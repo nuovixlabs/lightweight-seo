@@ -1,0 +1,99 @@
+/**
+ * Lightweight SEO Admin Styles
+ * @author Rakesh Mandal
+ * @version 1.0.0
+ * @since 1.0.0
+ * @package Lightweight SEO
+ * @subpackage Lightweight SEO Admin Styles
+ * @link https://rakeshmandal.com
+ * @license MIT
+ */
+
+/* Meta Box Styles */
+.lightweight-seo-meta-box {
+  margin: 10px 0;
+}
+
+.lightweight-seo-meta-box .form-table th {
+  width: 200px;
+  padding: 15px 10px 15px 0;
+}
+
+.lightweight-seo-meta-box .form-table td {
+  padding: 15px 10px;
+}
+
+.lightweight-seo-meta-box .description {
+  font-style: italic;
+  color: #666;
+  margin: 5px 0 0;
+}
+
+/* Tab Navigation */
+.lightweight-seo-tabs {
+  margin-top: 10px;
+}
+
+.lightweight-seo-tab-nav {
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 15px;
+}
+
+.lightweight-seo-tab-nav .nav-tab {
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.lightweight-seo-tab-nav .nav-tab-active {
+  border-bottom: 1px solid #f1f1f1;
+  background: #f1f1f1;
+}
+
+/* Tab Content */
+.lightweight-seo-tab-content .tab-content {
+  display: none;
+}
+
+.lightweight-seo-tab-content .tab-content.active {
+  display: block;
+}
+
+/* Image Field */
+.lightweight-seo-image-field {
+  margin-bottom: 10px;
+}
+
+.lightweight-seo-image-field input[type="text"] {
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+
+.lightweight-seo-image-preview {
+  margin: 10px 0;
+  padding: 5px;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  max-width: 300px;
+}
+
+/* Settings Page */
+.toplevel_page_lightweight-seo .form-table th {
+  width: 250px;
+}
+
+.toplevel_page_lightweight-seo .form-table .description {
+  color: #666;
+  font-style: italic;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+  .lightweight-seo-meta-box .form-table th,
+  .lightweight-seo-meta-box .form-table td {
+    padding: 10px 0;
+  }
+
+  .lightweight-seo-meta-box .form-table th {
+    width: 100%;
+  }
+}
