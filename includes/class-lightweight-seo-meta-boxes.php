@@ -45,7 +45,7 @@ class Lightweight_SEO_Meta_Boxes {
                 __('SEO Settings', 'lightweight-seo'),
                 array($this, 'render_meta_box'),
                 $post_type,
-                'normal',
+                'advanced',
                 'high'
             );
         }

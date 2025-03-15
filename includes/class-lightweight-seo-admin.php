@@ -164,8 +164,8 @@ class Lightweight_SEO_Admin {
     public function title_format_render() {
         $options = get_option('lightweight_seo_settings');
         ?>
-        <input type="text" name="lightweight_seo_settings[title_format]" value="<?php echo esc_attr($options['title_format'] ?? '%title% | %sitename%'); ?>" class="regular-text">
-        <p class="description"><?php _e('Format for page titles. Example: %title% | %sitename%', 'lightweight-seo'); ?></p>
+        <input type="text" name="lightweight_seo_settings[title_format]" value="<?php echo esc_attr($options['title_format'] ?? '%title% &#8211; %sitename%'); ?>" class="regular-text">
+        <p class="description"><?php _e('Format for page titles. Example: %title% &#8211; %sitename%', 'lightweight-seo'); ?></p>
         <?php
     }
 

@@ -52,7 +52,7 @@ class Lightweight_SEO_Frontend {
         
         // Otherwise use the format from settings
         $settings = get_option('lightweight_seo_settings');
-        $title_format = $settings['title_format'] ?? '%title% | %sitename%';
+        $title_format = $settings['title_format'] ?? '%title% &#8211; %sitename%';
         
         // Replace variables
         $title = str_replace(
@@ -61,7 +61,7 @@ class Lightweight_SEO_Frontend {
                 get_the_title($post_id),
                 get_bloginfo('name'),
                 get_bloginfo('description'),
-                '|'
+                '&#8211;'
             ),
             $title_format
         );

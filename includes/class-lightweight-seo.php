@@ -111,7 +111,7 @@ class Lightweight_SEO {
         // Set default options if they don't exist
         if (!get_option('lightweight_seo_settings')) {
             $default_settings = array(
-                'title_format' => '%title% - %sitename%',
+                'title_format' => '%title% &#8211; %sitename%',
                 'meta_description' => get_bloginfo('description'),
                 'meta_keywords' => '',
                 'social_image' => '',
