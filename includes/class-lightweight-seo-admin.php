@@ -144,6 +144,41 @@ class Lightweight_SEO_Admin {
             $this->plugin_name,
             'lightweight_seo_general_section'
         );
+
+        // Tracking Codes Section
+        add_settings_section(
+            'lightweight_seo_tracking_section',
+            __('Tracking Codes', 'lightweight-seo'),
+            array($this, 'tracking_section_callback'),
+            $this->plugin_name
+        );
+
+        // Google Analytics 4
+        add_settings_field(
+            'ga4_measurement_id',
+            __('Google Analytics 4 Measurement ID', 'lightweight-seo'),
+            array($this, 'ga4_measurement_id_render'),
+            $this->plugin_name,
+            'lightweight_seo_tracking_section'
+        );
+
+        // Google Tag Manager
+        add_settings_field(
+            'gtm_container_id',
+            __('Google Tag Manager Container ID', 'lightweight-seo'),
+            array($this, 'gtm_container_id_render'),
+            $this->plugin_name,
+            'lightweight_seo_tracking_section'
+        );
+
+        // Facebook Pixel
+        add_settings_field(
+            'facebook_pixel_id',
+            __('Facebook Pixel ID', 'lightweight-seo'),
+            array($this, 'facebook_pixel_id_render'),
+            $this->plugin_name,
+            'lightweight_seo_tracking_section'
+        );
     }
 
     /**
@@ -218,6 +253,54 @@ class Lightweight_SEO_Admin {
     }
 
     /**
+     * Render the tracking section information
+     *
+     * @since    1.0.1
+     */
+    public function tracking_section_callback() {
+        echo '<p>' . __('Add your tracking codes to integrate analytics and marketing tools. These will be automatically added to your site.', 'lightweight-seo') . '</p>';
+    }
+
+    /**
+     * Render the GA4 measurement ID field
+     *
+     * @since    1.0.1
+     */
+    public function ga4_measurement_id_render() {
+        $options = get_option('lightweight_seo_settings');
+        ?>
+        <input type="text" name="lightweight_seo_settings[ga4_measurement_id]" value="<?php echo esc_attr($options['ga4_measurement_id'] ?? ''); ?>" class="regular-text">
+        <p class="description"><?php _e('Enter your Google Analytics 4 Measurement ID (e.g., G-XXXXXXXXXX)', 'lightweight-seo'); ?></p>
+        <?php
+    }
+
+    /**
+     * Render the GTM container ID field
+     *
+     * @since    1.0.1
+     */
+    public function gtm_container_id_render() {
+        $options = get_option('lightweight_seo_settings');
+        ?>
+        <input type="text" name="lightweight_seo_settings[gtm_container_id]" value="<?php echo esc_attr($options['gtm_container_id'] ?? ''); ?>" class="regular-text">
+        <p class="description"><?php _e('Enter your Google Tag Manager Container ID (e.g., GTM-XXXXXX)', 'lightweight-seo'); ?></p>
+        <?php
+    }
+
+    /**
+     * Render the Facebook Pixel ID field
+     *
+     * @since    1.0.1
+     */
+    public function facebook_pixel_id_render() {
+        $options = get_option('lightweight_seo_settings');
+        ?>
+        <input type="text" name="lightweight_seo_settings[facebook_pixel_id]" value="<?php echo esc_attr($options['facebook_pixel_id'] ?? ''); ?>" class="regular-text">
+        <p class="description"><?php _e('Enter your Facebook Pixel ID', 'lightweight-seo'); ?></p>
+        <?php
+    }
+
+    /**
      * Sanitize and validate settings
      *
      * @since    1.0.0
@@ -241,6 +324,18 @@ class Lightweight_SEO_Admin {
         
         if (isset($input['social_image'])) {
             $sanitized_input['social_image'] = esc_url_raw($input['social_image']);
+        }
+        
+        if (isset($input['ga4_measurement_id'])) {
+            $sanitized_input['ga4_measurement_id'] = sanitize_text_field($input['ga4_measurement_id']);
+        }
+
+        if (isset($input['gtm_container_id'])) {
+            $sanitized_input['gtm_container_id'] = sanitize_text_field($input['gtm_container_id']);
+        }
+
+        if (isset($input['facebook_pixel_id'])) {
+            $sanitized_input['facebook_pixel_id'] = sanitize_text_field($input['facebook_pixel_id']);
         }
         
         return $sanitized_input;

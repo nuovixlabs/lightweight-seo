@@ -29,6 +29,13 @@ Lightweight SEO is a simple yet powerful WordPress plugin designed to help you o
   - Per-page SEO overrides
   - Clean, valid HTML output
 
+- **Analytics & Tracking Integration**
+
+  - Google Analytics 4 support
+  - Google Tag Manager integration
+  - Facebook Pixel implementation
+  - Easy-to-use tracking ID management
+
 - **User Experience**
   - Simple, intuitive interface
   - Minimal performance impact

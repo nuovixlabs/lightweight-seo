@@ -27,6 +27,10 @@ class Lightweight_SEO_Frontend {
         
         // Add meta tags to head
         add_action('wp_head', array($this, 'add_meta_tags'), 1);
+
+        // Add tracking codes
+        add_action('wp_head', array($this, 'add_tracking_codes'), 1);
+        add_action('wp_body_open', array($this, 'add_gtm_noscript'), 1);
     }
 
     /**
@@ -197,6 +201,83 @@ class Lightweight_SEO_Frontend {
         
         if (!empty($og_image)) {
             echo '<meta name="twitter:image" content="' . esc_url($og_image) . '" />' . "\n";
+        }
+    }
+
+    /**
+     * Add tracking codes to head
+     *
+     * @since    1.0.1
+     */
+    public function add_tracking_codes() {
+        $settings = get_option('lightweight_seo_settings');
+        
+        // Google Analytics 4
+        if (!empty($settings['ga4_measurement_id'])) {
+            ?>
+            <!-- Google Analytics 4 -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr($settings['ga4_measurement_id']); ?>"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '<?php echo esc_attr($settings['ga4_measurement_id']); ?>');
+            </script>
+            <?php
+        }
+
+        // Google Tag Manager
+        if (!empty($settings['gtm_container_id'])) {
+            ?>
+            <!-- Google Tag Manager -->
+            <script>
+                (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','<?php echo esc_attr($settings['gtm_container_id']); ?>');
+            </script>
+            <?php
+        }
+
+        // Facebook Pixel
+        if (!empty($settings['facebook_pixel_id'])) {
+            ?>
+            <!-- Facebook Pixel -->
+            <script>
+                !function(f,b,e,v,n,t,s)
+                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                n.queue=[];t=b.createElement(e);t.async=!0;
+                t.src=v;s=b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t,s)}(window, document,'script',
+                'https://connect.facebook.net/en_US/fbevents.js');
+                fbq('init', '<?php echo esc_attr($settings['facebook_pixel_id']); ?>');
+                fbq('track', 'PageView');
+            </script>
+            <noscript>
+                <img height="1" width="1" style="display:none" 
+                    src="https://www.facebook.com/tr?id=<?php echo esc_attr($settings['facebook_pixel_id']); ?>&ev=PageView&noscript=1"/>
+            </noscript>
+            <?php
+        }
+    }
+
+    /**
+     * Add Google Tag Manager noscript code after body tag
+     *
+     * @since    1.0.1
+     */
+    public function add_gtm_noscript() {
+        $settings = get_option('lightweight_seo_settings');
+        
+        if (!empty($settings['gtm_container_id'])) {
+            ?>
+            <!-- Google Tag Manager (noscript) -->
+            <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?php echo esc_attr($settings['gtm_container_id']); ?>"
+            height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+            <?php
         }
     }
 }
