@@ -16,8 +16,13 @@ if (!defined('WPINC')) {
     die;
 }
 
+// Get plugin metadata
+$plugin_data = get_file_data(__FILE__, array(
+    'Version' => 'Version',
+), 'plugin');
+
 // Define plugin constants
-define('LIGHTWEIGHT_SEO_VERSION', '1.0.0');
+define('LIGHTWEIGHT_SEO_VERSION', $plugin_data['Version']);
 define('LIGHTWEIGHT_SEO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('LIGHTWEIGHT_SEO_PLUGIN_URL', plugin_dir_url(__FILE__));
 
