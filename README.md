@@ -66,7 +66,7 @@ You can use these variables in your title formats:
 
 ## 🔄 Release
 
-[Latest Release (v1.0.0)](https://github.com/therakeshm/lightweight-seo/releases/latest)
+[Latest Release (v1.0.1)](https://github.com/therakeshm/lightweight-seo/releases/latest)
 
 ## 👨‍💻 Author
 
