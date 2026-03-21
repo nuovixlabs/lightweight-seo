@@ -1,0 +1,73 @@
+name: Release Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      PLUGIN_SLUG: lightweight-seo
+      RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate tag matches plugin version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          plugin_version="$(sed -n 's/^ \* Version: //p' lightweight-seo.php | head -n1 | tr -d '\r')"
+          tag_version="${RELEASE_TAG#v}"
+
+          if [[ -z "${plugin_version}" ]]; then
+            echo "Could not read the plugin version from lightweight-seo.php" >&2
+            exit 1
+          fi
+
+          if [[ "${plugin_version}" != "${tag_version}" ]]; then
+            echo "Release tag ${RELEASE_TAG} does not match plugin version ${plugin_version}" >&2
+            exit 1
+          fi
+
+          echo "ZIP_NAME=${PLUGIN_SLUG}-${RELEASE_TAG}.zip" >> "${GITHUB_ENV}"
+
+      - name: Build plugin zip
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+          git archive --format=tar --worktree-attributes --prefix="${PLUGIN_SLUG}/" HEAD | tar -xf - -C dist
+
+          (
+            cd dist
+            zip -qr "../${ZIP_NAME}" "${PLUGIN_SLUG}"
+          )
+
+      - name: Publish release asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" "${ZIP_NAME}" --clobber
+          else
+            gh release create "${RELEASE_TAG}" "${ZIP_NAME}" --title "${RELEASE_TAG}" --generate-notes --verify-tag
+          fi
