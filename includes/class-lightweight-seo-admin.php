@@ -383,18 +383,26 @@ class Lightweight_SEO_Admin {
 	 * Keep the stored social image URL and attachment ID in sync.
 	 *
 	 * @since    1.0.2
-	 * @param    string    $image_url    Submitted image URL.
-	 * @param    int       $image_id     Submitted attachment ID.
+	 * @param    string    $image_url             Submitted image URL.
+	 * @param    int       $image_id              Submitted attachment ID.
+	 * @param    string    $previous_image_url    Previously saved image URL.
+	 * @param    int       $previous_image_id     Previously saved attachment ID.
 	 * @return   array
 	 */
-	private function normalize_social_image( $image_url, $image_id ) {
-		$image_url = esc_url_raw( $image_url );
-		$image_id  = absint( $image_id );
+	private function normalize_social_image( $image_url, $image_id, $previous_image_url = '', $previous_image_id = 0 ) {
+		$image_url          = esc_url_raw( $image_url );
+		$image_id           = absint( $image_id );
+		$previous_image_url = esc_url_raw( $previous_image_url );
+		$previous_image_id  = absint( $previous_image_id );
 
-		if ( $image_id ) {
+		if ( '' === $image_url ) {
+			return array( $image_url, 0 );
+		}
+
+		if ( $image_id && $image_url !== $previous_image_url && $image_id === $previous_image_id ) {
 			$attachment_url = wp_get_attachment_image_url( $image_id, 'full' );
 
-			if ( empty( $image_url ) || empty( $attachment_url ) || $image_url !== $attachment_url ) {
+			if ( empty( $attachment_url ) || $image_url !== $attachment_url ) {
 				$image_id = 0;
 			}
 		}
@@ -447,7 +455,9 @@ class Lightweight_SEO_Admin {
 
 		list( $sanitized_input['social_image'], $sanitized_input['social_image_id'] ) = $this->normalize_social_image(
 			$sanitized_input['social_image'],
-			$sanitized_input['social_image_id']
+			$sanitized_input['social_image_id'],
+			$existing_settings['social_image'] ?? '',
+			$existing_settings['social_image_id'] ?? 0
 		);
 
 		if ( isset( $input['ga4_measurement_id'] ) ) {

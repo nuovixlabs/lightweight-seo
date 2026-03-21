@@ -283,12 +283,24 @@ class Lightweight_SEO_Meta_Boxes {
 			$this->post_meta->update( $post_id, 'social_description', sanitize_textarea_field( wp_unslash( $_POST['lightweight_seo_social_description'] ) ) );
 		}
 
+		$existing_social_image    = $this->post_meta->get( $post_id, 'social_image' );
+		$existing_social_image_id = absint( $this->post_meta->get( $post_id, 'social_image_id' ) );
+		$social_image             = isset( $_POST['lightweight_seo_social_image'] ) ? esc_url_raw( wp_unslash( $_POST['lightweight_seo_social_image'] ) ) : $existing_social_image;
+		$social_image_id          = isset( $_POST['lightweight_seo_social_image_id'] ) ? absint( $_POST['lightweight_seo_social_image_id'] ) : $existing_social_image_id;
+
+		list( $social_image, $social_image_id ) = $this->post_meta->normalize_social_image(
+			$social_image,
+			$social_image_id,
+			$existing_social_image,
+			$existing_social_image_id
+		);
+
 		if ( isset( $_POST['lightweight_seo_social_image'] ) ) {
-			$this->post_meta->update( $post_id, 'social_image', esc_url_raw( wp_unslash( $_POST['lightweight_seo_social_image'] ) ) );
+			$this->post_meta->update( $post_id, 'social_image', $social_image );
 		}
 
 		if ( isset( $_POST['lightweight_seo_social_image_id'] ) ) {
-			$this->post_meta->update( $post_id, 'social_image_id', absint( $_POST['lightweight_seo_social_image_id'] ) );
+			$this->post_meta->update( $post_id, 'social_image_id', $social_image_id );
 		}
 	}
 }

@@ -111,6 +111,46 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 0, $validated['social_image_id'] );
 	}
 
+	public function test_validate_settings_preserves_attachment_id_when_only_the_resolved_url_changes(): void {
+		global $lightweight_seo_test_attachment_urls;
+
+		$lightweight_seo_test_attachment_urls[14] = 'https://example.com/uploads/current-image.jpg';
+
+		$settings = new class() {
+			public function get_all() {
+				return array(
+					'title_format'         => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
+					'meta_description'     => 'Existing description',
+					'meta_keywords'        => 'existing,keywords',
+					'enable_meta_keywords' => '1',
+					'social_image'         => 'https://example.com/uploads/old-image.jpg',
+					'social_image_id'      => 14,
+					'ga4_measurement_id'   => '',
+					'gtm_container_id'     => '',
+					'facebook_pixel_id'    => '',
+				);
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.0.2', $settings, $post_meta );
+
+		$validated = $admin->validate_settings(
+			array(
+				'social_image'    => 'https://example.com/uploads/current-image.jpg',
+				'social_image_id' => '14',
+			)
+		);
+
+		$this->assertSame( 'https://example.com/uploads/current-image.jpg', $validated['social_image'] );
+		$this->assertSame( 14, $validated['social_image_id'] );
+	}
+
 	public function test_display_plugin_admin_page_renders_settings_errors(): void {
 		global $lightweight_seo_test_rendered_settings_errors;
 
