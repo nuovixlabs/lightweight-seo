@@ -50,6 +50,8 @@ class Lightweight_SEO_Post_Meta {
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'register_meta' ), 20 );
+		add_action( 'added_post_meta', array( $this, 'maybe_clear_stale_social_image_id' ), 10, 4 );
+		add_action( 'updated_post_meta', array( $this, 'maybe_clear_stale_social_image_id' ), 10, 4 );
 	}
 
 	/**
@@ -196,6 +198,38 @@ class Lightweight_SEO_Post_Meta {
 	}
 
 	/**
+	 * Clear attachment IDs that no longer match the stored social image URL.
+	 *
+	 * @since    1.0.2
+	 * @param    int       $meta_id      Meta ID.
+	 * @param    int       $post_id      Post ID.
+	 * @param    string    $meta_key     Meta key.
+	 * @param    mixed     $meta_value   Updated meta value.
+	 * @return   void
+	 */
+	public function maybe_clear_stale_social_image_id( $meta_id, $post_id, $meta_key, $meta_value ) {
+		if ( $this->meta_keys['social_image'] !== $meta_key ) {
+			return;
+		}
+
+		unset( $this->cache[ (int) $post_id ] );
+
+		$image_url = esc_url_raw( (string) $meta_value );
+		$image_id  = absint( get_post_meta( $post_id, $this->meta_keys['social_image_id'], true ) );
+
+		if ( ! $image_id ) {
+			return;
+		}
+
+		$attachment_url = wp_get_attachment_image_url( $image_id, 'full' );
+
+		if ( empty( $image_url ) || empty( $attachment_url ) || $image_url !== $attachment_url ) {
+			update_post_meta( $post_id, $this->meta_keys['social_image_id'], 0 );
+			unset( $this->cache[ (int) $post_id ] );
+		}
+	}
+
+	/**
 	 * Get the resolved social image URL for a post.
 	 *
 	 * @since    1.0.2
@@ -204,16 +238,21 @@ class Lightweight_SEO_Post_Meta {
 	 */
 	public function get_social_image_url( $post_id ) {
 		$post_meta = $this->get_all( $post_id );
+		$image_url = $post_meta['social_image'] ?? '';
 		$image_id  = absint( $post_meta['social_image_id'] ?? 0 );
 
 		if ( $image_id ) {
-			$image_url = wp_get_attachment_image_url( $image_id, 'full' );
+			$attachment_url = wp_get_attachment_image_url( $image_id, 'full' );
 
-			if ( ! empty( $image_url ) ) {
-				return $image_url;
+			if ( ! empty( $attachment_url ) ) {
+				if ( ! empty( $image_url ) && $image_url !== $attachment_url ) {
+					return $image_url;
+				}
+
+				return $attachment_url;
 			}
 		}
 
-		return $post_meta['social_image'] ?? '';
+		return $image_url;
 	}
 }
