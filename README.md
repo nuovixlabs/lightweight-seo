@@ -42,6 +42,55 @@ Lightweight SEO is a simple yet powerful WordPress plugin designed to help you o
   - WordPress standard design patterns
   - No bloat or unnecessary features
 
+## 🏗️ Architecture
+
+- `lightweight-seo.php` bootstraps the plugin and loads the core class
+- `includes/class-lightweight-seo.php` wires shared services, admin UI, meta boxes, and frontend handlers
+- `includes/class-lightweight-seo-settings.php` centralizes option defaults and resolved settings
+- `includes/class-lightweight-seo-post-meta.php` centralizes SEO post meta, supported post types, and REST registration
+- Frontend behavior is split across:
+  - `includes/class-lightweight-seo-page-context-service.php`
+  - `includes/class-lightweight-seo-title-service.php`
+  - `includes/class-lightweight-seo-meta-tags-service.php`
+  - `includes/class-lightweight-seo-tracking-service.php`
+
+## 🧪 Local Development
+
+For live testing during development, symlink this workspace into your local WordPress install:
+
+```bash
+ln -s "/Users/rakeshm/conductor/workspaces/lightweight-seo/bucharest" "/path/to/wp-content/plugins/lightweight-seo"
+```
+
+That lets WordPress load the latest files from this workspace directly.
+
+## ✅ Quality Checks
+
+Install development tools:
+
+```bash
+composer install
+```
+
+Run coding standards:
+
+```bash
+composer run phpcs
+```
+
+Run tests:
+
+```bash
+composer run test
+```
+
+## 🔁 Upgrade Notes
+
+- Social images now support attachment IDs with URL fallback for backward compatibility
+- Meta keywords output can now be disabled from plugin settings
+- Supported SEO post types are now filterable through `lightweight_seo_supported_post_types`
+- Frontend title, meta tags, page context, and tracking settings now expose extension hooks
+
 ## 📖 How to Use
 
 ### 1. Global Settings
