@@ -53,6 +53,15 @@ class Lightweight_SEO {
 	protected $post_meta;
 
 	/**
+	 * Shared term and author meta service.
+	 *
+	 * @since    1.1.0
+	 * @access   protected
+	 * @var      Lightweight_SEO_Archive_Meta    $archive_meta
+	 */
+	protected $archive_meta;
+
+	/**
 	 * Define the core functionality of the plugin.
 	 *
 	 * @since    1.0.0
@@ -61,8 +70,9 @@ class Lightweight_SEO {
 		$this->plugin_name = 'lightweight-seo';
 		$this->version     = LIGHTWEIGHT_SEO_VERSION;
 		$this->load_dependencies();
-		$this->settings  = new Lightweight_SEO_Settings();
-		$this->post_meta = new Lightweight_SEO_Post_Meta();
+		$this->settings     = new Lightweight_SEO_Settings();
+		$this->post_meta    = new Lightweight_SEO_Post_Meta();
+		$this->archive_meta = new Lightweight_SEO_Archive_Meta( $this->settings );
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 	}
 
@@ -78,6 +88,9 @@ class Lightweight_SEO {
 
 		// Shared post meta service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-post-meta.php';
+
+		// Shared term and author meta service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-archive-meta.php';
 
 		// Admin class for backend functionality
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-admin.php';
@@ -97,6 +110,15 @@ class Lightweight_SEO {
 		// Frontend tracking service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-tracking-service.php';
 
+		// Sitemap integration service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-sitemap-service.php';
+
+		// Structured data service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-schema-service.php';
+
+		// Redirect and 404 monitoring service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirects-service.php';
+
 		// Frontend class for displaying SEO data
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-frontend.php';
 	}
@@ -114,7 +136,13 @@ class Lightweight_SEO {
 		$plugin_meta_boxes = new Lightweight_SEO_Meta_Boxes( $this->settings, $this->post_meta );
 
 		// Initialize frontend functionality
-		$plugin_frontend = new Lightweight_SEO_Frontend( $this->settings, $this->post_meta );
+		$plugin_frontend = new Lightweight_SEO_Frontend( $this->settings, $this->post_meta, $this->archive_meta );
+
+		// Initialize sitemap integration
+		$plugin_sitemaps = new Lightweight_SEO_Sitemap_Service( $this->settings, $this->post_meta, $this->archive_meta );
+
+		// Initialize redirect handling and 404 monitoring
+		$plugin_redirects = new Lightweight_SEO_Redirects_Service( $this->settings );
 
 		// Register activation hook
 		register_activation_hook( LIGHTWEIGHT_SEO_PLUGIN_FILE, array( $this, 'activate' ) );

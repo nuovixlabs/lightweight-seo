@@ -24,14 +24,19 @@ class Lightweight_SEO_Post_Meta {
 	 * @var      array    $meta_keys
 	 */
 	private $meta_keys = array(
-		'seo_title'          => '_lightweight_seo_title',
-		'seo_description'    => '_lightweight_seo_description',
-		'seo_keywords'       => '_lightweight_seo_keywords',
-		'seo_noindex'        => '_lightweight_seo_noindex',
-		'social_title'       => '_lightweight_seo_social_title',
-		'social_description' => '_lightweight_seo_social_description',
-		'social_image'       => '_lightweight_seo_social_image',
-		'social_image_id'    => '_lightweight_seo_social_image_id',
+		'seo_title'             => '_lightweight_seo_title',
+		'seo_description'       => '_lightweight_seo_description',
+		'seo_keywords'          => '_lightweight_seo_keywords',
+		'seo_canonical_url'     => '_lightweight_seo_canonical_url',
+		'seo_noindex'           => '_lightweight_seo_noindex',
+		'seo_nofollow'          => '_lightweight_seo_nofollow',
+		'seo_noarchive'         => '_lightweight_seo_noarchive',
+		'seo_nosnippet'         => '_lightweight_seo_nosnippet',
+		'seo_max_image_preview' => '_lightweight_seo_max_image_preview',
+		'social_title'          => '_lightweight_seo_social_title',
+		'social_description'    => '_lightweight_seo_social_description',
+		'social_image'          => '_lightweight_seo_social_image',
+		'social_image_id'       => '_lightweight_seo_social_image_id',
 	);
 
 	/**
@@ -75,35 +80,55 @@ class Lightweight_SEO_Post_Meta {
 	 */
 	public function register_meta() {
 		$meta_config = array(
-			'seo_title'          => array(
+			'seo_title'             => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 			),
-			'seo_description'    => array(
+			'seo_description'       => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_textarea_field',
 			),
-			'seo_keywords'       => array(
+			'seo_keywords'          => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 			),
-			'seo_noindex'        => array(
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
-			),
-			'social_title'       => array(
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
-			),
-			'social_description' => array(
-				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_textarea_field',
-			),
-			'social_image'       => array(
+			'seo_canonical_url'     => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'esc_url_raw',
 			),
-			'social_image_id'    => array(
+			'seo_noindex'           => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'seo_nofollow'          => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'seo_noarchive'         => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'seo_nosnippet'         => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'seo_max_image_preview' => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'social_title'          => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'social_description'    => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_textarea_field',
+			),
+			'social_image'          => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'esc_url_raw',
+			),
+			'social_image_id'       => array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
 			),
@@ -174,6 +199,17 @@ class Lightweight_SEO_Post_Meta {
 		$meta_values = $this->get_all( $post_id );
 
 		return $meta_values[ $field ] ?? '';
+	}
+
+	/**
+	 * Get a registered SEO meta key by field alias.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $field    Meta field alias.
+	 * @return   string
+	 */
+	public function get_meta_key( $field ) {
+		return $this->meta_keys[ $field ] ?? '';
 	}
 
 	/**

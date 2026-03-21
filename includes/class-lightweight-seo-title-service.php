@@ -43,10 +43,6 @@ class Lightweight_SEO_Title_Service {
 	 * @return   string
 	 */
 	public function filter_document_title( $title ) {
-		if ( ! is_singular() ) {
-			return $title;
-		}
-
 		$context = $this->page_context->get_context();
 
 		if ( ! empty( $context['document_title'] ) ) {

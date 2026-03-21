@@ -83,15 +83,20 @@ class Lightweight_SEO_Meta_Boxes {
 		wp_nonce_field( 'lightweight_seo_meta_box', 'lightweight_seo_meta_box_nonce' );
 
 		// Get saved values
-		$post_meta          = $this->post_meta->get_all( $post->ID );
-		$seo_title          = $post_meta['seo_title'];
-		$seo_description    = $post_meta['seo_description'];
-		$seo_keywords       = $post_meta['seo_keywords'];
-		$seo_noindex        = $post_meta['seo_noindex'];
-		$social_title       = $post_meta['social_title'];
-		$social_description = $post_meta['social_description'];
-		$social_image       = $this->post_meta->get_social_image_url( $post->ID );
-		$social_image_id    = absint( $post_meta['social_image_id'] );
+		$post_meta             = $this->post_meta->get_all( $post->ID );
+		$seo_title             = $post_meta['seo_title'] ?? '';
+		$seo_description       = $post_meta['seo_description'] ?? '';
+		$seo_keywords          = $post_meta['seo_keywords'] ?? '';
+		$seo_canonical_url     = $post_meta['seo_canonical_url'] ?? '';
+		$seo_noindex           = $post_meta['seo_noindex'] ?? '';
+		$seo_nofollow          = $post_meta['seo_nofollow'] ?? '';
+		$seo_noarchive         = $post_meta['seo_noarchive'] ?? '';
+		$seo_nosnippet         = $post_meta['seo_nosnippet'] ?? '';
+		$seo_max_image_preview = $post_meta['seo_max_image_preview'] ?? '';
+		$social_title          = $post_meta['social_title'] ?? '';
+		$social_description    = $post_meta['social_description'] ?? '';
+		$social_image          = $this->post_meta->get_social_image_url( $post->ID );
+		$social_image_id       = absint( $post_meta['social_image_id'] ?? 0 );
 
 		// Get global settings for reference
 		$global_settings     = $this->settings->get_all();
@@ -164,6 +169,17 @@ class Lightweight_SEO_Meta_Boxes {
 							</tr>
 							<tr>
 								<th scope="row">
+									<label for="lightweight_seo_canonical_url"><?php _e( 'Canonical URL', 'lightweight-seo' ); ?></label>
+								</th>
+								<td>
+									<input type="url" id="lightweight_seo_canonical_url" name="lightweight_seo_canonical_url" value="<?php echo esc_url( $seo_canonical_url ); ?>" class="large-text">
+									<p class="description">
+										<?php _e( 'Optional canonical URL override. Leave empty to use the page permalink.', 'lightweight-seo' ); ?>
+									</p>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
 									<?php _e( 'Search Engine Indexing', 'lightweight-seo' ); ?>
 								</th>
 								<td>
@@ -171,6 +187,36 @@ class Lightweight_SEO_Meta_Boxes {
 										<input type="checkbox" name="lightweight_seo_noindex" value="1" <?php checked( $seo_noindex, '1' ); ?>>
 										<?php _e( 'Prevent search engines from indexing this page', 'lightweight-seo' ); ?>
 									</label>
+								</td>
+							</tr>
+							<tr>
+								<th scope="row">
+									<?php _e( 'Advanced Robots', 'lightweight-seo' ); ?>
+								</th>
+								<td>
+									<label>
+										<input type="checkbox" name="lightweight_seo_nofollow" value="1" <?php checked( $seo_nofollow, '1' ); ?>>
+										<?php _e( 'Prevent search engines from following links on this page', 'lightweight-seo' ); ?>
+									</label>
+									<br>
+									<label>
+										<input type="checkbox" name="lightweight_seo_noarchive" value="1" <?php checked( $seo_noarchive, '1' ); ?>>
+										<?php _e( 'Prevent search engines from showing cached copies', 'lightweight-seo' ); ?>
+									</label>
+									<br>
+									<label>
+										<input type="checkbox" name="lightweight_seo_nosnippet" value="1" <?php checked( $seo_nosnippet, '1' ); ?>>
+										<?php _e( 'Prevent text snippets from showing in search results', 'lightweight-seo' ); ?>
+									</label>
+									<p class="description" style="margin-top: 10px;">
+										<label for="lightweight_seo_max_image_preview"><?php _e( 'Max Image Preview', 'lightweight-seo' ); ?></label><br>
+										<select id="lightweight_seo_max_image_preview" name="lightweight_seo_max_image_preview">
+											<option value="" <?php selected( $seo_max_image_preview, '' ); ?>><?php _e( 'Use global default', 'lightweight-seo' ); ?></option>
+											<option value="large" <?php selected( $seo_max_image_preview, 'large' ); ?>><?php _e( 'Large', 'lightweight-seo' ); ?></option>
+											<option value="standard" <?php selected( $seo_max_image_preview, 'standard' ); ?>><?php _e( 'Standard', 'lightweight-seo' ); ?></option>
+											<option value="none" <?php selected( $seo_max_image_preview, 'none' ); ?>><?php _e( 'None', 'lightweight-seo' ); ?></option>
+										</select>
+									</p>
 								</td>
 							</tr>
 						</table>
@@ -271,9 +317,27 @@ class Lightweight_SEO_Meta_Boxes {
 			$this->post_meta->update( $post_id, 'seo_keywords', sanitize_text_field( wp_unslash( $_POST['lightweight_seo_keywords'] ) ) );
 		}
 
+		if ( isset( $_POST['lightweight_seo_canonical_url'] ) ) {
+			$this->post_meta->update( $post_id, 'seo_canonical_url', esc_url_raw( wp_unslash( $_POST['lightweight_seo_canonical_url'] ) ) );
+		}
+
 		// Checkbox fields need to be handled differently
 		$noindex = isset( $_POST['lightweight_seo_noindex'] ) ? '1' : '0';
 		$this->post_meta->update( $post_id, 'seo_noindex', $noindex );
+		$this->post_meta->update( $post_id, 'seo_nofollow', isset( $_POST['lightweight_seo_nofollow'] ) ? '1' : '0' );
+		$this->post_meta->update( $post_id, 'seo_noarchive', isset( $_POST['lightweight_seo_noarchive'] ) ? '1' : '0' );
+		$this->post_meta->update( $post_id, 'seo_nosnippet', isset( $_POST['lightweight_seo_nosnippet'] ) ? '1' : '0' );
+
+		if ( isset( $_POST['lightweight_seo_max_image_preview'] ) ) {
+			$allowed_values = array( '', 'large', 'standard', 'none' );
+			$max_preview    = sanitize_text_field( wp_unslash( $_POST['lightweight_seo_max_image_preview'] ) );
+
+			if ( ! in_array( $max_preview, $allowed_values, true ) ) {
+				$max_preview = '';
+			}
+
+			$this->post_meta->update( $post_id, 'seo_max_image_preview', $max_preview );
+		}
 
 		if ( isset( $_POST['lightweight_seo_social_title'] ) ) {
 			$this->post_meta->update( $post_id, 'social_title', sanitize_text_field( wp_unslash( $_POST['lightweight_seo_social_title'] ) ) );

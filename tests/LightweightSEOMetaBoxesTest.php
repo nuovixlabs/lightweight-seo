@@ -39,7 +39,21 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 			}
 
 			public function get_all( $post_id ) {
-				return array();
+				return array(
+					'seo_title'             => '',
+					'seo_description'       => '',
+					'seo_keywords'          => '',
+					'seo_canonical_url'     => '',
+					'seo_noindex'           => '',
+					'seo_nofollow'          => '',
+					'seo_noarchive'         => '',
+					'seo_nosnippet'         => '',
+					'seo_max_image_preview' => '',
+					'social_title'          => '',
+					'social_description'    => '',
+					'social_image'          => '',
+					'social_image_id'       => 0,
+				);
 			}
 
 			public function get_social_image_url( $post_id ) {
@@ -56,7 +70,12 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 			'lightweight_seo_title'              => '  My Title  ',
 			'lightweight_seo_description'        => ' My Description ',
 			'lightweight_seo_keywords'           => 'alpha, beta',
+			'lightweight_seo_canonical_url'      => 'https://example.com/canonical-url',
 			'lightweight_seo_noindex'            => '1',
+			'lightweight_seo_nofollow'           => '1',
+			'lightweight_seo_noarchive'          => '1',
+			'lightweight_seo_nosnippet'          => '1',
+			'lightweight_seo_max_image_preview'  => 'standard',
 			'lightweight_seo_social_title'       => ' Social Title ',
 			'lightweight_seo_social_description' => ' Social Description ',
 			'lightweight_seo_social_image'       => 'https://example.com/social-image.jpg',
@@ -69,7 +88,12 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		$this->assertSame( 'My Title', $post_meta->updates['seo_title'] );
 		$this->assertSame( 'My Description', $post_meta->updates['seo_description'] );
 		$this->assertSame( 'alpha, beta', $post_meta->updates['seo_keywords'] );
+		$this->assertSame( 'https://example.com/canonical-url', $post_meta->updates['seo_canonical_url'] );
 		$this->assertSame( '1', $post_meta->updates['seo_noindex'] );
+		$this->assertSame( '1', $post_meta->updates['seo_nofollow'] );
+		$this->assertSame( '1', $post_meta->updates['seo_noarchive'] );
+		$this->assertSame( '1', $post_meta->updates['seo_nosnippet'] );
+		$this->assertSame( 'standard', $post_meta->updates['seo_max_image_preview'] );
 		$this->assertSame( 'Social Title', $post_meta->updates['social_title'] );
 		$this->assertSame( 'Social Description', $post_meta->updates['social_description'] );
 		$this->assertSame( 'https://example.com/social-image.jpg', $post_meta->updates['social_image'] );

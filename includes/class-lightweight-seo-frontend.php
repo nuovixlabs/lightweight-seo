@@ -44,6 +44,15 @@ class Lightweight_SEO_Frontend {
 	private $tracking_service;
 
 	/**
+	 * Schema service.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Schema_Service    $schema_service
+	 */
+	private $schema_service;
+
+	/**
 	 * Shared page context service.
 	 *
 	 * @since    1.0.2
@@ -56,13 +65,15 @@ class Lightweight_SEO_Frontend {
 	 * Initialize the class.
 	 *
 	 * @since    1.0.2
-	 * @param    Lightweight_SEO_Settings     $settings     Shared settings service.
-	 * @param    Lightweight_SEO_Post_Meta    $post_meta    Shared post meta service.
+	 * @param    Lightweight_SEO_Settings        $settings        Shared settings service.
+	 * @param    Lightweight_SEO_Post_Meta       $post_meta       Shared post meta service.
+	 * @param    Lightweight_SEO_Archive_Meta    $archive_meta    Shared archive meta service.
 	 */
-	public function __construct( $settings, $post_meta ) {
-		$this->page_context      = new Lightweight_SEO_Page_Context_Service( $settings, $post_meta );
+	public function __construct( $settings, $post_meta, $archive_meta ) {
+		$this->page_context      = new Lightweight_SEO_Page_Context_Service( $settings, $post_meta, $archive_meta );
 		$this->title_service     = new Lightweight_SEO_Title_Service( $this->page_context );
 		$this->meta_tags_service = new Lightweight_SEO_Meta_Tags_Service( $this->page_context );
+		$this->schema_service    = new Lightweight_SEO_Schema_Service( $this->page_context, $settings );
 		$this->tracking_service  = new Lightweight_SEO_Tracking_Service( $settings );
 
 		// Filter document title
@@ -70,6 +81,7 @@ class Lightweight_SEO_Frontend {
 
 		// Add meta tags to head
 		add_action( 'wp_head', array( $this->meta_tags_service, 'add_meta_tags' ), 1 );
+		add_action( 'wp_head', array( $this->schema_service, 'add_schema' ), 5 );
 
 		// Add tracking codes
 		add_action( 'wp_head', array( $this->tracking_service, 'add_tracking_codes' ), 1 );
