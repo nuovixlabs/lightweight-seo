@@ -128,7 +128,12 @@ You can use these variables in your title formats:
 
 ## 🔄 Release
 
-[Latest Release (v1.0.2)](https://github.com/therakeshm/lightweight-seo/releases/latest)
+1. Update the `Version:` field in `lightweight-seo.php`
+2. Merge the release commit to `main`
+3. Push a tag like `v1.0.3`
+4. GitHub Actions builds `lightweight-seo-v1.0.3.zip` and attaches it to the GitHub release
+
+[Latest Release](https://github.com/therakeshm/lightweight-seo/releases/latest)
 
 ## 👨‍💻 Author
 

@@ -13,25 +13,32 @@ use PHPUnit\Framework\TestCase;
 final class LightweightSEOAdminTest extends TestCase {
 
 	protected function setUp(): void {
+		global $lightweight_seo_test_attachment_urls;
 		global $lightweight_seo_test_nonce_is_valid;
 		global $lightweight_seo_test_options;
 		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_rendered_settings_errors;
 		global $lightweight_seo_test_settings_errors;
 		global $lightweight_seo_test_user_can;
 		global $lightweight_seo_test_cache;
 		global $lightweight_seo_test_network_admin;
 
-		$lightweight_seo_test_nonce_is_valid  = true;
-		$lightweight_seo_test_options         = array();
-		$lightweight_seo_test_posts           = array();
-		$lightweight_seo_test_settings_errors = array();
-		$lightweight_seo_test_user_can        = true;
-		$lightweight_seo_test_cache           = array();
-		$lightweight_seo_test_network_admin   = false;
+		$lightweight_seo_test_attachment_urls          = array();
+		$lightweight_seo_test_nonce_is_valid           = true;
+		$lightweight_seo_test_options                  = array();
+		$lightweight_seo_test_posts                    = array();
+		$lightweight_seo_test_rendered_settings_errors = array();
+		$lightweight_seo_test_settings_errors          = array();
+		$lightweight_seo_test_user_can                 = true;
+		$lightweight_seo_test_cache                    = array();
+		$lightweight_seo_test_network_admin            = false;
 	}
 
 	public function test_validate_settings_preserves_existing_tracking_ids_when_invalid(): void {
+		global $lightweight_seo_test_attachment_urls;
 		global $lightweight_seo_test_settings_errors;
+
+		$lightweight_seo_test_attachment_urls[27] = 'https://example.com/new-image.jpg';
 
 		$settings = new class() {
 			public function get_all() {
@@ -84,7 +91,7 @@ final class LightweightSEOAdminTest extends TestCase {
 			}
 		};
 
-		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.0.2', $settings, $post_meta );
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
 
 		$validated = $admin->validate_settings(
 			array(
@@ -128,6 +135,102 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 'large', $validated['default_max_image_preview'] );
 		$this->assertSame( 27, $validated['social_image_id'] );
 		$this->assertCount( 2, $lightweight_seo_test_settings_errors );
+	}
+
+	public function test_validate_settings_clears_stale_social_image_id_for_manual_urls(): void {
+		global $lightweight_seo_test_attachment_urls;
+
+		$lightweight_seo_test_attachment_urls[14] = 'https://example.com/existing-image.jpg';
+
+		$settings = new class() {
+			public function get_all() {
+				return array(
+					'title_format'         => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
+					'meta_description'     => 'Existing description',
+					'meta_keywords'        => 'existing,keywords',
+					'enable_meta_keywords' => '1',
+					'social_image'         => 'https://example.com/existing-image.jpg',
+					'social_image_id'      => 14,
+					'ga4_measurement_id'   => '',
+					'gtm_container_id'     => '',
+					'facebook_pixel_id'    => '',
+				);
+			}
+
+			public function normalize_max_image_preview( $value, $fallback = '' ) {
+				return 'large';
+			}
+
+			public function normalize_redirect_rules_input( $value ) {
+				return '';
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		$validated = $admin->validate_settings(
+			array(
+				'social_image'    => 'https://cdn.example.com/manual-image.jpg',
+				'social_image_id' => '14',
+			)
+		);
+
+		$this->assertSame( 'https://cdn.example.com/manual-image.jpg', $validated['social_image'] );
+		$this->assertSame( 0, $validated['social_image_id'] );
+	}
+
+	public function test_validate_settings_preserves_attachment_id_when_only_the_resolved_url_changes(): void {
+		global $lightweight_seo_test_attachment_urls;
+
+		$lightweight_seo_test_attachment_urls[14] = 'https://example.com/uploads/current-image.jpg';
+
+		$settings = new class() {
+			public function get_all() {
+				return array(
+					'title_format'         => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
+					'meta_description'     => 'Existing description',
+					'meta_keywords'        => 'existing,keywords',
+					'enable_meta_keywords' => '1',
+					'social_image'         => 'https://example.com/uploads/old-image.jpg',
+					'social_image_id'      => 14,
+					'ga4_measurement_id'   => '',
+					'gtm_container_id'     => '',
+					'facebook_pixel_id'    => '',
+				);
+			}
+
+			public function normalize_max_image_preview( $value, $fallback = '' ) {
+				return 'large';
+			}
+
+			public function normalize_redirect_rules_input( $value ) {
+				return '';
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		$validated = $admin->validate_settings(
+			array(
+				'social_image'    => 'https://example.com/uploads/current-image.jpg',
+				'social_image_id' => '14',
+			)
+		);
+
+		$this->assertSame( 'https://example.com/uploads/current-image.jpg', $validated['social_image'] );
+		$this->assertSame( 14, $validated['social_image_id'] );
 	}
 
 	public function test_internal_link_report_render_outputs_orphans_and_broken_links(): void {
@@ -413,5 +516,30 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( 'safe mode is active', $output );
 		$this->assertStringContainsString( 'Yoast SEO', $output );
+	}
+
+	public function test_display_plugin_admin_page_renders_settings_errors(): void {
+		global $lightweight_seo_test_rendered_settings_errors;
+
+		$settings = new class() {
+			public function get_all() {
+				return array();
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		ob_start();
+		$admin->display_plugin_admin_page();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'settings-errors', $output );
+		$this->assertSame( array( LIGHTWEIGHT_SEO_OPTION_NAME ), $lightweight_seo_test_rendered_settings_errors );
 	}
 }

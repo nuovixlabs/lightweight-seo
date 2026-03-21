@@ -2070,6 +2070,37 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Keep the stored social image URL and attachment ID in sync.
+	 *
+	 * @since    1.0.2
+	 * @param    string    $image_url             Submitted image URL.
+	 * @param    int       $image_id              Submitted attachment ID.
+	 * @param    string    $previous_image_url    Previously saved image URL.
+	 * @param    int       $previous_image_id     Previously saved attachment ID.
+	 * @return   array
+	 */
+	private function normalize_social_image( $image_url, $image_id, $previous_image_url = '', $previous_image_id = 0 ) {
+		$image_url          = esc_url_raw( $image_url );
+		$image_id           = absint( $image_id );
+		$previous_image_url = esc_url_raw( $previous_image_url );
+		$previous_image_id  = absint( $previous_image_id );
+
+		if ( '' === $image_url ) {
+			return array( $image_url, 0 );
+		}
+
+		if ( $image_id && $image_url !== $previous_image_url && $image_id === $previous_image_id ) {
+			$attachment_url = wp_get_attachment_image_url( $image_id, 'full' );
+
+			if ( empty( $attachment_url ) || $image_url !== $attachment_url ) {
+				$image_id = 0;
+			}
+		}
+
+		return array( $image_url, $image_id );
+	}
+
+	/**
 	 * Sanitize and validate settings
 	 *
 	 * @since    1.0.0
@@ -2250,6 +2281,13 @@ class Lightweight_SEO_Admin {
 			$sanitized_input['social_image_id'] = absint( $existing_settings['social_image_id'] ?? 0 );
 		}
 
+		list( $sanitized_input['social_image'], $sanitized_input['social_image_id'] ) = $this->normalize_social_image(
+			$sanitized_input['social_image'],
+			$sanitized_input['social_image_id'],
+			$existing_settings['social_image'] ?? '',
+			$existing_settings['social_image_id'] ?? 0
+		);
+
 		if ( isset( $input['ga4_measurement_id'] ) ) {
 			$sanitized_input['ga4_measurement_id'] = $this->validate_tracking_id(
 				$input['ga4_measurement_id'],
@@ -2318,6 +2356,7 @@ class Lightweight_SEO_Admin {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<?php settings_errors( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( LIGHTWEIGHT_SEO_OPTION_NAME );

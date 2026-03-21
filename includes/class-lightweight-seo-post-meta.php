@@ -49,12 +49,25 @@ class Lightweight_SEO_Post_Meta {
 	private $cache = array();
 
 	/**
+	 * Social image state captured before post meta updates.
+	 *
+	 * @since    1.0.2
+	 * @access   private
+	 * @var      array    $pending_social_image_updates
+	 */
+	private $pending_social_image_updates = array();
+
+	/**
 	 * Register post meta support.
 	 *
 	 * @since    1.0.2
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'register_meta' ), 20 );
+		add_filter( 'add_post_metadata', array( $this, 'remember_social_image_state' ), 10, 5 );
+		add_filter( 'update_post_metadata', array( $this, 'remember_social_image_state' ), 10, 5 );
+		add_action( 'added_post_meta', array( $this, 'maybe_clear_stale_social_image_id' ), 10, 4 );
+		add_action( 'updated_post_meta', array( $this, 'maybe_clear_stale_social_image_id' ), 10, 4 );
 	}
 
 	/**
@@ -229,6 +242,99 @@ class Lightweight_SEO_Post_Meta {
 		unset( $this->cache[ (int) $post_id ] );
 
 		return update_post_meta( $post_id, $this->meta_keys[ $field ], $value );
+	}
+
+	/**
+	 * Capture the current social image state before metadata changes.
+	 *
+	 * @since    1.0.2
+	 * @param    mixed     $check        Short-circuit value.
+	 * @param    int       $post_id      Post ID.
+	 * @param    string    $meta_key     Meta key.
+	 * @param    mixed     $meta_value   Updated meta value.
+	 * @param    mixed     $extra        Extra hook argument.
+	 * @return   mixed
+	 */
+	public function remember_social_image_state( $check, $post_id, $meta_key, $meta_value, $extra ) {
+		if ( $this->meta_keys['social_image'] !== $meta_key ) {
+			return $check;
+		}
+
+		$this->pending_social_image_updates[ (int) $post_id ] = array(
+			'social_image'    => get_post_meta( $post_id, $this->meta_keys['social_image'], true ),
+			'social_image_id' => absint( get_post_meta( $post_id, $this->meta_keys['social_image_id'], true ) ),
+		);
+
+		return $check;
+	}
+
+	/**
+	 * Keep the stored social image URL and attachment ID in sync.
+	 *
+	 * @since    1.0.2
+	 * @param    string    $image_url             Submitted image URL.
+	 * @param    int       $image_id              Submitted attachment ID.
+	 * @param    string    $previous_image_url    Previously saved image URL.
+	 * @param    int       $previous_image_id     Previously saved attachment ID.
+	 * @return   array
+	 */
+	public function normalize_social_image( $image_url, $image_id, $previous_image_url = '', $previous_image_id = 0 ) {
+		$image_url          = esc_url_raw( $image_url );
+		$image_id           = absint( $image_id );
+		$previous_image_url = esc_url_raw( $previous_image_url );
+		$previous_image_id  = absint( $previous_image_id );
+
+		if ( '' === $image_url ) {
+			return array( $image_url, 0 );
+		}
+
+		if ( $image_id && $image_url !== $previous_image_url && $image_id === $previous_image_id ) {
+			$attachment_url = wp_get_attachment_image_url( $image_id, 'full' );
+
+			if ( empty( $attachment_url ) || $image_url !== $attachment_url ) {
+				$image_id = 0;
+			}
+		}
+
+		return array( $image_url, $image_id );
+	}
+
+	/**
+	 * Clear stale attachment IDs after social image updates.
+	 *
+	 * @since    1.0.2
+	 * @param    int       $meta_id      Meta ID.
+	 * @param    int       $post_id      Post ID.
+	 * @param    string    $meta_key     Meta key.
+	 * @param    mixed     $meta_value   Updated meta value.
+	 * @return   void
+	 */
+	public function maybe_clear_stale_social_image_id( $meta_id, $post_id, $meta_key, $meta_value ) {
+		if ( $this->meta_keys['social_image'] !== $meta_key ) {
+			return;
+		}
+
+		$post_id  = (int) $post_id;
+		$previous = $this->pending_social_image_updates[ $post_id ] ?? array(
+			'social_image'    => '',
+			'social_image_id' => 0,
+		);
+
+		unset( $this->pending_social_image_updates[ $post_id ] );
+		unset( $this->cache[ $post_id ] );
+
+		$current_image_id              = absint( get_post_meta( $post_id, $this->meta_keys['social_image_id'], true ) );
+		list( , $normalized_image_id ) = $this->normalize_social_image(
+			(string) $meta_value,
+			$current_image_id,
+			$previous['social_image'],
+			$previous['social_image_id']
+		);
+
+		if ( $normalized_image_id !== $current_image_id ) {
+			update_post_meta( $post_id, $this->meta_keys['social_image_id'], $normalized_image_id );
+			unset( $this->cache[ $post_id ] );
+		}
 	}
 
 	/**
