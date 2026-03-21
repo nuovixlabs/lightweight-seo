@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<ruleset name="Lightweight SEO">
+    <description>WordPress coding standards for the Lightweight SEO plugin.</description>
+
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+
+    <file>lightweight-seo.php</file>
+    <file>includes</file>
+    <file>tests</file>
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+
+    <rule ref="WordPress-Core">
+        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
+        <exclude name="WordPress.Files.FileComment.MissingPackageTag"/>
+        <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+        <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
+        <exclude name="Squiz.Commenting.ClassComment.Missing"/>
+        <exclude name="Squiz.Commenting.FileComment.Missing"/>
+    </rule>
+</ruleset>
