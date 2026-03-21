@@ -129,4 +129,51 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 		$this->assertSame( '/new-page', $rule['target'] );
 		$this->assertSame( 301, $rule['status'] );
 	}
+
+	public function test_redirect_health_report_detects_chains_and_loops(): void {
+		$settings = new class() {
+			public function get_manual_redirect_rules() {
+				return array(
+					array(
+						'source' => '/old-page',
+						'target' => '/mid-page',
+						'status' => 301,
+					),
+					array(
+						'source' => '/mid-page',
+						'target' => '/final-page',
+						'status' => 301,
+					),
+					array(
+						'source' => '/loop-a',
+						'target' => '/loop-b',
+						'status' => 301,
+					),
+					array(
+						'source' => '/loop-b',
+						'target' => '/loop-a',
+						'status' => 301,
+					),
+				);
+			}
+
+			public function not_found_monitor_enabled() {
+				return true;
+			}
+
+			public function auto_redirects_enabled() {
+				return true;
+			}
+		};
+
+		$service = new Lightweight_SEO_Redirects_Service( $settings, false );
+		$report  = $service->get_redirect_health_report();
+		$sources = array_column( $report['loops'], 'source' );
+
+		$this->assertCount( 1, $report['chains'] );
+		$this->assertCount( 2, $report['loops'] );
+		$this->assertSame( array( '/old-page', '/mid-page', '/final-page' ), $report['chains'][0]['sequence'] );
+		$this->assertContains( '/loop-a', $sources );
+		$this->assertContains( '/loop-b', $sources );
+	}
 }

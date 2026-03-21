@@ -72,13 +72,15 @@ class Lightweight_SEO_Redirects_Service {
 	 * @since    1.1.0
 	 * @param    Lightweight_SEO_Settings    $settings    Shared settings service.
 	 */
-	public function __construct( $settings ) {
+	public function __construct( $settings, $register_hooks = true ) {
 		$this->settings = $settings;
 
-		add_action( 'pre_post_update', array( $this, 'capture_previous_post_path' ), 10, 2 );
-		add_action( 'post_updated', array( $this, 'maybe_store_slug_redirect' ), 10, 3 );
-		add_action( 'template_redirect', array( $this, 'maybe_redirect_request' ), 0 );
-		add_action( 'template_redirect', array( $this, 'log_404_request' ), 99 );
+		if ( $register_hooks ) {
+			add_action( 'pre_post_update', array( $this, 'capture_previous_post_path' ), 10, 2 );
+			add_action( 'post_updated', array( $this, 'maybe_store_slug_redirect' ), 10, 3 );
+			add_action( 'template_redirect', array( $this, 'maybe_redirect_request' ), 0 );
+			add_action( 'template_redirect', array( $this, 'log_404_request' ), 99 );
+		}
 	}
 
 	/**
@@ -116,13 +118,7 @@ class Lightweight_SEO_Redirects_Service {
 	public function find_matching_redirect( $path ) {
 		$normalized_path = $this->normalize_path( $path );
 
-		foreach ( $this->settings->get_manual_redirect_rules() as $rule ) {
-			if ( $rule['source'] === $normalized_path ) {
-				return $rule;
-			}
-		}
-
-		foreach ( $this->get_generated_redirect_rules() as $rule ) {
+		foreach ( $this->get_all_redirect_rules() as $rule ) {
 			if ( $rule['source'] === $normalized_path ) {
 				return $rule;
 			}
@@ -294,6 +290,55 @@ class Lightweight_SEO_Redirects_Service {
 	}
 
 	/**
+	 * Get all redirect rules with manual entries taking precedence.
+	 *
+	 * @since    1.1.0
+	 * @return   array
+	 */
+	public function get_all_redirect_rules() {
+		return array_merge(
+			$this->settings->get_manual_redirect_rules(),
+			$this->get_generated_redirect_rules()
+		);
+	}
+
+	/**
+	 * Analyze redirect rules for loops and multi-hop chains.
+	 *
+	 * @since    1.1.0
+	 * @return   array
+	 */
+	public function get_redirect_health_report() {
+		$rules    = $this->get_all_redirect_rules();
+		$rule_map = array();
+		$chains   = array();
+		$loops    = array();
+
+		foreach ( $rules as $rule ) {
+			$rule_map[ $rule['source'] ] = $rule;
+		}
+
+		foreach ( array_keys( $rule_map ) as $source ) {
+			$path_report = $this->trace_redirect_path( $source, $rule_map );
+
+			if ( ! empty( $path_report['loop'] ) ) {
+				$loops[ $source ] = $path_report;
+
+				continue;
+			}
+
+			if ( ! empty( $path_report['chain'] ) ) {
+				$chains[ $source ] = $path_report;
+			}
+		}
+
+		return array(
+			'chains' => array_values( $chains ),
+			'loops'  => array_values( $loops ),
+		);
+	}
+
+	/**
 	 * Resolve a redirect target into an absolute URL when needed.
 	 *
 	 * @since    1.1.0
@@ -438,6 +483,60 @@ class Lightweight_SEO_Redirects_Service {
 			'status'     => $status,
 			'object_id'  => absint( $rule['object_id'] ?? 0 ),
 			'updated_at' => sanitize_text_field( $rule['updated_at'] ?? '' ),
+		);
+	}
+
+	/**
+	 * Trace a redirect path to detect chains and loops.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $source      Redirect source path.
+	 * @param    array     $rule_map    Redirect rules keyed by source.
+	 * @return   array
+	 */
+	private function trace_redirect_path( $source, $rule_map ) {
+		$visited_paths = array();
+		$sequence      = array( $source );
+		$current       = $source;
+
+		while ( isset( $rule_map[ $current ] ) ) {
+			if ( isset( $visited_paths[ $current ] ) ) {
+				$sequence[] = $current;
+
+				return array(
+					'source'   => $source,
+					'sequence' => $sequence,
+					'loop'     => true,
+					'chain'    => false,
+				);
+			}
+
+			$visited_paths[ $current ] = true;
+			$target                    = $rule_map[ $current ]['target'];
+
+			if ( 0 !== strpos( $target, '/' ) ) {
+				break;
+			}
+
+			$target     = $this->normalize_path( $target );
+			$sequence[] = $target;
+			$current    = $target;
+
+			if ( count( $sequence ) > 10 ) {
+				return array(
+					'source'   => $source,
+					'sequence' => $sequence,
+					'loop'     => false,
+					'chain'    => true,
+				);
+			}
+		}
+
+		return array(
+			'source'   => $source,
+			'sequence' => $sequence,
+			'loop'     => false,
+			'chain'    => count( $sequence ) > 2,
 		);
 	}
 

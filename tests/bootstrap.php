@@ -366,8 +366,9 @@ if (!function_exists('get_posts')) {
         $posts = array_values($lightweight_seo_test_posts);
 
         if (isset($args['post_type'])) {
-            $posts = array_values(array_filter($posts, function ($post) use ($args) {
-                return ($post->post_type ?? '') === $args['post_type'];
+            $allowed_post_types = (array) $args['post_type'];
+            $posts = array_values(array_filter($posts, function ($post) use ($allowed_post_types) {
+                return in_array($post->post_type ?? '', $allowed_post_types, true);
             }));
         }
 
@@ -556,10 +557,15 @@ if (!function_exists('get_the_title')) {
 
 if (!function_exists('get_permalink')) {
     function get_permalink($post_id = 0) {
+        global $lightweight_seo_test_posts;
         global $lightweight_seo_test_query_state;
 
         if (is_object($post_id) && isset($post_id->permalink)) {
             return $post_id->permalink;
+        }
+
+        if (isset($lightweight_seo_test_posts[(int) $post_id]) && isset($lightweight_seo_test_posts[(int) $post_id]->permalink)) {
+            return $lightweight_seo_test_posts[(int) $post_id]->permalink;
         }
 
         return $lightweight_seo_test_query_state['permalink'];

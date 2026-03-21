@@ -215,6 +215,14 @@ class Lightweight_SEO_Admin {
 		);
 
 		add_settings_field(
+			'noindex_attachment_pages',
+			__( 'Attachment Pages', 'lightweight-seo' ),
+			array( $this, 'noindex_attachment_pages_render' ),
+			$this->plugin_name,
+			'lightweight_seo_indexation_section'
+		);
+
+		add_settings_field(
 			'default_max_image_preview',
 			__( 'Default Max Image Preview', 'lightweight-seo' ),
 			array( $this, 'default_max_image_preview_render' ),
@@ -311,11 +319,43 @@ class Lightweight_SEO_Admin {
 		);
 
 		add_settings_field(
+			'redirect_export',
+			__( 'Redirect Export', 'lightweight-seo' ),
+			array( $this, 'redirect_export_render' ),
+			$this->plugin_name,
+			'lightweight_seo_redirects_section'
+		);
+
+		add_settings_field(
+			'redirect_health',
+			__( 'Redirect Health', 'lightweight-seo' ),
+			array( $this, 'redirect_health_render' ),
+			$this->plugin_name,
+			'lightweight_seo_redirects_section'
+		);
+
+		add_settings_field(
 			'recent_404_logs',
 			__( 'Recent 404s', 'lightweight-seo' ),
 			array( $this, 'recent_404_logs_render' ),
 			$this->plugin_name,
 			'lightweight_seo_redirects_section'
+		);
+
+		// Internal Linking Section
+		add_settings_section(
+			'lightweight_seo_internal_links_section',
+			__( 'Internal Linking', 'lightweight-seo' ),
+			array( $this, 'internal_links_section_callback' ),
+			$this->plugin_name
+		);
+
+		add_settings_field(
+			'internal_link_report',
+			__( 'Link Health Report', 'lightweight-seo' ),
+			array( $this, 'internal_link_report_render' ),
+			$this->plugin_name,
+			'lightweight_seo_internal_links_section'
 		);
 
 		// Tracking Codes Section
@@ -508,6 +548,22 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Render the attachment pages noindex field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function noindex_attachment_pages_render() {
+		$options = $this->settings->get_all();
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[noindex_attachment_pages]" value="1" <?php checked( $options['noindex_attachment_pages'] ?? '1', '1' ); ?>>
+			<?php _e( 'Add a noindex directive to attachment pages by default', 'lightweight-seo' ); ?>
+		</label>
+		<p class="description"><?php _e( 'Recommended for most sites unless attachment pages are being used as standalone landing pages.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Render the default max-image-preview field.
 	 *
 	 * @since    1.1.0
@@ -619,6 +675,16 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Render the internal linking section information.
+	 *
+	 * @since    1.1.0
+	 */
+	public function internal_links_section_callback() {
+		echo '<p>' . __( 'Scan published content for internal links, orphan pages, and broken destinations using a cached report.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Reports refresh automatically after content changes and are cached for up to 15 minutes.', 'lightweight-seo' ) . '</p>';
+	}
+
+	/**
 	 * Render the 404 monitor toggle field.
 	 *
 	 * @since    1.1.0
@@ -692,6 +758,84 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Render an exportable redirect rules snapshot.
+	 *
+	 * @since    1.1.0
+	 */
+	public function redirect_export_render() {
+		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
+		$rules             = $redirects_service->get_all_redirect_rules();
+
+		if ( empty( $rules ) ) {
+			echo '<p class="description">' . __( 'No redirect rules are available to export yet.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		$lines = array();
+
+		foreach ( $rules as $rule ) {
+			$lines[] = implode(
+				' ',
+				array(
+					$rule['source'] ?? '',
+					$rule['target'] ?? '',
+					$rule['status'] ?? 301,
+				)
+			);
+		}
+
+		echo '<textarea rows="8" cols="50" class="large-text code" readonly="readonly">' . esc_textarea( implode( "\n", $lines ) ) . '</textarea>';
+		echo '<p class="description">' . __( 'Copy this snapshot to migrate rules or keep an external backup. Manual rules can be imported by pasting them into the redirect rules field above.', 'lightweight-seo' ) . '</p>';
+	}
+
+	/**
+	 * Render redirect chain and loop health warnings.
+	 *
+	 * @since    1.1.0
+	 */
+	public function redirect_health_render() {
+		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
+		$report            = $redirects_service->get_redirect_health_report();
+		$issues            = array_merge(
+			array_map(
+				function ( $item ) {
+					$item['type'] = 'loop';
+
+					return $item;
+				},
+				$report['loops']
+			),
+			array_map(
+				function ( $item ) {
+					$item['type'] = 'chain';
+
+					return $item;
+				},
+				$report['chains']
+			)
+		);
+
+		if ( empty( $issues ) ) {
+			echo '<p class="description">' . __( 'No redirect chains or loops detected.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<div class="lightweight-seo-redirect-health"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Type', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Path', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $issues, 0, 10 ) as $issue ) {
+			echo '<tr>';
+			echo '<td>' . esc_html( ucfirst( $issue['type'] ) ) . '</td>';
+			echo '<td><code>' . esc_html( $issue['source'] ?? '' ) . '</code></td>';
+			echo '<td><code>' . esc_html( implode( ' -> ', $issue['sequence'] ?? array() ) ) . '</code></td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
 	 * Render a recent 404 log summary.
 	 *
 	 * @since    1.1.0
@@ -714,6 +858,108 @@ class Lightweight_SEO_Admin {
 			echo '<td>' . esc_html( $log['last_seen'] ?? '' ) . '</td>';
 			echo '<td>' . esc_html( $log['referer'] ?? '' ) . '</td>';
 			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Render the internal link health report.
+	 *
+	 * @since    1.1.0
+	 */
+	public function internal_link_report_render() {
+		$internal_links_service = new Lightweight_SEO_Internal_Links_Service( $this->post_meta, false );
+		$report                 = $internal_links_service->get_report();
+
+		if ( empty( $report['pages_scanned'] ) ) {
+			echo '<p class="description">' . __( 'No published indexable content is available to analyze yet.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<p class="description">';
+		echo esc_html(
+			sprintf(
+				/* translators: 1: pages scanned, 2: internal links found, 3: report timestamp */
+				__( 'Scanned %1$d pages and found %2$d internal links. Last generated: %3$s.', 'lightweight-seo' ),
+				(int) $report['pages_scanned'],
+				(int) $report['internal_links'],
+				(string) ( $report['generated_at'] ?? '' )
+			)
+		);
+		echo '</p>';
+
+		$this->render_internal_link_table(
+			__( 'Orphan Pages', 'lightweight-seo' ),
+			$report['orphan_pages'] ?? array(),
+			function ( $row ) {
+				echo '<tr>';
+				echo '<td><a href="' . esc_url( $row['url'] ?? '' ) . '">' . esc_html( $row['title'] ?? '' ) . '</a></td>';
+				echo '<td><code>' . esc_html( $row['path'] ?? '' ) . '</code></td>';
+				echo '<td>' . esc_html( (string) ( $row['inbound'] ?? 0 ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $row['outbound'] ?? 0 ) ) . '</td>';
+				echo '</tr>';
+			}
+		);
+
+		$this->render_internal_link_table(
+			__( 'Weakly Linked Pages', 'lightweight-seo' ),
+			$report['weak_pages'] ?? array(),
+			function ( $row ) {
+				echo '<tr>';
+				echo '<td><a href="' . esc_url( $row['url'] ?? '' ) . '">' . esc_html( $row['title'] ?? '' ) . '</a></td>';
+				echo '<td><code>' . esc_html( $row['path'] ?? '' ) . '</code></td>';
+				echo '<td>' . esc_html( (string) ( $row['inbound'] ?? 0 ) ) . '</td>';
+				echo '<td>' . esc_html( (string) ( $row['outbound'] ?? 0 ) ) . '</td>';
+				echo '</tr>';
+			}
+		);
+
+		$broken_links = $report['broken_links'] ?? array();
+
+		if ( empty( $broken_links ) ) {
+			echo '<p class="description">' . __( 'No broken internal links were detected in the scanned content.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<h3>' . esc_html__( 'Broken Internal Links', 'lightweight-seo' ) . '</h3>';
+		echo '<div class="lightweight-seo-internal-links-table"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Source URL', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Missing Target', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $broken_links, 0, 10 ) as $broken_link ) {
+			echo '<tr>';
+			echo '<td>' . esc_html( $broken_link['source_title'] ?? '' ) . '</td>';
+			echo '<td><code>' . esc_html( $broken_link['source_url'] ?? '' ) . '</code></td>';
+			echo '<td><code>' . esc_html( $broken_link['target_path'] ?? '' ) . '</code></td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Render a standard internal link report table.
+	 *
+	 * @since    1.1.0
+	 * @param    string      $heading        Table heading.
+	 * @param    array       $rows           Report rows.
+	 * @param    callable    $row_renderer   Row rendering callback.
+	 * @return   void
+	 */
+	private function render_internal_link_table( $heading, $rows, $row_renderer ) {
+		echo '<h3>' . esc_html( $heading ) . '</h3>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="description">' . esc_html__( 'Nothing to report for this segment.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<div class="lightweight-seo-internal-links-table"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Page', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Path', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Inbound Links', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Outbound Links', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $rows, 0, 10 ) as $row ) {
+			call_user_func( $row_renderer, $row );
 		}
 
 		echo '</tbody></table></div>';
@@ -848,6 +1094,7 @@ class Lightweight_SEO_Admin {
 
 		$sanitized_input['enable_meta_keywords']          = isset( $input['enable_meta_keywords'] ) ? '1' : '0';
 		$sanitized_input['noindex_search_results']        = isset( $input['noindex_search_results'] ) ? '1' : '0';
+		$sanitized_input['noindex_attachment_pages']      = isset( $input['noindex_attachment_pages'] ) ? '1' : '0';
 		$sanitized_input['exclude_noindex_from_sitemaps'] = isset( $input['exclude_noindex_from_sitemaps'] ) ? '1' : '0';
 		$sanitized_input['enable_image_sitemaps']         = isset( $input['enable_image_sitemaps'] ) ? '1' : '0';
 		$sanitized_input['enable_schema_output']          = isset( $input['enable_schema_output'] ) ? '1' : '0';

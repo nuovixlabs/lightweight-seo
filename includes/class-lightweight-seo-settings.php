@@ -41,6 +41,7 @@ class Lightweight_SEO_Settings {
 			'meta_keywords'                 => '',
 			'enable_meta_keywords'          => '1',
 			'noindex_search_results'        => '1',
+			'noindex_attachment_pages'      => '1',
 			'exclude_noindex_from_sitemaps' => '1',
 			'enable_image_sitemaps'         => '1',
 			'enable_schema_output'          => '1',
@@ -147,6 +148,16 @@ class Lightweight_SEO_Settings {
 	 */
 	public function search_results_noindex_enabled() {
 		return '1' === (string) $this->get( 'noindex_search_results', '1' );
+	}
+
+	/**
+	 * Determine whether attachment pages should default to noindex.
+	 *
+	 * @since    1.1.0
+	 * @return   bool
+	 */
+	public function attachment_pages_noindex_enabled() {
+		return '1' === (string) $this->get( 'noindex_attachment_pages', '1' );
 	}
 
 	/**

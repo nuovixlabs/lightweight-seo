@@ -1,5 +1,7 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-internal-links-service.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-redirects-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin.php';
 
 use PHPUnit\Framework\TestCase;
@@ -8,10 +10,14 @@ final class LightweightSEOAdminTest extends TestCase {
 
 	protected function setUp(): void {
 		global $lightweight_seo_test_nonce_is_valid;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_settings_errors;
 		global $lightweight_seo_test_user_can;
 
 		$lightweight_seo_test_nonce_is_valid  = true;
+		$lightweight_seo_test_options         = array();
+		$lightweight_seo_test_posts           = array();
 		$lightweight_seo_test_settings_errors = array();
 		$lightweight_seo_test_user_can        = true;
 	}
@@ -30,6 +36,7 @@ final class LightweightSEOAdminTest extends TestCase {
 					'meta_keywords'                 => 'existing,keywords',
 					'enable_meta_keywords'          => '1',
 					'noindex_search_results'        => '1',
+					'noindex_attachment_pages'      => '1',
 					'exclude_noindex_from_sitemaps' => '1',
 					'enable_image_sitemaps'         => '1',
 					'enable_schema_output'          => '1',
@@ -96,6 +103,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 'Find %search%', $validated['search_title_format'] );
 		$this->assertSame( '0', $validated['enable_meta_keywords'] );
 		$this->assertSame( '0', $validated['noindex_search_results'] );
+		$this->assertSame( '0', $validated['noindex_attachment_pages'] );
 		$this->assertSame( '0', $validated['exclude_noindex_from_sitemaps'] );
 		$this->assertSame( '0', $validated['enable_image_sitemaps'] );
 		$this->assertSame( '0', $validated['enable_schema_output'] );
@@ -106,5 +114,166 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 'large', $validated['default_max_image_preview'] );
 		$this->assertSame( 27, $validated['social_image_id'] );
 		$this->assertCount( 2, $lightweight_seo_test_settings_errors );
+	}
+
+	public function test_internal_link_report_render_outputs_orphans_and_broken_links(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_options = array();
+		$lightweight_seo_test_posts   = array(
+			11 => (object) array(
+				'ID'           => 11,
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_title'   => 'Alpha',
+				'post_content' => '<a href="/beta/">Beta</a><a href="/missing-page/">Missing</a>',
+				'permalink'    => 'https://example.com/alpha/',
+			),
+			12 => (object) array(
+				'ID'           => 12,
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_title'   => 'Beta',
+				'post_content' => '<a href="/alpha/">Alpha</a>',
+				'permalink'    => 'https://example.com/beta/',
+			),
+			13 => (object) array(
+				'ID'           => 13,
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_title'   => 'Gamma',
+				'post_content' => '',
+				'permalink'    => 'https://example.com/gamma/',
+			),
+		);
+
+		$settings = new class() {
+			public function get_all() {
+				return array();
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+
+			public function get_all( $post_id ) {
+				return array();
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		ob_start();
+		$admin->internal_link_report_render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'Scanned 3 pages and found 3 internal links.', $output );
+		$this->assertStringContainsString( 'Orphan Pages', $output );
+		$this->assertStringContainsString( 'Gamma', $output );
+		$this->assertStringContainsString( 'Broken Internal Links', $output );
+		$this->assertStringContainsString( '/missing-page', $output );
+	}
+
+	public function test_redirect_health_render_outputs_detected_issues(): void {
+		$settings = new class() {
+			public function get_all() {
+				return array();
+			}
+
+			public function get_manual_redirect_rules() {
+				return array(
+					array(
+						'source' => '/old-page',
+						'target' => '/mid-page',
+						'status' => 301,
+					),
+					array(
+						'source' => '/mid-page',
+						'target' => '/final-page',
+						'status' => 301,
+					),
+				);
+			}
+
+			public function not_found_monitor_enabled() {
+				return true;
+			}
+
+			public function auto_redirects_enabled() {
+				return true;
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		ob_start();
+		$admin->redirect_health_render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'Chain', $output );
+		$this->assertStringContainsString( '/old-page', $output );
+		$this->assertStringContainsString( '/old-page -&gt; /mid-page -&gt; /final-page', $output );
+	}
+
+	public function test_redirect_export_render_outputs_normalized_rules(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ Lightweight_SEO_Redirects_Service::GENERATED_RULES_OPTION_NAME ] = array(
+			array(
+				'source'     => '/legacy-page',
+				'target'     => '/fresh-page',
+				'status'     => 301,
+				'object_id'  => 9,
+				'updated_at' => '2026-03-21T00:00:00+00:00',
+			),
+		);
+
+		$settings = new class() {
+			public function get_all() {
+				return array();
+			}
+
+			public function get_manual_redirect_rules() {
+				return array(
+					array(
+						'source' => '/old-page',
+						'target' => '/new-page',
+						'status' => 302,
+					),
+				);
+			}
+
+			public function not_found_monitor_enabled() {
+				return true;
+			}
+
+			public function auto_redirects_enabled() {
+				return true;
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		ob_start();
+		$admin->redirect_export_render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '/old-page /new-page 302', $output );
+		$this->assertStringContainsString( '/legacy-page /fresh-page 301', $output );
 	}
 }

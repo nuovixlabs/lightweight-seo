@@ -119,6 +119,9 @@ class Lightweight_SEO {
 		// Redirect and 404 monitoring service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirects-service.php';
 
+		// Internal link analysis service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-internal-links-service.php';
+
 		// Frontend class for displaying SEO data
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-frontend.php';
 	}
@@ -143,6 +146,9 @@ class Lightweight_SEO {
 
 		// Initialize redirect handling and 404 monitoring
 		$plugin_redirects = new Lightweight_SEO_Redirects_Service( $this->settings );
+
+		// Initialize internal link analysis hooks
+		new Lightweight_SEO_Internal_Links_Service( $this->post_meta );
 
 		// Register activation hook
 		register_activation_hook( LIGHTWEIGHT_SEO_PLUGIN_FILE, array( $this, 'activate' ) );

@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 final class LightweightSEOPageContextServiceTest extends TestCase {
 
 	protected function setUp(): void {
+		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_authors;
 		global $lightweight_seo_test_query_state;
 		global $wp;
@@ -36,6 +37,7 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 				'description'  => 'Author biography',
 			),
 		);
+		$lightweight_seo_test_posts       = array();
 
 		$wp = (object) array(
 			'request' => '',
@@ -227,6 +229,61 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( 'nofollow, noarchive, max-image-preview:large', $context['robots'] );
 	}
 
+	public function test_attachment_pages_default_to_noindex_when_enabled(): void {
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 88;
+		$lightweight_seo_test_query_state['permalink']         = 'https://example.com/media/attachment-page/';
+		$lightweight_seo_test_query_state['title']             = 'Attachment Page';
+		$lightweight_seo_test_posts[88]                        = (object) array(
+			'ID'        => 88,
+			'post_type' => 'attachment',
+			'permalink' => 'https://example.com/media/attachment-page/',
+		);
+
+		$post_meta = new class() {
+			public function get_all( $post_id ) {
+				return array(
+					'seo_title'             => '',
+					'seo_description'       => '',
+					'seo_keywords'          => '',
+					'seo_canonical_url'     => '',
+					'seo_noindex'           => '0',
+					'seo_nofollow'          => '0',
+					'seo_noarchive'         => '0',
+					'seo_nosnippet'         => '0',
+					'seo_max_image_preview' => '',
+					'social_title'          => '',
+					'social_description'    => '',
+					'social_image'          => '',
+					'social_image_id'       => 0,
+				);
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+
+		$archive_meta = new class() {
+			public function get_term_all( $term_id ) {
+				return array();
+			}
+
+			public function get_user_all( $user_id ) {
+				return array();
+			}
+		};
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( true ), $post_meta, $archive_meta );
+		$context = $service->get_context();
+
+		$this->assertSame( 'noindex, max-image-preview:large', $context['robots'] );
+		$this->assertSame( 'https://example.com/media/attachment-page/', $context['canonical_url'] );
+	}
+
 	private function get_settings_stub( $keywords_enabled ) {
 		return new class( $keywords_enabled ) {
 			private $keywords_enabled;
@@ -281,6 +338,10 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 			}
 
 			public function search_results_noindex_enabled() {
+				return true;
+			}
+
+			public function attachment_pages_noindex_enabled() {
 				return true;
 			}
 		};

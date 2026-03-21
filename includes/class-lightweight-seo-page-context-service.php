@@ -107,6 +107,7 @@ class Lightweight_SEO_Page_Context_Service {
 			$post_id = get_queried_object_id();
 
 			if ( $post_id ) {
+				$post      = get_post( $post_id );
 				$post_meta = $this->post_meta->get_all( $post_id );
 
 				$context['document_title'] = ! empty( $post_meta['seo_title'] ) ? $post_meta['seo_title'] : $this->replace_title_template_vars(
@@ -127,6 +128,10 @@ class Lightweight_SEO_Page_Context_Service {
 				$context['canonical_url'] = ! empty( $post_meta['seo_canonical_url'] ) ? $post_meta['seo_canonical_url'] : get_permalink( $post_id );
 
 				$context['robots'] = $this->build_robots_directives( $post_meta, true );
+
+				if ( $this->should_noindex_attachment_page( $post ) ) {
+					$context['robots'] = $this->ensure_robots_directive( $context['robots'], 'noindex' );
+				}
 
 				if ( empty( $context['canonical_url'] ) ) {
 					$context['canonical_url'] = get_permalink( $post_id );
@@ -275,6 +280,40 @@ class Lightweight_SEO_Page_Context_Service {
 
 		if ( ! empty( $max_image_preview ) ) {
 			$directives[] = 'max-image-preview:' . $max_image_preview;
+		}
+
+		return implode( ', ', $directives );
+	}
+
+	/**
+	 * Determine whether the current singular object should default to attachment noindex.
+	 *
+	 * @since    1.1.0
+	 * @param    object|null    $post    Current queried post object.
+	 * @return   bool
+	 */
+	private function should_noindex_attachment_page( $post ) {
+		return ! empty( $post ) && 'attachment' === (string) ( $post->post_type ?? '' ) && $this->settings->attachment_pages_noindex_enabled();
+	}
+
+	/**
+	 * Ensure a robots directive is present without duplicating it.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $robots       Existing robots string.
+	 * @param    string    $directive    Directive to ensure.
+	 * @return   string
+	 */
+	private function ensure_robots_directive( $robots, $directive ) {
+		$directives = array_filter(
+			array_map(
+				'trim',
+				explode( ',', (string) $robots )
+			)
+		);
+
+		if ( ! in_array( $directive, $directives, true ) ) {
+			array_unshift( $directives, $directive );
 		}
 
 		return implode( ', ', $directives );
