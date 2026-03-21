@@ -284,6 +284,64 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( 'https://example.com/media/attachment-page/', $context['canonical_url'] );
 	}
 
+	public function test_static_front_page_uses_home_title_format_with_singular_context(): void {
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_front_page']     = true;
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 99;
+		$lightweight_seo_test_query_state['permalink']         = 'https://example.com/';
+		$lightweight_seo_test_query_state['title']             = 'Homepage';
+		$lightweight_seo_test_posts[99]                        = (object) array(
+			'ID'          => 99,
+			'post_type'   => 'page',
+			'post_status' => 'publish',
+			'permalink'   => 'https://example.com/',
+		);
+
+		$post_meta = new class() {
+			public function get_all( $post_id ) {
+				return array(
+					'seo_title'             => '',
+					'seo_description'       => '',
+					'seo_keywords'          => '',
+					'seo_canonical_url'     => '',
+					'seo_noindex'           => '0',
+					'seo_nofollow'          => '0',
+					'seo_noarchive'         => '0',
+					'seo_nosnippet'         => '0',
+					'seo_max_image_preview' => '',
+					'social_title'          => '',
+					'social_description'    => '',
+					'social_image'          => '',
+					'social_image_id'       => 0,
+				);
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+
+		$archive_meta = new class() {
+			public function get_term_all( $term_id ) {
+				return array();
+			}
+
+			public function get_user_all( $user_id ) {
+				return array();
+			}
+		};
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( true ), $post_meta, $archive_meta );
+		$context = $service->get_context();
+
+		$this->assertSame( 'Test Site – Test Tagline', $context['document_title'] );
+		$this->assertSame( 'Test Site – Test Tagline', $context['og_title'] );
+		$this->assertSame( 'https://example.com/', $context['canonical_url'] );
+	}
+
 	private function get_settings_stub( $keywords_enabled ) {
 		return new class( $keywords_enabled ) {
 			private $keywords_enabled;

@@ -107,11 +107,12 @@ class Lightweight_SEO_Page_Context_Service {
 			$post_id = get_queried_object_id();
 
 			if ( $post_id ) {
-				$post      = get_post( $post_id );
-				$post_meta = $this->post_meta->get_all( $post_id );
+				$post           = get_post( $post_id );
+				$post_meta      = $this->post_meta->get_all( $post_id );
+				$title_template = is_front_page() ? $this->settings->get_home_title_format() : $this->settings->get_title_format();
 
 				$context['document_title'] = ! empty( $post_meta['seo_title'] ) ? $post_meta['seo_title'] : $this->replace_title_template_vars(
-					$this->settings->get_title_format(),
+					$title_template,
 					array(
 						'title' => get_the_title( $post_id ),
 					)

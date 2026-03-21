@@ -10,11 +10,15 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 		global $lightweight_seo_test_options;
 		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_query_state;
+		global $lightweight_seo_test_wp_redirect_calls;
+		global $lightweight_seo_test_wp_safe_redirect_calls;
 
-		$lightweight_seo_test_options               = array();
-		$lightweight_seo_test_posts                 = array();
-		$lightweight_seo_test_query_state['is_404'] = false;
-		$_SERVER['REQUEST_URI']                     = '/';
+		$lightweight_seo_test_options                = array();
+		$lightweight_seo_test_posts                  = array();
+		$lightweight_seo_test_query_state['is_404']  = false;
+		$lightweight_seo_test_wp_redirect_calls      = array();
+		$lightweight_seo_test_wp_safe_redirect_calls = array();
+		$_SERVER['REQUEST_URI']                      = '/';
 		unset( $_SERVER['HTTP_REFERER'] );
 	}
 
@@ -175,5 +179,67 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 		$this->assertSame( array( '/old-page', '/mid-page', '/final-page' ), $report['chains'][0]['sequence'] );
 		$this->assertContains( '/loop-a', $sources );
 		$this->assertContains( '/loop-b', $sources );
+	}
+
+	public function test_perform_redirect_uses_wp_redirect_for_external_targets(): void {
+		global $lightweight_seo_test_wp_redirect_calls;
+		global $lightweight_seo_test_wp_safe_redirect_calls;
+
+		$settings = new class() {
+			public function get_manual_redirect_rules() {
+				return array();
+			}
+
+			public function not_found_monitor_enabled() {
+				return true;
+			}
+
+			public function auto_redirects_enabled() {
+				return true;
+			}
+		};
+
+		$service = new class( $settings ) extends Lightweight_SEO_Redirects_Service {
+			public function dispatch_redirect( $target_url, $status ) {
+				return $this->perform_redirect( $target_url, $status );
+			}
+		};
+
+		$this->assertTrue( $service->dispatch_redirect( 'https://new.example/landing', 301 ) );
+		$this->assertCount( 1, $lightweight_seo_test_wp_redirect_calls );
+		$this->assertSame( 'https://new.example/landing', $lightweight_seo_test_wp_redirect_calls[0]['location'] );
+		$this->assertSame( 301, $lightweight_seo_test_wp_redirect_calls[0]['status'] );
+		$this->assertSame( array(), $lightweight_seo_test_wp_safe_redirect_calls );
+	}
+
+	public function test_perform_redirect_uses_wp_safe_redirect_for_local_targets(): void {
+		global $lightweight_seo_test_wp_redirect_calls;
+		global $lightweight_seo_test_wp_safe_redirect_calls;
+
+		$settings = new class() {
+			public function get_manual_redirect_rules() {
+				return array();
+			}
+
+			public function not_found_monitor_enabled() {
+				return true;
+			}
+
+			public function auto_redirects_enabled() {
+				return true;
+			}
+		};
+
+		$service = new class( $settings ) extends Lightweight_SEO_Redirects_Service {
+			public function dispatch_redirect( $target_url, $status ) {
+				return $this->perform_redirect( $target_url, $status );
+			}
+		};
+
+		$this->assertTrue( $service->dispatch_redirect( 'https://example.com/local-target/', 302 ) );
+		$this->assertCount( 1, $lightweight_seo_test_wp_safe_redirect_calls );
+		$this->assertSame( 'https://example.com/local-target/', $lightweight_seo_test_wp_safe_redirect_calls[0]['location'] );
+		$this->assertSame( 302, $lightweight_seo_test_wp_safe_redirect_calls[0]['status'] );
+		$this->assertSame( array(), $lightweight_seo_test_wp_redirect_calls );
 	}
 }

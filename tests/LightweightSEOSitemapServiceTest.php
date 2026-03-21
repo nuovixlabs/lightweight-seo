@@ -11,10 +11,12 @@ use PHPUnit\Framework\TestCase;
 final class LightweightSEOSitemapServiceTest extends TestCase {
 
 	protected function setUp(): void {
+		global $lightweight_seo_test_get_posts_calls;
 		global $lightweight_seo_test_options;
 		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_registered_sitemap_providers;
 
+		$lightweight_seo_test_get_posts_calls              = 0;
 		$lightweight_seo_test_options                      = array();
 		$lightweight_seo_test_posts                        = array();
 		$lightweight_seo_test_registered_sitemap_providers = array();
@@ -85,6 +87,7 @@ final class LightweightSEOSitemapServiceTest extends TestCase {
 	}
 
 	public function test_filter_posts_query_args_excludes_redirected_posts(): void {
+		global $lightweight_seo_test_get_posts_calls;
 		global $lightweight_seo_test_posts;
 
 		$lightweight_seo_test_posts = array(
@@ -113,6 +116,7 @@ final class LightweightSEOSitemapServiceTest extends TestCase {
 		);
 
 		$this->assertSame( array( 21 ), $args['post__not_in'] );
+		$this->assertSame( 0, $lightweight_seo_test_get_posts_calls );
 	}
 
 	private function get_service() {

@@ -104,8 +104,9 @@ class Lightweight_SEO_Redirects_Service {
 			return;
 		}
 
-		wp_safe_redirect( $target_url, (int) $rule['status'], 'Lightweight SEO' );
-		exit;
+		if ( $this->perform_redirect( $target_url, (int) $rule['status'] ) ) {
+			exit;
+		}
 	}
 
 	/**
@@ -351,6 +352,40 @@ class Lightweight_SEO_Redirects_Service {
 		}
 
 		return $target;
+	}
+
+	/**
+	 * Send the redirect response with the correct WordPress redirect helper.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $target_url    Absolute redirect target URL.
+	 * @param    int       $status        Redirect status code.
+	 * @return   bool
+	 */
+	protected function perform_redirect( $target_url, $status ) {
+		if ( $this->is_external_redirect_url( $target_url ) ) {
+			return wp_redirect( $target_url, $status, 'Lightweight SEO' );
+		}
+
+		return wp_safe_redirect( $target_url, $status, 'Lightweight SEO' );
+	}
+
+	/**
+	 * Determine whether a redirect target points away from the current site host.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $target_url    Absolute redirect target URL.
+	 * @return   bool
+	 */
+	private function is_external_redirect_url( $target_url ) {
+		$target_host = strtolower( (string) wp_parse_url( $target_url, PHP_URL_HOST ) );
+		$home_host   = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+
+		if ( empty( $target_host ) || empty( $home_host ) ) {
+			return false;
+		}
+
+		return $target_host !== $home_host;
 	}
 
 	/**

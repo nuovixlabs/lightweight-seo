@@ -233,45 +233,24 @@ class Lightweight_SEO_Sitemap_Service {
 	 * @return   array
 	 */
 	private function append_redirected_post_exclusions( $args, $post_type ) {
-		if ( ! class_exists( 'Lightweight_SEO_Redirects_Service' ) ) {
+		if ( ! class_exists( 'Lightweight_SEO_Redirects_Service' ) || ! function_exists( 'url_to_postid' ) ) {
 			return $args;
 		}
 
 		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
-		$redirect_sources  = array();
+		$excluded_ids      = array();
 
 		foreach ( $redirects_service->get_all_redirect_rules() as $rule ) {
-			if ( ! empty( $rule['source'] ) ) {
-				$redirect_sources[ $rule['source'] ] = true;
-			}
-		}
+			$source = $this->normalize_path( $rule['source'] ?? '' );
 
-		if ( empty( $redirect_sources ) ) {
-			return $args;
-		}
-
-		$excluded_ids = array();
-		$posts        = get_posts(
-			array(
-				'post_type'              => $post_type,
-				'post_status'            => 'publish',
-				'posts_per_page'         => -1,
-				'no_found_rows'          => true,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-			)
-		);
-
-		foreach ( $posts as $post ) {
-			$path = (string) wp_parse_url( (string) get_permalink( $post ), PHP_URL_PATH );
-			$path = '/' . ltrim( $path, '/' );
-
-			if ( '/' !== $path ) {
-				$path = rtrim( $path, '/' );
+			if ( empty( $source ) ) {
+				continue;
 			}
 
-			if ( isset( $redirect_sources[ $path ] ) ) {
-				$excluded_ids[] = (int) $post->ID;
+			$post_id = $this->find_redirected_post_id( $source, $post_type );
+
+			if ( $post_id ) {
+				$excluded_ids[] = $post_id;
 			}
 		}
 
@@ -289,5 +268,63 @@ class Lightweight_SEO_Sitemap_Service {
 		);
 
 		return $args;
+	}
+
+	/**
+	 * Resolve a redirect source path to a published post ID for the given post type.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $source       Normalized redirect source path.
+	 * @param    string    $post_type    Post type being queried.
+	 * @return   int
+	 */
+	private function find_redirected_post_id( $source, $post_type ) {
+		$candidate_urls = array();
+
+		if ( '/' === $source ) {
+			$candidate_urls[] = home_url( '/' );
+		} else {
+			$candidate_urls[] = home_url( trailingslashit( $source ) );
+			$candidate_urls[] = home_url( $source );
+		}
+
+		foreach ( array_unique( $candidate_urls ) as $candidate_url ) {
+			$post_id = absint( url_to_postid( $candidate_url ) );
+
+			if ( 0 === $post_id ) {
+				continue;
+			}
+
+			$post = get_post( $post_id );
+
+			if ( empty( $post ) || (string) ( $post->post_type ?? '' ) !== $post_type || 'publish' !== (string) ( $post->post_status ?? '' ) ) {
+				continue;
+			}
+
+			$current_path = $this->normalize_path( (string) wp_parse_url( (string) get_permalink( $post ), PHP_URL_PATH ) );
+
+			if ( $current_path === $source ) {
+				return $post_id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Normalize a request or permalink path to a sitemap-comparable form.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $path    Path to normalize.
+	 * @return   string
+	 */
+	private function normalize_path( $path ) {
+		$normalized = '/' . ltrim( trim( (string) $path ), '/' );
+
+		if ( '/' !== $normalized ) {
+			$normalized = rtrim( $normalized, '/' );
+		}
+
+		return $normalized;
 	}
 }
