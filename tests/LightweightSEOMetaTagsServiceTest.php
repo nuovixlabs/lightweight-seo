@@ -13,6 +13,7 @@ final class LightweightSEOMetaTagsServiceTest extends TestCase {
 					'description'      => 'A description',
 					'keywords'         => 'one,two',
 					'keywords_enabled' => false,
+					'canonical_url'    => 'https://example.com/canonical-url',
 					'robots'           => 'noindex, nofollow',
 					'og_title'         => 'My OG Title',
 					'og_description'   => 'My OG Description',
@@ -31,6 +32,7 @@ final class LightweightSEOMetaTagsServiceTest extends TestCase {
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'name="description" content="A description"', $output );
+		$this->assertStringContainsString( 'rel="canonical" href="https://example.com/canonical-url"', $output );
 		$this->assertStringContainsString( 'property="og:title" content="My OG Title"', $output );
 		$this->assertStringContainsString( 'name="twitter:title" content="My OG Title"', $output );
 		$this->assertStringNotContainsString( 'name="keywords"', $output );

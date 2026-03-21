@@ -43,6 +43,12 @@ class Lightweight_SEO_Meta_Tags_Service {
 	 */
 	public function add_meta_tags() {
 		$context = $this->page_context->get_context();
+		$links   = array(
+			array(
+				'rel'  => 'canonical',
+				'href' => $context['canonical_url'] ?? '',
+			),
+		);
 		$tags    = array(
 			array(
 				'attribute' => 'name',
@@ -120,7 +126,24 @@ class Lightweight_SEO_Meta_Tags_Service {
 
 		$tags = apply_filters( 'lightweight_seo_meta_tags', $tags, $context );
 
+		$links = array_filter(
+			$links,
+			function ( $link ) {
+				return ! empty( $link['href'] );
+			}
+		);
+
+		$links = apply_filters( 'lightweight_seo_link_tags', $links, $context );
+
 		do_action( 'lightweight_seo_before_meta_tags', $tags, $context );
+
+		foreach ( $links as $link ) {
+			if ( ! isset( $link['rel'], $link['href'] ) ) {
+				continue;
+			}
+
+			echo '<link rel="' . esc_attr( $link['rel'] ) . '" href="' . esc_url( $link['href'] ) . '" />' . "\n";
+		}
 
 		foreach ( $tags as $tag ) {
 			if ( ! isset( $tag['attribute'], $tag['key'], $tag['value'] ) ) {
