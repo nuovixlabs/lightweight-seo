@@ -33,28 +33,30 @@ class Lightweight_SEO_Settings {
 	 */
 	public function get_defaults() {
 		return array(
-			'title_format'                  => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
-			'home_title_format'             => '%sitename% %sep% %tagline%',
-			'archive_title_format'          => '%title% %sep% %sitename%',
-			'search_title_format'           => 'Search Results for "%search%" %sep% %sitename%',
-			'meta_description'              => get_bloginfo( 'description' ),
-			'meta_keywords'                 => '',
-			'enable_meta_keywords'          => '1',
-			'noindex_search_results'        => '1',
-			'noindex_attachment_pages'      => '1',
-			'exclude_noindex_from_sitemaps' => '1',
-			'enable_image_sitemaps'         => '1',
-			'enable_schema_output'          => '1',
-			'organization_same_as'          => '',
-			'enable_404_monitor'            => '1',
-			'enable_auto_redirects'         => '1',
-			'redirect_rules'                => '',
-			'default_max_image_preview'     => 'large',
-			'social_image'                  => '',
-			'social_image_id'               => 0,
-			'ga4_measurement_id'            => '',
-			'gtm_container_id'              => '',
-			'facebook_pixel_id'             => '',
+			'title_format'                        => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
+			'home_title_format'                   => '%sitename% %sep% %tagline%',
+			'archive_title_format'                => '%title% %sep% %sitename%',
+			'search_title_format'                 => 'Search Results for "%search%" %sep% %sitename%',
+			'meta_description'                    => get_bloginfo( 'description' ),
+			'meta_keywords'                       => '',
+			'enable_meta_keywords'                => '1',
+			'noindex_search_results'              => '1',
+			'noindex_attachment_pages'            => '1',
+			'exclude_noindex_from_sitemaps'       => '1',
+			'enable_image_sitemaps'               => '1',
+			'enable_schema_output'                => '1',
+			'organization_same_as'                => '',
+			'search_console_property'             => '',
+			'search_console_service_account_json' => '',
+			'enable_404_monitor'                  => '1',
+			'enable_auto_redirects'               => '1',
+			'redirect_rules'                      => '',
+			'default_max_image_preview'           => 'large',
+			'social_image'                        => '',
+			'social_image_id'                     => 0,
+			'ga4_measurement_id'                  => '',
+			'gtm_container_id'                    => '',
+			'facebook_pixel_id'                   => '',
 		);
 	}
 
@@ -230,6 +232,26 @@ class Lightweight_SEO_Settings {
 		}
 
 		return array_values( array_unique( $urls ) );
+	}
+
+	/**
+	 * Get the configured Search Console property identifier.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	public function get_search_console_property() {
+		return trim( sanitize_text_field( (string) $this->get( 'search_console_property', '' ) ) );
+	}
+
+	/**
+	 * Get the raw Search Console service-account JSON payload.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	public function get_search_console_service_account_json() {
+		return trim( (string) $this->get( 'search_console_service_account_json', '' ) );
 	}
 
 	/**

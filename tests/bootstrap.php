@@ -34,6 +34,9 @@ $lightweight_seo_test_post_meta = array();
 $lightweight_seo_test_posts = array();
 $lightweight_seo_test_term_meta = array();
 $lightweight_seo_test_user_meta = array();
+$lightweight_seo_test_remote_post_responses = array();
+$lightweight_seo_test_remote_get_responses = array();
+$lightweight_seo_test_scheduled_events = array();
 $lightweight_seo_test_registered_sitemap_providers = array();
 $lightweight_seo_test_authors = array(
     17 => array(
@@ -634,6 +637,64 @@ if (!function_exists('wp_json_encode')) {
     }
 }
 
+if (!function_exists('wp_remote_post')) {
+    function wp_remote_post($url, $args = array()) {
+        global $lightweight_seo_test_remote_post_responses;
+
+        $response = $lightweight_seo_test_remote_post_responses[$url] ?? new WP_Error('missing_stub', 'Missing wp_remote_post stub for ' . $url);
+
+        if (is_callable($response)) {
+            return $response($url, $args);
+        }
+
+        return $response;
+    }
+}
+
+if (!function_exists('wp_remote_get')) {
+    function wp_remote_get($url, $args = array()) {
+        global $lightweight_seo_test_remote_get_responses;
+
+        $response = $lightweight_seo_test_remote_get_responses[$url] ?? new WP_Error('missing_stub', 'Missing wp_remote_get stub for ' . $url);
+
+        if (is_callable($response)) {
+            return $response($url, $args);
+        }
+
+        return $response;
+    }
+}
+
+if (!function_exists('wp_remote_retrieve_response_code')) {
+    function wp_remote_retrieve_response_code($response) {
+        return (int) ($response['response']['code'] ?? 0);
+    }
+}
+
+if (!function_exists('wp_remote_retrieve_body')) {
+    function wp_remote_retrieve_body($response) {
+        return (string) ($response['body'] ?? '');
+    }
+}
+
+if (!function_exists('wp_next_scheduled')) {
+    function wp_next_scheduled($hook, $args = array()) {
+        global $lightweight_seo_test_scheduled_events;
+
+        return $lightweight_seo_test_scheduled_events[$hook] ?? false;
+    }
+}
+
+if (!function_exists('wp_schedule_event')) {
+    function wp_schedule_event($timestamp, $recurrence, $hook, $args = array(), $wp_error = false) {
+        global $lightweight_seo_test_scheduled_events;
+
+        $lightweight_seo_test_scheduled_events[$hook] = (int) $timestamp;
+
+        return true;
+    }
+}
+
 if (!function_exists('wp_sitemaps_get_max_urls')) {
     function wp_sitemaps_get_max_urls($object_type = '') {
         return 2000;
@@ -684,9 +745,25 @@ if (!function_exists('get_term_link')) {
     }
 }
 
+if (!class_exists('WP_Error')) {
+    class WP_Error {
+        private $code;
+        private $message;
+
+        public function __construct($code = '', $message = '') {
+            $this->code = $code;
+            $this->message = $message;
+        }
+
+        public function get_error_message() {
+            return $this->message;
+        }
+    }
+}
+
 if (!function_exists('is_wp_error')) {
     function is_wp_error($thing) {
-        return false;
+        return $thing instanceof WP_Error;
     }
 }
 

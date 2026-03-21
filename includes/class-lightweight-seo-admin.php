@@ -358,6 +358,38 @@ class Lightweight_SEO_Admin {
 			'lightweight_seo_internal_links_section'
 		);
 
+		// Search Console Section
+		add_settings_section(
+			'lightweight_seo_search_console_section',
+			__( 'Search Console', 'lightweight-seo' ),
+			array( $this, 'search_console_section_callback' ),
+			$this->plugin_name
+		);
+
+		add_settings_field(
+			'search_console_property',
+			__( 'Property', 'lightweight-seo' ),
+			array( $this, 'search_console_property_render' ),
+			$this->plugin_name,
+			'lightweight_seo_search_console_section'
+		);
+
+		add_settings_field(
+			'search_console_service_account_json',
+			__( 'Service Account JSON', 'lightweight-seo' ),
+			array( $this, 'search_console_service_account_json_render' ),
+			$this->plugin_name,
+			'lightweight_seo_search_console_section'
+		);
+
+		add_settings_field(
+			'search_console_report',
+			__( 'Search Performance Snapshot', 'lightweight-seo' ),
+			array( $this, 'search_console_report_render' ),
+			$this->plugin_name,
+			'lightweight_seo_search_console_section'
+		);
+
 		// Tracking Codes Section
 		add_settings_section(
 			'lightweight_seo_tracking_section',
@@ -685,6 +717,18 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Render the Search Console section information.
+	 *
+	 * @since    1.1.0
+	 */
+	public function search_console_section_callback() {
+		echo '<p>' . __( 'Connect a Search Console property with a Google service account to surface clicks, impressions, low-CTR pages, and sitemap status.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Add the service-account email as an owner or user on the Search Console property before syncing.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Snapshots refresh on demand and are scheduled for daily background sync when WordPress cron is available.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Important pages from the snapshot are also inspected for indexation and canonical issues, with inspection volume capped to stay within API quotas.', 'lightweight-seo' ) . '</p>';
+	}
+
+	/**
 	 * Render the 404 monitor toggle field.
 	 *
 	 * @since    1.1.0
@@ -939,6 +983,112 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Render the Search Console property field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function search_console_property_render() {
+		$options = $this->settings->get_all();
+		?>
+		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[search_console_property]" value="<?php echo esc_attr( $options['search_console_property'] ?? '' ); ?>" class="regular-text">
+		<p class="description"><?php _e( 'Use either a URL-prefix property like https://example.com/ or a domain property like sc-domain:example.com.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the Search Console service-account JSON field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function search_console_service_account_json_render() {
+		$options = $this->settings->get_all();
+		?>
+		<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[search_console_service_account_json]" rows="8" cols="50" class="large-text code"><?php echo esc_textarea( $options['search_console_service_account_json'] ?? '' ); ?></textarea>
+		<p class="description"><?php _e( 'Paste the full Google service-account JSON. The service-account email must have access to the configured Search Console property.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render a cached Search Console performance snapshot.
+	 *
+	 * @since    1.1.0
+	 */
+	public function search_console_report_render() {
+		$search_console = new Lightweight_SEO_Search_Console_Service( $this->settings );
+		$snapshot       = $search_console->get_snapshot();
+
+		if ( ! $snapshot['configured'] ) {
+			echo '<p class="description">' . __( 'Configure a Search Console property and service-account JSON to start syncing performance data.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<p class="description">';
+		echo esc_html(
+			sprintf(
+				/* translators: 1: property identifier, 2: service-account email, 3: sync timestamp */
+				__( 'Property: %1$s. Service account: %2$s. Last synced: %3$s.', 'lightweight-seo' ),
+				(string) $snapshot['property'],
+				(string) $snapshot['service_account_email'],
+				(string) $snapshot['last_synced']
+			)
+		);
+		echo '</p>';
+
+		if ( ! empty( $snapshot['last_error'] ) ) {
+			echo '<p class="description">' . esc_html( $snapshot['last_error'] ) . '</p>';
+		}
+
+		echo '<div class="lightweight-seo-search-console-summary"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Clicks', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Impressions', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Average CTR', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Average Position', 'lightweight-seo' ) . '</th></tr></thead><tbody><tr>';
+		echo '<td>' . esc_html( (string) round( (float) ( $snapshot['totals']['clicks'] ?? 0 ) ) ) . '</td>';
+		echo '<td>' . esc_html( (string) round( (float) ( $snapshot['totals']['impressions'] ?? 0 ) ) ) . '</td>';
+		echo '<td>' . esc_html( $this->format_ctr_value( (float) ( $snapshot['totals']['ctr'] ?? 0 ) ) ) . '</td>';
+		echo '<td>' . esc_html( number_format( (float) ( $snapshot['totals']['position'] ?? 0 ), 2 ) ) . '</td>';
+		echo '</tr></tbody></table></div>';
+
+		$this->render_search_console_pages_table(
+			__( 'Low CTR Pages', 'lightweight-seo' ),
+			$snapshot['low_ctr_pages'] ?? array()
+		);
+		$this->render_search_console_declines_table(
+			__( 'Declining Pages', 'lightweight-seo' ),
+			$snapshot['declining_pages'] ?? array()
+		);
+		$this->render_search_console_issues_table(
+			__( 'Indexation Issues', 'lightweight-seo' ),
+			$snapshot['indexation_issues'] ?? array()
+		);
+		$this->render_search_console_canonical_table(
+			__( 'Canonical Mismatches', 'lightweight-seo' ),
+			$snapshot['canonical_mismatches'] ?? array()
+		);
+
+		$sitemaps = $snapshot['sitemaps'] ?? array();
+
+		echo '<h3>' . esc_html__( 'Sitemaps', 'lightweight-seo' ) . '</h3>';
+
+		if ( empty( $sitemaps ) ) {
+			echo '<p class="description">' . __( 'No sitemap data is available yet for this property.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<div class="lightweight-seo-search-console-sitemaps"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Path', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Type', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Last Submitted', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Errors', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Warnings', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $sitemaps, 0, 10 ) as $sitemap ) {
+			echo '<tr>';
+			echo '<td><code>' . esc_html( $sitemap['path'] ?? '' ) . '</code></td>';
+			echo '<td>' . esc_html( $sitemap['type'] ?? '' ) . '</td>';
+			echo '<td>' . esc_html( $sitemap['last_submitted'] ?? '' ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $sitemap['errors'] ?? 0 ) ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $sitemap['warnings'] ?? 0 ) ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
 	 * Render a standard internal link report table.
 	 *
 	 * @since    1.1.0
@@ -963,6 +1113,141 @@ class Lightweight_SEO_Admin {
 		}
 
 		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Render a Search Console pages table.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $heading    Table heading.
+	 * @param    array     $rows       Search Analytics rows.
+	 * @return   void
+	 */
+	private function render_search_console_pages_table( $heading, $rows ) {
+		echo '<h3>' . esc_html( $heading ) . '</h3>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="description">' . esc_html__( 'Nothing to report for this segment.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<div class="lightweight-seo-search-console-pages"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Page', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Clicks', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Impressions', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'CTR', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Position', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $rows, 0, 10 ) as $row ) {
+			echo '<tr>';
+			echo '<td><code>' . esc_html( $row['page'] ?? '' ) . '</code></td>';
+			echo '<td>' . esc_html( (string) round( (float) ( $row['clicks'] ?? 0 ) ) ) . '</td>';
+			echo '<td>' . esc_html( (string) round( (float) ( $row['impressions'] ?? 0 ) ) ) . '</td>';
+			echo '<td>' . esc_html( $this->format_ctr_value( (float) ( $row['ctr'] ?? 0 ) ) ) . '</td>';
+			echo '<td>' . esc_html( number_format( (float) ( $row['position'] ?? 0 ), 2 ) ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Render a Search Console declining pages table.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $heading    Table heading.
+	 * @param    array     $rows       Declining page rows.
+	 * @return   void
+	 */
+	private function render_search_console_declines_table( $heading, $rows ) {
+		echo '<h3>' . esc_html( $heading ) . '</h3>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="description">' . esc_html__( 'Nothing to report for this segment.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<div class="lightweight-seo-search-console-pages"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Page', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Current Clicks', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Previous Clicks', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Change', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'CTR', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $rows, 0, 10 ) as $row ) {
+			echo '<tr>';
+			echo '<td><code>' . esc_html( $row['page'] ?? '' ) . '</code></td>';
+			echo '<td>' . esc_html( (string) round( (float) ( $row['current_clicks'] ?? 0 ) ) ) . '</td>';
+			echo '<td>' . esc_html( (string) round( (float) ( $row['previous_clicks'] ?? 0 ) ) ) . '</td>';
+			echo '<td>' . esc_html( (string) round( (float) ( $row['click_delta'] ?? 0 ) ) ) . '</td>';
+			echo '<td>' . esc_html( $this->format_ctr_value( (float) ( $row['ctr'] ?? 0 ) ) ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Render a Search Console indexation issues table.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $heading    Table heading.
+	 * @param    array     $rows       Indexation issue rows.
+	 * @return   void
+	 */
+	private function render_search_console_issues_table( $heading, $rows ) {
+		echo '<h3>' . esc_html( $heading ) . '</h3>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="description">' . esc_html__( 'Nothing to report for this segment.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<div class="lightweight-seo-search-console-pages"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Page', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Type', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Details', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $rows, 0, 10 ) as $row ) {
+			echo '<tr>';
+			echo '<td><code>' . esc_html( $row['page'] ?? '' ) . '</code></td>';
+			echo '<td>' . esc_html( ucfirst( (string) ( $row['type'] ?? '' ) ) ) . '</td>';
+			echo '<td>' . esc_html( $row['details'] ?? '' ) . '</td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Render a Search Console canonical mismatches table.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $heading    Table heading.
+	 * @param    array     $rows       Canonical mismatch rows.
+	 * @return   void
+	 */
+	private function render_search_console_canonical_table( $heading, $rows ) {
+		echo '<h3>' . esc_html( $heading ) . '</h3>';
+
+		if ( empty( $rows ) ) {
+			echo '<p class="description">' . esc_html__( 'Nothing to report for this segment.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
+		echo '<div class="lightweight-seo-search-console-pages"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Page', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'User Canonical', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Google Canonical', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+
+		foreach ( array_slice( $rows, 0, 10 ) as $row ) {
+			echo '<tr>';
+			echo '<td><code>' . esc_html( $row['page'] ?? '' ) . '</code></td>';
+			echo '<td><code>' . esc_html( $row['user_canonical'] ?? '' ) . '</code></td>';
+			echo '<td><code>' . esc_html( $row['google_canonical'] ?? '' ) . '</code></td>';
+			echo '</tr>';
+		}
+
+		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Format a CTR value for display.
+	 *
+	 * @since    1.1.0
+	 * @param    float    $ctr    Raw CTR decimal.
+	 * @return   string
+	 */
+	private function format_ctr_value( $ctr ) {
+		return number_format( $ctr * 100, 2 ) . '%';
 	}
 
 	/**
@@ -1043,6 +1328,84 @@ class Lightweight_SEO_Admin {
 		add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, $settings_error, $message, 'error' );
 
 		return $existing_value;
+	}
+
+	/**
+	 * Normalize a Search Console property identifier.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $value             Submitted property identifier.
+	 * @param    string    $existing_value    Existing stored value.
+	 * @return   string
+	 */
+	private function normalize_search_console_property( $value, $existing_value = '' ) {
+		$property = trim( sanitize_text_field( $value ) );
+
+		if ( '' === $property ) {
+			return '';
+		}
+
+		if ( 0 === strpos( $property, 'sc-domain:' ) ) {
+			$domain = trim( substr( $property, strlen( 'sc-domain:' ) ) );
+
+			if ( '' !== $domain ) {
+				return 'sc-domain:' . $domain;
+			}
+		}
+
+		if ( false !== filter_var( $property, FILTER_VALIDATE_URL ) ) {
+			$scheme = strtolower( (string) wp_parse_url( $property, PHP_URL_SCHEME ) );
+
+			if ( in_array( $scheme, array( 'http', 'https' ), true ) ) {
+				return $property;
+			}
+		}
+
+		add_settings_error(
+			LIGHTWEIGHT_SEO_OPTION_NAME,
+			'invalid_search_console_property',
+			__( 'Invalid Search Console property. Use either a URL-prefix property or sc-domain:example.com.', 'lightweight-seo' ),
+			'error'
+		);
+
+		return $existing_value;
+	}
+
+	/**
+	 * Normalize Search Console service-account JSON.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $value             Submitted JSON payload.
+	 * @param    string    $existing_value    Existing stored value.
+	 * @return   string
+	 */
+	private function normalize_search_console_service_account_json( $value, $existing_value = '' ) {
+		$raw_json = trim( (string) $value );
+
+		if ( '' === $raw_json ) {
+			return '';
+		}
+
+		$decoded = json_decode( $raw_json, true );
+
+		if ( ! is_array( $decoded ) || empty( $decoded['client_email'] ) || empty( $decoded['private_key'] ) ) {
+			add_settings_error(
+				LIGHTWEIGHT_SEO_OPTION_NAME,
+				'invalid_search_console_service_account',
+				__( 'Invalid Search Console service-account JSON. The payload must include client_email and private_key.', 'lightweight-seo' ),
+				'error'
+			);
+
+			return $existing_value;
+		}
+
+		$normalized_payload = array(
+			'client_email' => sanitize_text_field( $decoded['client_email'] ),
+			'private_key'  => (string) $decoded['private_key'],
+			'token_uri'    => ! empty( $decoded['token_uri'] ) ? esc_url_raw( $decoded['token_uri'] ) : 'https://oauth2.googleapis.com/token',
+		);
+
+		return (string) wp_json_encode( $normalized_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 	}
 
 	/**
@@ -1136,6 +1499,24 @@ class Lightweight_SEO_Admin {
 			$sanitized_input['organization_same_as'] = implode( "\n", array_values( array_unique( $sanitized_lines ) ) );
 		} else {
 			$sanitized_input['organization_same_as'] = $existing_settings['organization_same_as'] ?? '';
+		}
+
+		if ( isset( $input['search_console_property'] ) ) {
+			$sanitized_input['search_console_property'] = $this->normalize_search_console_property(
+				$input['search_console_property'],
+				$existing_settings['search_console_property'] ?? ''
+			);
+		} else {
+			$sanitized_input['search_console_property'] = $existing_settings['search_console_property'] ?? '';
+		}
+
+		if ( isset( $input['search_console_service_account_json'] ) ) {
+			$sanitized_input['search_console_service_account_json'] = $this->normalize_search_console_service_account_json(
+				$input['search_console_service_account_json'],
+				$existing_settings['search_console_service_account_json'] ?? ''
+			);
+		} else {
+			$sanitized_input['search_console_service_account_json'] = $existing_settings['search_console_service_account_json'] ?? '';
 		}
 
 		if ( isset( $input['social_image'] ) ) {

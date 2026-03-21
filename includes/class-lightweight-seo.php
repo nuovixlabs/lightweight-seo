@@ -122,6 +122,9 @@ class Lightweight_SEO {
 		// Internal link analysis service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-internal-links-service.php';
 
+		// Search Console sync service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-search-console-service.php';
+
 		// Frontend class for displaying SEO data
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-frontend.php';
 	}
@@ -149,6 +152,9 @@ class Lightweight_SEO {
 
 		// Initialize internal link analysis hooks
 		new Lightweight_SEO_Internal_Links_Service( $this->post_meta );
+
+		// Initialize Search Console sync hooks
+		new Lightweight_SEO_Search_Console_Service( $this->settings );
 
 		// Register activation hook
 		register_activation_hook( LIGHTWEIGHT_SEO_PLUGIN_FILE, array( $this, 'activate' ) );
