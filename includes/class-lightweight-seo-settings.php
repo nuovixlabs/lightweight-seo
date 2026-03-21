@@ -104,16 +104,21 @@ class Lightweight_SEO_Settings {
 	 * @return   string
 	 */
 	public function get_social_image_url() {
-		$image_id = absint( $this->get( 'social_image_id', 0 ) );
+		$image_url = $this->get( 'social_image', '' );
+		$image_id  = absint( $this->get( 'social_image_id', 0 ) );
 
 		if ( $image_id ) {
-			$image_url = wp_get_attachment_image_url( $image_id, 'full' );
+			$attachment_url = wp_get_attachment_image_url( $image_id, 'full' );
 
-			if ( ! empty( $image_url ) ) {
-				return $image_url;
+			if ( ! empty( $attachment_url ) ) {
+				if ( ! empty( $image_url ) && $image_url !== $attachment_url ) {
+					return $image_url;
+				}
+
+				return $attachment_url;
 			}
 		}
 
-		return $this->get( 'social_image', '' );
+		return $image_url;
 	}
 }
