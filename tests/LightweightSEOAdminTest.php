@@ -3,6 +3,9 @@
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-internal-links-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-redirects-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-search-console-service.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-compatibility-service.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-image-audit-service.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-importer-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin.php';
 
 use PHPUnit\Framework\TestCase;
@@ -15,12 +18,16 @@ final class LightweightSEOAdminTest extends TestCase {
 		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_settings_errors;
 		global $lightweight_seo_test_user_can;
+		global $lightweight_seo_test_cache;
+		global $lightweight_seo_test_network_admin;
 
 		$lightweight_seo_test_nonce_is_valid  = true;
 		$lightweight_seo_test_options         = array();
 		$lightweight_seo_test_posts           = array();
 		$lightweight_seo_test_settings_errors = array();
 		$lightweight_seo_test_user_can        = true;
+		$lightweight_seo_test_cache           = array();
+		$lightweight_seo_test_network_admin   = false;
 	}
 
 	public function test_validate_settings_preserves_existing_tracking_ids_when_invalid(): void {
@@ -133,23 +140,23 @@ final class LightweightSEOAdminTest extends TestCase {
 				'ID'           => 11,
 				'post_type'    => 'post',
 				'post_status'  => 'publish',
-				'post_title'   => 'Alpha',
-				'post_content' => '<a href="/beta/">Beta</a><a href="/missing-page/">Missing</a>',
+				'post_title'   => 'SEO Basics',
+				'post_content' => '<a href="/beta/">read more</a><a href="/missing-page/">Missing</a><p>This SEO audit guide covers crawl depth.</p>',
 				'permalink'    => 'https://example.com/alpha/',
 			),
 			12 => (object) array(
 				'ID'           => 12,
 				'post_type'    => 'page',
 				'post_status'  => 'publish',
-				'post_title'   => 'Beta',
-				'post_content' => '<a href="/alpha/">Alpha</a>',
+				'post_title'   => 'Metadata Tips',
+				'post_content' => '<a href="/alpha/">click here</a>',
 				'permalink'    => 'https://example.com/beta/',
 			),
 			13 => (object) array(
 				'ID'           => 13,
 				'post_type'    => 'page',
 				'post_status'  => 'publish',
-				'post_title'   => 'Gamma',
+				'post_title'   => 'SEO Audit Guide',
 				'post_content' => '',
 				'permalink'    => 'https://example.com/gamma/',
 			),
@@ -179,9 +186,104 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( 'Scanned 3 pages and found 3 internal links.', $output );
 		$this->assertStringContainsString( 'Orphan Pages', $output );
-		$this->assertStringContainsString( 'Gamma', $output );
+		$this->assertStringContainsString( 'SEO Audit Guide', $output );
 		$this->assertStringContainsString( 'Broken Internal Links', $output );
+		$this->assertStringContainsString( 'Anchor Text Issues', $output );
+		$this->assertStringContainsString( 'Suggested Internal Links', $output );
+		$this->assertStringContainsString( 'Topic Clusters', $output );
+		$this->assertStringContainsString( 'Recommended Anchor', $output );
 		$this->assertStringContainsString( '/missing-page', $output );
+	}
+
+	public function test_image_discover_report_render_outputs_image_audit_segments(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['thumbnail_url'] = '';
+		$lightweight_seo_test_post_meta                    = array(
+			31  => array(
+				'_lightweight_seo_noindex' => '',
+			),
+			32  => array(
+				'_lightweight_seo_noindex' => '',
+			),
+			501 => array(
+				'_wp_attachment_image_alt' => '',
+			),
+		);
+		$lightweight_seo_test_posts                        = array(
+			31  => (object) array(
+				'ID'            => 31,
+				'post_type'     => 'post',
+				'post_status'   => 'publish',
+				'post_title'    => 'Discover Candidate',
+				'post_content'  => '',
+				'permalink'     => 'https://example.com/discover-candidate/',
+				'thumbnail_id'  => 501,
+				'thumbnail_url' => 'https://example.com/uploads/discover.jpg',
+			),
+			32  => (object) array(
+				'ID'           => 32,
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_title'   => 'No Thumbnail',
+				'post_content' => '',
+				'permalink'    => 'https://example.com/no-thumbnail/',
+			),
+			501 => (object) array(
+				'ID'             => 501,
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'post_mime_type' => 'image/jpeg',
+				'attachment_url' => 'https://example.com/uploads/discover.jpg',
+				'metadata'       => array(
+					'width'  => 800,
+					'height' => 600,
+				),
+			),
+		);
+
+		$settings = new class() {
+			public function get_all() {
+				return array(
+					'discover_min_image_width'  => 1200,
+					'discover_min_image_height' => 900,
+				);
+			}
+
+			public function get_discover_min_image_width() {
+				return 1200;
+			}
+
+			public function get_discover_min_image_height() {
+				return 900;
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+
+			public function get_all( $post_id ) {
+				return array(
+					'seo_noindex' => '',
+				);
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		ob_start();
+		$admin->image_discover_report_render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'Missing Featured Images', $output );
+		$this->assertStringContainsString( 'Missing Alt Text', $output );
+		$this->assertStringContainsString( 'Undersized Featured Images', $output );
+		$this->assertStringContainsString( 'No Thumbnail', $output );
+		$this->assertStringContainsString( 'Discover Candidate', $output );
 	}
 
 	public function test_redirect_health_render_outputs_detected_issues(): void {
@@ -282,5 +384,34 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( '/old-page /new-page 302', $output );
 		$this->assertStringContainsString( '/legacy-page /fresh-page 301', $output );
+	}
+
+	public function test_safe_mode_notice_renders_when_conflicting_plugin_is_active(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options['active_plugins'] = array(
+			'wordpress-seo/wp-seo.php',
+		);
+
+		$settings = new class() {
+			public function get_all() {
+				return array();
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		ob_start();
+		$admin->maybe_render_safe_mode_notice();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'safe mode is active', $output );
+		$this->assertStringContainsString( 'Yoast SEO', $output );
 	}
 }

@@ -47,8 +47,12 @@ KEY;
 		$analytics_endpoint                         = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/searchAnalytics/query';
 		$inspection_endpoint                        = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect';
 		$sitemaps_endpoint                          = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps';
+		$submit_sitemap_endpoint                    = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap.xml' );
+		$submit_image_sitemap_endpoint              = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap-lightweightseoimages-1.xml' );
+		$submit_video_sitemap_endpoint              = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap-lightweightseovideos-1.xml' );
+		$submit_news_sitemap_endpoint               = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap-lightweightseonews-1.xml' );
 		$lightweight_seo_test_remote_post_responses = array(
-			$token_endpoint      => array(
+			$token_endpoint                => array(
 				'response' => array(
 					'code' => 200,
 				),
@@ -59,7 +63,7 @@ KEY;
 					)
 				),
 			),
-			$analytics_endpoint  => function ( $url, $args ) {
+			$analytics_endpoint            => function ( $url, $args ) {
 				$body = json_decode( (string) ( $args['body'] ?? '{}' ), true );
 
 				if ( ( $body['startDate'] ?? '' ) === gmdate( 'Y-m-d', strtotime( '-55 days' ) ) ) {
@@ -116,7 +120,7 @@ KEY;
 					),
 				);
 			},
-			$inspection_endpoint => function ( $url, $args ) {
+			$inspection_endpoint           => function ( $url, $args ) {
 				$body           = json_decode( (string) ( $args['body'] ?? '{}' ), true );
 				$inspection_url = $body['inspectionUrl'] ?? '';
 
@@ -165,6 +169,30 @@ KEY;
 					),
 				);
 			},
+			$submit_sitemap_endpoint       => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
+			),
+			$submit_image_sitemap_endpoint => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
+			),
+			$submit_video_sitemap_endpoint => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
+			),
+			$submit_news_sitemap_endpoint  => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
+			),
 		);
 		$lightweight_seo_test_remote_get_responses  = array(
 			$sitemaps_endpoint => array(
@@ -204,6 +232,7 @@ KEY;
 		$this->assertCount( 2, $snapshot['indexation_issues'] );
 		$this->assertCount( 1, $snapshot['canonical_mismatches'] );
 		$this->assertSame( 'https://example.com/alpha-canonical/', $snapshot['canonical_mismatches'][0]['google_canonical'] );
+		$this->assertCount( 4, $snapshot['submitted_sitemaps'] );
 		$this->assertCount( 1, $snapshot['sitemaps'] );
 		$this->assertSame( 1, $snapshot['sitemaps'][0]['errors'] );
 	}
@@ -218,8 +247,12 @@ KEY;
 		$analytics_endpoint                         = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/searchAnalytics/query';
 		$inspection_endpoint                        = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect';
 		$sitemaps_endpoint                          = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps';
+		$submit_sitemap_endpoint                    = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap.xml' );
+		$submit_image_sitemap_endpoint              = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap-lightweightseoimages-1.xml' );
+		$submit_video_sitemap_endpoint              = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap-lightweightseovideos-1.xml' );
+		$submit_news_sitemap_endpoint               = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap-lightweightseonews-1.xml' );
 		$lightweight_seo_test_remote_post_responses = array(
-			$token_endpoint      => array(
+			$token_endpoint                => array(
 				'response' => array(
 					'code' => 200,
 				),
@@ -230,7 +263,7 @@ KEY;
 					)
 				),
 			),
-			$analytics_endpoint  => function ( $url, $args ) {
+			$analytics_endpoint            => function ( $url, $args ) {
 				return array(
 					'response' => array(
 						'code' => 200,
@@ -250,7 +283,7 @@ KEY;
 					),
 				);
 			},
-			$inspection_endpoint => array(
+			$inspection_endpoint           => array(
 				'response' => array(
 					'code' => 200,
 				),
@@ -269,6 +302,30 @@ KEY;
 						),
 					)
 				),
+			),
+			$submit_sitemap_endpoint       => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
+			),
+			$submit_image_sitemap_endpoint => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
+			),
+			$submit_video_sitemap_endpoint => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
+			),
+			$submit_news_sitemap_endpoint  => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => '{}',
 			),
 		);
 		$lightweight_seo_test_remote_get_responses  = array(
@@ -349,6 +406,22 @@ KEY;
 						'token_uri'    => 'https://oauth2.googleapis.com/token',
 					)
 				);
+			}
+
+			public function search_console_sitemap_submission_enabled() {
+				return true;
+			}
+
+			public function image_sitemaps_enabled() {
+				return true;
+			}
+
+			public function video_sitemaps_enabled() {
+				return true;
+			}
+
+			public function news_sitemaps_enabled() {
+				return true;
 			}
 		};
 	}

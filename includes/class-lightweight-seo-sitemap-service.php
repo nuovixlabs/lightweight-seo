@@ -21,7 +21,7 @@ class Lightweight_SEO_Sitemap_Service {
 	 *
 	 * @since    1.1.0
 	 * @access   private
-	 * @var      Lightweight_SEO_Settings    $settings
+	 * @var      Lightweight_SEO_Settings
 	 */
 	private $settings;
 
@@ -30,7 +30,7 @@ class Lightweight_SEO_Sitemap_Service {
 	 *
 	 * @since    1.1.0
 	 * @access   private
-	 * @var      Lightweight_SEO_Post_Meta    $post_meta
+	 * @var      Lightweight_SEO_Post_Meta
 	 */
 	private $post_meta;
 
@@ -39,7 +39,7 @@ class Lightweight_SEO_Sitemap_Service {
 	 *
 	 * @since    1.1.0
 	 * @access   private
-	 * @var      Lightweight_SEO_Archive_Meta    $archive_meta
+	 * @var      Lightweight_SEO_Archive_Meta
 	 */
 	private $archive_meta;
 
@@ -57,6 +57,8 @@ class Lightweight_SEO_Sitemap_Service {
 		$this->archive_meta = $archive_meta;
 
 		add_action( 'init', array( $this, 'register_image_sitemap_provider' ), 25 );
+		add_action( 'init', array( $this, 'register_video_sitemap_provider' ), 25 );
+		add_action( 'init', array( $this, 'register_news_sitemap_provider' ), 25 );
 		add_filter( 'wp_sitemaps_posts_query_args', array( $this, 'filter_posts_query_args' ), 10, 2 );
 		add_filter( 'wp_sitemaps_taxonomies_query_args', array( $this, 'filter_taxonomies_query_args' ), 10, 2 );
 		add_filter( 'wp_sitemaps_users_query_args', array( $this, 'filter_users_query_args' ) );
@@ -84,7 +86,49 @@ class Lightweight_SEO_Sitemap_Service {
 	}
 
 	/**
-	 * Exclude noindexed content from WordPress core sitemap post queries.
+	 * Register the attachment video sitemap provider with WordPress core.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function register_video_sitemap_provider() {
+		if ( ! $this->settings->video_sitemaps_enabled() || ! class_exists( 'WP_Sitemaps_Provider' ) || ! function_exists( 'wp_register_sitemap_provider' ) ) {
+			return;
+		}
+
+		if ( ! class_exists( 'Lightweight_SEO_Video_Sitemap_Provider' ) ) {
+			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-video-sitemap-provider.php';
+		}
+
+		wp_register_sitemap_provider(
+			'lightweightseovideos',
+			new Lightweight_SEO_Video_Sitemap_Provider( $this->settings )
+		);
+	}
+
+	/**
+	 * Register the news sitemap provider with WordPress core.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function register_news_sitemap_provider() {
+		if ( ! $this->settings->news_sitemaps_enabled() || ! class_exists( 'WP_Sitemaps_Provider' ) || ! function_exists( 'wp_register_sitemap_provider' ) ) {
+			return;
+		}
+
+		if ( ! class_exists( 'Lightweight_SEO_News_Sitemap_Provider' ) ) {
+			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-news-sitemap-provider.php';
+		}
+
+		wp_register_sitemap_provider(
+			'lightweightseonews',
+			new Lightweight_SEO_News_Sitemap_Provider( $this->settings, $this->post_meta )
+		);
+	}
+
+	/**
+	 * Exclude noindexed and redirected content from WordPress core sitemap post queries.
 	 *
 	 * @since    1.1.0
 	 * @param    array     $args         Current query arguments.
@@ -92,14 +136,18 @@ class Lightweight_SEO_Sitemap_Service {
 	 * @return   array
 	 */
 	public function filter_posts_query_args( $args, $post_type ) {
-		if ( ! $this->settings->exclude_noindex_from_sitemaps_enabled() ) {
-			return $args;
+		if ( $this->settings->exclude_noindex_from_sitemaps_enabled() ) {
+			$args = $this->append_noindex_meta_query(
+				$args,
+				$this->post_meta->get_meta_key( 'seo_noindex' )
+			);
 		}
 
-		return $this->append_noindex_meta_query(
-			$args,
-			$this->post_meta->get_meta_key( 'seo_noindex' )
-		);
+		if ( $this->settings->exclude_redirected_from_sitemaps_enabled() ) {
+			$args = $this->append_redirected_post_exclusions( $args, $post_type );
+		}
+
+		return $args;
 	}
 
 	/**
@@ -171,6 +219,73 @@ class Lightweight_SEO_Sitemap_Service {
 			'relation' => 'AND',
 			$args['meta_query'],
 			$noindex_query,
+		);
+
+		return $args;
+	}
+
+	/**
+	 * Append exclusions for posts whose current paths are redirected elsewhere.
+	 *
+	 * @since    1.1.0
+	 * @param    array     $args         Current query arguments.
+	 * @param    string    $post_type    Post type being queried.
+	 * @return   array
+	 */
+	private function append_redirected_post_exclusions( $args, $post_type ) {
+		if ( ! class_exists( 'Lightweight_SEO_Redirects_Service' ) ) {
+			return $args;
+		}
+
+		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
+		$redirect_sources  = array();
+
+		foreach ( $redirects_service->get_all_redirect_rules() as $rule ) {
+			if ( ! empty( $rule['source'] ) ) {
+				$redirect_sources[ $rule['source'] ] = true;
+			}
+		}
+
+		if ( empty( $redirect_sources ) ) {
+			return $args;
+		}
+
+		$excluded_ids = array();
+		$posts        = get_posts(
+			array(
+				'post_type'              => $post_type,
+				'post_status'            => 'publish',
+				'posts_per_page'         => -1,
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+
+		foreach ( $posts as $post ) {
+			$path = (string) wp_parse_url( (string) get_permalink( $post ), PHP_URL_PATH );
+			$path = '/' . ltrim( $path, '/' );
+
+			if ( '/' !== $path ) {
+				$path = rtrim( $path, '/' );
+			}
+
+			if ( isset( $redirect_sources[ $path ] ) ) {
+				$excluded_ids[] = (int) $post->ID;
+			}
+		}
+
+		if ( empty( $excluded_ids ) ) {
+			return $args;
+		}
+
+		$args['post__not_in'] = array_values(
+			array_unique(
+				array_merge(
+					array_map( 'absint', (array) ( $args['post__not_in'] ?? array() ) ),
+					$excluded_ids
+				)
+			)
 		);
 
 		return $args;

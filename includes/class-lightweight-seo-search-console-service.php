@@ -54,7 +54,7 @@ class Lightweight_SEO_Search_Console_Service {
 	 * @since    1.1.0
 	 * @var      string
 	 */
-	const API_SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
+	const API_SCOPE = 'https://www.googleapis.com/auth/webmasters';
 
 	/**
 	 * Shared settings service.
@@ -115,9 +115,20 @@ class Lightweight_SEO_Search_Console_Service {
 			return $this->get_empty_snapshot();
 		}
 
+		$cache_key = $this->get_cache_key();
+		$cached    = function_exists( 'wp_cache_get' ) ? wp_cache_get( $cache_key, 'lightweight_seo' ) : false;
+
+		if ( ! $force_refresh && is_array( $cached ) && $this->is_snapshot_fresh( $cached ) ) {
+			return $cached;
+		}
+
 		$snapshot = get_option( self::SNAPSHOT_OPTION_NAME, array() );
 
 		if ( ! $force_refresh && $this->is_snapshot_fresh( $snapshot ) ) {
+			if ( function_exists( 'wp_cache_set' ) ) {
+				wp_cache_set( $cache_key, $snapshot, 'lightweight_seo', self::SNAPSHOT_TTL );
+			}
+
 			return $snapshot;
 		}
 
@@ -151,12 +162,14 @@ class Lightweight_SEO_Search_Console_Service {
 			$analytics_date_ranges['previous']['start'],
 			$analytics_date_ranges['previous']['end']
 		);
+		$submitted_sitemaps    = $this->submit_sitemaps( $property );
 		$sitemap_rows          = $this->fetch_sitemaps( $property );
 
 		$snapshot['configured']            = true;
 		$snapshot['property']              = $property;
 		$snapshot['service_account_email'] = $this->get_service_account_email();
 		$snapshot['last_synced']           = gmdate( 'c' );
+		$snapshot['submitted_sitemaps']    = $submitted_sitemaps;
 
 		if ( is_wp_error( $analytics_rows ) ) {
 			$snapshot['last_error'] = $analytics_rows->get_error_message();
@@ -187,6 +200,10 @@ class Lightweight_SEO_Search_Console_Service {
 		}
 
 		update_option( self::SNAPSHOT_OPTION_NAME, $snapshot );
+
+		if ( function_exists( 'wp_cache_set' ) ) {
+			wp_cache_set( $this->get_cache_key(), $snapshot, 'lightweight_seo', self::SNAPSHOT_TTL );
+		}
 
 		return $snapshot;
 	}
@@ -232,6 +249,7 @@ class Lightweight_SEO_Search_Console_Service {
 			'inspection_results'    => array(),
 			'indexation_issues'     => array(),
 			'canonical_mismatches'  => array(),
+			'submitted_sitemaps'    => array(),
 			'sitemaps'              => array(),
 		);
 	}
@@ -393,6 +411,64 @@ class Lightweight_SEO_Search_Console_Service {
 		}
 
 		return $normalized_sitemaps;
+	}
+
+	/**
+	 * Submit configured sitemap URLs to Search Console when enabled.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $property    Search Console property identifier.
+	 * @return   array
+	 */
+	private function submit_sitemaps( $property ) {
+		if ( ! $this->settings->search_console_sitemap_submission_enabled() ) {
+			return array();
+		}
+
+		$results = array();
+
+		foreach ( $this->get_sitemap_submission_urls() as $sitemap_url ) {
+			$endpoint = sprintf(
+				'https://www.googleapis.com/webmasters/v3/sites/%s/sitemaps/%s',
+				rawurlencode( $property ),
+				rawurlencode( $sitemap_url )
+			);
+			$response = $this->request_json( 'PUT', $endpoint );
+
+			$results[] = array(
+				'path'      => $sitemap_url,
+				'submitted' => ! is_wp_error( $response ),
+				'error'     => is_wp_error( $response ) ? $response->get_error_message() : '',
+			);
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Build the sitemap URLs that should be submitted during sync.
+	 *
+	 * @since    1.1.0
+	 * @return   array
+	 */
+	private function get_sitemap_submission_urls() {
+		$sitemap_urls = array(
+			home_url( '/wp-sitemap.xml' ),
+		);
+
+		if ( $this->settings->image_sitemaps_enabled() ) {
+			$sitemap_urls[] = home_url( '/wp-sitemap-lightweightseoimages-1.xml' );
+		}
+
+		if ( $this->settings->video_sitemaps_enabled() ) {
+			$sitemap_urls[] = home_url( '/wp-sitemap-lightweightseovideos-1.xml' );
+		}
+
+		if ( $this->settings->news_sitemaps_enabled() ) {
+			$sitemap_urls[] = home_url( '/wp-sitemap-lightweightseonews-1.xml' );
+		}
+
+		return array_values( array_unique( array_filter( array_map( 'esc_url_raw', $sitemap_urls ) ) ) );
 	}
 
 	/**
@@ -670,9 +746,12 @@ class Lightweight_SEO_Search_Console_Service {
 			'timeout' => 20,
 		);
 
-		if ( 'POST' === strtoupper( $method ) ) {
+		$method = strtoupper( $method );
+
+		if ( in_array( $method, array( 'POST', 'PUT' ), true ) ) {
 			$args['headers']['Content-Type'] = 'application/json';
 			$args['body']                    = wp_json_encode( $body );
+			$args['method']                  = $method;
 			$response                        = wp_remote_post( $url, $args );
 		} else {
 			$response = wp_remote_get( $url, $args );
@@ -831,5 +910,17 @@ class Lightweight_SEO_Search_Console_Service {
 	 */
 	private function base64url_encode( $value ) {
 		return rtrim( strtr( base64_encode( (string) $value ), '+/', '-_' ), '=' );
+	}
+
+	/**
+	 * Get the site-scoped cache key for Search Console snapshots.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	private function get_cache_key() {
+		$blog_id = function_exists( 'get_current_blog_id' ) ? (int) get_current_blog_id() : 1;
+
+		return 'search_console_snapshot_' . $blog_id;
 	}
 }

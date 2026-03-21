@@ -16,23 +16,23 @@ final class LightweightSEOInternalLinksServiceTest extends TestCase {
 				'ID'           => 21,
 				'post_type'    => 'post',
 				'post_status'  => 'publish',
-				'post_title'   => 'Alpha',
-				'post_content' => '<a href="/beta/">Beta</a><a href="https://example.com/missing-page/">Missing</a><a href="https://external.example.com/">External</a>',
+				'post_title'   => 'SEO Basics',
+				'post_content' => '<a href="/beta/">read more</a><a href="https://example.com/missing-page/">Missing</a><a href="https://external.example.com/">External</a><p>This SEO audit guide covers crawl depth.</p>',
 				'permalink'    => 'https://example.com/alpha/',
 			),
 			22 => (object) array(
 				'ID'           => 22,
 				'post_type'    => 'page',
 				'post_status'  => 'publish',
-				'post_title'   => 'Beta',
-				'post_content' => '<a href="/alpha/">Alpha</a>',
+				'post_title'   => 'Metadata Tips',
+				'post_content' => '<a href="/alpha/">click here</a>',
 				'permalink'    => 'https://example.com/beta/',
 			),
 			23 => (object) array(
 				'ID'           => 23,
 				'post_type'    => 'page',
 				'post_status'  => 'publish',
-				'post_title'   => 'Gamma',
+				'post_title'   => 'SEO Audit Guide',
 				'post_content' => '',
 				'permalink'    => 'https://example.com/gamma/',
 			),
@@ -69,10 +69,17 @@ final class LightweightSEOInternalLinksServiceTest extends TestCase {
 
 		$this->assertSame( 3, $report['pages_scanned'] );
 		$this->assertSame( 3, $report['internal_links'] );
-		$this->assertSame( array( 'Gamma' ), array_column( $report['orphan_pages'], 'title' ) );
-		$this->assertSame( array( 'Alpha', 'Beta' ), array_column( $report['weak_pages'], 'title' ) );
+		$this->assertSame( array( 'SEO Audit Guide' ), array_column( $report['orphan_pages'], 'title' ) );
+		$this->assertSame( array( 'Metadata Tips', 'SEO Basics' ), array_column( $report['weak_pages'], 'title' ) );
 		$this->assertCount( 1, $report['broken_links'] );
 		$this->assertSame( '/missing-page', $report['broken_links'][0]['target_path'] );
+		$this->assertSame( array( 'Metadata Tips', 'SEO Basics' ), array_column( $report['anchor_text_issues'], 'title' ) );
+		$this->assertSame( 'metadata tips', $report['anchor_text_issues'][0]['recommended_anchor'] );
+		$this->assertSame( 'SEO Audit Guide', $report['link_suggestions'][0]['target_title'] );
+		$this->assertSame( 'seo audit guide', $report['link_suggestions'][0]['recommended_anchor'] );
+		$this->assertSame( 'SEO Basics', $report['link_suggestions'][0]['suggestions'][0]['source_title'] );
+		$this->assertSame( 'seo', $report['topic_clusters'][0]['topic'] );
+		$this->assertSame( 2, $report['topic_clusters'][0]['member_count'] );
 	}
 
 	public function test_get_report_uses_cached_payload_until_invalidated(): void {

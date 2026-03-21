@@ -92,6 +92,9 @@ class Lightweight_SEO {
 		// Shared term and author meta service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-archive-meta.php';
 
+		// Compatibility and safe-mode service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-compatibility-service.php';
+
 		// Admin class for backend functionality
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-admin.php';
 
@@ -106,6 +109,12 @@ class Lightweight_SEO {
 
 		// Frontend meta tags service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-meta-tags-service.php';
+
+		// Frontend header service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-header-service.php';
+
+		// Frontend hreflang service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-hreflang-service.php';
 
 		// Frontend tracking service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-tracking-service.php';
@@ -122,8 +131,14 @@ class Lightweight_SEO {
 		// Internal link analysis service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-internal-links-service.php';
 
+		// Discover image audit service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-image-audit-service.php';
+
 		// Search Console sync service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-search-console-service.php';
+
+		// SEO metadata importer service
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-importer-service.php';
 
 		// Frontend class for displaying SEO data
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-frontend.php';
@@ -152,6 +167,9 @@ class Lightweight_SEO {
 
 		// Initialize internal link analysis hooks
 		new Lightweight_SEO_Internal_Links_Service( $this->post_meta );
+
+		// Initialize image audit hooks
+		new Lightweight_SEO_Image_Audit_Service( $this->settings, $this->post_meta );
 
 		// Initialize Search Console sync hooks
 		new Lightweight_SEO_Search_Console_Service( $this->settings );

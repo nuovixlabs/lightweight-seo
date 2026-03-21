@@ -54,6 +54,12 @@ Lightweight SEO is a simple yet powerful WordPress plugin designed to help you o
   - `includes/class-lightweight-seo-meta-tags-service.php`
   - `includes/class-lightweight-seo-tracking-service.php`
 
+## 📚 Documentation
+
+- [Documentation Index](docs/README.md)
+- [Feature Guide](docs/features.md)
+- [QA Checklist](docs/qa-checklist.md)
+
 ## 🧪 Local Development
 
 For live testing during development, symlink this workspace into your local WordPress install:
