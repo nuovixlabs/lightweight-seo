@@ -233,6 +233,67 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 14, $validated['social_image_id'] );
 	}
 
+	public function test_validate_settings_normalizes_url_prefix_search_console_properties(): void {
+		$settings = new class() {
+			public function get_all() {
+				return array(
+					'title_format'                        => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
+					'home_title_format'                   => '%sitename% %sep% %tagline%',
+					'archive_title_format'                => '%title% %sep% %sitename%',
+					'search_title_format'                 => 'Search Results for "%search%" %sep% %sitename%',
+					'meta_description'                    => '',
+					'meta_keywords'                       => '',
+					'enable_meta_keywords'                => '1',
+					'noindex_search_results'              => '1',
+					'noindex_attachment_pages'            => '1',
+					'exclude_noindex_from_sitemaps'       => '1',
+					'enable_image_sitemaps'               => '1',
+					'enable_schema_output'                => '1',
+					'organization_same_as'                => '',
+					'search_console_property'             => '',
+					'search_console_service_account_json' => '',
+					'enable_404_monitor'                  => '1',
+					'enable_auto_redirects'               => '1',
+					'redirect_rules'                      => '',
+					'default_max_image_preview'           => 'large',
+					'social_image'                        => '',
+					'social_image_id'                     => 0,
+					'ga4_measurement_id'                  => '',
+					'gtm_container_id'                    => '',
+					'facebook_pixel_id'                   => '',
+				);
+			}
+
+			public function normalize_max_image_preview( $value, $fallback = '' ) {
+				return in_array( $value, array( 'none', 'standard', 'large' ), true ) ? $value : $fallback;
+			}
+
+			public function get_default_max_image_preview() {
+				return 'large';
+			}
+
+			public function normalize_redirect_rules_input( $value ) {
+				return '';
+			}
+		};
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		$validated = $admin->validate_settings(
+			array(
+				'search_console_property' => 'https://Example.com/blog',
+			)
+		);
+
+		$this->assertSame( 'https://example.com/blog/', $validated['search_console_property'] );
+	}
+
 	public function test_internal_link_report_render_outputs_orphans_and_broken_links(): void {
 		global $lightweight_seo_test_options;
 		global $lightweight_seo_test_posts;

@@ -775,10 +775,13 @@ class Lightweight_SEO_Search_Console_Service {
 		$method = strtoupper( $method );
 
 		if ( in_array( $method, array( 'POST', 'PUT' ), true ) ) {
-			$args['headers']['Content-Type'] = 'application/json';
-			$args['body']                    = wp_json_encode( $body );
-			$args['method']                  = $method;
-			$response                        = wp_remote_post( $url, $args );
+			if ( null !== $body ) {
+				$args['headers']['Content-Type'] = 'application/json';
+				$args['body']                    = wp_json_encode( $body );
+			}
+
+			$args['method'] = $method;
+			$response       = wp_remote_post( $url, $args );
 		} else {
 			$response = wp_remote_get( $url, $args );
 		}

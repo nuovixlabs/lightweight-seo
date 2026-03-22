@@ -165,12 +165,12 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( 'https://example.com/page/2/', $context['og_url'] );
 	}
 
-	public function test_paginated_search_preserves_query_string_in_current_url(): void {
+	public function test_paginated_search_keeps_search_and_pagination_query_args_only(): void {
 		global $lightweight_seo_test_query_state;
 
 		$lightweight_seo_test_query_state['is_search']    = true;
 		$lightweight_seo_test_query_state['search_query'] = 'seo plugin';
-		$_SERVER['REQUEST_URI']                           = '/?s=seo%20plugin&paged=2';
+		$_SERVER['REQUEST_URI']                           = '/?s=seo%20plugin&paged=2&utm_source=newsletter&fbclid=abc123';
 
 		$post_meta = new class() {
 			public function get_all( $post_id ) {
@@ -197,6 +197,39 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 
 		$this->assertSame( 'https://example.com/?s=seo%20plugin&paged=2', $context['canonical_url'] );
 		$this->assertSame( 'https://example.com/?s=seo%20plugin&paged=2', $context['og_url'] );
+	}
+
+	public function test_home_canonical_strips_tracking_query_args(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_home'] = true;
+		$_SERVER['REQUEST_URI']                      = '/?utm_source=newsletter&fbclid=abc123';
+
+		$post_meta = new class() {
+			public function get_all( $post_id ) {
+				return array();
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+
+		$archive_meta = new class() {
+			public function get_term_all( $term_id ) {
+				return array();
+			}
+
+			public function get_user_all( $user_id ) {
+				return array();
+			}
+		};
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( true ), $post_meta, $archive_meta );
+		$context = $service->get_context();
+
+		$this->assertSame( 'https://example.com/', $context['canonical_url'] );
+		$this->assertSame( 'https://example.com/', $context['og_url'] );
 	}
 
 	public function test_term_archive_uses_object_level_overrides(): void {

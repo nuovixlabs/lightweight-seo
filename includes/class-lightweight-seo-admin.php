@@ -2018,7 +2018,23 @@ class Lightweight_SEO_Admin {
 			$scheme = strtolower( (string) wp_parse_url( $property, PHP_URL_SCHEME ) );
 
 			if ( in_array( $scheme, array( 'http', 'https' ), true ) ) {
-				return $property;
+				$parts = wp_parse_url( $property );
+
+				if ( empty( $parts['host'] ) ) {
+					return $existing_value;
+				}
+
+				$normalized = $scheme . '://' . strtolower( (string) $parts['host'] );
+
+				if ( ! empty( $parts['port'] ) ) {
+					$normalized .= ':' . (int) $parts['port'];
+				}
+
+				$path = (string) ( $parts['path'] ?? '/' );
+				$path = '/' . ltrim( $path, '/' );
+				$path = trailingslashit( $path );
+
+				return $normalized . $path;
 			}
 		}
 
