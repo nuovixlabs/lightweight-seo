@@ -49,6 +49,14 @@ class Lightweight_SEO_Search_Console_Service {
 	const SNAPSHOT_TTL = 21600;
 
 	/**
+	 * Search Analytics API row limit per request.
+	 *
+	 * @since    1.1.0
+	 * @var      int
+	 */
+	const SEARCH_ANALYTICS_ROW_LIMIT = 25000;
+
+	/**
 	 * Search Console API scope.
 	 *
 	 * @since    1.1.0
@@ -287,45 +295,63 @@ class Lightweight_SEO_Search_Console_Service {
 	 * @return   array|WP_Error
 	 */
 	private function fetch_search_analytics_rows_for_range( $property, $start_date, $end_date ) {
-		$endpoint = sprintf(
+		$endpoint        = sprintf(
 			'https://www.googleapis.com/webmasters/v3/sites/%s/searchAnalytics/query',
 			rawurlencode( $property )
 		);
-		$response = $this->request_json(
-			'POST',
-			$endpoint,
-			array(
-				'startDate'  => $start_date,
-				'endDate'    => $end_date,
-				'dimensions' => array( 'page' ),
-				'rowLimit'   => 100,
-			)
-		);
-
-		if ( is_wp_error( $response ) ) {
-			return $response;
-		}
-
-		$rows            = $response['rows'] ?? array();
 		$normalized_rows = array();
+		$row_limit       = $this->get_search_analytics_row_limit();
+		$start_row       = 0;
 
-		foreach ( $rows as $row ) {
-			$page = $row['keys'][0] ?? '';
+		do {
+			$response = $this->request_json(
+				'POST',
+				$endpoint,
+				array(
+					'startDate'  => $start_date,
+					'endDate'    => $end_date,
+					'dimensions' => array( 'page' ),
+					'rowLimit'   => $row_limit,
+					'startRow'   => $start_row,
+				)
+			);
 
-			if ( empty( $page ) ) {
-				continue;
+			if ( is_wp_error( $response ) ) {
+				return $response;
 			}
 
-			$normalized_rows[] = array(
-				'page'        => esc_url_raw( $page ),
-				'clicks'      => (float) ( $row['clicks'] ?? 0 ),
-				'impressions' => (float) ( $row['impressions'] ?? 0 ),
-				'ctr'         => (float) ( $row['ctr'] ?? 0 ),
-				'position'    => (float) ( $row['position'] ?? 0 ),
-			);
-		}
+			$rows = $response['rows'] ?? array();
+
+			foreach ( $rows as $row ) {
+				$page = $row['keys'][0] ?? '';
+
+				if ( empty( $page ) ) {
+					continue;
+				}
+
+				$normalized_rows[] = array(
+					'page'        => esc_url_raw( $page ),
+					'clicks'      => (float) ( $row['clicks'] ?? 0 ),
+					'impressions' => (float) ( $row['impressions'] ?? 0 ),
+					'ctr'         => (float) ( $row['ctr'] ?? 0 ),
+					'position'    => (float) ( $row['position'] ?? 0 ),
+				);
+			}
+
+			$start_row += $row_limit;
+		} while ( count( $rows ) === $row_limit );
 
 		return $normalized_rows;
+	}
+
+	/**
+	 * Get the Search Analytics row limit used for each API request.
+	 *
+	 * @since    1.1.0
+	 * @return   int
+	 */
+	protected function get_search_analytics_row_limit() {
+		return self::SEARCH_ANALYTICS_ROW_LIMIT;
 	}
 
 	/**

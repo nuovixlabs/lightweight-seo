@@ -473,12 +473,29 @@ class Lightweight_SEO_Page_Context_Service {
 			}
 		}
 
-		if ( is_home() || is_front_page() ) {
-			return home_url( '/' );
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( (string) $_SERVER['REQUEST_URI'] ) : '';
+
+		if ( '' !== $request_uri ) {
+			$request_path  = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
+			$request_query = (string) wp_parse_url( $request_uri, PHP_URL_QUERY );
+
+			if ( '' !== $request_path || '' !== $request_query ) {
+				$url = home_url( '' !== $request_path ? $request_path : '/' );
+
+				if ( '' !== $request_query ) {
+					$url .= '?' . $request_query;
+				}
+
+				return $url;
+			}
 		}
 
 		if ( is_search() && function_exists( 'get_search_link' ) ) {
 			return get_search_link( get_search_query() );
+		}
+
+		if ( is_home() || is_front_page() ) {
+			return home_url( '/' );
 		}
 
 		return home_url( add_query_arg( array(), $GLOBALS['wp']->request ) );

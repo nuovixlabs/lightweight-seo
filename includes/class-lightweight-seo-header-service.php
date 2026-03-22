@@ -99,16 +99,6 @@ class Lightweight_SEO_Header_Service {
 			'ppt',
 			'pptx',
 			'zip',
-			'jpg',
-			'jpeg',
-			'png',
-			'gif',
-			'webp',
-			'svg',
-			'mp4',
-			'mov',
-			'webm',
-			'mp3',
 		);
 
 		if ( in_array( $extension, $extensions, true ) ) {
