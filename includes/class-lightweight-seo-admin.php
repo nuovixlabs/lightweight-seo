@@ -1283,7 +1283,7 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function internal_link_report_render() {
-		$internal_links_service = new Lightweight_SEO_Internal_Links_Service( $this->post_meta, false );
+		$internal_links_service = new Lightweight_SEO_Internal_Links_Service( $this->post_meta, false, $this->settings );
 		$report                 = $internal_links_service->get_report();
 
 		if ( empty( $report['pages_scanned'] ) ) {

@@ -71,13 +71,13 @@ class Lightweight_SEO_Image_Audit_Service {
 		$cache_key = $this->get_cache_key();
 		$cached    = function_exists( 'wp_cache_get' ) ? wp_cache_get( $cache_key, 'lightweight_seo' ) : false;
 
-		if ( ! $force_refresh && is_array( $cached ) && ! empty( $cached['generated_at'] ) ) {
+		if ( ! $force_refresh && is_array( $cached ) && $this->is_cached_report_fresh( $cached ) ) {
 			return $cached;
 		}
 
 		$report = get_option( self::REPORT_OPTION_NAME, array() );
 
-		if ( ! $force_refresh && ! empty( $report['generated_at'] ) ) {
+		if ( ! $force_refresh && $this->is_cached_report_fresh( $report ) ) {
 			if ( function_exists( 'wp_cache_set' ) ) {
 				wp_cache_set( $cache_key, $report, 'lightweight_seo', 900 );
 			}
@@ -141,6 +141,10 @@ class Lightweight_SEO_Image_Audit_Service {
 				continue;
 			}
 
+			if ( $this->should_exclude_attachment( $post ) ) {
+				continue;
+			}
+
 			$post_title = ! empty( $post->post_title ) ? $post->post_title : get_the_title( $post->ID );
 			$post_url   = get_permalink( $post );
 
@@ -189,6 +193,37 @@ class Lightweight_SEO_Image_Audit_Service {
 			'missing_alt_text'        => array_slice( $missing_alt_text, 0, 20 ),
 			'undersized_images'       => array_slice( $undersized_images, 0, 20 ),
 		);
+	}
+
+	/**
+	 * Determine whether a cached report still reflects the current settings.
+	 *
+	 * @since    1.1.0
+	 * @param    array $report Cached report payload.
+	 * @return   bool
+	 */
+	private function is_cached_report_fresh( $report ) {
+		if ( empty( $report['generated_at'] ) ) {
+			return false;
+		}
+
+		return (int) ( $report['minimum_width'] ?? 0 ) === $this->settings->get_discover_min_image_width()
+			&& (int) ( $report['minimum_height'] ?? 0 ) === $this->settings->get_discover_min_image_height();
+	}
+
+	/**
+	 * Determine whether an attachment should be excluded by default.
+	 *
+	 * @since    1.1.0
+	 * @param    object $post Candidate post object.
+	 * @return   bool
+	 */
+	private function should_exclude_attachment( $post ) {
+		if ( empty( $post ) || 'attachment' !== (string) ( $post->post_type ?? '' ) ) {
+			return false;
+		}
+
+		return method_exists( $this->settings, 'attachment_pages_noindex_enabled' ) && $this->settings->attachment_pages_noindex_enabled();
 	}
 
 	/**
