@@ -473,14 +473,66 @@ class Lightweight_SEO_Page_Context_Service {
 			}
 		}
 
-		if ( is_home() || is_front_page() ) {
-			return home_url( '/' );
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( (string) $_SERVER['REQUEST_URI'] ) : '';
+
+		if ( '' !== $request_uri ) {
+			$request_path  = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
+			$request_query = $this->get_canonical_query_string( (string) wp_parse_url( $request_uri, PHP_URL_QUERY ) );
+
+			if ( '' !== $request_path || '' !== $request_query ) {
+				$url = home_url( '' !== $request_path ? $request_path : '/' );
+
+				if ( '' !== $request_query ) {
+					$url .= '?' . $request_query;
+				}
+
+				return $url;
+			}
 		}
 
 		if ( is_search() && function_exists( 'get_search_link' ) ) {
 			return get_search_link( get_search_query() );
 		}
 
+		if ( is_home() || is_front_page() ) {
+			return home_url( '/' );
+		}
+
 		return home_url( add_query_arg( array(), $GLOBALS['wp']->request ) );
+	}
+
+	/**
+	 * Normalize request query arguments for canonical URLs.
+	 *
+	 * @since    1.1.0
+	 * @param    string $request_query Raw request query string.
+	 * @return   string
+	 */
+	private function get_canonical_query_string( $request_query ) {
+		if ( '' === $request_query ) {
+			return '';
+		}
+
+		parse_str( $request_query, $query_args );
+
+		if ( empty( $query_args ) || ! is_array( $query_args ) ) {
+			return '';
+		}
+
+		$allowed_args = array();
+
+		if ( is_search() && isset( $query_args['s'] ) && is_scalar( $query_args['s'] ) && '' !== (string) $query_args['s'] ) {
+			$allowed_args['s'] = (string) $query_args['s'];
+		}
+
+		if ( isset( $query_args['paged'] ) && is_scalar( $query_args['paged'] ) && '' !== (string) $query_args['paged'] ) {
+			$allowed_args['paged'] = (string) $query_args['paged'];
+		}
+
+		if ( empty( $allowed_args ) ) {
+			return '';
+		}
+
+		return http_build_query( $allowed_args, '', '&', PHP_QUERY_RFC3986 );
 	}
 }

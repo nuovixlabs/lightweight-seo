@@ -1283,7 +1283,7 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function internal_link_report_render() {
-		$internal_links_service = new Lightweight_SEO_Internal_Links_Service( $this->post_meta, false );
+		$internal_links_service = new Lightweight_SEO_Internal_Links_Service( $this->post_meta, false, $this->settings );
 		$report                 = $internal_links_service->get_report();
 
 		if ( empty( $report['pages_scanned'] ) ) {
@@ -2018,7 +2018,23 @@ class Lightweight_SEO_Admin {
 			$scheme = strtolower( (string) wp_parse_url( $property, PHP_URL_SCHEME ) );
 
 			if ( in_array( $scheme, array( 'http', 'https' ), true ) ) {
-				return $property;
+				$parts = wp_parse_url( $property );
+
+				if ( empty( $parts['host'] ) ) {
+					return $existing_value;
+				}
+
+				$normalized = $scheme . '://' . strtolower( (string) $parts['host'] );
+
+				if ( ! empty( $parts['port'] ) ) {
+					$normalized .= ':' . (int) $parts['port'];
+				}
+
+				$path = (string) ( $parts['path'] ?? '/' );
+				$path = '/' . ltrim( $path, '/' );
+				$path = trailingslashit( $path );
+
+				return $normalized . $path;
 			}
 		}
 

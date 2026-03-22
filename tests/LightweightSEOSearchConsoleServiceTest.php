@@ -386,6 +386,275 @@ KEY;
 		$this->assertArrayHasKey( Lightweight_SEO_Search_Console_Service::SYNC_HOOK, $lightweight_seo_test_scheduled_events );
 	}
 
+	public function test_get_snapshot_paginates_search_analytics_rows_before_building_totals(): void {
+		global $lightweight_seo_test_remote_get_responses;
+		global $lightweight_seo_test_remote_post_responses;
+
+		$property            = 'https://example.com/';
+		$encoded_property    = rawurlencode( $property );
+		$token_endpoint      = 'https://oauth2.googleapis.com/token';
+		$analytics_endpoint  = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/searchAnalytics/query';
+		$inspection_endpoint = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect';
+		$sitemaps_endpoint   = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps';
+
+		$lightweight_seo_test_remote_post_responses = array(
+			$token_endpoint      => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => wp_json_encode(
+					array(
+						'access_token' => 'search-console-token',
+						'expires_in'   => 3600,
+					)
+				),
+			),
+			$analytics_endpoint  => function ( $url, $args ) {
+				$body       = json_decode( (string) ( $args['body'] ?? '{}' ), true );
+				$start_row  = (int) ( $body['startRow'] ?? 0 );
+				$start_date = (string) ( $body['startDate'] ?? '' );
+
+				if ( gmdate( 'Y-m-d', strtotime( '-55 days' ) ) === $start_date ) {
+					return array(
+						'response' => array(
+							'code' => 200,
+						),
+						'body'     => wp_json_encode(
+							array(
+								'rows' => array(),
+							)
+						),
+					);
+				}
+
+				$page_map = array(
+					0 => array(
+						array(
+							'keys'        => array( 'https://example.com/alpha/' ),
+							'clicks'      => 10,
+							'impressions' => 100,
+							'ctr'         => 0.10,
+							'position'    => 2.0,
+						),
+						array(
+							'keys'        => array( 'https://example.com/beta/' ),
+							'clicks'      => 5,
+							'impressions' => 80,
+							'ctr'         => 0.0625,
+							'position'    => 3.1,
+						),
+					),
+					2 => array(
+						array(
+							'keys'        => array( 'https://example.com/gamma/' ),
+							'clicks'      => 2,
+							'impressions' => 40,
+							'ctr'         => 0.05,
+							'position'    => 4.7,
+						),
+					),
+				);
+
+				return array(
+					'response' => array(
+						'code' => 200,
+					),
+					'body'     => wp_json_encode(
+						array(
+							'rows' => $page_map[ $start_row ] ?? array(),
+						)
+					),
+				);
+			},
+			$inspection_endpoint => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => wp_json_encode(
+					array(
+						'inspectionResult' => array(
+							'indexStatusResult' => array(
+								'verdict'         => 'PASS',
+								'coverageState'   => 'Indexed',
+								'indexingState'   => 'INDEXING_ALLOWED',
+								'robotsTxtState'  => 'ALLOWED',
+								'pageFetchState'  => 'SUCCESSFUL',
+								'googleCanonical' => 'https://example.com/alpha/',
+								'userCanonical'   => 'https://example.com/alpha/',
+							),
+						),
+					)
+				),
+			),
+		);
+		$lightweight_seo_test_remote_get_responses  = array(
+			$sitemaps_endpoint => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => wp_json_encode(
+					array(
+						'sitemap' => array(),
+					)
+				),
+			),
+		);
+
+		$settings = new class( $property ) {
+			private $property;
+
+			public function __construct( $property ) {
+				$this->property = $property;
+			}
+
+			public function get_search_console_property() {
+				return $this->property;
+			}
+
+			public function get_search_console_service_account_json() {
+				return wp_json_encode(
+					array(
+						'client_email' => 'search-console@example.com',
+						'private_key'  => LightweightSEOSearchConsoleServiceTest::PRIVATE_KEY,
+						'token_uri'    => 'https://oauth2.googleapis.com/token',
+					)
+				);
+			}
+
+			public function search_console_sitemap_submission_enabled() {
+				return false;
+			}
+
+			public function image_sitemaps_enabled() {
+				return false;
+			}
+
+			public function video_sitemaps_enabled() {
+				return false;
+			}
+
+			public function news_sitemaps_enabled() {
+				return false;
+			}
+		};
+
+		$service = new class( $settings, false ) extends Lightweight_SEO_Search_Console_Service {
+			protected function get_search_analytics_row_limit() {
+				return 2;
+			}
+		};
+
+		$snapshot = $service->get_snapshot( true );
+
+		$this->assertSame( 17.0, $snapshot['totals']['clicks'] );
+		$this->assertSame( 220.0, $snapshot['totals']['impressions'] );
+		$this->assertCount( 3, $snapshot['top_pages'] );
+	}
+
+	public function test_submit_sitemaps_put_requests_do_not_send_json_null_bodies(): void {
+		global $lightweight_seo_test_remote_get_responses;
+		global $lightweight_seo_test_remote_post_responses;
+
+		$property                                   = 'https://example.com/';
+		$encoded_property                           = rawurlencode( $property );
+		$token_endpoint                             = 'https://oauth2.googleapis.com/token';
+		$analytics_endpoint                         = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/searchAnalytics/query';
+		$inspection_endpoint                        = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect';
+		$sitemaps_endpoint                          = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps';
+		$submit_sitemap_endpoint                    = 'https://www.googleapis.com/webmasters/v3/sites/' . $encoded_property . '/sitemaps/' . rawurlencode( 'https://example.com/wp-sitemap.xml' );
+		$submit_sitemap_request_args                = array();
+		$lightweight_seo_test_remote_post_responses = array(
+			$token_endpoint          => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => wp_json_encode(
+					array(
+						'access_token' => 'search-console-token',
+						'expires_in'   => 3600,
+					)
+				),
+			),
+			$analytics_endpoint      => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => wp_json_encode(
+					array(
+						'rows' => array(),
+					)
+				),
+			),
+			$submit_sitemap_endpoint => function ( $url, $args ) use ( &$submit_sitemap_request_args ) {
+				$submit_sitemap_request_args = $args;
+
+				return array(
+					'response' => array(
+						'code' => 200,
+					),
+					'body'     => '{}',
+				);
+			},
+		);
+		$lightweight_seo_test_remote_get_responses  = array(
+			$sitemaps_endpoint => array(
+				'response' => array(
+					'code' => 200,
+				),
+				'body'     => wp_json_encode(
+					array(
+						'sitemap' => array(),
+					)
+				),
+			),
+		);
+
+		$settings = new class( $property ) {
+			private $property;
+
+			public function __construct( $property ) {
+				$this->property = $property;
+			}
+
+			public function get_search_console_property() {
+				return $this->property;
+			}
+
+			public function get_search_console_service_account_json() {
+				return wp_json_encode(
+					array(
+						'client_email' => 'search-console@example.com',
+						'private_key'  => LightweightSEOSearchConsoleServiceTest::PRIVATE_KEY,
+						'token_uri'    => 'https://oauth2.googleapis.com/token',
+					)
+				);
+			}
+
+			public function search_console_sitemap_submission_enabled() {
+				return true;
+			}
+
+			public function image_sitemaps_enabled() {
+				return false;
+			}
+
+			public function video_sitemaps_enabled() {
+				return false;
+			}
+
+			public function news_sitemaps_enabled() {
+				return false;
+			}
+		};
+
+		$service = new Lightweight_SEO_Search_Console_Service( $settings, false );
+		$service->get_snapshot( true );
+
+		$this->assertSame( 'PUT', $submit_sitemap_request_args['method'] ?? '' );
+		$this->assertArrayNotHasKey( 'body', $submit_sitemap_request_args );
+		$this->assertArrayNotHasKey( 'Content-Type', $submit_sitemap_request_args['headers'] ?? array() );
+	}
+
 	private function get_settings_stub( $property ) {
 		return new class( $property ) {
 			private $property;

@@ -117,4 +117,40 @@ final class LightweightSEOInternalLinksServiceTest extends TestCase {
 
 		$this->assertSame( $first_report['pages_scanned'] + 1, $refreshed_report['pages_scanned'] );
 	}
+
+	public function test_get_report_excludes_default_noindexed_attachments_when_enabled(): void {
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_posts[26] = (object) array(
+			'ID'           => 26,
+			'post_type'    => 'attachment',
+			'post_status'  => 'publish',
+			'post_title'   => 'Upload Asset',
+			'post_content' => '',
+			'permalink'    => 'https://example.com/uploads/upload-asset/',
+		);
+
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page', 'attachment' );
+			}
+
+			public function get_all( $post_id ) {
+				return array();
+			}
+		};
+
+		$settings = new class() {
+			public function attachment_pages_noindex_enabled() {
+				return true;
+			}
+		};
+
+		$service = new Lightweight_SEO_Internal_Links_Service( $post_meta, false, $settings );
+		$report  = $service->get_report( true );
+
+		$this->assertSame( 4, $report['pages_scanned'] );
+		$this->assertNotContains( 'Upload Asset', array_column( $report['orphan_pages'], 'title' ) );
+		$this->assertNotContains( 'Upload Asset', array_column( $report['weak_pages'], 'title' ) );
+	}
 }

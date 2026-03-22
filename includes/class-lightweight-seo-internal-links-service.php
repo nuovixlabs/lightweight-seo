@@ -42,14 +42,25 @@ class Lightweight_SEO_Internal_Links_Service {
 	private $post_meta;
 
 	/**
+	 * Shared settings service.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Settings|null
+	 */
+	private $settings;
+
+	/**
 	 * Initialize the service.
 	 *
 	 * @since    1.1.0
-	 * @param    Lightweight_SEO_Post_Meta    $post_meta          Shared post meta service.
-	 * @param    bool                         $register_hooks     Whether to register invalidation hooks.
+	 * @param    Lightweight_SEO_Post_Meta         $post_meta          Shared post meta service.
+	 * @param    bool                              $register_hooks     Whether to register invalidation hooks.
+	 * @param    Lightweight_SEO_Settings|null    $settings           Shared settings service.
 	 */
-	public function __construct( $post_meta, $register_hooks = true ) {
+	public function __construct( $post_meta, $register_hooks = true, $settings = null ) {
 		$this->post_meta = $post_meta;
+		$this->settings  = $settings;
 
 		if ( $register_hooks ) {
 			add_action( 'save_post', array( $this, 'invalidate_report_cache' ) );
@@ -279,10 +290,33 @@ class Lightweight_SEO_Internal_Links_Service {
 				function ( $post ) {
 					$post_meta = $this->post_meta->get_all( (int) $post->ID );
 
-					return '1' !== (string) ( $post_meta['seo_noindex'] ?? '' );
+					if ( '1' === (string) ( $post_meta['seo_noindex'] ?? '' ) ) {
+						return false;
+					}
+
+					if ( $this->should_exclude_attachment( $post ) ) {
+						return false;
+					}
+
+					return true;
 				}
 			)
 		);
+	}
+
+	/**
+	 * Determine whether an attachment should be excluded by default.
+	 *
+	 * @since    1.1.0
+	 * @param    object $post Candidate post object.
+	 * @return   bool
+	 */
+	private function should_exclude_attachment( $post ) {
+		if ( empty( $post ) || 'attachment' !== (string) ( $post->post_type ?? '' ) ) {
+			return false;
+		}
+
+		return ! empty( $this->settings ) && method_exists( $this->settings, 'attachment_pages_noindex_enabled' ) && $this->settings->attachment_pages_noindex_enabled();
 	}
 
 	/**

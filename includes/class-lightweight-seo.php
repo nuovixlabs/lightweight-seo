@@ -166,7 +166,7 @@ class Lightweight_SEO {
 		$plugin_redirects = new Lightweight_SEO_Redirects_Service( $this->settings );
 
 		// Initialize internal link analysis hooks
-		new Lightweight_SEO_Internal_Links_Service( $this->post_meta );
+		new Lightweight_SEO_Internal_Links_Service( $this->post_meta, true, $this->settings );
 
 		// Initialize image audit hooks
 		new Lightweight_SEO_Image_Audit_Service( $this->settings, $this->post_meta );

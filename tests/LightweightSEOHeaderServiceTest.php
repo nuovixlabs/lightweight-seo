@@ -46,7 +46,7 @@ final class LightweightSEOHeaderServiceTest extends TestCase {
 		$this->assertSame( 'noindex, noarchive', $service->get_x_robots_tag() );
 	}
 
-	public function test_get_x_robots_tag_flags_direct_media_requests(): void {
+	public function test_get_x_robots_tag_flags_direct_document_requests(): void {
 		$_SERVER['REQUEST_URI'] = '/files/seo-guide.pdf';
 
 		$page_context = new class() {
@@ -64,5 +64,45 @@ final class LightweightSEOHeaderServiceTest extends TestCase {
 		$service = new Lightweight_SEO_Header_Service( $page_context, $settings );
 
 		$this->assertSame( 'noindex, noarchive', $service->get_x_robots_tag() );
+	}
+
+	public function test_get_x_robots_tag_does_not_flag_direct_image_requests(): void {
+		$_SERVER['REQUEST_URI'] = '/uploads/hero-image.jpg';
+
+		$page_context = new class() {
+			public function get_context() {
+				return array();
+			}
+		};
+
+		$settings = new class() {
+			public function media_x_robots_headers_enabled() {
+				return true;
+			}
+		};
+
+		$service = new Lightweight_SEO_Header_Service( $page_context, $settings );
+
+		$this->assertSame( '', $service->get_x_robots_tag() );
+	}
+
+	public function test_get_x_robots_tag_does_not_flag_direct_video_requests(): void {
+		$_SERVER['REQUEST_URI'] = '/videos/demo.mp4';
+
+		$page_context = new class() {
+			public function get_context() {
+				return array();
+			}
+		};
+
+		$settings = new class() {
+			public function media_x_robots_headers_enabled() {
+				return true;
+			}
+		};
+
+		$service = new Lightweight_SEO_Header_Service( $page_context, $settings );
+
+		$this->assertSame( '', $service->get_x_robots_tag() );
 	}
 }
