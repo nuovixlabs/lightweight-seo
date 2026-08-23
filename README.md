@@ -65,7 +65,7 @@ Lightweight SEO is a simple yet powerful WordPress plugin designed to help you o
 For live testing during development, symlink this workspace into your local WordPress install:
 
 ```bash
-ln -s "/Users/rakeshm/conductor/workspaces/lightweight-seo/bucharest" "/path/to/wp-content/plugins/lightweight-seo"
+ln -s "/path/to/lightweight-seo" "/path/to/wp-content/plugins/lightweight-seo"
 ```
 
 That lets WordPress load the latest files from this workspace directly.
