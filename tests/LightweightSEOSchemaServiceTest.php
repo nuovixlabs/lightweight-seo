@@ -239,6 +239,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 
 			public function get_local_business_data() {
 				return array(
+					'valid'         => true,
 					'type'          => 'Restaurant',
 					'name'          => 'Example Cafe',
 					'telephone'     => '+1-555-555-5555',
@@ -251,6 +252,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 					'latitude'      => '32.7157',
 					'longitude'     => '-117.1611',
 					'opening_hours' => array( 'Mo-Fr 09:00-17:00' ),
+					'image'         => 'https://example.com/business.jpg',
 				);
 			}
 
@@ -260,11 +262,26 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 		};
 
 		$module = new Lightweight_SEO_Local_SEO_Module( $settings );
-		$output = wp_json_encode( $module->add_local_business( array(), $page_context->get_context() ) );
+		$graph  = $module->add_local_business(
+			array(
+				array(
+					'@type'  => 'Organization',
+					'@id'    => 'https://example.com/#organization',
+					'name'   => 'Test Site',
+					'sameAs' => array( 'https://example.com/profile' ),
+				),
+			),
+			$page_context->get_context()
+		);
+		$output = wp_json_encode( $graph );
 
+		$this->assertCount( 1, $graph );
 		$this->assertStringContainsString( '"@type":"Restaurant"', $output );
+		$this->assertStringContainsString( '"@id":"https:\/\/example.com\/#organization"', $output );
 		$this->assertStringContainsString( '"telephone":"+1-555-555-5555"', $output );
 		$this->assertStringContainsString( '"openingHours":["Mo-Fr 09:00-17:00"]', $output );
+		$this->assertStringContainsString( '"image":"https:\/\/example.com\/business.jpg"', $output );
+		$this->assertStringNotContainsString( 'logo.png', $output );
 	}
 
 	public function test_single_product_schema_is_deferred_to_woocommerce(): void {

@@ -288,6 +288,7 @@ class Lightweight_SEO {
 				$service = new Lightweight_SEO_Tracking_Service( $this->settings );
 				add_action( 'wp_head', array( $service, 'add_tracking_codes' ), 1 );
 				add_action( 'wp_body_open', array( $service, 'add_gtm_noscript' ), 1 );
+				add_action( 'wp_footer', array( $service, 'add_gtm_theme_diagnostic' ), 100 );
 				break;
 			case 'local-seo':
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-local-seo-module.php';

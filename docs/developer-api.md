@@ -50,3 +50,18 @@ Returned values are copies of normalized public data. They never contain setting
 | `lightweight_seo_sitemap_urls` | `string[] $urls` | Filters enabled, valid sitemap locations. |
 
 Module factories receive the current context (`frontend`, `admin`, `editor`, `rest`, or `cron`) and module ID. A factory runs at most once per request and only when the module is enabled for that context. Extensions that own their enablement option may pass an explicit boolean `enabled` value during registration. Module metadata returned by the facade never includes the factory callable.
+
+## Tracking extension points
+
+The optional Tracking module emits nothing until it is enabled by a valid provider ID. When GTM is configured, direct GA4 and Meta Pixel output is suppressed to avoid duplicate event paths.
+
+| Hook | Arguments | Contract |
+|---|---|---|
+| `lightweight_seo_tracking_consent_granted` | `bool $granted, string $provider` | Return `false` to block `gtm`, `ga4`, or `meta` until the site's consent solution allows it. |
+| `lightweight_seo_tracking_should_output` | `bool $should_output, string $provider` | Final provider-level output decision after role, environment, and consent checks. |
+| `lightweight_seo_tracking_script_nonce` | `string $nonce, string $provider` | Supplies a CSP nonce for the provider's script tags. Return the raw nonce value, not an HTML attribute. |
+| `lightweight_seo_tracking_settings` | `array $tracking_settings` | Retained compatibility filter containing only the three tracking identifier keys. The complete plugin settings array is no longer exposed. |
+| `lightweight_seo_before_tracking_codes` | `array $tracking_settings` | Fires before configured head providers are considered with the three filtered tracking identifier keys. |
+| `lightweight_seo_after_tracking_codes` | `array $tracking_settings` | Fires after configured head providers are considered with the three filtered tracking identifier keys. |
+
+The consent filter supports a basic blocking integration; Lightweight SEO does not create a consent banner or persist consent choices. GTM's noscript fallback uses `wp_body_open`. A theme that omits that hook receives a diagnostic comment in page source while the head container continues to operate.

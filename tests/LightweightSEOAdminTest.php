@@ -138,6 +138,39 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertCount( 2, $lightweight_seo_test_settings_errors );
 	}
 
+	public function test_validate_settings_disables_invalid_local_seo_and_normalizes_tracking_exclusions(): void {
+		global $lightweight_seo_test_settings_errors;
+
+		$settings  = new Lightweight_SEO_Settings();
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+		$admin     = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+		$validated = $admin->validate_settings(
+			array(
+				'settings_tab'                   => 'modules',
+				'enable_local_business_schema'   => '1',
+				'local_business_name'            => 'Example Cafe',
+				'local_business_address_street'  => '123 Main St',
+				'local_business_address_country' => 'USA',
+				'local_business_latitude'        => '91',
+				'local_business_longitude'       => '-181',
+				'local_business_opening_hours'   => 'weekdays',
+				'tracking_excluded_roles'        => 'Administrator, EDITOR, invalid role',
+				'tracking_excluded_environments' => 'local, staging, unknown',
+			)
+		);
+
+		$this->assertSame( '0', $validated['enable_local_business_schema'] );
+		$this->assertSame( '', $validated['local_business_address_country'] );
+		$this->assertSame( '', $validated['local_business_latitude'] );
+		$this->assertSame( "administrator\neditor\ninvalid\nrole", $validated['tracking_excluded_roles'] );
+		$this->assertSame( "local\nstaging", $validated['tracking_excluded_environments'] );
+		$this->assertNotEmpty( $lightweight_seo_test_settings_errors );
+	}
+
 	public function test_validate_settings_clears_stale_social_image_id_for_manual_urls(): void {
 		global $lightweight_seo_test_attachment_urls;
 

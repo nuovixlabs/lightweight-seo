@@ -542,16 +542,7 @@ class Lightweight_SEO_Admin {
 			$this->plugin_name
 		);
 
-		// Google Analytics 4
-		add_settings_field(
-			'ga4_measurement_id',
-			__( 'Google Analytics 4 Measurement ID', 'lightweight-seo' ),
-			array( $this, 'ga4_measurement_id_render' ),
-			$this->plugin_name,
-			'lightweight_seo_tracking_section'
-		);
-
-		// Google Tag Manager
+		// Google Tag Manager (recommended primary strategy).
 		add_settings_field(
 			'gtm_container_id',
 			__( 'Google Tag Manager Container ID', 'lightweight-seo' ),
@@ -560,11 +551,36 @@ class Lightweight_SEO_Admin {
 			'lightweight_seo_tracking_section'
 		);
 
+		// Direct Google Analytics 4 alternative.
+		add_settings_field(
+			'ga4_measurement_id',
+			__( 'Direct Google Analytics 4 Measurement ID', 'lightweight-seo' ),
+			array( $this, 'ga4_measurement_id_render' ),
+			$this->plugin_name,
+			'lightweight_seo_tracking_section'
+		);
+
 		// Facebook Pixel
 		add_settings_field(
 			'facebook_pixel_id',
-			__( 'Facebook Pixel ID', 'lightweight-seo' ),
+			__( 'Direct Meta Pixel ID', 'lightweight-seo' ),
 			array( $this, 'facebook_pixel_id_render' ),
+			$this->plugin_name,
+			'lightweight_seo_tracking_section'
+		);
+
+		add_settings_field(
+			'tracking_excluded_roles',
+			__( 'Excluded Roles', 'lightweight-seo' ),
+			array( $this, 'tracking_excluded_roles_render' ),
+			$this->plugin_name,
+			'lightweight_seo_tracking_section'
+		);
+
+		add_settings_field(
+			'tracking_excluded_environments',
+			__( 'Excluded Environments', 'lightweight-seo' ),
+			array( $this, 'tracking_excluded_environments_render' ),
 			$this->plugin_name,
 			'lightweight_seo_tracking_section'
 		);
@@ -977,11 +993,13 @@ class Lightweight_SEO_Admin {
 		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_locality]" value="<?php echo esc_attr( $options['local_business_address_locality'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'City / locality', 'lightweight-seo' ) ); ?>"></p>
 		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_region]" value="<?php echo esc_attr( $options['local_business_address_region'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Region / state', 'lightweight-seo' ) ); ?>"></p>
 		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_postal_code]" value="<?php echo esc_attr( $options['local_business_address_postal_code'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Postal code', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_country]" value="<?php echo esc_attr( $options['local_business_address_country'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Country', 'lightweight-seo' ) ); ?>"></p>
+		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_country]" value="<?php echo esc_attr( $options['local_business_address_country'] ?? '' ); ?>" class="small-text" maxlength="2" placeholder="<?php echo esc_attr( __( 'Country code', 'lightweight-seo' ) ); ?>"></p>
 		<p>
 			<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_latitude]" value="<?php echo esc_attr( $options['local_business_latitude'] ?? '' ); ?>" class="small-text" placeholder="<?php echo esc_attr( __( 'Latitude', 'lightweight-seo' ) ); ?>">
 			<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_longitude]" value="<?php echo esc_attr( $options['local_business_longitude'] ?? '' ); ?>" class="small-text" placeholder="<?php echo esc_attr( __( 'Longitude', 'lightweight-seo' ) ); ?>">
 		</p>
+		<p><input type="url" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_image]" value="<?php echo esc_attr( $options['local_business_image'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Dedicated business image or logo URL', 'lightweight-seo' ) ); ?>"></p>
+		<p class="description"><?php _e( 'Use a dedicated business image. The general social sharing image is not reused for LocalBusiness.', 'lightweight-seo' ); ?></p>
 		<p>
 			<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_opening_hours]" rows="4" cols="50" class="large-text"><?php echo esc_textarea( $options['local_business_opening_hours'] ?? '' ); ?></textarea>
 		</p>
@@ -1914,7 +1932,15 @@ class Lightweight_SEO_Admin {
 	 * @since    1.0.1
 	 */
 	public function tracking_section_callback() {
-		echo '<p>' . __( 'Add your tracking codes to integrate analytics and marketing tools. These will be automatically added to your site.', 'lightweight-seo' ) . '</p>';
+		$options = $this->settings->get_all();
+
+		echo '<p>' . __( 'Use Google Tag Manager as the primary strategy. Direct GA4 and Meta Pixel IDs are alternatives and do not output while GTM is configured.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Tracking is excluded from the selected roles and environments. Consent plugins can use the lightweight_seo_tracking_consent_granted filter, and CSP integrations can supply a nonce through lightweight_seo_tracking_script_nonce.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'GTM themes must call wp_body_open(). If they do not, Lightweight SEO adds a diagnostic comment to the page source and omits only the noscript fallback.', 'lightweight-seo' ) . '</p>';
+
+		if ( ! empty( $options['gtm_container_id'] ) && ( ! empty( $options['ga4_measurement_id'] ) || ! empty( $options['facebook_pixel_id'] ) ) ) {
+			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'GTM is active, so the direct GA4 and Meta Pixel alternatives are stored but suppressed to avoid duplicate events.', 'lightweight-seo' ) . '</p></div>';
+		}
 	}
 
 	/**
@@ -1926,7 +1952,7 @@ class Lightweight_SEO_Admin {
 		$options = $this->settings->get_all();
 		?>
 		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[ga4_measurement_id]" value="<?php echo esc_attr( $options['ga4_measurement_id'] ?? '' ); ?>" class="regular-text">
-		<p class="description"><?php _e( 'Enter your Google Analytics 4 Measurement ID (e.g., G-XXXXXXXXXX)', 'lightweight-seo' ); ?></p>
+		<p class="description"><?php _e( 'Direct alternative: enter a GA4 Measurement ID (e.g., G-XXXXXXXXXX). It is suppressed when GTM is configured.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -1939,7 +1965,7 @@ class Lightweight_SEO_Admin {
 		$options = $this->settings->get_all();
 		?>
 		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[gtm_container_id]" value="<?php echo esc_attr( $options['gtm_container_id'] ?? '' ); ?>" class="regular-text">
-		<p class="description"><?php _e( 'Enter your Google Tag Manager Container ID (e.g., GTM-XXXXXX)', 'lightweight-seo' ); ?></p>
+		<p class="description"><?php _e( 'Recommended: enter a Google Tag Manager Container ID (e.g., GTM-XXXXXX).', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -1952,7 +1978,25 @@ class Lightweight_SEO_Admin {
 		$options = $this->settings->get_all();
 		?>
 		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[facebook_pixel_id]" value="<?php echo esc_attr( $options['facebook_pixel_id'] ?? '' ); ?>" class="regular-text">
-		<p class="description"><?php _e( 'Enter your Facebook Pixel ID', 'lightweight-seo' ); ?></p>
+		<p class="description"><?php _e( 'Enter a numeric Meta Pixel ID. This direct alternative is suppressed when GTM is configured.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/** Render role slugs that suppress tracking for logged-in users. */
+	public function tracking_excluded_roles_render() {
+		$options = $this->settings->get_all();
+		?>
+		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[tracking_excluded_roles]" value="<?php echo esc_attr( $options['tracking_excluded_roles'] ?? 'administrator' ); ?>" class="regular-text">
+		<p class="description"><?php _e( 'Comma-separated WordPress role slugs, for example administrator, editor. Leave empty to include all logged-in roles.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/** Render environments that suppress tracking. */
+	public function tracking_excluded_environments_render() {
+		$options = $this->settings->get_all();
+		?>
+		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[tracking_excluded_environments]" value="<?php echo esc_attr( str_replace( "\n", ', ', $options['tracking_excluded_environments'] ?? "local\ndevelopment\nstaging" ) ); ?>" class="regular-text">
+		<p class="description"><?php _e( 'Choose from local, development, staging, and production. WordPress defaults to production when no environment type is set.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -2224,18 +2268,26 @@ class Lightweight_SEO_Admin {
 			$sanitized_input['organization_same_as'] = $existing_settings['organization_same_as'] ?? '';
 		}
 
-		$sanitized_input['local_business_type']                = sanitize_text_field( $input['local_business_type'] ?? ( $existing_settings['local_business_type'] ?? 'LocalBusiness' ) );
-		$sanitized_input['local_business_name']                = sanitize_text_field( $input['local_business_name'] ?? ( $existing_settings['local_business_name'] ?? '' ) );
-		$sanitized_input['local_business_phone']               = sanitize_text_field( $input['local_business_phone'] ?? ( $existing_settings['local_business_phone'] ?? '' ) );
-		$sanitized_input['local_business_price_range']         = sanitize_text_field( $input['local_business_price_range'] ?? ( $existing_settings['local_business_price_range'] ?? '' ) );
-		$sanitized_input['local_business_address_street']      = sanitize_text_field( $input['local_business_address_street'] ?? ( $existing_settings['local_business_address_street'] ?? '' ) );
-		$sanitized_input['local_business_address_locality']    = sanitize_text_field( $input['local_business_address_locality'] ?? ( $existing_settings['local_business_address_locality'] ?? '' ) );
-		$sanitized_input['local_business_address_region']      = sanitize_text_field( $input['local_business_address_region'] ?? ( $existing_settings['local_business_address_region'] ?? '' ) );
-		$sanitized_input['local_business_address_postal_code'] = sanitize_text_field( $input['local_business_address_postal_code'] ?? ( $existing_settings['local_business_address_postal_code'] ?? '' ) );
-		$sanitized_input['local_business_address_country']     = sanitize_text_field( $input['local_business_address_country'] ?? ( $existing_settings['local_business_address_country'] ?? '' ) );
-		$sanitized_input['local_business_latitude']            = sanitize_text_field( $input['local_business_latitude'] ?? ( $existing_settings['local_business_latitude'] ?? '' ) );
-		$sanitized_input['local_business_longitude']           = sanitize_text_field( $input['local_business_longitude'] ?? ( $existing_settings['local_business_longitude'] ?? '' ) );
-		$sanitized_input['local_business_opening_hours']       = sanitize_textarea_field( $input['local_business_opening_hours'] ?? ( $existing_settings['local_business_opening_hours'] ?? '' ) );
+		$local_business_input                                 = array_merge( $existing_settings, $input );
+		$local_business_input['enable_local_business_schema'] = $sanitized_input['enable_local_business_schema'];
+
+		if ( method_exists( $this->settings, 'normalize_local_business_input' ) ) {
+			$local_business  = $this->settings->normalize_local_business_input( $local_business_input );
+			$sanitized_input = array_merge( $sanitized_input, $local_business['values'] );
+
+			if ( ! empty( $local_business['errors'] ) && in_array( $active_tab, array( 'all', 'modules' ), true ) ) {
+				foreach ( $local_business['errors'] as $index => $message ) {
+					add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'invalid_local_business_' . $index, $message, 'error' );
+				}
+
+				$sanitized_input['enable_local_business_schema'] = '0';
+			}
+		} else {
+			foreach ( array( 'type', 'name', 'phone', 'price_range', 'address_street', 'address_locality', 'address_region', 'address_postal_code', 'address_country', 'latitude', 'longitude', 'opening_hours', 'image' ) as $field ) {
+				$key                     = 'local_business_' . $field;
+				$sanitized_input[ $key ] = sanitize_text_field( $local_business_input[ $key ] ?? '' );
+			}
+		}
 
 		if ( isset( $input['hreflang_mappings'] ) ) {
 			$sanitized_input['hreflang_mappings'] = $this->settings->normalize_hreflang_mappings_input( $input['hreflang_mappings'] );
@@ -2321,6 +2373,17 @@ class Lightweight_SEO_Admin {
 			);
 		} else {
 			$sanitized_input['facebook_pixel_id'] = $existing_settings['facebook_pixel_id'] ?? '';
+		}
+
+		foreach ( array( 'tracking_excluded_roles', 'tracking_excluded_environments' ) as $key ) {
+			$value = $input[ $key ] ?? ( $existing_settings[ $key ] ?? '' );
+			$keys  = method_exists( $this->settings, 'normalize_key_list' ) ? $this->settings->normalize_key_list( $value ) : array_filter( array_map( 'sanitize_key', preg_split( '/[\s,]+/', strtolower( (string) $value ) ) ) );
+
+			if ( 'tracking_excluded_environments' === $key ) {
+				$keys = array_intersect( $keys, array( 'local', 'development', 'staging', 'production' ) );
+			}
+
+			$sanitized_input[ $key ] = implode( "\n", array_values( array_unique( $keys ) ) );
 		}
 
 		if ( ! empty( $input['run_import'] ) && in_array( $sanitized_input['import_source'], array( 'yoast', 'rank_math', 'aioseo' ), true ) ) {

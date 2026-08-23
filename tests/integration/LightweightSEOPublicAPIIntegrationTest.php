@@ -65,4 +65,73 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$this->assertSame( 'en-GB', $links[1]['hreflang'] );
 		$this->assertSame( 'x-default', $links[2]['hreflang'] );
 	}
+
+	public function test_tracking_module_prefers_gtm_and_emits_its_body_fallback(): void {
+		require_once dirname( __DIR__, 2 ) . '/includes/class-lightweight-seo-tracking-service.php';
+
+		update_option(
+			LIGHTWEIGHT_SEO_OPTION_NAME,
+			array(
+				'gtm_container_id'               => 'GTM-INTEGRATION1',
+				'ga4_measurement_id'             => 'G-DIRECT1',
+				'facebook_pixel_id'              => '1234567',
+				'tracking_excluded_roles'        => '',
+				'tracking_excluded_environments' => '',
+			)
+		);
+		$service = new Lightweight_SEO_Tracking_Service( new Lightweight_SEO_Settings() );
+
+		ob_start();
+		$service->add_tracking_codes();
+		$service->add_gtm_noscript();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'GTM-INTEGRATION1', $output );
+		$this->assertStringContainsString( 'googletagmanager.com/ns.html', $output );
+		$this->assertStringNotContainsString( 'G-DIRECT1', $output );
+		$this->assertStringNotContainsString( '1234567', $output );
+	}
+
+	public function test_local_seo_module_replaces_the_generic_organization_with_valid_business_data(): void {
+		require_once dirname( __DIR__, 2 ) . '/includes/class-lightweight-seo-local-seo-module.php';
+		$this->go_to( home_url( '/' ) );
+
+		update_option(
+			LIGHTWEIGHT_SEO_OPTION_NAME,
+			array(
+				'enable_local_business_schema'       => '1',
+				'local_business_type'                => 'Restaurant',
+				'local_business_name'                => 'Integration Cafe',
+				'local_business_phone'               => '+1 555 555 5555',
+				'local_business_price_range'         => '$$',
+				'local_business_address_street'      => '123 Main St',
+				'local_business_address_locality'    => 'San Diego',
+				'local_business_address_region'      => 'CA',
+				'local_business_address_postal_code' => '92101',
+				'local_business_address_country'     => 'US',
+				'local_business_latitude'            => '32.7157',
+				'local_business_longitude'           => '-117.1611',
+				'local_business_opening_hours'       => 'Mo-Fr 09:00-17:00',
+				'local_business_image'               => 'https://example.org/business.jpg',
+			)
+		);
+		$settings = new Lightweight_SEO_Settings();
+		$module   = new Lightweight_SEO_Local_SEO_Module( $settings );
+		$graph    = $module->add_local_business(
+			array(
+				array(
+					'@type' => 'Organization',
+					'@id'   => home_url( '/#organization' ),
+					'name'  => get_bloginfo( 'name' ),
+				),
+			),
+			array()
+		);
+
+		$this->assertCount( 1, $graph );
+		$this->assertSame( 'Restaurant', $graph[0]['@type'] );
+		$this->assertSame( 'Integration Cafe', $graph[0]['name'] );
+		$this->assertSame( 'US', $graph[0]['address']['addressCountry'] );
+		$this->assertSame( 'https://example.org/business.jpg', $graph[0]['image'] );
+	}
 }

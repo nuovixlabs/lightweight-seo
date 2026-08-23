@@ -52,6 +52,9 @@ if (!defined('LIGHTWEIGHT_SEO_PLUGIN_URL')) {
 
 $lightweight_seo_test_nonce_is_valid = true;
 $lightweight_seo_test_user_can = true;
+$lightweight_seo_test_user_roles = array();
+$lightweight_seo_test_environment_type = 'production';
+$lightweight_seo_test_filters = array();
 $lightweight_seo_test_settings_errors = array();
 $lightweight_seo_test_options = array();
 $lightweight_seo_test_post_meta = array();
@@ -120,6 +123,12 @@ if (!function_exists('add_filter')) {
 
 if (!function_exists('apply_filters')) {
     function apply_filters($hook_name, $value, ...$args) {
+		global $lightweight_seo_test_filters;
+
+		if ( isset( $lightweight_seo_test_filters[ $hook_name ] ) && is_callable( $lightweight_seo_test_filters[ $hook_name ] ) ) {
+			return $lightweight_seo_test_filters[ $hook_name ]( $value, ...$args );
+		}
+
         return $value;
     }
 }
@@ -276,6 +285,30 @@ if (!function_exists('current_user_can')) {
 
         return $lightweight_seo_test_user_can;
     }
+}
+
+if (!function_exists('is_user_logged_in')) {
+    function is_user_logged_in() {
+		global $lightweight_seo_test_user_roles;
+
+		return ! empty( $lightweight_seo_test_user_roles );
+	}
+}
+
+if (!function_exists('wp_get_current_user')) {
+    function wp_get_current_user() {
+		global $lightweight_seo_test_user_roles;
+
+		return (object) array( 'roles' => $lightweight_seo_test_user_roles );
+	}
+}
+
+if (!function_exists('wp_get_environment_type')) {
+    function wp_get_environment_type() {
+		global $lightweight_seo_test_environment_type;
+
+		return $lightweight_seo_test_environment_type;
+	}
 }
 
 if (!function_exists('get_bloginfo')) {

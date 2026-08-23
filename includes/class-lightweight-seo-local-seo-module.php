@@ -27,21 +27,20 @@ class Lightweight_SEO_Local_SEO_Module {
 
 		$business = $this->settings->get_local_business_data();
 
-		if ( empty( $business['name'] ) ) {
+		if ( ( isset( $business['valid'] ) && ! $business['valid'] ) || empty( $business['name'] ) ) {
 			return $graph;
 		}
 
 		$schema = array(
-			'@type'              => $business['type'],
-			'@id'                => home_url( '/#localbusiness' ),
-			'name'               => $business['name'],
-			'url'                => home_url( '/' ),
-			'parentOrganization' => array( '@id' => home_url( '/#organization' ) ),
+			'@type' => $business['type'],
+			'@id'   => home_url( '/#organization' ),
+			'name'  => $business['name'],
+			'url'   => home_url( '/' ),
 		);
-		$logo   = $this->settings->get_social_image_url();
 
-		if ( $logo ) {
-			$schema['image'] = $logo;
+		if ( ! empty( $business['image'] ) ) {
+			$schema['image'] = $business['image'];
+			$schema['logo']  = $business['image'];
 		}
 
 		foreach ( array(
@@ -77,7 +76,25 @@ class Lightweight_SEO_Local_SEO_Module {
 			);
 		}
 
-		$graph[] = $schema;
+		$replaced = false;
+
+		foreach ( $graph as $index => $node ) {
+			if ( home_url( '/#organization' ) !== ( $node['@id'] ?? '' ) ) {
+				continue;
+			}
+
+			if ( ! empty( $node['sameAs'] ) ) {
+				$schema['sameAs'] = $node['sameAs'];
+			}
+
+			$graph[ $index ] = $schema;
+			$replaced        = true;
+			break;
+		}
+
+		if ( ! $replaced ) {
+			$graph[] = $schema;
+		}
 
 		return $graph;
 	}

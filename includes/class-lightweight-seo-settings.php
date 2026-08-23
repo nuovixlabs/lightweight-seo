@@ -69,6 +69,7 @@ class Lightweight_SEO_Settings {
 			'local_business_latitude'             => '',
 			'local_business_longitude'            => '',
 			'local_business_opening_hours'        => '',
+			'local_business_image'                => '',
 			'organization_same_as'                => '',
 			'enable_hreflang_output'              => '0',
 			'enable_hreflang_path_mirroring'      => '0',
@@ -89,6 +90,8 @@ class Lightweight_SEO_Settings {
 			'ga4_measurement_id'                  => '',
 			'gtm_container_id'                    => '',
 			'facebook_pixel_id'                   => '',
+			'tracking_excluded_roles'             => 'administrator',
+			'tracking_excluded_environments'      => "local\ndevelopment\nstaging",
 			'delete_data_on_uninstall'            => '0',
 		);
 	}
@@ -344,40 +347,150 @@ class Lightweight_SEO_Settings {
 	 * @return   array
 	 */
 	public function get_local_business_data() {
-		$business_type = sanitize_text_field( (string) $this->get( 'local_business_type', 'LocalBusiness' ) );
-		$allowed_types = array(
-			'LocalBusiness',
-			'Restaurant',
-			'Store',
-			'MedicalBusiness',
-			'ProfessionalService',
-		);
+		$normalized = $this->normalize_local_business_input( $this->get_all() );
 
-		if ( ! in_array( $business_type, $allowed_types, true ) ) {
-			$business_type = 'LocalBusiness';
+		return $normalized['data'];
+	}
+
+	/**
+	 * Validate and normalize the supported single-location business fields.
+	 *
+	 * @param array $input Submitted or stored settings.
+	 * @return array Normalized data, storage values, and validation errors.
+	 */
+	public function normalize_local_business_input( $input ) {
+		$input         = is_array( $input ) ? $input : array();
+		$allowed_types = array( 'LocalBusiness', 'Restaurant', 'Store', 'MedicalBusiness', 'ProfessionalService' );
+		$type          = sanitize_text_field( (string) ( $input['local_business_type'] ?? 'LocalBusiness' ) );
+		$errors        = array();
+
+		if ( ! in_array( $type, $allowed_types, true ) ) {
+			$type     = 'LocalBusiness';
+			$errors[] = __( 'Choose a supported LocalBusiness type.', 'lightweight-seo' );
 		}
 
-		$opening_hours = preg_split( "/\r\n|\n|\r/", (string) $this->get( 'local_business_opening_hours', '' ) );
-		$opening_hours = array_values(
-			array_filter(
-				array_map( 'sanitize_text_field', $opening_hours )
-			)
+		$raw_image = trim( (string) ( $input['local_business_image'] ?? '' ) );
+		$data      = array(
+			'type'          => $type,
+			'name'          => sanitize_text_field( (string) ( $input['local_business_name'] ?? '' ) ),
+			'telephone'     => sanitize_text_field( (string) ( $input['local_business_phone'] ?? '' ) ),
+			'price_range'   => sanitize_text_field( (string) ( $input['local_business_price_range'] ?? '' ) ),
+			'street'        => sanitize_text_field( (string) ( $input['local_business_address_street'] ?? '' ) ),
+			'locality'      => sanitize_text_field( (string) ( $input['local_business_address_locality'] ?? '' ) ),
+			'region'        => sanitize_text_field( (string) ( $input['local_business_address_region'] ?? '' ) ),
+			'postal_code'   => sanitize_text_field( (string) ( $input['local_business_address_postal_code'] ?? '' ) ),
+			'country'       => strtoupper( sanitize_text_field( (string) ( $input['local_business_address_country'] ?? '' ) ) ),
+			'latitude'      => trim( sanitize_text_field( (string) ( $input['local_business_latitude'] ?? '' ) ) ),
+			'longitude'     => trim( sanitize_text_field( (string) ( $input['local_business_longitude'] ?? '' ) ) ),
+			'opening_hours' => array(),
+			'image'         => esc_url_raw( $raw_image ),
+			'valid'         => true,
 		);
 
+		if ( '' !== $data['telephone'] ) {
+			$digit_count = strlen( preg_replace( '/\D+/', '', $data['telephone'] ) );
+
+			if ( $digit_count < 7 || $digit_count > 15 || 1 !== preg_match( '/^\+?[0-9().\-\s]+$/', $data['telephone'] ) ) {
+				$data['telephone'] = '';
+				$errors[]          = __( 'Enter a valid phone number containing 7 to 15 digits.', 'lightweight-seo' );
+			}
+		}
+
+		if ( '' !== $data['price_range'] && ( strlen( $data['price_range'] ) > 32 || 1 !== preg_match( '/^[\p{Sc}0-9.,\-–\s]+$/u', $data['price_range'] ) ) ) {
+			$data['price_range'] = '';
+			$errors[]            = __( 'Enter a short numeric or currency-symbol price range.', 'lightweight-seo' );
+		}
+
+		if ( '' !== $data['country'] && 1 !== preg_match( '/^[A-Z]{2}$/', $data['country'] ) ) {
+			$data['country'] = '';
+			$errors[]        = __( 'Use a two-letter ISO country code.', 'lightweight-seo' );
+		}
+
+		$has_latitude  = '' !== $data['latitude'];
+		$has_longitude = '' !== $data['longitude'];
+
+		if ( $has_latitude !== $has_longitude || ( $has_latitude && ( ! is_numeric( $data['latitude'] ) || ! is_numeric( $data['longitude'] ) || (float) $data['latitude'] < -90 || (float) $data['latitude'] > 90 || (float) $data['longitude'] < -180 || (float) $data['longitude'] > 180 ) ) ) {
+			$data['latitude']  = '';
+			$data['longitude'] = '';
+			$errors[]          = __( 'Enter both coordinates using latitude -90 to 90 and longitude -180 to 180.', 'lightweight-seo' );
+		}
+
+		foreach ( preg_split( "/\r\n|\n|\r/", (string) ( $input['local_business_opening_hours'] ?? '' ) ) as $opening_hours ) {
+			$opening_hours = trim( sanitize_text_field( $opening_hours ) );
+
+			if ( '' === $opening_hours ) {
+				continue;
+			}
+
+			if ( 1 !== preg_match( '/^(Mo|Tu|We|Th|Fr|Sa|Su)(-(Mo|Tu|We|Th|Fr|Sa|Su))? (?:[01][0-9]|2[0-3]):[0-5][0-9]-(?:[01][0-9]|2[0-3]):[0-5][0-9]$/', $opening_hours ) ) {
+				$errors[] = __( 'Use opening hours like Mo-Fr 09:00-17:00.', 'lightweight-seo' );
+				continue;
+			}
+
+			$data['opening_hours'][] = $opening_hours;
+		}
+
+		if ( '' !== $raw_image ) {
+			$scheme = strtolower( (string) wp_parse_url( $data['image'], PHP_URL_SCHEME ) );
+
+			if ( ! in_array( $scheme, array( 'http', 'https' ), true ) || false === filter_var( $data['image'], FILTER_VALIDATE_URL ) ) {
+				$data['image'] = '';
+				$errors[]      = __( 'Enter a valid HTTP or HTTPS business image URL.', 'lightweight-seo' );
+			}
+		}
+
+		$address_values = array( $data['street'], $data['locality'], $data['postal_code'], $data['country'] );
+		$has_address    = (bool) array_filter( $address_values );
+
+		$enabled = '1' === (string) ( $input['enable_local_business_schema'] ?? '0' );
+
+		if ( $enabled && $has_address && 4 !== count( array_filter( $address_values ) ) ) {
+			$errors[] = __( 'Complete the street, locality, postal code, and country together.', 'lightweight-seo' );
+		}
+
+		if ( $enabled && ( '' === $data['name'] || ! $has_address || 4 !== count( array_filter( $address_values ) ) ) ) {
+			$errors[] = __( 'A business name and complete address are required before Local SEO can be enabled.', 'lightweight-seo' );
+		}
+
+		$data['valid'] = empty( $errors );
+
 		return array(
-			'type'          => $business_type,
-			'name'          => sanitize_text_field( (string) $this->get( 'local_business_name', '' ) ),
-			'telephone'     => sanitize_text_field( (string) $this->get( 'local_business_phone', '' ) ),
-			'price_range'   => sanitize_text_field( (string) $this->get( 'local_business_price_range', '' ) ),
-			'street'        => sanitize_text_field( (string) $this->get( 'local_business_address_street', '' ) ),
-			'locality'      => sanitize_text_field( (string) $this->get( 'local_business_address_locality', '' ) ),
-			'region'        => sanitize_text_field( (string) $this->get( 'local_business_address_region', '' ) ),
-			'postal_code'   => sanitize_text_field( (string) $this->get( 'local_business_address_postal_code', '' ) ),
-			'country'       => sanitize_text_field( (string) $this->get( 'local_business_address_country', '' ) ),
-			'latitude'      => sanitize_text_field( (string) $this->get( 'local_business_latitude', '' ) ),
-			'longitude'     => sanitize_text_field( (string) $this->get( 'local_business_longitude', '' ) ),
-			'opening_hours' => $opening_hours,
+			'data'   => $data,
+			'errors' => array_values( array_unique( $errors ) ),
+			'values' => array(
+				'local_business_type'                => $data['type'],
+				'local_business_name'                => $data['name'],
+				'local_business_phone'               => $data['telephone'],
+				'local_business_price_range'         => $data['price_range'],
+				'local_business_address_street'      => $data['street'],
+				'local_business_address_locality'    => $data['locality'],
+				'local_business_address_region'      => $data['region'],
+				'local_business_address_postal_code' => $data['postal_code'],
+				'local_business_address_country'     => $data['country'],
+				'local_business_latitude'            => $data['latitude'],
+				'local_business_longitude'           => $data['longitude'],
+				'local_business_opening_hours'       => implode( "\n", $data['opening_hours'] ),
+				'local_business_image'               => $data['image'],
+			),
 		);
+	}
+
+	/** Return sanitized role slugs excluded from tracking output. */
+	public function get_tracking_excluded_roles() {
+		return $this->normalize_key_list( $this->get( 'tracking_excluded_roles', 'administrator' ) );
+	}
+
+	/** Return recognized WordPress environment types excluded from tracking. */
+	public function get_tracking_excluded_environments() {
+		return array_values( array_intersect( $this->normalize_key_list( $this->get( 'tracking_excluded_environments', "local\ndevelopment\nstaging" ) ), array( 'local', 'development', 'staging', 'production' ) ) );
+	}
+
+	/** Normalize a comma or line separated list of keys. */
+	public function normalize_key_list( $value ) {
+		$keys = preg_split( '/[\s,]+/', strtolower( (string) $value ) );
+		$keys = array_filter( array_map( 'sanitize_key', $keys ) );
+
+		return array_values( array_unique( $keys ) );
 	}
 
 	/**

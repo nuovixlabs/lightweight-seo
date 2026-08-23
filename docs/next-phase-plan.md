@@ -659,11 +659,23 @@ Verification evidence:
 
 ### PR 6: Tracking and Local SEO modules
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - GTM-first tracking design
 - consent, exclusion, duplicate, and CSP extension points
 - validated single-location LocalBusiness output
 
 Exit gate: no scripts when disabled, no duplicate configured provider path, and schema validation passes.
+
+Verification evidence:
+
+- Fast suite: 91 tests and 362 assertions pass.
+- Real WordPress 6.0 single-site suite: 18 tests and 67 assertions pass, with the multisite-only lifecycle case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 18 tests and 68 assertions pass.
+- GTM takes precedence over stored direct GA4 and Meta Pixel alternatives; strict identifier validation, role/environment exclusions, consent decisions, CSP nonces, and a missing-`wp_body_open` source diagnostic have dedicated coverage.
+- Local SEO validates a complete single location, including type, phone, price range, ISO country code, coordinate bounds, opening hours, and a dedicated business image. Its LocalBusiness subtype replaces the generic Organization node so publisher references keep one identity.
+- Browser and anonymous frontend smoke testing confirm normalized settings, the duplicate-provider warning, GTM head/body output without direct-provider duplication, and one complete Restaurant schema node using the dedicated image.
+- PHPCS, PHP syntax checks, Composer validation, dependency security audit, and whitespace checks pass.
 
 ### PR 7: AI Discovery module
 
