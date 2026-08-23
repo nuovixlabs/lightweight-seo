@@ -47,7 +47,7 @@ class Lightweight_SEO_Header_Service {
 	}
 
 	/**
-	 * Add X-Robots-Tag headers for media and attachment requests.
+	 * Add X-Robots-Tag headers for WordPress attachment pages.
 	 *
 	 * @since    1.1.0
 	 * @param    array    $headers    Existing response headers.
@@ -85,24 +85,6 @@ class Lightweight_SEO_Header_Service {
 
 				return ! empty( $context['robots'] ) ? (string) $context['robots'] : 'noindex, noarchive';
 			}
-		}
-
-		$request_uri  = sanitize_text_field( $_SERVER['REQUEST_URI'] ?? '' );
-		$request_path = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
-		$extension    = strtolower( pathinfo( $request_path, PATHINFO_EXTENSION ) );
-		$extensions   = array(
-			'pdf',
-			'doc',
-			'docx',
-			'xls',
-			'xlsx',
-			'ppt',
-			'pptx',
-			'zip',
-		);
-
-		if ( in_array( $extension, $extensions, true ) ) {
-			return 'noindex, noarchive';
 		}
 
 		return '';

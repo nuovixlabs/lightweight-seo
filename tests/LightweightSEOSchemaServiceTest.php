@@ -85,12 +85,18 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 	}
 
 	public function test_single_post_schema_outputs_article_and_breadcrumbs(): void {
+		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_query_state;
 
 		$lightweight_seo_test_query_state['is_singular']       = true;
 		$lightweight_seo_test_query_state['is_single']         = true;
 		$lightweight_seo_test_query_state['queried_object_id'] = 42;
 		$lightweight_seo_test_query_state['thumbnail_url']     = 'https://example.com/post-image.jpg';
+		$lightweight_seo_test_posts[42]                        = (object) array(
+			'ID'          => 42,
+			'post_type'   => 'post',
+			'post_status' => 'publish',
+		);
 
 		$page_context = new class() {
 			public function get_context() {
@@ -263,7 +269,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 		$this->assertStringContainsString( '"openingHours":["Mo-Fr 09:00-17:00"]', $output );
 	}
 
-	public function test_single_product_schema_outputs_product_with_offer(): void {
+	public function test_single_product_schema_is_deferred_to_woocommerce(): void {
 		global $lightweight_seo_test_post_meta;
 		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_query_state;
@@ -331,8 +337,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 		$service->add_schema();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( '"@type":"Product"', $output );
-		$this->assertStringContainsString( '"price":"19.99"', $output );
-		$this->assertStringContainsString( '"sku":"SKU-123"', $output );
+		$this->assertStringNotContainsString( '"@type":"Product"', $output );
+		$this->assertStringNotContainsString( '"@type":"Article"', $output );
 	}
 }

@@ -46,7 +46,7 @@ final class LightweightSEOHeaderServiceTest extends TestCase {
 		$this->assertSame( 'noindex, noarchive', $service->get_x_robots_tag() );
 	}
 
-	public function test_get_x_robots_tag_flags_direct_document_requests(): void {
+	public function test_get_x_robots_tag_does_not_claim_control_over_static_document_requests(): void {
 		$_SERVER['REQUEST_URI'] = '/files/seo-guide.pdf';
 
 		$page_context = new class() {
@@ -63,7 +63,7 @@ final class LightweightSEOHeaderServiceTest extends TestCase {
 
 		$service = new Lightweight_SEO_Header_Service( $page_context, $settings );
 
-		$this->assertSame( 'noindex, noarchive', $service->get_x_robots_tag() );
+		$this->assertSame( '', $service->get_x_robots_tag() );
 	}
 
 	public function test_get_x_robots_tag_does_not_flag_direct_image_requests(): void {

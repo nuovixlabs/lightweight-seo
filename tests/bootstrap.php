@@ -548,7 +548,7 @@ if (!function_exists('is_singular')) {
     function is_singular() {
         global $lightweight_seo_test_query_state;
 
-        return (bool) $lightweight_seo_test_query_state['is_singular'];
+        return (bool) ( $lightweight_seo_test_query_state['is_singular'] ?? false );
     }
 }
 
@@ -628,7 +628,7 @@ if (!function_exists('is_404')) {
     function is_404() {
         global $lightweight_seo_test_query_state;
 
-        return (bool) $lightweight_seo_test_query_state['is_404'];
+        return (bool) ( $lightweight_seo_test_query_state['is_404'] ?? false );
     }
 }
 

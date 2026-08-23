@@ -56,75 +56,9 @@ class Lightweight_SEO_Sitemap_Service {
 		$this->post_meta    = $post_meta;
 		$this->archive_meta = $archive_meta;
 
-		add_action( 'init', array( $this, 'register_image_sitemap_provider' ), 25 );
-		add_action( 'init', array( $this, 'register_video_sitemap_provider' ), 25 );
-		add_action( 'init', array( $this, 'register_news_sitemap_provider' ), 25 );
 		add_filter( 'wp_sitemaps_posts_query_args', array( $this, 'filter_posts_query_args' ), 10, 2 );
 		add_filter( 'wp_sitemaps_taxonomies_query_args', array( $this, 'filter_taxonomies_query_args' ), 10, 2 );
 		add_filter( 'wp_sitemaps_users_query_args', array( $this, 'filter_users_query_args' ) );
-	}
-
-	/**
-	 * Register the attachment image sitemap provider with WordPress core.
-	 *
-	 * @since    1.1.0
-	 * @return   void
-	 */
-	public function register_image_sitemap_provider() {
-		if ( ! $this->settings->image_sitemaps_enabled() || ! class_exists( 'WP_Sitemaps_Provider' ) || ! function_exists( 'wp_register_sitemap_provider' ) ) {
-			return;
-		}
-
-		if ( ! class_exists( 'Lightweight_SEO_Image_Sitemap_Provider' ) ) {
-			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-image-sitemap-provider.php';
-		}
-
-		wp_register_sitemap_provider(
-			'lightweightseoimages',
-			new Lightweight_SEO_Image_Sitemap_Provider( $this->settings )
-		);
-	}
-
-	/**
-	 * Register the attachment video sitemap provider with WordPress core.
-	 *
-	 * @since    1.1.0
-	 * @return   void
-	 */
-	public function register_video_sitemap_provider() {
-		if ( ! $this->settings->video_sitemaps_enabled() || ! class_exists( 'WP_Sitemaps_Provider' ) || ! function_exists( 'wp_register_sitemap_provider' ) ) {
-			return;
-		}
-
-		if ( ! class_exists( 'Lightweight_SEO_Video_Sitemap_Provider' ) ) {
-			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-video-sitemap-provider.php';
-		}
-
-		wp_register_sitemap_provider(
-			'lightweightseovideos',
-			new Lightweight_SEO_Video_Sitemap_Provider( $this->settings )
-		);
-	}
-
-	/**
-	 * Register the news sitemap provider with WordPress core.
-	 *
-	 * @since    1.1.0
-	 * @return   void
-	 */
-	public function register_news_sitemap_provider() {
-		if ( ! $this->settings->news_sitemaps_enabled() || ! class_exists( 'WP_Sitemaps_Provider' ) || ! function_exists( 'wp_register_sitemap_provider' ) ) {
-			return;
-		}
-
-		if ( ! class_exists( 'Lightweight_SEO_News_Sitemap_Provider' ) ) {
-			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-news-sitemap-provider.php';
-		}
-
-		wp_register_sitemap_provider(
-			'lightweightseonews',
-			new Lightweight_SEO_News_Sitemap_Provider( $this->settings, $this->post_meta )
-		);
 	}
 
 	/**

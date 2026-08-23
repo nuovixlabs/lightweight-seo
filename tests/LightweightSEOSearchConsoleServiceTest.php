@@ -232,7 +232,7 @@ KEY;
 		$this->assertCount( 2, $snapshot['indexation_issues'] );
 		$this->assertCount( 1, $snapshot['canonical_mismatches'] );
 		$this->assertSame( 'https://example.com/alpha-canonical/', $snapshot['canonical_mismatches'][0]['google_canonical'] );
-		$this->assertCount( 4, $snapshot['submitted_sitemaps'] );
+		$this->assertCount( 1, $snapshot['submitted_sitemaps'] );
 		$this->assertCount( 1, $snapshot['sitemaps'] );
 		$this->assertSame( 1, $snapshot['sitemaps'][0]['errors'] );
 	}

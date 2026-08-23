@@ -28,4 +28,12 @@ final class LightweightSEOSettingsTest extends TestCase {
 
 		$this->assertSame( 'https://example.com/uploads/current-image.jpg', $settings->get_social_image_url() );
 	}
+
+	public function test_new_install_defaults_do_not_use_the_site_tagline_as_description(): void {
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertSame( '', $settings->get_defaults()['meta_description'] );
+		$this->assertSame( '0', $settings->get_defaults()['enable_product_schema'] );
+		$this->assertSame( '0', $settings->get_defaults()['enable_image_sitemaps'] );
+	}
 }

@@ -104,6 +104,9 @@ class Lightweight_SEO_Frontend {
 
 			// Add meta tags to head
 			add_action( 'wp_head', array( $this->meta_tags_service, 'add_meta_tags' ), 1 );
+			add_filter( 'wp_robots', array( $this->meta_tags_service, 'filter_robots' ) );
+			add_filter( 'get_canonical_url', array( $this->meta_tags_service, 'filter_canonical_url' ), 10, 2 );
+			add_action( 'wp_head', array( $this->meta_tags_service, 'add_non_singular_canonical' ), 10 );
 			add_action( 'wp_head', array( $this->hreflang_service, 'add_hreflang_links' ), 2 );
 			add_action( 'wp_head', array( $this->schema_service, 'add_schema' ), 5 );
 		}

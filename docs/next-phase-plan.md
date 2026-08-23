@@ -575,6 +575,8 @@ Verification evidence:
 
 ### PR 2: Core output correctness
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - canonical and `wp_robots` integration
 - metadata fallback corrections
 - 404 behavior
@@ -583,6 +585,14 @@ Verification evidence:
 - standard sitemap filtering only
 
 Exit gate: exactly one canonical and robots output, valid schema graph, valid core sitemap XML, and compatibility smoke tests.
+
+Verification evidence:
+
+- Fast suite: 72 tests and 276 assertions pass.
+- Real WordPress 6.0 single-site suite: 12 tests and 39 assertions pass, with the multisite-only lifecycle case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 12 tests and 40 assertions pass.
+- Real `wp_head` output contains one WordPress-native canonical and one coherent robots tag; 404 output suppresses canonical, social, and schema markup.
+- WordPress core sitemap integration excludes noindexed posts, renders parseable XML, and registers no image, video, or news providers.
 
 ### PR 3: Public API and lazy module registry
 

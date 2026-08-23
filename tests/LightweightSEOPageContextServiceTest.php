@@ -93,6 +93,7 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 
 		$this->assertSame( 'Original Post – Test Site', $context['document_title'] );
 		$this->assertSame( 'https://example.com/canonical-post', $context['canonical_url'] );
+		$this->assertTrue( $context['canonical_custom'] );
 		$this->assertSame( 'noindex, noarchive, max-image-preview:standard', $context['robots'] );
 		$this->assertSame( 'https://example.com/canonical-post', $context['og_url'] );
 	}
@@ -442,6 +443,92 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( 'Test Site – Test Tagline', $context['document_title'] );
 		$this->assertSame( 'Test Site – Test Tagline', $context['og_title'] );
 		$this->assertSame( 'https://example.com/', $context['canonical_url'] );
+	}
+
+	public function test_singular_context_uses_normalized_excerpt_and_image_metadata(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']                = true;
+		$lightweight_seo_test_query_state['is_single']                  = true;
+		$lightweight_seo_test_query_state['queried_object_id']          = 42;
+		$lightweight_seo_test_posts[42]                                 = (object) array(
+			'ID'            => 42,
+			'post_type'     => 'post',
+			'post_excerpt'  => '<strong>Useful</strong>  excerpt',
+			'post_content'  => 'Fallback content',
+			'thumbnail_id'  => 10,
+			'thumbnail_url' => 'https://example.com/hero.jpg',
+		);
+		$lightweight_seo_test_posts[10]                                 = (object) array(
+			'metadata' => array(
+				'width'  => 1600,
+				'height' => 900,
+			),
+		);
+		$lightweight_seo_test_post_meta[10]['_wp_attachment_image_alt'] = 'Hero image';
+
+		$post_meta = new class() {
+			public function get_all( $post_id ) {
+				return array();
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+
+		$archive_meta = new class() {
+			public function get_term_all( $term_id ) {
+				return array();
+			}
+
+			public function get_user_all( $user_id ) {
+				return array();
+			}
+		};
+
+		$context = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( true ), $post_meta, $archive_meta ) )->get_context();
+
+		$this->assertSame( 'Useful excerpt', $context['description'] );
+		$this->assertSame( 'Hero image', $context['og_image_alt'] );
+		$this->assertSame( 1600, $context['og_image_width'] );
+		$this->assertSame( 900, $context['og_image_height'] );
+		$this->assertSame( 'summary_large_image', $context['twitter_card'] );
+	}
+
+	public function test_404_context_suppresses_canonical_and_social_values(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_404'] = true;
+
+		$post_meta = new class() {
+			public function get_all( $post_id ) {
+				return array();
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+
+		$archive_meta = new class() {
+			public function get_term_all( $term_id ) {
+				return array();
+			}
+
+			public function get_user_all( $user_id ) {
+				return array();
+			}
+		};
+
+		$context = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( true ), $post_meta, $archive_meta ) )->get_context();
+
+		$this->assertSame( '', $context['canonical_url'] );
+		$this->assertSame( '', $context['og_title'] );
+		$this->assertSame( '', $context['og_image'] );
+		$this->assertStringContainsString( 'noindex', $context['robots'] );
 	}
 
 	private function get_settings_stub( $keywords_enabled ) {

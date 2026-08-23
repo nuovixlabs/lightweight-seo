@@ -287,33 +287,9 @@ class Lightweight_SEO_Admin {
 		);
 
 		add_settings_field(
-			'enable_image_sitemaps',
-			__( 'Attachment Image Sitemap', 'lightweight-seo' ),
-			array( $this, 'enable_image_sitemaps_render' ),
-			$this->plugin_name,
-			'lightweight_seo_sitemap_section'
-		);
-
-		add_settings_field(
 			'exclude_redirected_from_sitemaps',
 			__( 'Exclude Redirected URLs', 'lightweight-seo' ),
 			array( $this, 'exclude_redirected_from_sitemaps_render' ),
-			$this->plugin_name,
-			'lightweight_seo_sitemap_section'
-		);
-
-		add_settings_field(
-			'enable_video_sitemaps',
-			__( 'Attachment Video Sitemap', 'lightweight-seo' ),
-			array( $this, 'enable_video_sitemaps_render' ),
-			$this->plugin_name,
-			'lightweight_seo_sitemap_section'
-		);
-
-		add_settings_field(
-			'enable_news_sitemaps',
-			__( 'Recent News Sitemap', 'lightweight-seo' ),
-			array( $this, 'enable_news_sitemaps_render' ),
 			$this->plugin_name,
 			'lightweight_seo_sitemap_section'
 		);
@@ -346,14 +322,6 @@ class Lightweight_SEO_Admin {
 			'organization_same_as',
 			__( 'Organization Profiles', 'lightweight-seo' ),
 			array( $this, 'organization_same_as_render' ),
-			$this->plugin_name,
-			'lightweight_seo_schema_section'
-		);
-
-		add_settings_field(
-			'enable_product_schema',
-			__( 'Product Schema', 'lightweight-seo' ),
-			array( $this, 'enable_product_schema_render' ),
 			$this->plugin_name,
 			'lightweight_seo_schema_section'
 		);
@@ -809,9 +777,9 @@ class Lightweight_SEO_Admin {
 		?>
 		<label>
 			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_media_x_robots_headers]" value="1" <?php checked( $options['enable_media_x_robots_headers'] ?? '1', '1' ); ?>>
-			<?php _e( 'Send X-Robots-Tag headers for attachment pages and direct media/document requests', 'lightweight-seo' ); ?>
+			<?php _e( 'Send X-Robots-Tag headers for WordPress attachment pages', 'lightweight-seo' ); ?>
 		</label>
-		<p class="description"><?php _e( 'Useful for PDFs and media files that should stay out of the index even without HTML meta tags.', 'lightweight-seo' ); ?></p>
+		<p class="description"><?php _e( 'Static files served directly by the web server or CDN require server-level header configuration.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -2194,11 +2162,11 @@ class Lightweight_SEO_Admin {
 		$sanitized_input['enable_media_x_robots_headers']     = isset( $input['enable_media_x_robots_headers'] ) ? '1' : '0';
 		$sanitized_input['exclude_noindex_from_sitemaps']     = isset( $input['exclude_noindex_from_sitemaps'] ) ? '1' : '0';
 		$sanitized_input['exclude_redirected_from_sitemaps']  = isset( $input['exclude_redirected_from_sitemaps'] ) ? '1' : '0';
-		$sanitized_input['enable_image_sitemaps']             = isset( $input['enable_image_sitemaps'] ) ? '1' : '0';
-		$sanitized_input['enable_video_sitemaps']             = isset( $input['enable_video_sitemaps'] ) ? '1' : '0';
-		$sanitized_input['enable_news_sitemaps']              = isset( $input['enable_news_sitemaps'] ) ? '1' : '0';
+		$sanitized_input['enable_image_sitemaps']             = $existing_settings['enable_image_sitemaps'] ?? '0';
+		$sanitized_input['enable_video_sitemaps']             = $existing_settings['enable_video_sitemaps'] ?? '0';
+		$sanitized_input['enable_news_sitemaps']              = $existing_settings['enable_news_sitemaps'] ?? '0';
 		$sanitized_input['enable_schema_output']              = isset( $input['enable_schema_output'] ) ? '1' : '0';
-		$sanitized_input['enable_product_schema']             = isset( $input['enable_product_schema'] ) ? '1' : '0';
+		$sanitized_input['enable_product_schema']             = $existing_settings['enable_product_schema'] ?? '0';
 		$sanitized_input['enable_local_business_schema']      = isset( $input['enable_local_business_schema'] ) ? '1' : '0';
 		$sanitized_input['enable_hreflang_output']            = isset( $input['enable_hreflang_output'] ) ? '1' : '0';
 		$sanitized_input['submit_sitemaps_to_search_console'] = isset( $input['submit_sitemaps_to_search_console'] ) ? '1' : '0';

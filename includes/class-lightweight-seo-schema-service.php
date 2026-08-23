@@ -60,10 +60,14 @@ class Lightweight_SEO_Schema_Service {
 		$context = $this->page_context->get_context();
 		$graph   = array();
 
-		if ( is_home() || is_front_page() ) {
-			$graph[] = $this->build_organization_schema();
-			$graph[] = $this->build_website_schema();
+		if ( ! empty( $context['is_404'] ) || is_404() ) {
+			return;
+		}
 
+		$graph[] = $this->build_organization_schema();
+		$graph[] = $this->build_website_schema();
+
+		if ( is_home() || is_front_page() ) {
 			$local_business_schema = $this->build_local_business_schema();
 
 			if ( ! empty( $local_business_schema ) ) {
@@ -75,12 +79,6 @@ class Lightweight_SEO_Schema_Service {
 
 		if ( ! empty( $breadcrumb_schema ) ) {
 			$graph[] = $breadcrumb_schema;
-		}
-
-		$product_schema = $this->build_product_schema( $context );
-
-		if ( ! empty( $product_schema ) ) {
-			$graph[] = $product_schema;
 		}
 
 		$article_schema = $this->build_article_schema( $context );
@@ -241,22 +239,25 @@ class Lightweight_SEO_Schema_Service {
 	 * @return   array
 	 */
 	private function build_article_schema( $context ) {
-		if ( ! is_single() ) {
-			return array();
-		}
-
 		$post_id = get_queried_object_id();
 		$post    = $post_id ? get_post( $post_id ) : null;
+		$types   = (array) apply_filters( 'lightweight_seo_article_post_types', array( 'post' ) );
 
-		if ( ! $post_id || $this->is_product_post( $post ) ) {
+		if ( ! is_singular() || ! $post_id || empty( $post ) || ! in_array( (string) ( $post->post_type ?? '' ), $types, true ) ) {
 			return array();
 		}
 
 		$schema = array(
 			'@type'            => 'Article',
+			'@id'              => $context['canonical_url'] . '#article',
 			'headline'         => ! empty( $context['document_title'] ) ? $context['document_title'] : get_the_title( $post_id ),
-			'mainEntityOfPage' => $context['canonical_url'],
+			'mainEntityOfPage' => array(
+				'@id' => $context['canonical_url'],
+			),
 			'url'              => $context['canonical_url'],
+			'isPartOf'         => array(
+				'@id' => home_url( '/#website' ),
+			),
 			'publisher'        => array(
 				'@id' => home_url( '/#organization' ),
 			),
@@ -400,7 +401,7 @@ class Lightweight_SEO_Schema_Service {
 	}
 
 	/**
-	 * Build a simple breadcrumb trail for the current request.
+	 * Build a hierarchical breadcrumb trail for the current request.
 	 *
 	 * @since    1.1.0
 	 * @param    array    $context    Resolved page context.
@@ -415,22 +416,61 @@ class Lightweight_SEO_Schema_Service {
 			return array();
 		}
 
+		$items = array(
+			array(
+				'@type'    => 'ListItem',
+				'position' => 1,
+				'name'     => get_bloginfo( 'name' ),
+				'item'     => home_url( '/' ),
+			),
+		);
+
+		if ( is_singular() ) {
+			$post_id   = get_queried_object_id();
+			$ancestors = function_exists( 'get_post_ancestors' ) ? array_reverse( get_post_ancestors( $post_id ) ) : array();
+
+			foreach ( $ancestors as $ancestor_id ) {
+				$items[] = array(
+					'@type'    => 'ListItem',
+					'position' => count( $items ) + 1,
+					'name'     => get_the_title( $ancestor_id ),
+					'item'     => get_permalink( $ancestor_id ),
+				);
+			}
+		} elseif ( is_category() || is_tax() ) {
+			$term      = get_queried_object();
+			$term_id   = (int) ( $term->term_id ?? 0 );
+			$taxonomy  = (string) ( $term->taxonomy ?? '' );
+			$ancestors = $term_id && function_exists( 'get_ancestors' ) ? array_reverse( get_ancestors( $term_id, $taxonomy, 'taxonomy' ) ) : array();
+
+			foreach ( $ancestors as $ancestor_id ) {
+				$ancestor = get_term( $ancestor_id, $taxonomy );
+				$link     = get_term_link( $ancestor_id, $taxonomy );
+
+				if ( is_wp_error( $ancestor ) || is_wp_error( $link ) ) {
+					continue;
+				}
+
+				$items[] = array(
+					'@type'    => 'ListItem',
+					'position' => count( $items ) + 1,
+					'name'     => $ancestor->name,
+					'item'     => $link,
+				);
+			}
+		}
+
+		$items[] = array(
+			'@type'    => 'ListItem',
+			'position' => count( $items ) + 1,
+			'name'     => $context['document_title'],
+			'item'     => $context['canonical_url'],
+		);
+
 		return array(
 			'@type'           => 'BreadcrumbList',
-			'itemListElement' => array(
-				array(
-					'@type'    => 'ListItem',
-					'position' => 1,
-					'name'     => get_bloginfo( 'name' ),
-					'item'     => home_url( '/' ),
-				),
-				array(
-					'@type'    => 'ListItem',
-					'position' => 2,
-					'name'     => $context['document_title'],
-					'item'     => $context['canonical_url'],
-				),
-			),
+			'@id'             => $context['canonical_url'] . '#breadcrumb',
+			'itemListElement' => $items,
 		);
 	}
 

@@ -478,23 +478,7 @@ class Lightweight_SEO_Search_Console_Service {
 	 * @return   array
 	 */
 	private function get_sitemap_submission_urls() {
-		$sitemap_urls = array(
-			home_url( '/wp-sitemap.xml' ),
-		);
-
-		if ( $this->settings->image_sitemaps_enabled() ) {
-			$sitemap_urls[] = home_url( '/wp-sitemap-lightweightseoimages-1.xml' );
-		}
-
-		if ( $this->settings->video_sitemaps_enabled() ) {
-			$sitemap_urls[] = home_url( '/wp-sitemap-lightweightseovideos-1.xml' );
-		}
-
-		if ( $this->settings->news_sitemaps_enabled() ) {
-			$sitemap_urls[] = home_url( '/wp-sitemap-lightweightseonews-1.xml' );
-		}
-
-		return array_values( array_unique( array_filter( array_map( 'esc_url_raw', $sitemap_urls ) ) ) );
+		return array( esc_url_raw( home_url( '/wp-sitemap.xml' ) ) );
 	}
 
 	/**

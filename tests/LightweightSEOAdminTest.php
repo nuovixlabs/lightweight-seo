@@ -124,7 +124,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '0', $validated['noindex_search_results'] );
 		$this->assertSame( '0', $validated['noindex_attachment_pages'] );
 		$this->assertSame( '0', $validated['exclude_noindex_from_sitemaps'] );
-		$this->assertSame( '0', $validated['enable_image_sitemaps'] );
+		$this->assertSame( '1', $validated['enable_image_sitemaps'] );
 		$this->assertSame( '0', $validated['enable_schema_output'] );
 		$this->assertSame( '0', $validated['enable_404_monitor'] );
 		$this->assertSame( '0', $validated['enable_auto_redirects'] );
