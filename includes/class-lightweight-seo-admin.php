@@ -2133,6 +2133,14 @@ class Lightweight_SEO_Admin {
 	public function validate_settings( $input ) {
 		$existing_settings = $this->settings->get_all();
 		$sanitized_input   = array();
+		$active_tab        = sanitize_key( $input['settings_tab'] ?? 'all' );
+		$checkbox_value    = function ( $key, $tab ) use ( $input, $existing_settings, $active_tab ) {
+			if ( 'all' === $active_tab || $tab === $active_tab ) {
+				return isset( $input[ $key ] ) ? '1' : '0';
+			}
+
+			return $existing_settings[ $key ] ?? '0';
+		};
 
 		if ( isset( $input['title_format'] ) ) {
 			$sanitized_input['title_format'] = sanitize_text_field( $input['title_format'] );
@@ -2170,23 +2178,23 @@ class Lightweight_SEO_Admin {
 			$sanitized_input['meta_keywords'] = $existing_settings['meta_keywords'] ?? '';
 		}
 
-		$sanitized_input['enable_meta_keywords']              = isset( $input['enable_meta_keywords'] ) ? '1' : '0';
-		$sanitized_input['noindex_search_results']            = isset( $input['noindex_search_results'] ) ? '1' : '0';
-		$sanitized_input['noindex_attachment_pages']          = isset( $input['noindex_attachment_pages'] ) ? '1' : '0';
-		$sanitized_input['enable_media_x_robots_headers']     = isset( $input['enable_media_x_robots_headers'] ) ? '1' : '0';
-		$sanitized_input['exclude_noindex_from_sitemaps']     = isset( $input['exclude_noindex_from_sitemaps'] ) ? '1' : '0';
-		$sanitized_input['exclude_redirected_from_sitemaps']  = isset( $input['exclude_redirected_from_sitemaps'] ) ? '1' : '0';
+		$sanitized_input['enable_meta_keywords']              = $checkbox_value( 'enable_meta_keywords', 'legacy' );
+		$sanitized_input['noindex_search_results']            = $checkbox_value( 'noindex_search_results', 'indexation' );
+		$sanitized_input['noindex_attachment_pages']          = $checkbox_value( 'noindex_attachment_pages', 'indexation' );
+		$sanitized_input['enable_media_x_robots_headers']     = $checkbox_value( 'enable_media_x_robots_headers', 'indexation' );
+		$sanitized_input['exclude_noindex_from_sitemaps']     = $checkbox_value( 'exclude_noindex_from_sitemaps', 'indexation' );
+		$sanitized_input['exclude_redirected_from_sitemaps']  = $checkbox_value( 'exclude_redirected_from_sitemaps', 'indexation' );
 		$sanitized_input['enable_image_sitemaps']             = $existing_settings['enable_image_sitemaps'] ?? '0';
 		$sanitized_input['enable_video_sitemaps']             = $existing_settings['enable_video_sitemaps'] ?? '0';
 		$sanitized_input['enable_news_sitemaps']              = $existing_settings['enable_news_sitemaps'] ?? '0';
-		$sanitized_input['enable_schema_output']              = isset( $input['enable_schema_output'] ) ? '1' : '0';
+		$sanitized_input['enable_schema_output']              = $checkbox_value( 'enable_schema_output', 'identity' );
 		$sanitized_input['enable_product_schema']             = $existing_settings['enable_product_schema'] ?? '0';
-		$sanitized_input['enable_local_business_schema']      = isset( $input['enable_local_business_schema'] ) ? '1' : '0';
-		$sanitized_input['enable_hreflang_output']            = isset( $input['enable_hreflang_output'] ) ? '1' : '0';
-		$sanitized_input['submit_sitemaps_to_search_console'] = isset( $input['submit_sitemaps_to_search_console'] ) ? '1' : '0';
-		$sanitized_input['enable_404_monitor']                = isset( $input['enable_404_monitor'] ) ? '1' : '0';
-		$sanitized_input['enable_auto_redirects']             = isset( $input['enable_auto_redirects'] ) ? '1' : '0';
-		$sanitized_input['delete_data_on_uninstall']          = isset( $input['delete_data_on_uninstall'] ) ? '1' : '0';
+		$sanitized_input['enable_local_business_schema']      = $checkbox_value( 'enable_local_business_schema', 'modules' );
+		$sanitized_input['enable_hreflang_output']            = $checkbox_value( 'enable_hreflang_output', 'modules' );
+		$sanitized_input['submit_sitemaps_to_search_console'] = $checkbox_value( 'submit_sitemaps_to_search_console', 'legacy' );
+		$sanitized_input['enable_404_monitor']                = $checkbox_value( 'enable_404_monitor', 'modules' );
+		$sanitized_input['enable_auto_redirects']             = $checkbox_value( 'enable_auto_redirects', 'modules' );
+		$sanitized_input['delete_data_on_uninstall']          = $checkbox_value( 'delete_data_on_uninstall', 'tools' );
 		$sanitized_input['default_max_image_preview']         = $this->settings->normalize_max_image_preview(
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),
 			'large'
@@ -2377,18 +2385,150 @@ class Lightweight_SEO_Admin {
 	 * @since    1.0.0
 	 */
 	public function display_plugin_admin_page() {
+		$tabs        = $this->get_admin_tabs();
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview';
+
+		if ( ! isset( $tabs[ $current_tab ] ) ) {
+			$current_tab = 'overview';
+		}
 		?>
-		<div class="wrap">
+		<div class="wrap lightweight-seo-admin">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<?php settings_errors( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>
-			<form method="post" action="options.php">
-				<?php
-				settings_fields( LIGHTWEIGHT_SEO_OPTION_NAME );
-				do_settings_sections( $this->plugin_name );
-				submit_button();
-				?>
-			</form>
+			<nav class="nav-tab-wrapper lightweight-seo-admin-nav" aria-label="<?php echo esc_attr( __( 'Lightweight SEO settings', 'lightweight-seo' ) ); ?>">
+				<?php foreach ( $tabs as $tab_id => $label ) : ?>
+					<a class="nav-tab <?php echo $current_tab === $tab_id ? 'nav-tab-active' : ''; ?>" <?php echo $current_tab === $tab_id ? 'aria-current="page"' : ''; ?> href="<?php echo esc_url( admin_url( 'admin.php?page=' . $this->plugin_name . '&tab=' . $tab_id ) ); ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endforeach; ?>
+			</nav>
+			<?php
+			if ( 'overview' === $current_tab ) {
+				$this->render_setup_overview();
+			} elseif ( 'developer' === $current_tab ) {
+				$this->render_developer_information();
+			} else {
+				$this->render_settings_tab( $current_tab );
+			}
+			?>
 		</div>
+		<?php
+	}
+
+	/** @return array */
+	private function get_admin_tabs() {
+		return array(
+			'overview'   => __( 'Overview', 'lightweight-seo' ),
+			'appearance' => __( 'Search appearance', 'lightweight-seo' ),
+			'indexation' => __( 'Content and indexation', 'lightweight-seo' ),
+			'identity'   => __( 'Schema and identity', 'lightweight-seo' ),
+			'modules'    => __( 'Modules', 'lightweight-seo' ),
+			'tools'      => __( 'Tools and migration', 'lightweight-seo' ),
+			'developer'  => __( 'Developer API', 'lightweight-seo' ),
+		);
+	}
+
+	/** Render the short, dismissible setup checklist. */
+	private function render_setup_overview() {
+		$options = $this->settings->get_all();
+		$items   = array(
+			array( ! empty( get_bloginfo( 'name' ) ), __( 'Confirm site identity', 'lightweight-seo' ), 'identity' ),
+			array( ! empty( $options['title_format'] ) && ! empty( $options['meta_description'] ), __( 'Choose title and description defaults', 'lightweight-seo' ), 'appearance' ),
+			array( isset( $options['noindex_search_results'] ), __( 'Review indexation defaults', 'lightweight-seo' ), 'indexation' ),
+			array( ! empty( $options['social_image'] ) || ! empty( $options['social_image_id'] ), __( 'Select a default social image', 'lightweight-seo' ), 'appearance' ),
+			array( false, __( 'Review optional modules', 'lightweight-seo' ), 'modules' ),
+			array( false, __( 'Verify generated output on one published page', 'lightweight-seo' ), '' ),
+		);
+		?>
+		<section class="lightweight-seo-setup" aria-labelledby="lightweight-seo-setup-title">
+			<div class="lightweight-seo-section-heading"><div><h2 id="lightweight-seo-setup-title"><?php _e( 'Essential setup', 'lightweight-seo' ); ?></h2><p><?php _e( 'Finish the essentials in any order. This is a checklist, not a required wizard.', 'lightweight-seo' ); ?></p></div><button type="button" class="button-link lightweight-seo-dismiss-checklist"><?php _e( 'Dismiss checklist', 'lightweight-seo' ); ?></button></div>
+			<ul class="lightweight-seo-setup-list">
+				<?php foreach ( $items as $item ) : ?>
+					<li class="<?php echo $item[0] ? 'is-complete' : 'is-pending'; ?>">
+						<span class="dashicons <?php echo esc_attr( $item[0] ? 'dashicons-yes-alt' : 'dashicons-marker' ); ?>" aria-hidden="true"></span>
+						<span><?php echo esc_html( $item[1] ); ?></span>
+						<?php if ( $item[2] ) : ?>
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . $this->plugin_name . '&tab=' . $item[2] ) ); ?>"><?php _e( 'Review', 'lightweight-seo' ); ?></a>
+						<?php elseif ( ! $item[0] ) : ?>
+							<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php _e( 'Open site', 'lightweight-seo' ); ?><span class="screen-reader-text"> <?php _e( '(opens in a new tab)', 'lightweight-seo' ); ?></span></a>
+						<?php endif; ?>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</section>
+		<?php
+	}
+
+	/** Render a selected subset of the existing Settings API fields. */
+	private function render_settings_tab( $tab ) {
+		$maps = array(
+			'appearance' => array( 'lightweight_seo_general_section' => array( 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format', 'meta_description', 'social_image' ) ),
+			'indexation' => array(
+				'lightweight_seo_indexation_section' => true,
+				'lightweight_seo_sitemap_section'    => array( 'exclude_noindex_from_sitemaps', 'exclude_redirected_from_sitemaps' ),
+			),
+			'identity'   => array( 'lightweight_seo_schema_section' => array( 'enable_schema_output', 'organization_same_as' ) ),
+			'modules'    => array(
+				'lightweight_seo_schema_section'    => array( 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings' ),
+				'lightweight_seo_redirects_section' => true,
+				'lightweight_seo_tracking_section'  => true,
+			),
+			'tools'      => array( 'lightweight_seo_migration_section' => true ),
+		);
+		?>
+		<form method="post" action="options.php" class="lightweight-seo-settings-form">
+			<?php settings_fields( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>
+			<input type="hidden" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[settings_tab]" value="<?php echo esc_attr( $tab ); ?>">
+			<?php $this->render_selected_settings_sections( $maps[ $tab ] ?? array() ); ?>
+			<?php submit_button(); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Render Settings API sections without exposing unrelated screens.
+	 *
+	 * @param array $section_map Section IDs and allowed fields.
+	 */
+	private function render_selected_settings_sections( $section_map ) {
+		global $wp_settings_fields, $wp_settings_sections;
+
+		foreach ( $section_map as $section_id => $allowed_fields ) {
+			$section = $wp_settings_sections[ $this->plugin_name ][ $section_id ] ?? null;
+
+			if ( empty( $section ) ) {
+				continue;
+			}
+
+			echo '<section class="lightweight-seo-settings-section">';
+			echo '<h2>' . esc_html( $section['title'] ) . '</h2>';
+
+			if ( ! empty( $section['callback'] ) ) {
+				call_user_func( $section['callback'], $section );
+			}
+
+			echo '<table class="form-table" role="presentation">';
+
+			foreach ( (array) ( $wp_settings_fields[ $this->plugin_name ][ $section_id ] ?? array() ) as $field_id => $field ) {
+				if ( true !== $allowed_fields && ! in_array( $field_id, $allowed_fields, true ) ) {
+					continue;
+				}
+
+				echo '<tr><th scope="row">' . esc_html( $field['title'] ) . '</th><td>';
+				call_user_func( $field['callback'], $field['args'] ?? array() );
+				echo '</td></tr>';
+			}
+
+			echo '</table></section>';
+		}
+	}
+
+	/** Render the stable public extension contract summary. */
+	private function render_developer_information() {
+		?>
+		<section class="lightweight-seo-settings-section">
+			<h2><?php _e( 'Developer API', 'lightweight-seo' ); ?></h2>
+			<p><?php _e( 'Extensions can read normalized SEO facts through the versioned facade without reading private settings or credentials.', 'lightweight-seo' ); ?></p>
+			<table class="widefat striped"><tbody><tr><th><?php _e( 'Plugin version', 'lightweight-seo' ); ?></th><td><code><?php echo esc_html( LIGHTWEIGHT_SEO_VERSION ); ?></code></td></tr><tr><th><?php _e( 'API version', 'lightweight-seo' ); ?></th><td><code><?php echo esc_html( LIGHTWEIGHT_SEO_API_VERSION ); ?></code></td></tr><tr><th><?php _e( 'Accessor', 'lightweight-seo' ); ?></th><td><code>lightweight_seo_get_api()</code></td></tr><tr><th><?php _e( 'Ready hook', 'lightweight-seo' ); ?></th><td><code>lightweight_seo_loaded</code></td></tr></tbody></table>
+		</section>
 		<?php
 	}
 

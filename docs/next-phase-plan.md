@@ -618,6 +618,8 @@ Verification evidence:
 
 ### PR 4: On-page SEO and admin information architecture
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - overview/setup checklist
 - reorganized settings
 - editor search/social previews
@@ -625,6 +627,15 @@ Verification evidence:
 - accessible navigation, empty, error, and success states
 
 Exit gate: a new user can complete essential setup and correct a page-level issue without documentation.
+
+Verification evidence:
+
+- Fast suite: 79 tests and 314 assertions pass.
+- Real WordPress 6.0 single-site suite: 14 tests and 52 assertions pass, with the multisite-only lifecycle case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 14 tests and 53 assertions pass.
+- Browser smoke testing confirms the overview checklist, focused settings tabs, search/social previews, live preview editing, keyboard tab navigation, deterministic checks, and persistent checklist dismissal.
+- Desktop and 390-pixel mobile views have no horizontal overflow; the editor guidance uses factual success/warning states and makes no ranking claims.
+- PHPCS, PHP syntax checks, Composer validation, and dependency security audit pass.
 
 ### PR 5: Redirects and Hreflang modules
 

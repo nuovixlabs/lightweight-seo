@@ -6,6 +6,7 @@ require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-search-consol
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-compatibility-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-image-audit-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-importer-service.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin.php';
 
 use PHPUnit\Framework\TestCase;
@@ -601,6 +602,39 @@ final class LightweightSEOAdminTest extends TestCase {
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'settings-errors', $output );
+		$this->assertStringContainsString( 'Essential setup', $output );
+		$this->assertStringContainsString( 'Search appearance', $output );
+		$this->assertStringContainsString( 'Developer API', $output );
 		$this->assertSame( array( LIGHTWEIGHT_SEO_OPTION_NAME ), $lightweight_seo_test_rendered_settings_errors );
+	}
+
+	public function test_tab_save_preserves_checkbox_values_from_other_tabs(): void {
+		global $lightweight_seo_test_options;
+
+		$settings                                 = new Lightweight_SEO_Settings();
+		$existing                                 = $settings->get_defaults();
+		$existing['noindex_search_results']       = '1';
+		$existing['enable_schema_output']         = '1';
+		$existing['enable_local_business_schema'] = '1';
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $existing;
+		$settings  = new Lightweight_SEO_Settings();
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+		$admin     = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		$validated = $admin->validate_settings(
+			array(
+				'settings_tab' => 'appearance',
+				'title_format' => '%title% | %sitename%',
+			)
+		);
+
+		$this->assertSame( '%title% | %sitename%', $validated['title_format'] );
+		$this->assertSame( '1', $validated['noindex_search_results'] );
+		$this->assertSame( '1', $validated['enable_schema_output'] );
+		$this->assertSame( '1', $validated['enable_local_business_schema'] );
 	}
 }
