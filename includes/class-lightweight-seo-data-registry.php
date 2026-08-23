@@ -23,6 +23,7 @@ class Lightweight_SEO_Data_Registry {
 	public static function get_persistent_options() {
 		return array(
 			'lightweight_seo_settings',
+			'lightweight_seo_modules',
 			'lightweight_seo_schema_version',
 			'lightweight_seo_generated_redirect_rules',
 		);

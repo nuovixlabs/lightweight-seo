@@ -1,6 +1,6 @@
 # Lightweight SEO Next-Phase Plan
 
-Status: Implementation in progress; PR 1 lifecycle foundation complete locally
+Status: Implementation in progress; PR 1 through PR 3 complete locally
 
 Planning date: 2026-08-24
 
@@ -596,6 +596,8 @@ Verification evidence:
 
 ### PR 3: Public API and lazy module registry
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - public facade and API version
 - stable lifecycle hooks
 - module registry and context-aware loader
@@ -603,6 +605,16 @@ Verification evidence:
 - dependency and version handshake prototype for Insights
 
 Exit gate: disabled modules register no implementation hooks/classes, and a fixture extension can consume the API without private access.
+
+Verification evidence:
+
+- Fast suite: 77 tests and 298 assertions pass.
+- Real WordPress 6.0 single-site suite: 14 tests and 52 assertions pass, with the multisite-only lifecycle case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 14 tests and 53 assertions pass.
+- Fresh installs persist all five module states as off; 1.0.3 upgrade fixtures preserve explicitly configured Tracking, Hreflang, Local SEO, and Redirects state.
+- Disabled Redirects, Hreflang, Tracking, and Local SEO implementation classes are absent after a normal WordPress bootstrap.
+- The Insights fixture completes its runtime version handshake and reads object types, module status, and sitemap locations through the public facade only.
+- PHPCS and PHP syntax checks pass; the public facade and stable hook argument shapes are documented in `docs/developer-api.md`.
 
 ### PR 4: On-page SEO and admin information architecture
 

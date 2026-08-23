@@ -241,7 +241,13 @@ class Lightweight_SEO_Post_Meta {
 
 		unset( $this->cache[ (int) $post_id ] );
 
-		return update_post_meta( $post_id, $this->meta_keys[ $field ], $value );
+		$updated = update_post_meta( $post_id, $this->meta_keys[ $field ], $value );
+
+		if ( false !== $updated ) {
+			do_action( 'lightweight_seo_object_meta_updated', 'post', (int) $post_id, array( $field ) );
+		}
+
+		return $updated;
 	}
 
 	/**

@@ -67,14 +67,6 @@ class Lightweight_SEO_Schema_Service {
 		$graph[] = $this->build_organization_schema();
 		$graph[] = $this->build_website_schema();
 
-		if ( is_home() || is_front_page() ) {
-			$local_business_schema = $this->build_local_business_schema();
-
-			if ( ! empty( $local_business_schema ) ) {
-				$graph[] = $local_business_schema;
-			}
-		}
-
 		$breadcrumb_schema = $this->build_breadcrumb_schema( $context );
 
 		if ( ! empty( $breadcrumb_schema ) ) {
@@ -158,77 +150,6 @@ class Lightweight_SEO_Schema_Service {
 				'@id' => home_url( '/#organization' ),
 			),
 		);
-	}
-
-	/**
-	 * Build a LocalBusiness schema node for the homepage.
-	 *
-	 * @since    1.1.0
-	 * @return   array
-	 */
-	private function build_local_business_schema() {
-		if ( ! $this->settings->local_business_schema_enabled() ) {
-			return array();
-		}
-
-		$business = $this->settings->get_local_business_data();
-
-		if ( empty( $business['name'] ) ) {
-			return array();
-		}
-
-		$schema = array(
-			'@type'              => $business['type'],
-			'@id'                => home_url( '/#localbusiness' ),
-			'name'               => $business['name'],
-			'url'                => home_url( '/' ),
-			'parentOrganization' => array(
-				'@id' => home_url( '/#organization' ),
-			),
-		);
-
-		$logo_url = $this->settings->get_social_image_url();
-
-		if ( ! empty( $logo_url ) ) {
-			$schema['image'] = $logo_url;
-		}
-
-		if ( ! empty( $business['telephone'] ) ) {
-			$schema['telephone'] = $business['telephone'];
-		}
-
-		if ( ! empty( $business['price_range'] ) ) {
-			$schema['priceRange'] = $business['price_range'];
-		}
-
-		$address = array_filter(
-			array(
-				'@type'           => 'PostalAddress',
-				'streetAddress'   => $business['street'],
-				'addressLocality' => $business['locality'],
-				'addressRegion'   => $business['region'],
-				'postalCode'      => $business['postal_code'],
-				'addressCountry'  => $business['country'],
-			)
-		);
-
-		if ( count( $address ) > 1 ) {
-			$schema['address'] = $address;
-		}
-
-		if ( ! empty( $business['latitude'] ) && ! empty( $business['longitude'] ) ) {
-			$schema['geo'] = array(
-				'@type'     => 'GeoCoordinates',
-				'latitude'  => $business['latitude'],
-				'longitude' => $business['longitude'],
-			);
-		}
-
-		if ( ! empty( $business['opening_hours'] ) ) {
-			$schema['openingHours'] = $business['opening_hours'];
-		}
-
-		return $schema;
 	}
 
 	/**

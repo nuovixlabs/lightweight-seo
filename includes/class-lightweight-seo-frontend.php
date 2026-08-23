@@ -35,15 +35,6 @@ class Lightweight_SEO_Frontend {
 	private $meta_tags_service;
 
 	/**
-	 * Tracking service.
-	 *
-	 * @since    1.0.2
-	 * @access   private
-	 * @var      Lightweight_SEO_Tracking_Service    $tracking_service
-	 */
-	private $tracking_service;
-
-	/**
 	 * Schema service.
 	 *
 	 * @since    1.1.0
@@ -62,15 +53,6 @@ class Lightweight_SEO_Frontend {
 	private $header_service;
 
 	/**
-	 * Hreflang service.
-	 *
-	 * @since    1.1.0
-	 * @access   private
-	 * @var      Lightweight_SEO_Hreflang_Service
-	 */
-	private $hreflang_service;
-
-	/**
 	 * Shared page context service.
 	 *
 	 * @since    1.0.2
@@ -83,20 +65,19 @@ class Lightweight_SEO_Frontend {
 	 * Initialize the class.
 	 *
 	 * @since    1.0.2
-	 * @param    Lightweight_SEO_Settings        $settings        Shared settings service.
-	 * @param    Lightweight_SEO_Post_Meta       $post_meta       Shared post meta service.
-	 * @param    Lightweight_SEO_Archive_Meta    $archive_meta    Shared archive meta service.
+	 * @param    Lightweight_SEO_Settings             $settings       Shared settings service.
+	 * @param    Lightweight_SEO_Post_Meta            $post_meta      Shared post meta service.
+	 * @param    Lightweight_SEO_Archive_Meta         $archive_meta   Shared archive meta service.
+	 * @param    Lightweight_SEO_Page_Context_Service $page_context   Optional shared page context service.
 	 */
-	public function __construct( $settings, $post_meta, $archive_meta ) {
+	public function __construct( $settings, $post_meta, $archive_meta, $page_context = null ) {
 		$compatibility_service = new Lightweight_SEO_Compatibility_Service();
 
-		$this->page_context      = new Lightweight_SEO_Page_Context_Service( $settings, $post_meta, $archive_meta );
+		$this->page_context      = $page_context ? $page_context : new Lightweight_SEO_Page_Context_Service( $settings, $post_meta, $archive_meta );
 		$this->title_service     = new Lightweight_SEO_Title_Service( $this->page_context );
 		$this->meta_tags_service = new Lightweight_SEO_Meta_Tags_Service( $this->page_context );
 		$this->header_service    = new Lightweight_SEO_Header_Service( $this->page_context, $settings );
-		$this->hreflang_service  = new Lightweight_SEO_Hreflang_Service( $settings, $this->page_context );
 		$this->schema_service    = new Lightweight_SEO_Schema_Service( $this->page_context, $settings );
-		$this->tracking_service  = new Lightweight_SEO_Tracking_Service( $settings );
 
 		if ( $compatibility_service->frontend_head_output_allowed() ) {
 			// Filter document title
@@ -107,14 +88,9 @@ class Lightweight_SEO_Frontend {
 			add_filter( 'wp_robots', array( $this->meta_tags_service, 'filter_robots' ) );
 			add_filter( 'get_canonical_url', array( $this->meta_tags_service, 'filter_canonical_url' ), 10, 2 );
 			add_action( 'wp_head', array( $this->meta_tags_service, 'add_non_singular_canonical' ), 10 );
-			add_action( 'wp_head', array( $this->hreflang_service, 'add_hreflang_links' ), 2 );
 			add_action( 'wp_head', array( $this->schema_service, 'add_schema' ), 5 );
 		}
 
 		add_filter( 'wp_headers', array( $this->header_service, 'filter_headers' ) );
-
-		// Add tracking codes
-		add_action( 'wp_head', array( $this->tracking_service, 'add_tracking_codes' ), 1 );
-		add_action( 'wp_body_open', array( $this->tracking_service, 'add_gtm_noscript' ), 1 );
 	}
 }

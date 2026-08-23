@@ -1143,7 +1143,7 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function generated_redirect_rules_render() {
-		$rules = get_option( Lightweight_SEO_Redirects_Service::GENERATED_RULES_OPTION_NAME, array() );
+		$rules = get_option( 'lightweight_seo_generated_redirect_rules', array() );
 
 		if ( empty( $rules ) ) {
 			echo '<p class="description">' . __( 'No automatic redirects have been generated yet.', 'lightweight-seo' ) . '</p>';
@@ -1170,6 +1170,7 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function redirect_export_render() {
+		$this->load_redirects_service_for_read_only_admin();
 		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
 		$rules             = $redirects_service->get_all_redirect_rules();
 
@@ -1202,6 +1203,7 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function redirect_health_render() {
+		$this->load_redirects_service_for_read_only_admin();
 		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
 		$report            = $redirects_service->get_redirect_health_report();
 		$issues            = array_merge(
@@ -1248,7 +1250,7 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function recent_404_logs_render() {
-		$logs = get_option( Lightweight_SEO_Redirects_Service::LOG_OPTION_NAME, array() );
+		$logs = get_option( 'lightweight_seo_404_logs', array() );
 
 		if ( empty( $logs ) ) {
 			echo '<p class="description">' . __( 'No 404s have been logged yet.', 'lightweight-seo' ) . '</p>';
@@ -1268,6 +1270,18 @@ class Lightweight_SEO_Admin {
 		}
 
 		echo '</tbody></table></div>';
+	}
+
+	/**
+	 * Load redirect parsing only when its legacy read-only report is rendered.
+	 * No redirect hooks are registered by these views.
+	 *
+	 * @return void
+	 */
+	private function load_redirects_service_for_read_only_admin() {
+		if ( ! class_exists( 'Lightweight_SEO_Redirects_Service', false ) ) {
+			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirects-service.php';
+		}
 	}
 
 	/**

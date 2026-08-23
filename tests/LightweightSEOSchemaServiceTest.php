@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-schema-service.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-local-seo-module.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -258,11 +259,8 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 			}
 		};
 
-		$service = new Lightweight_SEO_Schema_Service( $page_context, $settings );
-
-		ob_start();
-		$service->add_schema();
-		$output = ob_get_clean();
+		$module = new Lightweight_SEO_Local_SEO_Module( $settings );
+		$output = wp_json_encode( $module->add_local_business( array(), $page_context->get_context() ) );
 
 		$this->assertStringContainsString( '"@type":"Restaurant"', $output );
 		$this->assertStringContainsString( '"telephone":"+1-555-555-5555"', $output );

@@ -69,8 +69,8 @@ class Lightweight_SEO_Settings {
 			'search_console_property'             => '',
 			'search_console_service_account_json' => '',
 			'submit_sitemaps_to_search_console'   => '1',
-			'enable_404_monitor'                  => '1',
-			'enable_auto_redirects'               => '1',
+			'enable_404_monitor'                  => '0',
+			'enable_auto_redirects'               => '0',
 			'redirect_rules'                      => '',
 			'discover_min_image_width'            => 1200,
 			'discover_min_image_height'           => 900,
@@ -285,7 +285,7 @@ class Lightweight_SEO_Settings {
 	 * @return   bool
 	 */
 	public function not_found_monitor_enabled() {
-		return '1' === (string) $this->get( 'enable_404_monitor', '1' );
+		return '1' === (string) $this->get( 'enable_404_monitor', '0' );
 	}
 
 	/**
@@ -295,7 +295,7 @@ class Lightweight_SEO_Settings {
 	 * @return   bool
 	 */
 	public function auto_redirects_enabled() {
-		return '1' === (string) $this->get( 'enable_auto_redirects', '1' );
+		return '1' === (string) $this->get( 'enable_auto_redirects', '0' );
 	}
 
 	/**

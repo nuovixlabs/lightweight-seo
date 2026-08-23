@@ -23,8 +23,18 @@ final class LightweightSEOLifecycleTest extends TestCase {
 
 		Lightweight_SEO_Migrator::maybe_migrate();
 
-		$this->assertSame( 1, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
+		$this->assertSame( 2, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
 		$this->assertSame( '0', $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['delete_data_on_uninstall'] );
+		$this->assertSame(
+			array(
+				'redirects' => false,
+				'hreflang'  => false,
+				'tracking'  => false,
+				'local-seo' => false,
+				'ai'        => false,
+			),
+			$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]
+		);
 
 		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['title_format'] = 'Custom';
 		Lightweight_SEO_Migrator::maybe_migrate();
@@ -44,7 +54,9 @@ final class LightweightSEOLifecycleTest extends TestCase {
 		Lightweight_SEO_Migrator::maybe_migrate();
 
 		$this->assertSame( $existing, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] );
-		$this->assertSame( 1, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
+		$this->assertSame( 2, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
+		$this->assertTrue( $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]['tracking'] );
+		$this->assertFalse( $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]['redirects'] );
 	}
 
 	public function test_deactivation_clears_every_owned_schedule(): void {

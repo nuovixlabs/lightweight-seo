@@ -5,6 +5,7 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		delete_option( LIGHTWEIGHT_SEO_OPTION_NAME );
+		delete_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME );
 		delete_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION );
 		wp_clear_scheduled_hook( 'lightweight_seo_search_console_sync' );
 	}
@@ -13,7 +14,17 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 		Lightweight_SEO_Lifecycle::activate();
 
 		$this->assertIsArray( get_option( LIGHTWEIGHT_SEO_OPTION_NAME ) );
-		$this->assertSame( 1, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertSame( 2, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertSame(
+			array(
+				'redirects' => false,
+				'hreflang'  => false,
+				'tracking'  => false,
+				'local-seo' => false,
+				'ai'        => false,
+			),
+			get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME )
+		);
 	}
 
 	public function test_activation_preserves_representative_103_settings(): void {
@@ -30,7 +41,8 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 		Lightweight_SEO_Lifecycle::activate();
 
 		$this->assertSame( $legacy_settings, get_option( LIGHTWEIGHT_SEO_OPTION_NAME ) );
-		$this->assertSame( 1, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertSame( 2, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertTrue( get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME )['tracking'] );
 	}
 
 	public function test_deactivation_unschedules_plugin_events(): void {
@@ -51,6 +63,6 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 
 		Lightweight_SEO_Lifecycle::activate( true );
 
-		$this->assertSame( 1, get_blog_option( $second_site_id, LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertSame( 2, get_blog_option( $second_site_id, LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
 	}
 }

@@ -10,8 +10,20 @@ if (!defined('LIGHTWEIGHT_SEO_OPTION_NAME')) {
     define('LIGHTWEIGHT_SEO_OPTION_NAME', 'lightweight_seo_settings');
 }
 
+if (!defined('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME')) {
+    define('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME', 'lightweight_seo_modules');
+}
+
 if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
-    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 1);
+    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 2);
+}
+
+if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
+    define('LIGHTWEIGHT_SEO_VERSION', '1.0.3');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_API_VERSION')) {
+    define('LIGHTWEIGHT_SEO_API_VERSION', '1.0');
 }
 
 if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION')) {
