@@ -1,6 +1,6 @@
 # QA Checklist
 
-Use this checklist before releasing or deploying a build of Lightweight SEO.
+Use this checklist before releasing or deploying the currently shipped Lightweight SEO implementation. It reflects the 1.0.3 feature surface and will be rewritten as the work in the [next-phase plan](./next-phase-plan.md) lands.
 
 ## Core Frontend Checks
 

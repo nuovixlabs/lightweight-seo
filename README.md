@@ -57,7 +57,7 @@ Lightweight SEO is a simple yet powerful WordPress plugin designed to help you o
 ## 📚 Documentation
 
 - [Documentation Index](docs/README.md)
-- [Feature Guide](docs/features.md)
+- [Next-Phase Product and Engineering Plan](docs/next-phase-plan.md)
 - [QA Checklist](docs/qa-checklist.md)
 
 ## 🧪 Local Development
