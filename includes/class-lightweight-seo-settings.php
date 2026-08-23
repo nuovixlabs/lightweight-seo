@@ -21,6 +21,9 @@ class Lightweight_SEO_Settings {
 	/** Maximum number of explicit hreflang mappings stored in the bounded core option. */
 	const MAX_HREFLANG_MAPPINGS = 500;
 
+	/** Maximum number of manually curated pages exposed in llms.txt. */
+	const MAX_LLMS_POSTS = 50;
+
 
 	/**
 	 * Cached settings for the current request.
@@ -92,6 +95,11 @@ class Lightweight_SEO_Settings {
 			'facebook_pixel_id'                   => '',
 			'tracking_excluded_roles'             => 'administrator',
 			'tracking_excluded_environments'      => "local\ndevelopment\nstaging",
+			'enable_ai_discovery'                 => '0',
+			'ai_search_crawlers_enabled'          => '1',
+			'ai_training_crawlers_enabled'        => '0',
+			'enable_llms_txt'                     => '0',
+			'llms_txt_post_ids'                   => '',
 			'delete_data_on_uninstall'            => '0',
 		);
 	}
@@ -491,6 +499,41 @@ class Lightweight_SEO_Settings {
 		$keys = array_filter( array_map( 'sanitize_key', $keys ) );
 
 		return array_values( array_unique( $keys ) );
+	}
+
+	/** Return whether the experimental AI Discovery module is configured on. */
+	public function ai_discovery_enabled() {
+		return '1' === (string) $this->get( 'enable_ai_discovery', '0' );
+	}
+
+	/** Return whether search and user-directed AI crawlers are allowed. */
+	public function ai_search_crawlers_enabled() {
+		return '1' === (string) $this->get( 'ai_search_crawlers_enabled', '1' );
+	}
+
+	/** Return whether model-training crawler tokens are allowed. */
+	public function ai_training_crawlers_enabled() {
+		return '1' === (string) $this->get( 'ai_training_crawlers_enabled', '0' );
+	}
+
+	/** Return whether the optional curated llms.txt endpoint is enabled. */
+	public function llms_txt_enabled() {
+		return '1' === (string) $this->get( 'enable_llms_txt', '0' );
+	}
+
+	/** Normalize the bounded list of explicitly curated post IDs. */
+	public function normalize_llms_post_ids( $value ) {
+		$ids = preg_split( '/[^0-9]+/', (string) $value );
+		$ids = array_filter( array_map( 'absint', $ids ) );
+
+		return implode( ',', array_slice( array_values( array_unique( $ids ) ), 0, self::MAX_LLMS_POSTS ) );
+	}
+
+	/** Return the bounded list of explicitly curated post IDs. */
+	public function get_llms_post_ids() {
+		$normalized = $this->normalize_llms_post_ids( $this->get( 'llms_txt_post_ids', '' ) );
+
+		return '' === $normalized ? array() : array_map( 'absint', explode( ',', $normalized ) );
 	}
 
 	/**

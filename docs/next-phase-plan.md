@@ -1,6 +1,6 @@
 # Lightweight SEO Next-Phase Plan
 
-Status: Implementation in progress; PR 1 through PR 3 complete locally
+Status: Implementation in progress; PR 1 through PR 7 complete locally
 
 Planning date: 2026-08-24
 
@@ -679,12 +679,25 @@ Verification evidence:
 
 ### PR 7: AI Discovery module
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - crawler-policy registry
 - virtual robots integration and physical-file diagnostics
 - curated `llms.txt`
 - deterministic readiness checks and experimental labeling
 
 Exit gate: no ranking claims, no private URLs, and correct conflict/cache behavior.
+
+Verification evidence:
+
+- Fast suite: 97 tests and 384 assertions pass.
+- Real WordPress 6.0 single-site suite: 19 tests and 74 assertions pass, with the multisite-only lifecycle case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 19 tests and 75 assertions pass.
+- The filterable crawler registry separates documented search and user-fetch tokens from model-training tokens. Virtual `robots.txt` output preserves existing token policies, yields to physical files, and defaults model-training access to off.
+- The exact `/llms.txt` endpoint publishes only manually selected public, indexable, local, canonical, non-redirected post and page summaries. It does not expose full content or provide `llms-full.txt`, and it supplies bounded caching with ETag-based `304` responses.
+- Readiness checks are deterministic and local-only. Browser testing confirms invalid drafts fail the curated-page check, a corrected selection passes all checks, settings persist through the admin form, and no ranking, inclusion, crawling, training, or citation guarantee is made.
+- The crawler descriptions and limitations were checked against official OpenAI, Anthropic, Perplexity, Google, WordPress, and llms.txt proposal documentation.
+- PHPCS, PHP syntax checks, Composer validation, dependency security audit, and whitespace checks pass.
 
 ### PR 8: Migration and removal cleanup
 

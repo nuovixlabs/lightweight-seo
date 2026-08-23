@@ -584,6 +584,32 @@ class Lightweight_SEO_Admin {
 			$this->plugin_name,
 			'lightweight_seo_tracking_section'
 		);
+
+		add_settings_section(
+			'lightweight_seo_ai_discovery_section',
+			__( 'AI Discovery (Experimental)', 'lightweight-seo' ),
+			array( $this, 'ai_discovery_section_callback' ),
+			$this->plugin_name
+		);
+
+		foreach (
+			array(
+				'enable_ai_discovery'          => array( __( 'Enable Module', 'lightweight-seo' ), 'enable_ai_discovery_render' ),
+				'ai_search_crawlers_enabled'   => array( __( 'AI Search Visibility', 'lightweight-seo' ), 'ai_search_crawlers_enabled_render' ),
+				'ai_training_crawlers_enabled' => array( __( 'Model Training Access', 'lightweight-seo' ), 'ai_training_crawlers_enabled_render' ),
+				'enable_llms_txt'              => array( __( 'Curated llms.txt', 'lightweight-seo' ), 'enable_llms_txt_render' ),
+				'llms_txt_post_ids'            => array( __( 'Authoritative Page IDs', 'lightweight-seo' ), 'llms_txt_post_ids_render' ),
+				'ai_readiness'                 => array( __( 'Readiness Checks', 'lightweight-seo' ), 'ai_readiness_render' ),
+			) as $field_id => $field
+		) {
+			add_settings_field(
+				$field_id,
+				$field[0],
+				array( $this, $field[1] ),
+				$this->plugin_name,
+				'lightweight_seo_ai_discovery_section'
+			);
+		}
 	}
 
 	/**
@@ -2000,6 +2026,73 @@ class Lightweight_SEO_Admin {
 		<?php
 	}
 
+	/** Explain the bounded, experimental AI Discovery scope. */
+	public function ai_discovery_section_callback() {
+		echo '<p><strong>' . esc_html__( 'Experimental:', 'lightweight-seo' ) . '</strong> ' . esc_html__( 'These controls separate AI search access from model-training access and can publish a manually curated llms.txt index.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . esc_html__( 'Google Search ignores llms.txt for visibility and rankings. No setting can guarantee crawling, citation, training, inclusion, or ranking in any AI product.', 'lightweight-seo' ) . '</p>';
+	}
+
+	/** Render the explicit AI module toggle. */
+	public function enable_ai_discovery_render() {
+		$options = $this->settings->get_all();
+		?>
+		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_ai_discovery]" value="1" <?php checked( $options['enable_ai_discovery'] ?? '0', '1' ); ?>> <?php _e( 'Enable the experimental AI Discovery module', 'lightweight-seo' ); ?></label>
+		<?php
+	}
+
+	/** Render search and user-directed crawler policy. */
+	public function ai_search_crawlers_enabled_render() {
+		$options = $this->settings->get_all();
+		?>
+		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[ai_search_crawlers_enabled]" value="1" <?php checked( $options['ai_search_crawlers_enabled'] ?? '1', '1' ); ?>> <?php _e( 'Allow bundled AI search and user-directed crawler tokens', 'lightweight-seo' ); ?></label>
+		<p class="description"><?php _e( 'This affects documented search and user-fetch tokens such as OAI-SearchBot, Claude-SearchBot, and PerplexityBot. It does not guarantee discovery or citation.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/** Render model-training crawler policy separately from search access. */
+	public function ai_training_crawlers_enabled_render() {
+		$options = $this->settings->get_all();
+		?>
+		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[ai_training_crawlers_enabled]" value="1" <?php checked( $options['ai_training_crawlers_enabled'] ?? '0', '1' ); ?>> <?php _e( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ); ?></label>
+		<p class="description"><?php _e( 'Off blocks GPTBot, ClaudeBot, and Google-Extended. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/** Render the optional curated llms.txt endpoint toggle. */
+	public function enable_llms_txt_render() {
+		$options = $this->settings->get_all();
+		?>
+		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_llms_txt]" value="1" <?php checked( $options['enable_llms_txt'] ?? '0', '1' ); ?>> <?php _e( 'Publish an experimental /llms.txt Markdown index', 'lightweight-seo' ); ?></label>
+		<p class="description"><?php _e( 'Only selected public page summaries are listed. No llms-full.txt or full-page Markdown copies are generated.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/** Render the bounded list of manually selected post and page IDs. */
+	public function llms_txt_post_ids_render() {
+		$options = $this->settings->get_all();
+		?>
+		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[llms_txt_post_ids]" value="<?php echo esc_attr( $options['llms_txt_post_ids'] ?? '' ); ?>" class="regular-text">
+		<?php /* translators: %d: Maximum number of curated post or page IDs. */ ?>
+		<p class="description"><?php printf( esc_html__( 'Enter up to %d comma-separated published post or page IDs. Drafts, private/password-protected, noindexed, redirected, external-canonical, or invalid URLs are excluded.', 'lightweight-seo' ), (int) Lightweight_SEO_Settings::MAX_LLMS_POSTS ); ?></p>
+		<?php
+	}
+
+	/** Render deterministic, local-only readiness checks. */
+	public function ai_readiness_render() {
+		if ( ! $this->is_module_enabled( 'ai' ) || ! class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ) ) {
+			echo '<p>' . esc_html__( 'Enable and save the module to run readiness checks.', 'lightweight-seo' ) . '</p>';
+			return;
+		}
+
+		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), 'admin' );
+
+		echo '<ul class="lightweight-seo-checklist">';
+		foreach ( $module->get_readiness_checks() as $check ) {
+			echo '<li><strong>' . esc_html( strtoupper( $check['status'] ) ) . ' — ' . esc_html( $check['label'] ) . ':</strong> ' . esc_html( $check['details'] ) . '</li>';
+		}
+		echo '</ul>';
+	}
+
 	/**
 	 * Validate a tracking ID against a strict format.
 	 *
@@ -2229,6 +2322,10 @@ class Lightweight_SEO_Admin {
 		$sanitized_input['submit_sitemaps_to_search_console'] = $checkbox_value( 'submit_sitemaps_to_search_console', 'legacy' );
 		$sanitized_input['enable_404_monitor']                = $checkbox_value( 'enable_404_monitor', 'modules' );
 		$sanitized_input['enable_auto_redirects']             = $checkbox_value( 'enable_auto_redirects', 'modules' );
+		$sanitized_input['enable_ai_discovery']               = $checkbox_value( 'enable_ai_discovery', 'modules' );
+		$sanitized_input['ai_search_crawlers_enabled']        = $checkbox_value( 'ai_search_crawlers_enabled', 'modules' );
+		$sanitized_input['ai_training_crawlers_enabled']      = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );
+		$sanitized_input['enable_llms_txt']                   = $checkbox_value( 'enable_llms_txt', 'modules' );
 		$sanitized_input['delete_data_on_uninstall']          = $checkbox_value( 'delete_data_on_uninstall', 'tools' );
 		$sanitized_input['default_max_image_preview']         = $this->settings->normalize_max_image_preview(
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),
@@ -2293,6 +2390,12 @@ class Lightweight_SEO_Admin {
 			$sanitized_input['hreflang_mappings'] = $this->settings->normalize_hreflang_mappings_input( $input['hreflang_mappings'] );
 		} else {
 			$sanitized_input['hreflang_mappings'] = $existing_settings['hreflang_mappings'] ?? '';
+		}
+
+		if ( isset( $input['llms_txt_post_ids'] ) ) {
+			$sanitized_input['llms_txt_post_ids'] = $this->settings->normalize_llms_post_ids( $input['llms_txt_post_ids'] );
+		} else {
+			$sanitized_input['llms_txt_post_ids'] = $existing_settings['llms_txt_post_ids'] ?? '';
 		}
 
 		if ( isset( $input['search_console_property'] ) ) {
@@ -2495,9 +2598,10 @@ class Lightweight_SEO_Admin {
 			),
 			'identity'   => array( 'lightweight_seo_schema_section' => array( 'enable_schema_output', 'organization_same_as' ) ),
 			'modules'    => array(
-				'lightweight_seo_schema_section'    => array( 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
-				'lightweight_seo_redirects_section' => true,
-				'lightweight_seo_tracking_section'  => true,
+				'lightweight_seo_schema_section'       => array( 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
+				'lightweight_seo_redirects_section'    => true,
+				'lightweight_seo_tracking_section'     => true,
+				'lightweight_seo_ai_discovery_section' => true,
 			),
 			'tools'      => array( 'lightweight_seo_migration_section' => true ),
 		);

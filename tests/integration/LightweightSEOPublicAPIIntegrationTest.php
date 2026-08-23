@@ -7,6 +7,7 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$this->assertFalse( class_exists( 'Lightweight_SEO_Hreflang_Service', false ) );
 		$this->assertFalse( class_exists( 'Lightweight_SEO_Tracking_Service', false ) );
 		$this->assertFalse( class_exists( 'Lightweight_SEO_Local_SEO_Module', false ) );
+		$this->assertFalse( class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ) );
 		$this->assertFalse( has_action( 'template_redirect', array( 'Lightweight_SEO_Redirects_Service', 'maybe_redirect_request' ) ) );
 	}
 
@@ -133,5 +134,45 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$this->assertSame( 'Integration Cafe', $graph[0]['name'] );
 		$this->assertSame( 'US', $graph[0]['address']['addressCountry'] );
 		$this->assertSame( 'https://example.org/business.jpg', $graph[0]['image'] );
+	}
+
+	public function test_ai_discovery_outputs_separate_robots_policies_and_curated_llms_txt(): void {
+		require_once dirname( __DIR__, 2 ) . '/includes/class-lightweight-seo-ai-discovery-module.php';
+
+		$public_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_title'   => 'Public Guide',
+				'post_excerpt' => 'A concise public summary.',
+			)
+		);
+		$draft_id  = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_status' => 'draft',
+				'post_title'  => 'Draft Guide',
+			)
+		);
+		update_option(
+			LIGHTWEIGHT_SEO_OPTION_NAME,
+			array(
+				'enable_ai_discovery'          => '1',
+				'ai_search_crawlers_enabled'   => '1',
+				'ai_training_crawlers_enabled' => '0',
+				'enable_llms_txt'              => '1',
+				'llms_txt_post_ids'            => $public_id . ',' . $draft_id,
+			)
+		);
+		$module = new Lightweight_SEO_AI_Discovery_Module( new Lightweight_SEO_Settings(), lightweight_seo_get_api(), 'admin' );
+		$robots = $module->filter_robots_txt( "User-agent: *\nDisallow: /wp-admin/\n", true );
+		$llms   = $module->build_llms_txt();
+
+		$this->assertStringContainsString( "User-agent: OAI-SearchBot\nAllow: /", $robots );
+		$this->assertStringContainsString( "User-agent: GPTBot\nDisallow: /", $robots );
+		$this->assertStringContainsString( 'Public Guide', $llms );
+		$this->assertStringContainsString( 'A concise public summary.', $llms );
+		$this->assertStringNotContainsString( 'Draft Guide', $llms );
+		$this->assertStringContainsString( 'does not guarantee crawling, citation, training, or inclusion', $llms );
 	}
 }

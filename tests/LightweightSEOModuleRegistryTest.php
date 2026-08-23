@@ -83,5 +83,8 @@ final class LightweightSEOModuleRegistryTest extends TestCase {
 
 		$legacy_404_only = Lightweight_SEO_Module_State::derive_from_legacy_settings( array( 'enable_404_monitor' => '1' ) );
 		$this->assertFalse( $legacy_404_only['redirects'] );
+
+		$ai_enabled = Lightweight_SEO_Module_State::derive_from_legacy_settings( array( 'enable_ai_discovery' => '1' ) );
+		$this->assertTrue( $ai_enabled['ai'] );
 	}
 }

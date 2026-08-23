@@ -254,10 +254,7 @@ class Lightweight_SEO {
 		);
 
 		foreach ( $definitions as $module_id => $definition ) {
-			if ( 'ai' !== $module_id ) {
-				$definition['factory'] = array( $this, 'load_builtin_module' );
-			}
-
+			$definition['factory'] = array( $this, 'load_builtin_module' );
 			$registry->register( $module_id, $definition );
 		}
 	}
@@ -293,6 +290,10 @@ class Lightweight_SEO {
 			case 'local-seo':
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-local-seo-module.php';
 				new Lightweight_SEO_Local_SEO_Module( $this->settings );
+				break;
+			case 'ai':
+				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-ai-discovery-module.php';
+				new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), $context );
 				break;
 		}
 	}

@@ -77,11 +77,10 @@ class Lightweight_SEO_Module_State {
 			return;
 		}
 
-		$states             = $this->get_all();
-		$derived            = self::derive_from_legacy_settings( $new_value );
-		$this->states       = array_merge( $states, $derived );
-		$this->states['ai'] = ! empty( $states['ai'] );
-		$this->states       = self::normalize( $this->states );
+		$states       = $this->get_all();
+		$derived      = self::derive_from_legacy_settings( $new_value );
+		$this->states = array_merge( $states, $derived );
+		$this->states = self::normalize( $this->states );
 
 		update_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME, $this->states );
 	}
@@ -100,6 +99,7 @@ class Lightweight_SEO_Module_State {
 			'hreflang'  => '1' === (string) ( $settings['enable_hreflang_output'] ?? '' ),
 			'tracking'  => self::has_tracking_identifier( $settings ),
 			'local-seo' => '1' === (string) ( $settings['enable_local_business_schema'] ?? '' ),
+			'ai'        => '1' === (string) ( $settings['enable_ai_discovery'] ?? '' ),
 		);
 	}
 

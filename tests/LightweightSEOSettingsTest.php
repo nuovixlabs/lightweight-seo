@@ -129,4 +129,17 @@ final class LightweightSEOSettingsTest extends TestCase {
 		$this->assertSame( '', $normalized['data']['latitude'] );
 		$this->assertSame( array(), $normalized['data']['opening_hours'] );
 	}
+
+	public function test_llms_selection_is_deduplicated_and_bounded(): void {
+		$settings = new Lightweight_SEO_Settings();
+		$ids      = range( 1, 60 );
+		$ids[]    = 1;
+		$ids[]    = 2;
+
+		$normalized = $settings->normalize_llms_post_ids( implode( ', ', $ids ) );
+
+		$this->assertCount( Lightweight_SEO_Settings::MAX_LLMS_POSTS, explode( ',', $normalized ) );
+		$this->assertSame( '1', explode( ',', $normalized )[0] );
+		$this->assertSame( '50', explode( ',', $normalized )[49] );
+	}
 }
