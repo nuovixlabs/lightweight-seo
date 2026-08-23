@@ -3,11 +3,16 @@
 final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 
 	public function test_disabled_modules_load_no_implementation_classes_or_hooks(): void {
-		$this->assertFalse( class_exists( 'Lightweight_SEO_Redirects_Service', false ) );
-		$this->assertFalse( class_exists( 'Lightweight_SEO_Hreflang_Service', false ) );
-		$this->assertFalse( class_exists( 'Lightweight_SEO_Tracking_Service', false ) );
-		$this->assertFalse( class_exists( 'Lightweight_SEO_Local_SEO_Module', false ) );
-		$this->assertFalse( class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ) );
+		$this->assertSame(
+			array(
+				'redirects' => false,
+				'hreflang'  => false,
+				'tracking'  => false,
+				'local-seo' => false,
+				'ai'        => false,
+			),
+			$GLOBALS['lightweight_seo_disabled_module_classes_at_boot']
+		);
 		$this->assertFalse( has_action( 'template_redirect', array( 'Lightweight_SEO_Redirects_Service', 'maybe_redirect_request' ) ) );
 	}
 

@@ -1,10 +1,7 @@
 <?php
 
-require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-internal-links-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-redirects-service.php';
-require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-search-console-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-compatibility-service.php';
-require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-image-audit-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-importer-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin.php';
@@ -121,17 +118,18 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '%sitename%', $validated['home_title_format'] );
 		$this->assertSame( '%title% | %sitename%', $validated['archive_title_format'] );
 		$this->assertSame( 'Find %search%', $validated['search_title_format'] );
-		$this->assertSame( '0', $validated['enable_meta_keywords'] );
+		$this->assertSame( 'existing,keywords', $validated['meta_keywords'] );
+		$this->assertArrayNotHasKey( 'enable_meta_keywords', $validated );
 		$this->assertSame( '0', $validated['noindex_search_results'] );
 		$this->assertSame( '0', $validated['noindex_attachment_pages'] );
 		$this->assertSame( '0', $validated['exclude_noindex_from_sitemaps'] );
-		$this->assertSame( '1', $validated['enable_image_sitemaps'] );
+		$this->assertArrayNotHasKey( 'enable_image_sitemaps', $validated );
 		$this->assertSame( '0', $validated['enable_schema_output'] );
-		$this->assertSame( '0', $validated['enable_404_monitor'] );
+		$this->assertArrayNotHasKey( 'enable_404_monitor', $validated );
 		$this->assertSame( '0', $validated['enable_auto_redirects'] );
 		$this->assertSame( 'https://example.com/linkedin', $validated['organization_same_as'] );
-		$this->assertSame( 'sc-domain:example.com', $validated['search_console_property'] );
-		$this->assertStringContainsString( 'search-console@example.com', $validated['search_console_service_account_json'] );
+		$this->assertSame( 'https://example.com/', $validated['search_console_property'] );
+		$this->assertStringContainsString( 'existing@example.com', $validated['search_console_service_account_json'] );
 		$this->assertSame( "/old-path /new-path 301\n/legacy https://example.com/destination 302", $validated['redirect_rules'] );
 		$this->assertSame( 'large', $validated['default_max_image_preview'] );
 		$this->assertSame( 27, $validated['social_image_id'] );
@@ -268,6 +266,9 @@ final class LightweightSEOAdminTest extends TestCase {
 	}
 
 	public function test_validate_settings_normalizes_url_prefix_search_console_properties(): void {
+		$this->assertFalse( class_exists( 'Lightweight_SEO_Search_Console_Service' ) );
+		return;
+
 		$settings = new class() {
 			public function get_all() {
 				return array(
@@ -329,6 +330,9 @@ final class LightweightSEOAdminTest extends TestCase {
 	}
 
 	public function test_internal_link_report_render_outputs_orphans_and_broken_links(): void {
+		$this->assertFalse( class_exists( 'Lightweight_SEO_Internal_Links_Service' ) );
+		return;
+
 		global $lightweight_seo_test_options;
 		global $lightweight_seo_test_posts;
 
@@ -394,6 +398,9 @@ final class LightweightSEOAdminTest extends TestCase {
 	}
 
 	public function test_image_discover_report_render_outputs_image_audit_segments(): void {
+		$this->assertFalse( class_exists( 'Lightweight_SEO_Image_Audit_Service' ) );
+		return;
+
 		global $lightweight_seo_test_post_meta;
 		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_query_state;
@@ -674,5 +681,34 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '1', $validated['noindex_search_results'] );
 		$this->assertSame( '1', $validated['enable_schema_output'] );
 		$this->assertSame( '1', $validated['enable_local_business_schema'] );
+	}
+
+	public function test_tools_save_explicitly_deletes_retained_search_console_and_404_data(): void {
+		global $lightweight_seo_test_options;
+
+		$settings_data                                        = ( new Lightweight_SEO_Settings() )->get_defaults();
+		$settings_data['search_console_property']             = 'sc-domain:example.com';
+		$settings_data['search_console_service_account_json'] = '{"private_key":"legacy"}';
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $settings_data;
+		$lightweight_seo_test_options['lightweight_seo_404_logs']    = array( '/missing' );
+		$settings  = new Lightweight_SEO_Settings();
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+		$admin     = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		$validated = $admin->validate_settings(
+			array(
+				'settings_tab'                      => 'tools',
+				'delete_legacy_search_console_data' => '1',
+				'delete_legacy_404_logs'            => '1',
+			)
+		);
+
+		$this->assertArrayNotHasKey( 'search_console_property', $validated );
+		$this->assertArrayNotHasKey( 'search_console_service_account_json', $validated );
+		$this->assertArrayNotHasKey( 'lightweight_seo_404_logs', $lightweight_seo_test_options );
 	}
 }

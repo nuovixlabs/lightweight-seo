@@ -356,10 +356,6 @@ class Lightweight_SEO_Meta_Boxes {
 			$this->post_meta->update( $post_id, 'seo_description', sanitize_textarea_field( wp_unslash( $_POST['lightweight_seo_description'] ) ) );
 		}
 
-		if ( isset( $_POST['lightweight_seo_keywords'] ) ) {
-			$this->post_meta->update( $post_id, 'seo_keywords', sanitize_text_field( wp_unslash( $_POST['lightweight_seo_keywords'] ) ) );
-		}
-
 		if ( isset( $_POST['lightweight_seo_canonical_url'] ) ) {
 			$this->post_meta->update( $post_id, 'seo_canonical_url', esc_url_raw( wp_unslash( $_POST['lightweight_seo_canonical_url'] ) ) );
 		}

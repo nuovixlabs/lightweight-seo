@@ -95,7 +95,7 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 
 		$this->assertSame( 'My Title', $post_meta->updates['seo_title'] );
 		$this->assertSame( 'My Description', $post_meta->updates['seo_description'] );
-		$this->assertSame( 'alpha, beta', $post_meta->updates['seo_keywords'] );
+		$this->assertArrayNotHasKey( 'seo_keywords', $post_meta->updates );
 		$this->assertSame( 'https://example.com/canonical-url', $post_meta->updates['seo_canonical_url'] );
 		$this->assertSame( '1', $post_meta->updates['seo_noindex'] );
 		$this->assertSame( '1', $post_meta->updates['seo_nofollow'] );

@@ -250,6 +250,17 @@ class Lightweight_SEO_Post_Meta {
 		return $updated;
 	}
 
+	/** Delete a single registered SEO meta value. */
+	public function delete( $post_id, $field ) {
+		if ( ! isset( $this->meta_keys[ $field ] ) ) {
+			return false;
+		}
+
+		unset( $this->cache[ (int) $post_id ] );
+
+		return delete_post_meta( $post_id, $this->meta_keys[ $field ] );
+	}
+
 	/**
 	 * Capture the current social image state before metadata changes.
 	 *

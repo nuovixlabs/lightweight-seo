@@ -219,66 +219,6 @@ class Lightweight_SEO_Schema_Service {
 	}
 
 	/**
-	 * Build a Product schema node for singular product content.
-	 *
-	 * @since    1.1.0
-	 * @param    array    $context    Resolved page context.
-	 * @return   array
-	 */
-	private function build_product_schema( $context ) {
-		if ( ! $this->settings->product_schema_enabled() || ! is_singular() ) {
-			return array();
-		}
-
-		$post_id = get_queried_object_id();
-		$post    = $post_id ? get_post( $post_id ) : null;
-
-		if ( ! $this->is_product_post( $post ) ) {
-			return array();
-		}
-
-		$price         = get_post_meta( $post_id, '_price', true );
-		$regular_price = get_post_meta( $post_id, '_regular_price', true );
-		$sale_price    = get_post_meta( $post_id, '_sale_price', true );
-		$stock_status  = sanitize_text_field( (string) get_post_meta( $post_id, '_stock_status', true ) );
-		$sku           = sanitize_text_field( (string) get_post_meta( $post_id, '_sku', true ) );
-		$description   = ! empty( $context['description'] ) ? $context['description'] : $this->get_post_plain_text( $post );
-		$schema        = array(
-			'@type'       => 'Product',
-			'@id'         => $context['canonical_url'] . '#product',
-			'name'        => ! empty( $context['document_title'] ) ? $context['document_title'] : get_the_title( $post_id ),
-			'url'         => $context['canonical_url'],
-			'description' => $description,
-			'brand'       => array(
-				'@id' => home_url( '/#organization' ),
-			),
-		);
-
-		if ( ! empty( $sku ) ) {
-			$schema['sku'] = $sku;
-		}
-
-		$image = $this->build_primary_image_schema( $context, $post_id );
-
-		if ( ! empty( $image ) ) {
-			$schema['image'] = $image;
-		}
-
-		if ( '' !== (string) $price || '' !== (string) $regular_price || '' !== (string) $sale_price ) {
-			$offer_price      = '' !== (string) $sale_price ? $sale_price : ( '' !== (string) $price ? $price : $regular_price );
-			$schema['offers'] = array(
-				'@type'         => 'Offer',
-				'price'         => (string) $offer_price,
-				'priceCurrency' => function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'USD',
-				'availability'  => 'outofstock' === strtolower( $stock_status ) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
-				'url'           => $context['canonical_url'],
-			);
-		}
-
-		return $schema;
-	}
-
-	/**
 	 * Build a profile page schema node for author archives.
 	 *
 	 * @since    1.1.0
@@ -393,17 +333,6 @@ class Lightweight_SEO_Schema_Service {
 			'@id'             => $context['canonical_url'] . '#breadcrumb',
 			'itemListElement' => $items,
 		);
-	}
-
-	/**
-	 * Determine whether the current post should be treated as a product.
-	 *
-	 * @since    1.1.0
-	 * @param    WP_Post|object|null    $post    Current queried post object.
-	 * @return   bool
-	 */
-	private function is_product_post( $post ) {
-		return ! empty( $post ) && 'product' === (string) ( $post->post_type ?? '' );
 	}
 
 	/**

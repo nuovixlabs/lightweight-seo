@@ -91,8 +91,6 @@ class Lightweight_SEO_Page_Context_Service {
 		$context  = array(
 			'document_title'   => '',
 			'description'      => '',
-			'keywords'         => $settings['meta_keywords'],
-			'keywords_enabled' => $this->settings->meta_keywords_enabled(),
 			'canonical_url'    => $this->get_current_url(),
 			'canonical_custom' => false,
 			'robots'           => $this->build_default_robots_directives(),
@@ -139,10 +137,6 @@ class Lightweight_SEO_Page_Context_Service {
 
 				if ( is_front_page() && empty( $post_meta['seo_description'] ) && ! empty( $settings['meta_description'] ) ) {
 					$context['description'] = $settings['meta_description'];
-				}
-
-				if ( ! empty( $post_meta['seo_keywords'] ) ) {
-					$context['keywords'] = $post_meta['seo_keywords'];
 				}
 
 				$context['canonical_custom'] = ! empty( $post_meta['seo_canonical_url'] );

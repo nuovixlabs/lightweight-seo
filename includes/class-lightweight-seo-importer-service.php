@@ -15,6 +15,11 @@ if ( ! defined( 'WPINC' ) ) {
  * SEO metadata importer service.
  */
 class Lightweight_SEO_Importer_Service {
+	/** Maximum number of posts read or changed in one administrator request. */
+	const BATCH_SIZE = 50;
+
+	/** Option containing the bounded rollback snapshot for the latest batch. */
+	const ROLLBACK_OPTION = 'lightweight_seo_import_rollback';
 
 	/**
 	 * Shared post meta service.
@@ -43,23 +48,86 @@ class Lightweight_SEO_Importer_Service {
 	 * @return   array
 	 */
 	public function import( $source ) {
+		return $this->import_batch( $source, 0 );
+	}
+
+	/** Preview one bounded batch without writing metadata. */
+	public function preview( $source, $offset = 0 ) {
+		return $this->process_batch( $source, $offset, false );
+	}
+
+	/** Import one bounded batch and retain only that batch's rollback snapshot. */
+	public function import_batch( $source, $offset = 0 ) {
+		return $this->process_batch( $source, $offset, true );
+	}
+
+	/** Roll back the most recently imported batch. */
+	public function rollback_last_batch() {
+		$snapshot = (array) get_option( self::ROLLBACK_OPTION, array() );
+		$restored = 0;
+
+		foreach ( (array) ( $snapshot['changes'] ?? array() ) as $change ) {
+			$post_id = absint( $change['post_id'] ?? 0 );
+			$field   = sanitize_key( $change['field'] ?? '' );
+
+			if ( ! $post_id || '' === $field ) {
+				continue;
+			}
+
+			if ( ! empty( $change['existed'] ) || '' !== (string) ( $change['old_value'] ?? '' ) ) {
+				$this->post_meta->update( $post_id, $field, $change['old_value'] ?? '' );
+			} elseif ( method_exists( $this->post_meta, 'delete' ) ) {
+				$this->post_meta->delete( $post_id, $field );
+			} else {
+				$this->post_meta->update( $post_id, $field, '' );
+			}
+
+			++$restored;
+		}
+
+		delete_option( self::ROLLBACK_OPTION );
+
+		return array(
+			'source'          => sanitize_key( $snapshot['source'] ?? '' ),
+			'restored_fields' => $restored,
+			'restored_posts'  => count( array_unique( array_map( 'absint', wp_list_pluck( (array) ( $snapshot['changes'] ?? array() ), 'post_id' ) ) ) ),
+			'offset'          => absint( $snapshot['offset'] ?? 0 ),
+		);
+	}
+
+	/** Whether a bounded latest-batch rollback is available. */
+	public function has_rollback() {
+		$snapshot = (array) get_option( self::ROLLBACK_OPTION, array() );
+
+		return ! empty( $snapshot['changes'] );
+	}
+
+	/** Analyze or write one bounded batch. */
+	private function process_batch( $source, $offset, $write ) {
 		$source = sanitize_key( $source );
 		$report = array(
 			'source'         => $source,
+			'offset'         => max( 0, absint( $offset ) ),
+			'batch_size'     => self::BATCH_SIZE,
 			'scanned_posts'  => 0,
+			'eligible_posts' => 0,
 			'imported_posts' => 0,
 			'updated_fields' => 0,
+			'skipped_fields' => 0,
+			'next_offset'    => max( 0, absint( $offset ) ),
+			'has_more'       => false,
 		);
 
 		if ( ! in_array( $source, array( 'yoast', 'rank_math', 'aioseo' ), true ) ) {
 			return $report;
 		}
 
-		$posts = get_posts(
+		$posts              = get_posts(
 			array(
 				'post_type'              => $this->post_meta->get_supported_post_types(),
 				'post_status'            => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page'         => -1,
+				'posts_per_page'         => self::BATCH_SIZE + 1,
+				'offset'                 => $report['offset'],
 				'orderby'                => 'ID',
 				'order'                  => 'ASC',
 				'no_found_rows'          => true,
@@ -67,6 +135,9 @@ class Lightweight_SEO_Importer_Service {
 				'update_post_term_cache' => false,
 			)
 		);
+		$report['has_more'] = count( $posts ) > self::BATCH_SIZE;
+		$posts              = array_slice( $posts, 0, self::BATCH_SIZE );
+		$rollback_changes   = array();
 
 		foreach ( $posts as $post ) {
 			++$report['scanned_posts'];
@@ -90,13 +161,52 @@ class Lightweight_SEO_Importer_Service {
 					continue;
 				}
 
-				$this->post_meta->update( (int) $post->ID, $field, $value );
+				if ( '' !== (string) $current_value ) {
+					++$report['skipped_fields'];
+					continue;
+				}
+
+				++$report['updated_fields'];
 				++$updated_field_count;
+
+				if ( ! $write ) {
+					continue;
+				}
+
+				$meta_key           = method_exists( $this->post_meta, 'get_meta_key' ) ? $this->post_meta->get_meta_key( $field ) : '';
+				$rollback_changes[] = array(
+					'post_id'   => (int) $post->ID,
+					'field'     => $field,
+					'existed'   => $meta_key && function_exists( 'metadata_exists' ) ? metadata_exists( 'post', (int) $post->ID, $meta_key ) : '' !== (string) $current_value,
+					'old_value' => $current_value,
+				);
+				$this->post_meta->update( (int) $post->ID, $field, $value );
 			}
 
 			if ( $updated_field_count > 0 ) {
-				++$report['imported_posts'];
-				$report['updated_fields'] += $updated_field_count;
+				++$report['eligible_posts'];
+
+				if ( $write ) {
+					++$report['imported_posts'];
+				}
+			}
+		}
+
+		$report['next_offset'] = $report['offset'] + $report['scanned_posts'];
+
+		if ( $write ) {
+			if ( ! empty( $rollback_changes ) ) {
+				update_option(
+					self::ROLLBACK_OPTION,
+					array(
+						'source'  => $source,
+						'offset'  => $report['offset'],
+						'changes' => $rollback_changes,
+					),
+					false
+				);
+			} else {
+				delete_option( self::ROLLBACK_OPTION );
 			}
 		}
 

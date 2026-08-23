@@ -76,6 +76,9 @@ class Lightweight_SEO_Admin {
 
 		// Render compatibility notices
 		add_action( 'admin_notices', array( $this, 'maybe_render_safe_mode_notice' ) );
+		add_action( 'admin_notices', array( $this, 'maybe_render_upgrade_summary' ) );
+		add_action( 'admin_post_lightweight_seo_dismiss_upgrade_summary', array( $this, 'dismiss_upgrade_summary' ) );
+		add_action( 'admin_post_lightweight_seo_export_legacy_keywords', array( $this, 'export_legacy_keywords' ) );
 
 		// Enqueue admin scripts and styles
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
@@ -134,11 +137,107 @@ class Lightweight_SEO_Admin {
 		echo esc_html(
 			sprintf(
 				/* translators: %s: comma-separated list of conflicting SEO plugins */
-				__( 'Lightweight SEO safe mode is active because %s is also running. Lightweight SEO title, meta, and schema output is disabled to avoid duplicate SEO markup. Redirects, sitemaps, Search Console, and content audits remain available.', 'lightweight-seo' ),
+				__( 'Lightweight SEO safe mode is active because %s is also running. Lightweight SEO title, meta, and schema output is disabled to avoid duplicate SEO markup. Core sitemaps and non-overlapping module settings remain available.', 'lightweight-seo' ),
 				implode( ', ', $conflicting_plugins )
 			)
 		);
 		echo '</p></div>';
+	}
+
+	/** Render the one-time summary created by the 1.0.3 cleanup migration. */
+	public function maybe_render_upgrade_summary() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$summary = (array) get_option( 'lightweight_seo_upgrade_summary', array() );
+
+		if ( empty( $summary ) ) {
+			return;
+		}
+
+		$dismiss_url = wp_nonce_url(
+			admin_url( 'admin-post.php?action=lightweight_seo_dismiss_upgrade_summary' ),
+			'lightweight_seo_dismiss_upgrade_summary'
+		);
+
+		echo '<div class="notice notice-info"><p><strong>' . esc_html__( 'Lightweight SEO upgrade summary', 'lightweight-seo' ) . '</strong></p><ul>';
+		echo '<li>' . esc_html__( 'Search Console synchronization, site-wide link/image reports, continuous 404 logging, meta-keywords output, and specialized sitemap providers are no longer active in core.', 'lightweight-seo' ) . '</li>';
+
+		if ( ! empty( $summary['removed_sitemaps'] ) ) {
+			echo '<li>' . esc_html__( 'Previously enabled image, video, or news sitemap endpoints were retired. Remove those submitted URLs from external webmaster tools.', 'lightweight-seo' ) . '</li>';
+		}
+
+		if ( ! empty( $summary['has_search_console_private'] ) || ! empty( $summary['legacy_404_entries'] ) || ! empty( $summary['has_meta_keywords'] ) ) {
+			echo '<li>' . esc_html__( 'Legacy credentials, 404 entries, or keyword values need an explicit export or deletion decision on Tools and migration.', 'lightweight-seo' ) . '</li>';
+		}
+
+		echo '</ul><p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=' . $this->plugin_name . '&tab=tools' ) ) . '">' . esc_html__( 'Review migration data', 'lightweight-seo' ) . '</a> <a href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss summary', 'lightweight-seo' ) . '</a></p></div>';
+	}
+
+	/** Dismiss the one-time upgrade summary. */
+	public function dismiss_upgrade_summary() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to dismiss this notice.', 'lightweight-seo' ) );
+		}
+
+		check_admin_referer( 'lightweight_seo_dismiss_upgrade_summary' );
+		delete_option( 'lightweight_seo_upgrade_summary' );
+		wp_safe_redirect( admin_url( 'admin.php?page=' . $this->plugin_name ) );
+		exit;
+	}
+
+	/** Export preserved global and post-level legacy keyword values as CSV. */
+	public function export_legacy_keywords() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to export this data.', 'lightweight-seo' ) );
+		}
+
+		check_admin_referer( 'lightweight_seo_export_legacy_keywords' );
+		$settings = (array) get_option( LIGHTWEIGHT_SEO_OPTION_NAME, array() );
+		$post_ids = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => '_lightweight_seo_keywords', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Explicit administrator export.
+			)
+		);
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="lightweight-seo-legacy-keywords.csv"' );
+
+		$output = fopen( 'php://output', 'w' );
+
+		if ( false === $output ) {
+			wp_die( esc_html__( 'The export stream could not be opened.', 'lightweight-seo' ) );
+		}
+
+		fputcsv( $output, array( 'object_type', 'object_id', 'value' ) );
+
+		if ( ! empty( $settings['meta_keywords'] ) ) {
+			fputcsv( $output, array( 'site', 0, $this->csv_safe_value( $settings['meta_keywords'] ) ) );
+		}
+
+		foreach ( $post_ids as $post_id ) {
+			$value = get_post_meta( $post_id, '_lightweight_seo_keywords', true );
+
+			if ( '' !== (string) $value ) {
+				fputcsv( $output, array( 'post', absint( $post_id ), $this->csv_safe_value( $value ) ) );
+			}
+		}
+
+		fclose( $output );
+		exit;
+	}
+
+	/** Prevent spreadsheet formula execution in administrator-initiated CSV exports. */
+	private function csv_safe_value( $value ) {
+		$value = (string) $value;
+
+		return preg_match( '/^[=+\-@]/', $value ) ? "'" . $value : $value;
 	}
 
 	/**
@@ -199,24 +298,6 @@ class Lightweight_SEO_Admin {
 			'meta_description',
 			__( 'Default Meta Description', 'lightweight-seo' ),
 			array( $this, 'meta_description_render' ),
-			$this->plugin_name,
-			'lightweight_seo_general_section'
-		);
-
-		// Meta Keywords
-		add_settings_field(
-			'meta_keywords',
-			__( 'Default Meta Keywords', 'lightweight-seo' ),
-			array( $this, 'meta_keywords_render' ),
-			$this->plugin_name,
-			'lightweight_seo_general_section'
-		);
-
-		// Meta Keywords Output Toggle
-		add_settings_field(
-			'enable_meta_keywords',
-			__( 'Output Meta Keywords', 'lightweight-seo' ),
-			array( $this, 'enable_meta_keywords_render' ),
 			$this->plugin_name,
 			'lightweight_seo_general_section'
 		);
@@ -290,14 +371,6 @@ class Lightweight_SEO_Admin {
 			'exclude_redirected_from_sitemaps',
 			__( 'Exclude Redirected URLs', 'lightweight-seo' ),
 			array( $this, 'exclude_redirected_from_sitemaps_render' ),
-			$this->plugin_name,
-			'lightweight_seo_sitemap_section'
-		);
-
-		add_settings_field(
-			'submit_sitemaps_to_search_console',
-			__( 'Search Console Submission', 'lightweight-seo' ),
-			array( $this, 'submit_sitemaps_to_search_console_render' ),
 			$this->plugin_name,
 			'lightweight_seo_sitemap_section'
 		);
@@ -414,86 +487,6 @@ class Lightweight_SEO_Admin {
 			'lightweight_seo_redirects_section'
 		);
 
-		// Internal Linking Section
-		add_settings_section(
-			'lightweight_seo_internal_links_section',
-			__( 'Internal Linking', 'lightweight-seo' ),
-			array( $this, 'internal_links_section_callback' ),
-			$this->plugin_name
-		);
-
-		add_settings_field(
-			'internal_link_report',
-			__( 'Link Health Report', 'lightweight-seo' ),
-			array( $this, 'internal_link_report_render' ),
-			$this->plugin_name,
-			'lightweight_seo_internal_links_section'
-		);
-
-		// Image SEO & Discover Section
-		add_settings_section(
-			'lightweight_seo_image_discover_section',
-			__( 'Image SEO & Discover', 'lightweight-seo' ),
-			array( $this, 'image_discover_section_callback' ),
-			$this->plugin_name
-		);
-
-		add_settings_field(
-			'discover_min_image_width',
-			__( 'Minimum Featured Image Width', 'lightweight-seo' ),
-			array( $this, 'discover_min_image_width_render' ),
-			$this->plugin_name,
-			'lightweight_seo_image_discover_section'
-		);
-
-		add_settings_field(
-			'discover_min_image_height',
-			__( 'Minimum Featured Image Height', 'lightweight-seo' ),
-			array( $this, 'discover_min_image_height_render' ),
-			$this->plugin_name,
-			'lightweight_seo_image_discover_section'
-		);
-
-		add_settings_field(
-			'image_discover_report',
-			__( 'Image SEO Audit', 'lightweight-seo' ),
-			array( $this, 'image_discover_report_render' ),
-			$this->plugin_name,
-			'lightweight_seo_image_discover_section'
-		);
-
-		// Search Console Section
-		add_settings_section(
-			'lightweight_seo_search_console_section',
-			__( 'Search Console', 'lightweight-seo' ),
-			array( $this, 'search_console_section_callback' ),
-			$this->plugin_name
-		);
-
-		add_settings_field(
-			'search_console_property',
-			__( 'Property', 'lightweight-seo' ),
-			array( $this, 'search_console_property_render' ),
-			$this->plugin_name,
-			'lightweight_seo_search_console_section'
-		);
-
-		add_settings_field(
-			'search_console_service_account_json',
-			__( 'Service Account JSON', 'lightweight-seo' ),
-			array( $this, 'search_console_service_account_json_render' ),
-			$this->plugin_name,
-			'lightweight_seo_search_console_section'
-		);
-
-		add_settings_field(
-			'search_console_report',
-			__( 'Search Performance Snapshot', 'lightweight-seo' ),
-			array( $this, 'search_console_report_render' ),
-			$this->plugin_name,
-			'lightweight_seo_search_console_section'
-		);
-
 		// Migration Section
 		add_settings_section(
 			'lightweight_seo_migration_section',
@@ -511,17 +504,25 @@ class Lightweight_SEO_Admin {
 		);
 
 		add_settings_field(
-			'run_import',
-			__( 'Run Import', 'lightweight-seo' ),
-			array( $this, 'run_import_render' ),
+			'import_actions',
+			__( 'Preview or Import', 'lightweight-seo' ),
+			array( $this, 'import_actions_render' ),
 			$this->plugin_name,
 			'lightweight_seo_migration_section'
 		);
 
 		add_settings_field(
 			'import_report',
-			__( 'Last Import Report', 'lightweight-seo' ),
+			__( 'Import Status', 'lightweight-seo' ),
 			array( $this, 'import_report_render' ),
+			$this->plugin_name,
+			'lightweight_seo_migration_section'
+		);
+
+		add_settings_field(
+			'legacy_data_transition',
+			__( 'Legacy Data Transition', 'lightweight-seo' ),
+			array( $this, 'legacy_data_transition_render' ),
 			$this->plugin_name,
 			'lightweight_seo_migration_section'
 		);
@@ -1119,7 +1120,8 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function migration_section_callback() {
-		echo '<p>' . __( 'Import saved SEO metadata from Yoast SEO, Rank Math, or All in One SEO into Lightweight SEO fields.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Preview and import saved SEO metadata from Yoast SEO, Rank Math, or All in One SEO in batches of 50 posts.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Imports fill empty Lightweight SEO fields only. Each imported batch can be rolled back before the next batch replaces its rollback snapshot.', 'lightweight-seo' ) . '</p>';
 	}
 
 	/**
@@ -1927,16 +1929,30 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
-	 * Render the run-import field.
+	 * Render bounded preview, import, and rollback actions.
 	 *
 	 * @since    1.1.0
 	 */
-	public function run_import_render() {
+	public function import_actions_render() {
+		$options  = $this->settings->get_all();
+		$importer = new Lightweight_SEO_Importer_Service( $this->post_meta );
 		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[run_import]" value="1">
-			<?php _e( 'Run the selected import the next time settings are saved', 'lightweight-seo' ); ?>
-		</label>
+		<p>
+			<button type="submit" class="button" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[import_action]" value="preview"><?php _e( 'Preview next batch', 'lightweight-seo' ); ?></button>
+			<button type="submit" class="button button-secondary" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[import_action]" value="import"><?php _e( 'Import next batch', 'lightweight-seo' ); ?></button>
+			<?php if ( $importer->has_rollback() ) : ?>
+				<button type="submit" class="button-link-delete" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[import_action]" value="rollback"><?php _e( 'Roll back last batch', 'lightweight-seo' ); ?></button>
+			<?php endif; ?>
+		</p>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %d: zero-based importer cursor. */
+				esc_html__( 'The next batch starts after %d scanned posts. Changing the source resets this cursor.', 'lightweight-seo' ),
+				absint( $options['import_cursor'] ?? 0 )
+			);
+			?>
+		</p>
 		<?php
 	}
 
@@ -1950,6 +1966,57 @@ class Lightweight_SEO_Admin {
 		?>
 		<textarea rows="4" cols="50" class="large-text code" readonly="readonly"><?php echo esc_textarea( $options['last_import_report'] ?? '' ); ?></textarea>
 		<?php
+	}
+
+	/** Render explicit export/delete choices for retained legacy data. */
+	public function legacy_data_transition_render() {
+		$options         = (array) get_option( LIGHTWEIGHT_SEO_OPTION_NAME, array() );
+		$legacy_404_logs = (array) get_option( 'lightweight_seo_404_logs', array() );
+		$has_credentials = ! empty( $options['search_console_property'] ) || ! empty( $options['search_console_service_account_json'] );
+		$has_keywords    = ! empty( $options['meta_keywords'] );
+		$export_url      = wp_nonce_url(
+			admin_url( 'admin-post.php?action=lightweight_seo_export_legacy_keywords' ),
+			'lightweight_seo_export_legacy_keywords'
+		);
+		?>
+		<p><?php _e( 'Retired data is never moved into another integration automatically.', 'lightweight-seo' ); ?></p>
+		<?php if ( $has_credentials ) : ?>
+			<details>
+				<summary><?php _e( 'Review retained Search Console configuration', 'lightweight-seo' ); ?></summary>
+				<p><strong><?php _e( 'Property:', 'lightweight-seo' ); ?></strong> <?php echo esc_html( $options['search_console_property'] ?? '' ); ?></p>
+				<textarea rows="6" class="large-text code" readonly="readonly" aria-label="<?php echo esc_attr__( 'Retained Search Console service account JSON', 'lightweight-seo' ); ?>"><?php echo esc_textarea( $options['search_console_service_account_json'] ?? '' ); ?></textarea>
+				<p class="description"><?php _e( 'Copy this only if you need an explicit private backup. Future Insights setup will require a new connection.', 'lightweight-seo' ); ?></p>
+				<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[delete_legacy_search_console_data]" value="1"> <?php _e( 'Permanently delete the retained property and private key when settings are saved', 'lightweight-seo' ); ?></label>
+			</details>
+		<?php else : ?>
+			<p><?php _e( 'No legacy Search Console credentials are retained.', 'lightweight-seo' ); ?></p>
+		<?php endif; ?>
+		<?php if ( ! empty( $legacy_404_logs ) ) : ?>
+			<?php /* translators: %d: Number of retained legacy 404 log entries. */ ?>
+			<p><label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[delete_legacy_404_logs]" value="1"> <?php printf( esc_html__( 'Permanently delete %d retained legacy 404 log entries when settings are saved', 'lightweight-seo' ), count( $legacy_404_logs ) ); ?></label></p>
+		<?php endif; ?>
+		<?php if ( $has_keywords || $this->has_legacy_post_keywords() ) : ?>
+			<p><a class="button" href="<?php echo esc_url( $export_url ); ?>"><?php _e( 'Export legacy keywords CSV', 'lightweight-seo' ); ?></a></p>
+			<p class="description"><?php _e( 'Stored keyword values remain available for export but are not edited or output by Lightweight SEO.', 'lightweight-seo' ); ?></p>
+		<?php else : ?>
+			<p><?php _e( 'No legacy keyword values were detected.', 'lightweight-seo' ); ?></p>
+		<?php endif; ?>
+		<?php
+	}
+
+	/** Detect keyword data with one bounded existence query on the Tools screen only. */
+	private function has_legacy_post_keywords() {
+		$post_ids = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => '_lightweight_seo_keywords', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Bounded administrator transition check.
+			)
+		);
+
+		return ! empty( $post_ids );
 	}
 
 	/**
@@ -2299,35 +2366,26 @@ class Lightweight_SEO_Admin {
 			$sanitized_input['meta_description'] = $existing_settings['meta_description'] ?? '';
 		}
 
-		if ( isset( $input['meta_keywords'] ) ) {
-			$sanitized_input['meta_keywords'] = sanitize_text_field( $input['meta_keywords'] );
-		} else {
+		if ( ! empty( $existing_settings['meta_keywords'] ) ) {
 			$sanitized_input['meta_keywords'] = $existing_settings['meta_keywords'] ?? '';
 		}
 
-		$sanitized_input['enable_meta_keywords']              = $checkbox_value( 'enable_meta_keywords', 'legacy' );
-		$sanitized_input['noindex_search_results']            = $checkbox_value( 'noindex_search_results', 'indexation' );
-		$sanitized_input['noindex_attachment_pages']          = $checkbox_value( 'noindex_attachment_pages', 'indexation' );
-		$sanitized_input['enable_media_x_robots_headers']     = $checkbox_value( 'enable_media_x_robots_headers', 'indexation' );
-		$sanitized_input['exclude_noindex_from_sitemaps']     = $checkbox_value( 'exclude_noindex_from_sitemaps', 'indexation' );
-		$sanitized_input['exclude_redirected_from_sitemaps']  = $checkbox_value( 'exclude_redirected_from_sitemaps', 'indexation' );
-		$sanitized_input['enable_image_sitemaps']             = $existing_settings['enable_image_sitemaps'] ?? '0';
-		$sanitized_input['enable_video_sitemaps']             = $existing_settings['enable_video_sitemaps'] ?? '0';
-		$sanitized_input['enable_news_sitemaps']              = $existing_settings['enable_news_sitemaps'] ?? '0';
-		$sanitized_input['enable_schema_output']              = $checkbox_value( 'enable_schema_output', 'identity' );
-		$sanitized_input['enable_product_schema']             = $existing_settings['enable_product_schema'] ?? '0';
-		$sanitized_input['enable_local_business_schema']      = $checkbox_value( 'enable_local_business_schema', 'modules' );
-		$sanitized_input['enable_hreflang_output']            = $checkbox_value( 'enable_hreflang_output', 'modules' );
-		$sanitized_input['enable_hreflang_path_mirroring']    = $checkbox_value( 'enable_hreflang_path_mirroring', 'modules' );
-		$sanitized_input['submit_sitemaps_to_search_console'] = $checkbox_value( 'submit_sitemaps_to_search_console', 'legacy' );
-		$sanitized_input['enable_404_monitor']                = $checkbox_value( 'enable_404_monitor', 'modules' );
-		$sanitized_input['enable_auto_redirects']             = $checkbox_value( 'enable_auto_redirects', 'modules' );
-		$sanitized_input['enable_ai_discovery']               = $checkbox_value( 'enable_ai_discovery', 'modules' );
-		$sanitized_input['ai_search_crawlers_enabled']        = $checkbox_value( 'ai_search_crawlers_enabled', 'modules' );
-		$sanitized_input['ai_training_crawlers_enabled']      = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );
-		$sanitized_input['enable_llms_txt']                   = $checkbox_value( 'enable_llms_txt', 'modules' );
-		$sanitized_input['delete_data_on_uninstall']          = $checkbox_value( 'delete_data_on_uninstall', 'tools' );
-		$sanitized_input['default_max_image_preview']         = $this->settings->normalize_max_image_preview(
+		$sanitized_input['noindex_search_results']           = $checkbox_value( 'noindex_search_results', 'indexation' );
+		$sanitized_input['noindex_attachment_pages']         = $checkbox_value( 'noindex_attachment_pages', 'indexation' );
+		$sanitized_input['enable_media_x_robots_headers']    = $checkbox_value( 'enable_media_x_robots_headers', 'indexation' );
+		$sanitized_input['exclude_noindex_from_sitemaps']    = $checkbox_value( 'exclude_noindex_from_sitemaps', 'indexation' );
+		$sanitized_input['exclude_redirected_from_sitemaps'] = $checkbox_value( 'exclude_redirected_from_sitemaps', 'indexation' );
+		$sanitized_input['enable_schema_output']             = $checkbox_value( 'enable_schema_output', 'identity' );
+		$sanitized_input['enable_local_business_schema']     = $checkbox_value( 'enable_local_business_schema', 'modules' );
+		$sanitized_input['enable_hreflang_output']           = $checkbox_value( 'enable_hreflang_output', 'modules' );
+		$sanitized_input['enable_hreflang_path_mirroring']   = $checkbox_value( 'enable_hreflang_path_mirroring', 'modules' );
+		$sanitized_input['enable_auto_redirects']            = $checkbox_value( 'enable_auto_redirects', 'modules' );
+		$sanitized_input['enable_ai_discovery']              = $checkbox_value( 'enable_ai_discovery', 'modules' );
+		$sanitized_input['ai_search_crawlers_enabled']       = $checkbox_value( 'ai_search_crawlers_enabled', 'modules' );
+		$sanitized_input['ai_training_crawlers_enabled']     = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );
+		$sanitized_input['enable_llms_txt']                  = $checkbox_value( 'enable_llms_txt', 'modules' );
+		$sanitized_input['delete_data_on_uninstall']         = $checkbox_value( 'delete_data_on_uninstall', 'tools' );
+		$sanitized_input['default_max_image_preview']        = $this->settings->normalize_max_image_preview(
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),
 			'large'
 		);
@@ -2398,28 +2456,26 @@ class Lightweight_SEO_Admin {
 			$sanitized_input['llms_txt_post_ids'] = $existing_settings['llms_txt_post_ids'] ?? '';
 		}
 
-		if ( isset( $input['search_console_property'] ) ) {
-			$sanitized_input['search_console_property'] = $this->normalize_search_console_property(
-				$input['search_console_property'],
-				$existing_settings['search_console_property'] ?? ''
-			);
-		} else {
+		if ( empty( $input['delete_legacy_search_console_data'] ) && ! empty( $existing_settings['search_console_property'] ) ) {
 			$sanitized_input['search_console_property'] = $existing_settings['search_console_property'] ?? '';
 		}
 
-		if ( isset( $input['search_console_service_account_json'] ) ) {
-			$sanitized_input['search_console_service_account_json'] = $this->normalize_search_console_service_account_json(
-				$input['search_console_service_account_json'],
-				$existing_settings['search_console_service_account_json'] ?? ''
-			);
-		} else {
+		if ( empty( $input['delete_legacy_search_console_data'] ) && ! empty( $existing_settings['search_console_service_account_json'] ) ) {
 			$sanitized_input['search_console_service_account_json'] = $existing_settings['search_console_service_account_json'] ?? '';
 		}
 
-		$sanitized_input['discover_min_image_width']  = max( 1, absint( $input['discover_min_image_width'] ?? ( $existing_settings['discover_min_image_width'] ?? 1200 ) ) );
-		$sanitized_input['discover_min_image_height'] = max( 1, absint( $input['discover_min_image_height'] ?? ( $existing_settings['discover_min_image_height'] ?? 900 ) ) );
-		$sanitized_input['import_source']             = sanitize_key( $input['import_source'] ?? ( $existing_settings['import_source'] ?? '' ) );
-		$sanitized_input['last_import_report']        = $existing_settings['last_import_report'] ?? '';
+		$sanitized_input['import_source']      = sanitize_key( $input['import_source'] ?? ( $existing_settings['import_source'] ?? '' ) );
+		$sanitized_input['import_cursor']      = absint( $existing_settings['import_cursor'] ?? 0 );
+		$sanitized_input['last_import_report'] = $existing_settings['last_import_report'] ?? '';
+
+		if ( ( $existing_settings['import_source'] ?? '' ) !== $sanitized_input['import_source'] ) {
+			$sanitized_input['import_cursor'] = 0;
+			delete_option( Lightweight_SEO_Importer_Service::ROLLBACK_OPTION );
+		}
+
+		if ( ! empty( $input['delete_legacy_404_logs'] ) ) {
+			delete_option( 'lightweight_seo_404_logs' );
+		}
 
 		if ( isset( $input['social_image'] ) ) {
 			$sanitized_input['social_image'] = esc_url_raw( $input['social_image'] );
@@ -2489,22 +2545,42 @@ class Lightweight_SEO_Admin {
 			$sanitized_input[ $key ] = implode( "\n", array_values( array_unique( $keys ) ) );
 		}
 
-		if ( ! empty( $input['run_import'] ) && in_array( $sanitized_input['import_source'], array( 'yoast', 'rank_math', 'aioseo' ), true ) ) {
-			if ( ! class_exists( 'Lightweight_SEO_Importer_Service' ) ) {
-				require_once __DIR__ . '/class-lightweight-seo-importer-service.php';
-			}
+		$import_action = sanitize_key( $input['import_action'] ?? '' );
 
+		if ( in_array( $import_action, array( 'preview', 'import', 'rollback' ), true ) ) {
 			$importer = new Lightweight_SEO_Importer_Service( $this->post_meta );
-			$report   = $importer->import( $sanitized_input['import_source'] );
 
-			$sanitized_input['last_import_report'] = sprintf(
-				/* translators: 1: import source, 2: scanned posts, 3: imported posts, 4: updated fields */
-				__( 'Imported from %1$s. Scanned %2$d posts, updated %3$d posts, and changed %4$d fields.', 'lightweight-seo' ),
-				$sanitized_input['import_source'],
-				(int) ( $report['scanned_posts'] ?? 0 ),
-				(int) ( $report['imported_posts'] ?? 0 ),
-				(int) ( $report['updated_fields'] ?? 0 )
-			);
+			if ( 'rollback' === $import_action ) {
+				$report                                = $importer->rollback_last_batch();
+				$sanitized_input['import_cursor']      = absint( $report['offset'] ?? 0 );
+				$sanitized_input['last_import_report'] = sprintf(
+					/* translators: 1: restored posts. 2: restored fields. */
+					__( 'Rolled back the latest batch: restored %1$d posts and %2$d fields.', 'lightweight-seo' ),
+					absint( $report['restored_posts'] ?? 0 ),
+					absint( $report['restored_fields'] ?? 0 )
+				);
+			} elseif ( in_array( $sanitized_input['import_source'], array( 'yoast', 'rank_math', 'aioseo' ), true ) ) {
+				$report = 'preview' === $import_action
+					? $importer->preview( $sanitized_input['import_source'], $sanitized_input['import_cursor'] )
+					: $importer->import_batch( $sanitized_input['import_source'], $sanitized_input['import_cursor'] );
+
+				if ( 'import' === $import_action ) {
+					$sanitized_input['import_cursor'] = ! empty( $report['has_more'] ) ? absint( $report['next_offset'] ?? 0 ) : 0;
+				}
+
+				$sanitized_input['last_import_report'] = sprintf(
+					/* translators: 1: action label. 2: source. 3: scanned posts. 4: eligible/imported posts. 5: changed fields. 6: skipped occupied fields. */
+					__( '%1$s %2$s batch: scanned %3$d posts, found %4$d eligible posts and %5$d fillable fields; skipped %6$d occupied fields.', 'lightweight-seo' ),
+					'preview' === $import_action ? __( 'Previewed', 'lightweight-seo' ) : __( 'Imported', 'lightweight-seo' ),
+					$sanitized_input['import_source'],
+					absint( $report['scanned_posts'] ?? 0 ),
+					absint( 'preview' === $import_action ? ( $report['eligible_posts'] ?? 0 ) : ( $report['imported_posts'] ?? 0 ) ),
+					absint( $report['updated_fields'] ?? 0 ),
+					absint( $report['skipped_fields'] ?? 0 )
+				);
+			} else {
+				$sanitized_input['last_import_report'] = __( 'Select a supported import source first.', 'lightweight-seo' );
+			}
 		}
 
 		return $sanitized_input;

@@ -135,15 +135,6 @@ class Lightweight_SEO {
 		// Structured data service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-schema-service.php';
 
-		// Internal link analysis service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-internal-links-service.php';
-
-		// Discover image audit service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-image-audit-service.php';
-
-		// Search Console sync service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-search-console-service.php';
-
 		// SEO metadata importer service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-importer-service.php';
 
@@ -171,15 +162,6 @@ class Lightweight_SEO {
 
 		// Initialize sitemap integration
 		$plugin_sitemaps = new Lightweight_SEO_Sitemap_Service( $this->settings, $this->post_meta, $this->archive_meta );
-
-		// Initialize internal link analysis hooks
-		new Lightweight_SEO_Internal_Links_Service( $this->post_meta, true, $this->settings );
-
-		// Initialize image audit hooks
-		new Lightweight_SEO_Image_Audit_Service( $this->settings, $this->post_meta );
-
-		// Initialize Search Console sync hooks
-		new Lightweight_SEO_Search_Console_Service( $this->settings );
 
 		$GLOBALS['lightweight_seo_api'] = new Lightweight_SEO_API( $this->page_context, $this->post_meta, $this->archive_meta, $this->module_registry );
 		do_action( 'lightweight_seo_loaded', $GLOBALS['lightweight_seo_api'] );

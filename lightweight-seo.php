@@ -35,7 +35,7 @@ define( 'LIGHTWEIGHT_SEO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LIGHTWEIGHT_SEO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'LIGHTWEIGHT_SEO_OPTION_NAME', 'lightweight_seo_settings' );
 define( 'LIGHTWEIGHT_SEO_MODULES_OPTION_NAME', 'lightweight_seo_modules' );
-define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION', 2 );
+define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION', 3 );
 define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION', 'lightweight_seo_schema_version' );
 define( 'LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT', '%title% – %sitename%' );
 define( 'LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR', '–' );

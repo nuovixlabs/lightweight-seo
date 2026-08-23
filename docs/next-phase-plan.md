@@ -1,6 +1,6 @@
 # Lightweight SEO Next-Phase Plan
 
-Status: Implementation in progress; PR 1 through PR 7 complete locally
+Status: Implementation in progress; PR 1 through PR 8 complete locally
 
 Planning date: 2026-08-24
 
@@ -708,6 +708,16 @@ Verification evidence:
 - complete importer preview, batching, and rollback design
 
 Exit gate: the 1.0.3 fixture upgrades without losing supported SEO metadata and without leaving scheduled jobs.
+
+Verification evidence:
+
+- Fast suite: 90 tests and 347 assertions pass.
+- Real WordPress 6.0 single-site suite: 20 tests and 89 assertions pass, with the multisite-only lifecycle case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 20 tests and 90 assertions pass.
+- A representative 1.0.3 fixture preserves supported settings and post, term, and user SEO metadata while removing retired report caches, Search Console tokens, and scheduled synchronization.
+- Browser testing confirms the one-time upgrade summary, read-only Search Console transition, explicit credential and retained-404 deletion, legacy keyword export, bounded preview/import, and rollback behavior.
+- The importer scans at most 50 posts per batch, fills only empty Lightweight SEO fields, keeps preview read-only, and stores only the latest bounded rollback snapshot.
+- PHPCS, PHP syntax checks, Composer validation, dependency security audit, and whitespace checks pass.
 
 ### PR 9: Release hardening
 

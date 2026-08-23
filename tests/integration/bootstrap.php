@@ -27,3 +27,11 @@ tests_add_filter(
 );
 
 require $tests_dir . '/includes/bootstrap.php';
+
+$GLOBALS['lightweight_seo_disabled_module_classes_at_boot'] = array(
+	'redirects' => class_exists( 'Lightweight_SEO_Redirects_Service', false ),
+	'hreflang'  => class_exists( 'Lightweight_SEO_Hreflang_Service', false ),
+	'tracking'  => class_exists( 'Lightweight_SEO_Tracking_Service', false ),
+	'local-seo' => class_exists( 'Lightweight_SEO_Local_SEO_Module', false ),
+	'ai'        => class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ),
+);

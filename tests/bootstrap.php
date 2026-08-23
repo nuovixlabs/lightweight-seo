@@ -15,7 +15,7 @@ if (!defined('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME')) {
 }
 
 if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
-    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 2);
+    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 3);
 }
 
 if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
@@ -353,6 +353,16 @@ if (!function_exists('update_option')) {
     }
 }
 
+if (!function_exists('delete_option')) {
+    function delete_option($option) {
+        global $lightweight_seo_test_options;
+
+        unset($lightweight_seo_test_options[$option]);
+
+        return true;
+    }
+}
+
 if (!function_exists('add_settings_error')) {
     function add_settings_error($setting, $code, $message, $type = 'error') {
         global $lightweight_seo_test_settings_errors;
@@ -466,6 +476,16 @@ if (!function_exists('update_post_meta')) {
     }
 }
 
+if (!function_exists('delete_post_meta')) {
+    function delete_post_meta($post_id, $meta_key, $meta_value = '') {
+        global $lightweight_seo_test_post_meta;
+
+        unset($lightweight_seo_test_post_meta[$post_id][$meta_key]);
+
+        return true;
+    }
+}
+
 if (!function_exists('get_post')) {
     function get_post($post = null, $output = 'OBJECT', $filter = 'raw') {
         global $lightweight_seo_test_posts;
@@ -481,6 +501,7 @@ if (!function_exists('get_post')) {
 if (!function_exists('get_posts')) {
     function get_posts($args = array()) {
         global $lightweight_seo_test_get_posts_calls;
+        global $lightweight_seo_test_post_meta;
         global $lightweight_seo_test_posts;
 
         $lightweight_seo_test_get_posts_calls++;
@@ -519,6 +540,13 @@ if (!function_exists('get_posts')) {
             }));
         }
 
+		if ( ! empty( $args['meta_key'] ) ) {
+			$meta_key = (string) $args['meta_key'];
+			$posts    = array_values( array_filter( $posts, function ( $post ) use ( $lightweight_seo_test_post_meta, $meta_key ) {
+				return '' !== (string) ( $lightweight_seo_test_post_meta[ (int) ( $post->ID ?? 0 ) ][ $meta_key ] ?? '' );
+			} ) );
+		}
+
         usort($posts, function ($left, $right) use ($args) {
             if ('date' === ($args['orderby'] ?? '')) {
                 return strcmp((string) ($right->post_date_gmt ?? ''), (string) ($left->post_date_gmt ?? ''));
@@ -531,9 +559,15 @@ if (!function_exists('get_posts')) {
         $paged = max(1, (int) ($args['paged'] ?? 1));
 
         if ($posts_per_page > -1) {
-            $offset = ($paged - 1) * $posts_per_page;
+            $offset = isset($args['offset']) ? max(0, (int) $args['offset']) : ($paged - 1) * $posts_per_page;
             $posts = array_slice($posts, $offset, $posts_per_page);
         }
+
+		if ( 'ids' === ( $args['fields'] ?? '' ) ) {
+			return array_map( function ( $post ) {
+				return (int) ( $post->ID ?? 0 );
+			}, $posts );
+		}
 
         if (($args['fields'] ?? '') === 'ids') {
             return array_map(function ($post) {

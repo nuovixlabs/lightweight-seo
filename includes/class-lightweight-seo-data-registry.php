@@ -41,6 +41,8 @@ class Lightweight_SEO_Data_Registry {
 			'lightweight_seo_internal_links_report',
 			'lightweight_seo_search_console_snapshot',
 			'lightweight_seo_search_console_token',
+			'lightweight_seo_import_rollback',
+			'lightweight_seo_upgrade_summary',
 		);
 	}
 
@@ -84,6 +86,7 @@ class Lightweight_SEO_Data_Registry {
 	public static function get_ephemeral_setting_keys() {
 		return array(
 			'last_import_report',
+			'search_console_property',
 			'search_console_service_account_json',
 		);
 	}

@@ -33,8 +33,9 @@ final class LightweightSEOSettingsTest extends TestCase {
 		$settings = new Lightweight_SEO_Settings();
 
 		$this->assertSame( '', $settings->get_defaults()['meta_description'] );
-		$this->assertSame( '0', $settings->get_defaults()['enable_product_schema'] );
-		$this->assertSame( '0', $settings->get_defaults()['enable_image_sitemaps'] );
+		$this->assertArrayNotHasKey( 'enable_product_schema', $settings->get_defaults() );
+		$this->assertArrayNotHasKey( 'enable_image_sitemaps', $settings->get_defaults() );
+		$this->assertArrayNotHasKey( 'enable_meta_keywords', $settings->get_defaults() );
 	}
 
 	public function test_redirect_normalization_rejects_loops_and_caps_storage(): void {
