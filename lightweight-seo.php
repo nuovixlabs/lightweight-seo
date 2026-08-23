@@ -3,7 +3,7 @@
  * Plugin Name: Lightweight SEO
  * Plugin URI: https://rakeshmandal.com
  * Description: A lightweight WordPress SEO plugin that adds essential SEO functionality without bloat.
- * Version: 1.0.3
+ * Version: 1.1.0-rc.1
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Rakesh Mandal
@@ -74,4 +74,4 @@ function run_lightweight_seo() {
 	$plugin->run();
 }
 
-add_action( 'plugins_loaded', 'run_lightweight_seo' );
+add_action( 'init', 'run_lightweight_seo', 0 );

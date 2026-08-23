@@ -5,7 +5,7 @@ class Lightweight_SEO_Insights_Fixture {
 	private $ready = false;
 
 	public function boot( $api ) {
-		if ( ! $api || ! is_callable( array( $api, 'is_compatible' ) ) || ! $api->is_compatible( '1.0.3', '1.0' ) ) {
+		if ( ! $api || ! is_callable( array( $api, 'is_compatible' ) ) || ! $api->is_compatible( '1.1.0-rc.1', '1.0' ) ) {
 			return false;
 		}
 

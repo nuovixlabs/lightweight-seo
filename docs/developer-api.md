@@ -10,7 +10,7 @@ The core plugin defines `LIGHTWEIGHT_SEO_API_VERSION` separately from its releas
 add_action(
 	'lightweight_seo_loaded',
 	static function ( $api ) {
-		if ( ! $api->is_compatible( '1.0.3', '1.0' ) ) {
+		if ( ! $api->is_compatible( '1.1.0-rc.1', '1.0' ) ) {
 			return;
 		}
 
@@ -19,7 +19,7 @@ add_action(
 );
 ```
 
-If `lightweight_seo_get_api()` does not exist or returns `null`, core is missing, inactive, or has not loaded. Extensions should register no jobs in that state and may show an administrator notice. A failed check must not delete extension data.
+If `lightweight_seo_get_api()` does not exist or returns `null`, core is missing, inactive, or has not loaded. Core finishes loading on `init` at priority 0; consumers should rely on `lightweight_seo_loaded` rather than a WordPress hook priority. Extensions should register no jobs in that state and may show an administrator notice. A failed check must not delete extension data.
 
 ## Facade methods
 
@@ -65,3 +65,37 @@ The optional Tracking module emits nothing until it is enabled by a valid provid
 | `lightweight_seo_after_tracking_codes` | `array $tracking_settings` | Fires after configured head providers are considered with the three filtered tracking identifier keys. |
 
 The consent filter supports a basic blocking integration; Lightweight SEO does not create a consent banner or persist consent choices. GTM's noscript fallback uses `wp_body_open`. A theme that omits that hook receives a diagnostic comment in page source while the head container continues to operate.
+
+## Core output filters and actions
+
+| Hook | Arguments | Contract |
+|---|---|---|
+| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. |
+| `lightweight_seo_document_title` | `string $title, array $context` | Filters the final plugin document title. |
+| `lightweight_seo_meta_tags` | `array $tags, array $context` | Filters normalized name/property meta-tag definitions before escaping. |
+| `lightweight_seo_before_meta_tags` | `array $tags, array $context` | Fires before meta tags are printed. |
+| `lightweight_seo_after_meta_tags` | `array $tags, array $context` | Fires after meta tags are printed. |
+| `lightweight_seo_link_tags` | `array $links, array $context` | Filters normalized link-tag definitions such as canonical output. |
+| `lightweight_seo_schema_graph` | `array $graph, array $context` | Filters schema graph nodes before JSON encoding. Return arrays only. |
+| `lightweight_seo_article_post_types` | `string[] $post_types` | Selects post types eligible for Article schema; Product is excluded by default. |
+| `lightweight_seo_supported_post_types` | `string[] $post_types` | Filters public post types that receive SEO metadata controls. |
+| `lightweight_seo_supported_taxonomies` | `string[] $taxonomies` | Filters public taxonomies that receive archive SEO controls. |
+| `lightweight_seo_compatibility_plugins` | `array $plugins` | Filters plugin-basename to label mappings used for safe-mode detection. |
+| `lightweight_seo_suppressed_features` | `string[] $features, string[] $plugins` | Filters the safe-mode feature matrix. Known full SEO plugins suppress title, meta, robots, canonical, and schema output by default. |
+| `lightweight_seo_multilingual_provider_active` | `bool $active` | Lets an additional multilingual provider claim hreflang ownership. |
+
+## Module hooks
+
+| Hook | Arguments | Contract |
+|---|---|---|
+| `lightweight_seo_ai_crawler_registry` | `array $registry` | Filters documented crawler-token metadata. Keep search/user-fetch and model-training purposes distinct. |
+| `lightweight_seo_multilingual_links` | `array $links` | Filters normalized provider language/URL pairs used by direct service consumers. |
+| `lightweight_seo_llms_txt_conflict` | `bool $conflict` | Return `true` when another owner serves `/llms.txt`. |
+| `lightweight_seo_physical_robots_path` | `string $path` | Changes the physical `robots.txt` conflict-check path. |
+| `lightweight_seo_physical_llms_path` | `string $path` | Changes the physical `llms.txt` conflict-check path. |
+
+Redirect, Hreflang, Tracking, Local SEO, and AI Discovery implementation classes are private runtime details. Integrations should use the registry and documented hooks, not instantiate those classes.
+
+## Compatibility policy
+
+API `1.0` remains backward compatible throughout the 1.1 release line. New fields may be added to returned associative arrays, so consumers must ignore unknown keys. Existing methods, hook names, argument order, and documented value types are not removed without an API version change. Experimental AI crawler metadata may add tokens, but the purpose categories and opt-in training boundary remain stable.

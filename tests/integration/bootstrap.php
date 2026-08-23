@@ -22,6 +22,16 @@ if ( 'true' === getenv( 'WP_TESTS_MULTISITE' ) ) {
 tests_add_filter(
 	'muplugins_loaded',
 	static function () {
+		$woocommerce_bootstrap = getenv( 'WP_TESTS_WOOCOMMERCE' );
+
+		if ( $woocommerce_bootstrap && file_exists( $woocommerce_bootstrap ) ) {
+			require $woocommerce_bootstrap;
+
+			if ( class_exists( 'WC_Install' ) ) {
+				add_action( 'init', array( 'WC_Install', 'install' ), -1 );
+			}
+		}
+
 		require dirname( __DIR__, 2 ) . '/lightweight-seo.php';
 	}
 );

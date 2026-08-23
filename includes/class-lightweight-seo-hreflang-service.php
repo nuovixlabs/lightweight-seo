@@ -139,7 +139,9 @@ class Lightweight_SEO_Hreflang_Service {
 
 	/** Whether an authoritative multilingual plugin should own hreflang output. */
 	public function multilingual_provider_active() {
-		return defined( 'ICL_SITEPRESS_VERSION' ) || function_exists( 'pll_the_languages' );
+		$active = defined( 'ICL_SITEPRESS_VERSION' ) || function_exists( 'pll_the_languages' );
+
+		return (bool) apply_filters( 'lightweight_seo_multilingual_provider_active', $active );
 	}
 
 	/**
@@ -197,7 +199,7 @@ class Lightweight_SEO_Hreflang_Service {
 			}
 		}
 
-		return $links;
+		return (array) apply_filters( 'lightweight_seo_multilingual_links', $links );
 	}
 
 	/** Normalize language/URL pairs and reject duplicate codes or destinations. */

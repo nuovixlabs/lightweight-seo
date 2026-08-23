@@ -6,6 +6,12 @@ use PHPUnit\Framework\TestCase;
 
 final class LightweightSEOHreflangServiceTest extends TestCase {
 
+	protected function setUp(): void {
+		global $lightweight_seo_test_filters;
+
+		$lightweight_seo_test_filters = array();
+	}
+
 	public function test_get_hreflang_links_builds_self_and_explicit_object_alternates(): void {
 		$settings = new class() {
 			public function hreflang_output_enabled() {
@@ -141,5 +147,17 @@ final class LightweightSEOHreflangServiceTest extends TestCase {
 		$this->assertSame( array(), $service->get_hreflang_links() );
 		$settings->reciprocal = true;
 		$this->assertCount( 2, $service->get_hreflang_links() );
+	}
+
+	public function test_additional_multilingual_provider_can_claim_output_ownership(): void {
+		global $lightweight_seo_test_filters;
+
+		$lightweight_seo_test_filters['lightweight_seo_multilingual_provider_active'] = static function () {
+			return true;
+		};
+
+		$service = new Lightweight_SEO_Hreflang_Service( new stdClass(), new stdClass() );
+
+		$this->assertTrue( $service->multilingual_provider_active() );
 	}
 }

@@ -20,7 +20,7 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$api = lightweight_seo_get_api();
 
 		$this->assertInstanceOf( Lightweight_SEO_API::class, $api );
-		$this->assertTrue( $api->is_compatible( '1.0.3', '1.0' ) );
+		$this->assertTrue( $api->is_compatible( '1.1.0-rc.1', '1.0' ) );
 		$this->assertArrayHasKey( 'post', $api->get_supported_object_types() );
 		$this->assertArrayHasKey( 'redirects', $api->get_modules() );
 		$this->assertArrayNotHasKey( 'factory', $api->get_modules()['redirects'] );

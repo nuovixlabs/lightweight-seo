@@ -1,6 +1,6 @@
 # Lightweight SEO Next-Phase Plan
 
-Status: Implementation in progress; PR 1 through PR 8 complete locally
+Status: Implementation complete locally; PR 1 through PR 9 complete and release-candidate gates pass
 
 Planning date: 2026-08-24
 
@@ -130,7 +130,7 @@ Minimal plugin bootstrap
        +--> register activation/deactivation hooks at file scope
        |
        v
-Core boot on plugins_loaded
+Core boot on init at priority 0
        |
        +--> core settings and API
        +--> module registry metadata
@@ -701,6 +701,8 @@ Verification evidence:
 
 ### PR 8: Migration and removal cleanup
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - remove retired services and settings UI
 - preserve/export legacy metadata
 - stop Search Console jobs and clean ephemeral data
@@ -721,12 +723,26 @@ Verification evidence:
 
 ### PR 9: Release hardening
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - complete compatibility, browser, performance, security, and packaging checks
 - update README, QA checklist, developer hook documentation, and release notes
 - verify translation readiness
 - publish beta/RC upgrade instructions
 
 Exit gate: all Definition of Done items pass.
+
+Verification evidence:
+
+- Fast suite: 90 tests and 352 assertions pass; PHPCS, PHP syntax checks, strict Composer validation, dependency audit, and whitespace checks pass.
+- WordPress 6.0 and latest-WordPress single-site suites each pass 23 tests and 92 assertions, with three intended skips. Their multisite suites each pass 23 tests and 95 assertions, with the WooCommerce-only case skipped.
+- Latest WordPress with the latest stable WooCommerce passes 23 tests and 95 assertions, with only the two single-site-inapplicable multisite cases skipped. Product pages receive no competing Product or Article graph from Lightweight SEO.
+- Yoast SEO, Rank Math, and All in One SEO safe-mode integration cases pass for local activation, with Yoast also covered for network activation. Browser testing confirms the administrator notice and suppression of title, meta, robots, canonical, and schema output; non-overlapping modules remain available.
+- The multilingual provider filters allow adapters to declare ownership and provide validated language links without coupling core to a specific plugin.
+- The reference performance run stays under the 5% median-response regression budget in both disabled-module and all-module states. Package, memory, query, option-size, and response-time measurements are recorded in `docs/release-baselines.md`.
+- The generated translation template uses the plugin text domain. The exact staged archive passes manifest and integrity checks and smoke-activates in a clean latest-WordPress install.
+- README, QA, developer API, migration, release-note, and release-baseline documents now match the release candidate. Retired administrative callbacks and tests have been removed while migration-only data handling remains bounded and explicit.
+- A static security/privacy audit confirms that mutation handlers combine capabilities with nonces, object saves use object-specific capabilities, and core contains no remote request, custom-table, recurring-schedule, site-wide crawl, or ordinary frontend-write path.
 
 ## 13. Future Insights Companion Boundary
 
@@ -790,6 +806,8 @@ The next phase is complete only when:
 - onboarding and editor guidance are usable by keyboard and understandable without SEO expertise
 - README, QA, API, migration, and release documentation match shipped behavior
 - no experimental AI feature is described as a ranking guarantee
+
+All Definition of Done items above have passing automated, integration, browser, migration, packaging, security, and performance evidence in the PR verification records and release documentation.
 
 ## 17. Approved Decisions
 

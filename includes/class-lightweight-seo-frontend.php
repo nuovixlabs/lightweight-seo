@@ -79,15 +79,24 @@ class Lightweight_SEO_Frontend {
 		$this->header_service    = new Lightweight_SEO_Header_Service( $this->page_context, $settings );
 		$this->schema_service    = new Lightweight_SEO_Schema_Service( $this->page_context, $settings );
 
-		if ( $compatibility_service->frontend_head_output_allowed() ) {
-			// Filter document title
+		if ( $compatibility_service->feature_output_allowed( 'title' ) ) {
 			add_filter( 'pre_get_document_title', array( $this->title_service, 'filter_document_title' ), 15 );
+		}
 
-			// Add meta tags to head
+		if ( $compatibility_service->feature_output_allowed( 'meta' ) ) {
 			add_action( 'wp_head', array( $this->meta_tags_service, 'add_meta_tags' ), 1 );
+		}
+
+		if ( $compatibility_service->feature_output_allowed( 'robots' ) ) {
 			add_filter( 'wp_robots', array( $this->meta_tags_service, 'filter_robots' ) );
+		}
+
+		if ( $compatibility_service->feature_output_allowed( 'canonical' ) ) {
 			add_filter( 'get_canonical_url', array( $this->meta_tags_service, 'filter_canonical_url' ), 10, 2 );
 			add_action( 'wp_head', array( $this->meta_tags_service, 'add_non_singular_canonical' ), 10 );
+		}
+
+		if ( $compatibility_service->feature_output_allowed( 'schema' ) ) {
 			add_action( 'wp_head', array( $this->schema_service, 'add_schema' ), 5 );
 		}
 

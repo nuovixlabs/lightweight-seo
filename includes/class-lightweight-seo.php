@@ -258,7 +258,7 @@ class Lightweight_SEO {
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-hreflang-service.php';
 				$service = new Lightweight_SEO_Hreflang_Service( $this->settings, $this->page_context );
 
-				if ( ! $service->multilingual_provider_active() && ( new Lightweight_SEO_Compatibility_Service() )->frontend_head_output_allowed() ) {
+				if ( ! $service->multilingual_provider_active() && ( new Lightweight_SEO_Compatibility_Service() )->feature_output_allowed( 'hreflang' ) ) {
 					add_action( 'wp_head', array( $service, 'add_hreflang_links' ), 2 );
 				}
 				break;

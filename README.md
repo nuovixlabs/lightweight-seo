@@ -1,167 +1,78 @@
 # Lightweight SEO
 
-A lightweight WordPress SEO plugin that adds essential SEO functionality without bloat.
+Lightweight SEO provides correct, predictable on-page SEO without a crawler, analytics dashboard, or background synchronization layer. It supports WordPress 6.0+ and PHP 7.4+.
 
-## 🎯 Introduction
+## What it does
 
-Lightweight SEO is a simple yet powerful WordPress plugin designed to help you optimize your website for search engines without overwhelming you with complex features. It focuses on the essential SEO elements that matter most for your website's visibility.
+Core provides:
 
-## ✨ Features
+- document titles and templates
+- meta descriptions, canonical URLs, and WordPress-native robots directives
+- Open Graph and X/Twitter metadata
+- post, term, and author SEO controls
+- Organization, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
+- filtering of WordPress core XML sitemaps
+- safe mode when Yoast SEO, Rank Math, or All in One SEO is active
+- bounded migration tools and a versioned, read-only extension API
 
-- **Meta Information Management**
+Five optional modules are lazy-loaded only in their declared request contexts:
 
-  - Custom title formats with variables support (%title%, %sitename%, %tagline%)
-  - Meta description control
-  - Meta keywords support
-  - Individual page/post SEO settings
+- Redirects: exact manual redirects and optional published-slug redirects
+- Hreflang: validated manual mappings and adapter hooks
+- Tracking: GTM-first output with direct GA4 or Meta Pixel alternatives
+- Local SEO: validated LocalBusiness schema fields
+- AI Discovery (experimental): crawler policies, a curated `/llms.txt`, and local readiness checks
 
-- **Social Media Optimization**
+AI Discovery does not guarantee crawling, training, citation, inclusion, visibility, or ranking.
 
-  - Open Graph support for better social sharing
-  - Custom social media images
-  - Twitter Card integration
-  - Customizable social titles and descriptions
+## Deliberate boundaries
 
-- **Search Engine Controls**
+Core makes no remote requests, schedules no recurring jobs, creates no custom tables, and performs no site-wide frontend scans. Search Console/GA4 reporting, URL Inspection, rank tracking, internal-link crawling, and historical analytics belong outside core.
 
-  - Noindex/nofollow controls
-  - Global SEO settings
-  - Per-page SEO overrides
-  - Clean, valid HTML output
+Meta-keywords output, Product schema, specialized image/video/news sitemap providers, continuous 404 logging, Search Console synchronization, internal-link reports, and site-wide image audits were retired in 1.1. Stored legacy keyword values remain exportable during migration.
 
-- **Analytics & Tracking Integration**
+## Installation
 
-  - Google Analytics 4 support
-  - Google Tag Manager integration
-  - Facebook Pixel implementation
-  - Easy-to-use tracking ID management
+1. Copy the `lightweight-seo` directory to `wp-content/plugins/` or install the release ZIP.
+2. Activate Lightweight SEO in WordPress.
+3. Open **SEO** in the administrator and review the setup overview.
+4. Enable only the optional modules the site needs.
 
-- **User Experience**
-  - Simple, intuitive interface
-  - Minimal performance impact
-  - WordPress standard design patterns
-  - No bloat or unnecessary features
+For a 1.0.3 upgrade or release-candidate test, follow [Migration and RC Testing](docs/migration.md) and take a database backup first.
 
-## 🏗️ Architecture
+## Editing content
 
-- `lightweight-seo.php` bootstraps the plugin and loads the core class
-- `includes/class-lightweight-seo.php` wires shared services, admin UI, meta boxes, and frontend handlers
-- `includes/class-lightweight-seo-settings.php` centralizes option defaults and resolved settings
-- `includes/class-lightweight-seo-post-meta.php` centralizes SEO post meta, supported post types, and REST registration
-- Frontend behavior is split across:
-  - `includes/class-lightweight-seo-page-context-service.php`
-  - `includes/class-lightweight-seo-title-service.php`
-  - `includes/class-lightweight-seo-meta-tags-service.php`
-  - `includes/class-lightweight-seo-tracking-service.php`
+The SEO panel on supported posts and pages provides:
 
-## 📚 Documentation
+- an optional SEO title and meta description
+- canonical and robots controls
+- social title, description, and image overrides
+- deterministic checks explaining missing or conflicting inputs
 
-- [Documentation Index](docs/README.md)
-- [Next-Phase Product and Engineering Plan](docs/next-phase-plan.md)
-- [QA Checklist](docs/qa-checklist.md)
+Legacy focus-keyword values are preserved for export but are not edited or emitted.
 
-## 🧪 Local Development
+## Development
 
-For live testing during development, symlink this workspace into your local WordPress install:
-
-```bash
-ln -s "/path/to/lightweight-seo" "/path/to/wp-content/plugins/lightweight-seo"
-```
-
-That lets WordPress load the latest files from this workspace directly.
-
-## ✅ Quality Checks
-
-Install development tools:
+Install the development dependencies and run the local gates:
 
 ```bash
 composer install
+composer validate --strict
+composer audit
+composer test
+composer phpcs
 ```
 
-Run coding standards:
+Real WordPress tests use `tests/bin/install-wp-tests.sh` and `composer test:integration`. CI covers the compatibility matrix documented in [QA Checklist](docs/qa-checklist.md).
 
-```bash
-composer run phpcs
-```
+The public extension contract and stable hooks are documented in [Developer API](docs/developer-api.md).
 
-Run tests:
+## Release
 
-```bash
-composer run test
-```
+Tags must exactly match the `Version:` header, for example `v1.1.0-rc.1`. The release workflow creates and verifies the ZIP, checks required runtime files, and smoke-activates the packaged plugin in WordPress.
 
-## 🔁 Upgrade Notes
+See [Release Notes](docs/release-notes-1.1.0.md) and [Release Baselines](docs/release-baselines.md) for the current candidate.
 
-- Social images now support attachment IDs with URL fallback for backward compatibility
-- Meta keywords output can now be disabled from plugin settings
-- Supported SEO post types are now filterable through `lightweight_seo_supported_post_types`
-- Frontend title, meta tags, page context, and tracking settings now expose extension hooks
+## License
 
-## 📖 How to Use
-
-### 1. Global Settings
-
-1. Navigate to "SEO" in your WordPress dashboard
-2. Configure your default title format (e.g., "%title% – %sitename%")
-3. Set up your default meta description
-4. Add your default social media image
-
-### 2. Page/Post SEO
-
-1. Edit any post or page
-2. Scroll to the "SEO Settings" meta box
-3. Customize:
-   - SEO Title
-   - Meta Description
-   - Meta Keywords
-   - Social Media Settings
-   - Search Engine Indexing
-
-### 3. Title Variables
-
-You can use these variables in your title formats:
-
-- `%title%` - Page/post title
-- `%sitename%` - Your site's name
-- `%tagline%` - Your site's tagline
-- `%sep%` - Separator (displays as "–")
-
-## 🔄 Release
-
-1. Update the `Version:` field in `lightweight-seo.php`
-2. Merge the release commit to `main`
-3. Push a tag like `v1.0.3`
-4. GitHub Actions builds `lightweight-seo-v1.0.3.zip` and attaches it to the GitHub release
-
-[Latest Release](https://github.com/nuovixlabs/lightweight-seo/releases/latest)
-
-## 👨‍💻 Author
-
-**Rakesh Mandal**
-
-- Website: [https://rakeshmandal.com](https://rakeshmandal.com)
-- GitHub: [@therakeshm](https://github.com/therakeshm)
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to:
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
-
-## 🐛 Bug Reports
-
-If you find a bug, please create an issue with:
-
-1. A clear description of the problem
-2. Steps to reproduce
-3. Expected behavior
-4. Screenshots (if applicable)
-5. Your WordPress version and environment details
+MIT. See [LICENSE](LICENSE).
