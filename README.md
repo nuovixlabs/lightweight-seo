@@ -133,7 +133,7 @@ You can use these variables in your title formats:
 3. Push a tag like `v1.0.3`
 4. GitHub Actions builds `lightweight-seo-v1.0.3.zip` and attaches it to the GitHub release
 
-[Latest Release](https://github.com/therakeshm/lightweight-seo/releases/latest)
+[Latest Release](https://github.com/nuovixlabs/lightweight-seo/releases/latest)
 
 ## 👨‍💻 Author
 
