@@ -65,7 +65,7 @@ Lightweight SEO is a simple yet powerful WordPress plugin designed to help you o
 For live testing during development, symlink this workspace into your local WordPress install:
 
 ```bash
-ln -s "/Users/rakeshm/conductor/workspaces/lightweight-seo/bucharest" "/path/to/wp-content/plugins/lightweight-seo"
+ln -s "/path/to/lightweight-seo" "/path/to/wp-content/plugins/lightweight-seo"
 ```
 
 That lets WordPress load the latest files from this workspace directly.
@@ -133,7 +133,7 @@ You can use these variables in your title formats:
 3. Push a tag like `v1.0.3`
 4. GitHub Actions builds `lightweight-seo-v1.0.3.zip` and attaches it to the GitHub release
 
-[Latest Release](https://github.com/therakeshm/lightweight-seo/releases/latest)
+[Latest Release](https://github.com/nuovixlabs/lightweight-seo/releases/latest)
 
 ## 👨‍💻 Author
 

@@ -59,6 +59,37 @@ jobs:
             zip -qr "../${ZIP_NAME}" "${PLUGIN_SLUG}"
           )
 
+      - name: Verify plugin zip
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          unzip -t "${ZIP_NAME}"
+          unzip -Z1 "${ZIP_NAME}" > package-manifest.txt
+
+          mapfile -t required_files < <(
+            git ls-tree -r --name-only HEAD -- \
+              lightweight-seo.php \
+              uninstall.php \
+              admin \
+              includes
+          )
+
+          missing_files=0
+
+          for required_file in "${required_files[@]}"; do
+            if ! grep -Fqx "${PLUGIN_SLUG}/${required_file}" package-manifest.txt; then
+              echo "Missing required plugin file: ${required_file}" >&2
+              missing_files=1
+            fi
+          done
+
+          if (( missing_files )); then
+            exit 1
+          fi
+
+          echo "Verified ${#required_files[@]} required plugin files in ${ZIP_NAME}"
+
       - name: Publish release asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
