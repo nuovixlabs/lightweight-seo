@@ -23,6 +23,16 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 	}
 
 	public function test_find_matching_redirect_returns_manual_rule(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ Lightweight_SEO_Redirects_Service::GENERATED_RULES_OPTION_NAME ] = array(
+			array(
+				'source' => '/old-page',
+				'target' => '/generated-target',
+				'status' => 302,
+			),
+		);
+
 		$settings = new class() {
 			public function get_manual_redirect_rules() {
 				return array(
@@ -48,38 +58,6 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 
 		$this->assertSame( '/new-page', $rule['target'] );
 		$this->assertSame( 301, $rule['status'] );
-	}
-
-	public function test_log_404_request_stores_recent_log_entry(): void {
-		global $lightweight_seo_test_options;
-		global $lightweight_seo_test_query_state;
-
-		$lightweight_seo_test_query_state['is_404'] = true;
-		$_SERVER['REQUEST_URI']                     = '/missing-page/';
-		$_SERVER['HTTP_REFERER']                    = 'https://example.com/referrer';
-
-		$settings = new class() {
-			public function get_manual_redirect_rules() {
-				return array();
-			}
-
-			public function not_found_monitor_enabled() {
-				return true;
-			}
-
-			public function auto_redirects_enabled() {
-				return true;
-			}
-		};
-
-		$service = new Lightweight_SEO_Redirects_Service( $settings );
-		$service->log_404_request();
-
-		$logs = $lightweight_seo_test_options[ Lightweight_SEO_Redirects_Service::LOG_OPTION_NAME ] ?? array();
-
-		$this->assertArrayHasKey( '/missing-page', $logs );
-		$this->assertSame( 1, $logs['/missing-page']['hits'] );
-		$this->assertSame( 'https://example.com/referrer', $logs['/missing-page']['referer'] );
 	}
 
 	public function test_slug_change_generates_redirect_rule(): void {
@@ -179,9 +157,11 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 		$this->assertSame( array( '/old-page', '/mid-page', '/final-page' ), $report['chains'][0]['sequence'] );
 		$this->assertContains( '/loop-a', $sources );
 		$this->assertContains( '/loop-b', $sources );
+		$this->assertSame( '/final-page', $service->find_matching_redirect( '/old-page' )['target'] );
+		$this->assertSame( array(), $service->find_matching_redirect( '/loop-a' ) );
 	}
 
-	public function test_perform_redirect_uses_wp_redirect_for_external_targets(): void {
+	public function test_perform_redirect_uses_safe_redirect_for_allowed_external_targets(): void {
 		global $lightweight_seo_test_wp_redirect_calls;
 		global $lightweight_seo_test_wp_safe_redirect_calls;
 
@@ -203,13 +183,37 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 			public function dispatch_redirect( $target_url, $status ) {
 				return $this->perform_redirect( $target_url, $status );
 			}
+
+			protected function is_redirect_target_allowed( $target_url ) {
+				return true;
+			}
 		};
 
 		$this->assertTrue( $service->dispatch_redirect( 'https://new.example/landing', 301 ) );
-		$this->assertCount( 1, $lightweight_seo_test_wp_redirect_calls );
-		$this->assertSame( 'https://new.example/landing', $lightweight_seo_test_wp_redirect_calls[0]['location'] );
-		$this->assertSame( 301, $lightweight_seo_test_wp_redirect_calls[0]['status'] );
+		$this->assertCount( 1, $lightweight_seo_test_wp_safe_redirect_calls );
+		$this->assertSame( 'https://new.example/landing', $lightweight_seo_test_wp_safe_redirect_calls[0]['location'] );
+		$this->assertSame( 301, $lightweight_seo_test_wp_safe_redirect_calls[0]['status'] );
+		$this->assertSame( array(), $lightweight_seo_test_wp_redirect_calls );
+	}
+
+	public function test_perform_redirect_rejects_unapproved_external_targets(): void {
+		global $lightweight_seo_test_wp_redirect_calls;
+		global $lightweight_seo_test_wp_safe_redirect_calls;
+
+		$settings = new class() {
+			public function get_manual_redirect_rules() {
+				return array();
+			}
+		};
+		$service  = new class( $settings ) extends Lightweight_SEO_Redirects_Service {
+			public function dispatch_redirect( $target_url, $status ) {
+				return $this->perform_redirect( $target_url, $status );
+			}
+		};
+
+		$this->assertFalse( $service->dispatch_redirect( 'https://unapproved.example/landing', 302 ) );
 		$this->assertSame( array(), $lightweight_seo_test_wp_safe_redirect_calls );
+		$this->assertSame( array(), $lightweight_seo_test_wp_redirect_calls );
 	}
 
 	public function test_perform_redirect_uses_wp_safe_redirect_for_local_targets(): void {

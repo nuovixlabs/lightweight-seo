@@ -228,7 +228,7 @@ class Lightweight_SEO {
 			'redirects' => array(
 				'name'        => __( 'Redirects', 'lightweight-seo' ),
 				'description' => __( 'Manage redirects and optional slug-change handling.', 'lightweight-seo' ),
-				'contexts'    => array( 'frontend', 'admin', 'editor', 'rest' ),
+				'contexts'    => array( 'frontend', 'editor' ),
 			),
 			'hreflang'  => array(
 				'name'        => __( 'Hreflang', 'lightweight-seo' ),
@@ -273,13 +273,13 @@ class Lightweight_SEO {
 		switch ( $module_id ) {
 			case 'redirects':
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirects-service.php';
-				new Lightweight_SEO_Redirects_Service( $this->settings );
+				new Lightweight_SEO_Redirects_Service( $this->settings, $context );
 				break;
 			case 'hreflang':
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-hreflang-service.php';
 				$service = new Lightweight_SEO_Hreflang_Service( $this->settings, $this->page_context );
 
-				if ( ( new Lightweight_SEO_Compatibility_Service() )->frontend_head_output_allowed() ) {
+				if ( ! $service->multilingual_provider_active() && ( new Lightweight_SEO_Compatibility_Service() )->frontend_head_output_allowed() ) {
 					add_action( 'wp_head', array( $service, 'add_hreflang_links' ), 2 );
 				}
 				break;

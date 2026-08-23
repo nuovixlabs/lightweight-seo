@@ -358,20 +358,20 @@ class Lightweight_SEO_Admin {
 			'lightweight_seo_schema_section'
 		);
 
+		add_settings_field(
+			'enable_hreflang_path_mirroring',
+			__( 'Legacy Path Mirroring', 'lightweight-seo' ),
+			array( $this, 'enable_hreflang_path_mirroring_render' ),
+			$this->plugin_name,
+			'lightweight_seo_schema_section'
+		);
+
 		// Redirects Section
 		add_settings_section(
 			'lightweight_seo_redirects_section',
-			__( 'Redirects & 404 Monitoring', 'lightweight-seo' ),
+			__( 'Redirects', 'lightweight-seo' ),
 			array( $this, 'redirects_section_callback' ),
 			$this->plugin_name
-		);
-
-		add_settings_field(
-			'enable_404_monitor',
-			__( '404 Monitor', 'lightweight-seo' ),
-			array( $this, 'enable_404_monitor_render' ),
-			$this->plugin_name,
-			'lightweight_seo_redirects_section'
 		);
 
 		add_settings_field(
@@ -410,14 +410,6 @@ class Lightweight_SEO_Admin {
 			'redirect_health',
 			__( 'Redirect Health', 'lightweight-seo' ),
 			array( $this, 'redirect_health_render' ),
-			$this->plugin_name,
-			'lightweight_seo_redirects_section'
-		);
-
-		add_settings_field(
-			'recent_404_logs',
-			__( 'Recent 404s', 'lightweight-seo' ),
-			array( $this, 'recent_404_logs_render' ),
 			$this->plugin_name,
 			'lightweight_seo_redirects_section'
 		);
@@ -1021,7 +1013,19 @@ class Lightweight_SEO_Admin {
 		$options = $this->settings->get_all();
 		?>
 		<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[hreflang_mappings]" rows="5" cols="50" class="large-text code"><?php echo esc_textarea( $options['hreflang_mappings'] ?? '' ); ?></textarea>
-		<p class="description"><?php _e( 'Use one mapping per line in the format: en-US https://en.example.com or x-default https://example.com. Root URLs will automatically reuse the current page path.', 'lightweight-seo' ); ?></p>
+		<p class="description"><?php _e( 'Use one explicit mapping per line: post:123 en-GB https://example.co.uk/page/ (term: and user: are also supported). Language tags must use BCP 47 format; x-default is supported.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/** Render the opt-in retained legacy path-mirroring mode. */
+	public function enable_hreflang_path_mirroring_render() {
+		$options = $this->settings->get_all();
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_hreflang_path_mirroring]" value="1" <?php checked( $options['enable_hreflang_path_mirroring'] ?? '0', '1' ); ?>>
+			<?php _e( 'Reuse the current canonical path with retained two-column language/base-URL mappings', 'lightweight-seo' ); ?>
+		</label>
+		<p class="description"><?php _e( 'Leave this off unless matching paths are intentionally guaranteed across the configured domains.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -1031,7 +1035,7 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function redirects_section_callback() {
-		echo '<p>' . __( 'Manage simple redirect rules, automatically preserve traffic after slug changes, and review recent 404s captured by the plugin.', 'lightweight-seo' ) . '</p>';
+		echo '<p>' . __( 'Manage exact redirect rules and optionally preserve traffic after published slugs change. Continuous 404 logging is not part of this module.', 'lightweight-seo' ) . '</p>';
 	}
 
 	/**
@@ -1092,22 +1096,6 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
-	 * Render the 404 monitor toggle field.
-	 *
-	 * @since    1.1.0
-	 */
-	public function enable_404_monitor_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_404_monitor]" value="1" <?php checked( $options['enable_404_monitor'] ?? '1', '1' ); ?>>
-			<?php _e( 'Log 404 requests so broken URLs can be reviewed in admin', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php _e( 'Recent 404s are stored in a capped list to keep the plugin lightweight.', 'lightweight-seo' ); ?></p>
-		<?php
-	}
-
-	/**
 	 * Render the automatic slug redirect toggle field.
 	 *
 	 * @since    1.1.0
@@ -1133,7 +1121,7 @@ class Lightweight_SEO_Admin {
 		?>
 		<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[redirect_rules]" rows="8" cols="50" class="large-text code"><?php echo esc_textarea( $options['redirect_rules'] ?? '' ); ?></textarea>
 		<p class="description"><?php _e( 'Add one rule per line using the format: /old-path /new-path 301', 'lightweight-seo' ); ?></p>
-		<p class="description"><?php _e( 'Targets can be local paths or full URLs. Supported status codes: 301, 302, 307, 308.', 'lightweight-seo' ); ?></p>
+		<p class="description"><?php _e( 'Targets can be local paths or full URLs. External hosts must be explicitly approved through WordPress’s allowed_redirect_hosts filter. Supported status codes: 301, 302, 307, 308.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -1143,6 +1131,12 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function generated_redirect_rules_render() {
+		if ( ! $this->is_module_enabled( 'redirects' ) ) {
+			echo '<p class="description">' . esc_html__( 'The Redirects module is disabled.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
 		$rules = get_option( 'lightweight_seo_generated_redirect_rules', array() );
 
 		if ( empty( $rules ) ) {
@@ -1170,6 +1164,12 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function redirect_export_render() {
+		if ( ! $this->is_module_enabled( 'redirects' ) ) {
+			echo '<p class="description">' . esc_html__( 'Enable Redirects by saving a valid manual rule or automatic slug redirects.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
 		$this->load_redirects_service_for_read_only_admin();
 		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
 		$rules             = $redirects_service->get_all_redirect_rules();
@@ -1181,6 +1181,9 @@ class Lightweight_SEO_Admin {
 		}
 
 		$lines = array();
+		echo '<label for="lightweight-seo-redirect-search" class="screen-reader-text">' . esc_html__( 'Search redirect rules', 'lightweight-seo' ) . '</label>';
+		echo '<input type="search" id="lightweight-seo-redirect-search" class="regular-text" placeholder="' . esc_attr( __( 'Search redirect rules', 'lightweight-seo' ) ) . '">';
+		echo '<table class="widefat striped lightweight-seo-redirect-table"><thead><tr><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Target', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Status', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
 
 		foreach ( $rules as $rule ) {
 			$lines[] = implode(
@@ -1191,8 +1194,10 @@ class Lightweight_SEO_Admin {
 					$rule['status'] ?? 301,
 				)
 			);
+			echo '<tr><td><code>' . esc_html( $rule['source'] ?? '' ) . '</code></td><td><code>' . esc_html( $rule['target'] ?? '' ) . '</code></td><td>' . esc_html( (string) ( $rule['status'] ?? 301 ) ) . '</td></tr>';
 		}
 
+		echo '</tbody></table>';
 		echo '<textarea rows="8" cols="50" class="large-text code" readonly="readonly">' . esc_textarea( implode( "\n", $lines ) ) . '</textarea>';
 		echo '<p class="description">' . __( 'Copy this snapshot to migrate rules or keep an external backup. Manual rules can be imported by pasting them into the redirect rules field above.', 'lightweight-seo' ) . '</p>';
 	}
@@ -1203,6 +1208,12 @@ class Lightweight_SEO_Admin {
 	 * @since    1.1.0
 	 */
 	public function redirect_health_render() {
+		if ( ! $this->is_module_enabled( 'redirects' ) ) {
+			echo '<p class="description">' . esc_html__( 'No redirect health checks run while the module is disabled.', 'lightweight-seo' ) . '</p>';
+
+			return;
+		}
+
 		$this->load_redirects_service_for_read_only_admin();
 		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
 		$report            = $redirects_service->get_redirect_health_report();
@@ -1245,34 +1256,6 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
-	 * Render a recent 404 log summary.
-	 *
-	 * @since    1.1.0
-	 */
-	public function recent_404_logs_render() {
-		$logs = get_option( 'lightweight_seo_404_logs', array() );
-
-		if ( empty( $logs ) ) {
-			echo '<p class="description">' . __( 'No 404s have been logged yet.', 'lightweight-seo' ) . '</p>';
-
-			return;
-		}
-
-		echo '<div class="lightweight-seo-404-log"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Path', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Hits', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Last Seen', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Referrer', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
-
-		foreach ( array_slice( array_values( $logs ), 0, 10 ) as $log ) {
-			echo '<tr>';
-			echo '<td><code>' . esc_html( $log['path'] ?? '' ) . '</code></td>';
-			echo '<td>' . esc_html( (string) ( $log['hits'] ?? 0 ) ) . '</td>';
-			echo '<td>' . esc_html( $log['last_seen'] ?? '' ) . '</td>';
-			echo '<td>' . esc_html( $log['referer'] ?? '' ) . '</td>';
-			echo '</tr>';
-		}
-
-		echo '</tbody></table></div>';
-	}
-
-	/**
 	 * Load redirect parsing only when its legacy read-only report is rendered.
 	 * No redirect hooks are registered by these views.
 	 *
@@ -1282,6 +1265,13 @@ class Lightweight_SEO_Admin {
 		if ( ! class_exists( 'Lightweight_SEO_Redirects_Service', false ) ) {
 			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirects-service.php';
 		}
+	}
+
+	/** Read bounded module state without loading a module implementation. */
+	private function is_module_enabled( $module_id ) {
+		$states = get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME, array() );
+
+		return ! empty( $states[ sanitize_key( $module_id ) ] );
 	}
 
 	/**
@@ -2191,6 +2181,7 @@ class Lightweight_SEO_Admin {
 		$sanitized_input['enable_product_schema']             = $existing_settings['enable_product_schema'] ?? '0';
 		$sanitized_input['enable_local_business_schema']      = $checkbox_value( 'enable_local_business_schema', 'modules' );
 		$sanitized_input['enable_hreflang_output']            = $checkbox_value( 'enable_hreflang_output', 'modules' );
+		$sanitized_input['enable_hreflang_path_mirroring']    = $checkbox_value( 'enable_hreflang_path_mirroring', 'modules' );
 		$sanitized_input['submit_sitemaps_to_search_console'] = $checkbox_value( 'submit_sitemaps_to_search_console', 'legacy' );
 		$sanitized_input['enable_404_monitor']                = $checkbox_value( 'enable_404_monitor', 'modules' );
 		$sanitized_input['enable_auto_redirects']             = $checkbox_value( 'enable_auto_redirects', 'modules' );
@@ -2247,33 +2238,7 @@ class Lightweight_SEO_Admin {
 		$sanitized_input['local_business_opening_hours']       = sanitize_textarea_field( $input['local_business_opening_hours'] ?? ( $existing_settings['local_business_opening_hours'] ?? '' ) );
 
 		if ( isset( $input['hreflang_mappings'] ) ) {
-			$lines           = preg_split( "/\r\n|\n|\r/", (string) $input['hreflang_mappings'] );
-			$sanitized_lines = array();
-
-			foreach ( $lines as $line ) {
-				$line = trim( (string) $line );
-
-				if ( empty( $line ) ) {
-					continue;
-				}
-
-				$parts = preg_split( '/\s+/', $line, 2 );
-
-				if ( 2 !== count( $parts ) ) {
-					continue;
-				}
-
-				$language = sanitize_text_field( $parts[0] );
-				$url      = esc_url_raw( $parts[1] );
-
-				if ( empty( $language ) || empty( $url ) || false === filter_var( str_replace( '%path%', 'path', $url ), FILTER_VALIDATE_URL ) ) {
-					continue;
-				}
-
-				$sanitized_lines[] = $language . ' ' . $url;
-			}
-
-			$sanitized_input['hreflang_mappings'] = implode( "\n", array_values( array_unique( $sanitized_lines ) ) );
+			$sanitized_input['hreflang_mappings'] = $this->settings->normalize_hreflang_mappings_input( $input['hreflang_mappings'] );
 		} else {
 			$sanitized_input['hreflang_mappings'] = $existing_settings['hreflang_mappings'] ?? '';
 		}
@@ -2467,7 +2432,7 @@ class Lightweight_SEO_Admin {
 			),
 			'identity'   => array( 'lightweight_seo_schema_section' => array( 'enable_schema_output', 'organization_same_as' ) ),
 			'modules'    => array(
-				'lightweight_seo_schema_section'    => array( 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings' ),
+				'lightweight_seo_schema_section'    => array( 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
 				'lightweight_seo_redirects_section' => true,
 				'lightweight_seo_tracking_section'  => true,
 			),

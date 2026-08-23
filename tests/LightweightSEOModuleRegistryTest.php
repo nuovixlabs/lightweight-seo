@@ -80,5 +80,8 @@ final class LightweightSEOModuleRegistryTest extends TestCase {
 		$this->assertTrue( $states['tracking'] );
 		$this->assertFalse( $states['local-seo'] );
 		$this->assertFalse( $states['redirects'] );
+
+		$legacy_404_only = Lightweight_SEO_Module_State::derive_from_legacy_settings( array( 'enable_404_monitor' => '1' ) );
+		$this->assertFalse( $legacy_404_only['redirects'] );
 	}
 }

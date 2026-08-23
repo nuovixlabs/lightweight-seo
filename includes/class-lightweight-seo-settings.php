@@ -15,6 +15,12 @@ if ( ! defined( 'WPINC' ) ) {
  * Shared settings service.
  */
 class Lightweight_SEO_Settings {
+	/** Maximum number of manual redirect rules stored in the bounded core option. */
+	const MAX_MANUAL_REDIRECTS = 500;
+
+	/** Maximum number of explicit hreflang mappings stored in the bounded core option. */
+	const MAX_HREFLANG_MAPPINGS = 500;
+
 
 	/**
 	 * Cached settings for the current request.
@@ -65,6 +71,7 @@ class Lightweight_SEO_Settings {
 			'local_business_opening_hours'        => '',
 			'organization_same_as'                => '',
 			'enable_hreflang_output'              => '0',
+			'enable_hreflang_path_mirroring'      => '0',
 			'hreflang_mappings'                   => '',
 			'search_console_property'             => '',
 			'search_console_service_account_json' => '',
@@ -390,26 +397,111 @@ class Lightweight_SEO_Settings {
 				continue;
 			}
 
-			$parts = preg_split( '/\s+/', $line, 2 );
+			$mapping = $this->parse_hreflang_mapping_line( $line );
 
-			if ( 2 !== count( $parts ) ) {
-				continue;
+			if ( ! empty( $mapping ) ) {
+				$mappings[] = $mapping;
 			}
-
-			$language = sanitize_text_field( $parts[0] );
-			$url      = esc_url_raw( $parts[1] );
-
-			if ( empty( $language ) || empty( $url ) ) {
-				continue;
-			}
-
-			$mappings[] = array(
-				'language' => $language,
-				'url'      => $url,
-			);
 		}
 
 		return $mappings;
+	}
+
+	/** Normalize explicit object mappings and retained legacy mirror mappings. */
+	public function normalize_hreflang_mappings_input( $value ) {
+		$lines         = preg_split( "/\r\n|\n|\r/", (string) $value );
+		$normalized    = array();
+		$seen_language = array();
+		$seen_target   = array();
+
+		foreach ( $lines as $line ) {
+			$mapping = $this->parse_hreflang_mapping_line( $line );
+
+			if ( empty( $mapping ) ) {
+				continue;
+			}
+
+			$reference    = $mapping['object_type'] . ':' . $mapping['object_id'];
+			$language_key = $reference . '|' . strtolower( $mapping['language'] );
+			$target_key   = $reference . '|' . strtolower( untrailingslashit( $mapping['url'] ) );
+
+			if ( isset( $seen_language[ $language_key ] ) || isset( $seen_target[ $target_key ] ) ) {
+				continue;
+			}
+
+			$seen_language[ $language_key ] = true;
+			$seen_target[ $target_key ]     = true;
+			$normalized[]                   = ( 'mirror' === $mapping['object_type'] ? '' : $reference . ' ' ) . $mapping['language'] . ' ' . $mapping['url'];
+		}
+
+		return implode( "\n", array_slice( $normalized, 0, self::MAX_HREFLANG_MAPPINGS ) );
+	}
+
+	/** Determine whether retained legacy base URLs may mirror the current path. */
+	public function hreflang_path_mirroring_enabled() {
+		return '1' === (string) $this->get( 'enable_hreflang_path_mirroring', '0' );
+	}
+
+	/** Parse one explicit `type:id language URL` line or a retained legacy mirror line. */
+	private function parse_hreflang_mapping_line( $line ) {
+		$parts = preg_split( '/\s+/', trim( (string) $line ) );
+
+		if ( 2 === count( $parts ) ) {
+			$object_type = 'mirror';
+			$object_id   = 0;
+			$language    = $parts[0];
+			$url         = $parts[1];
+		} elseif ( 3 === count( $parts ) && preg_match( '/^(post|term|user):([1-9][0-9]*)$/', $parts[0], $matches ) ) {
+			$object_type = $matches[1];
+			$object_id   = absint( $matches[2] );
+			$language    = $parts[1];
+			$url         = $parts[2];
+		} else {
+			return array();
+		}
+
+		$language = $this->normalize_hreflang_language( $language );
+		$url      = esc_url_raw( $url );
+
+		if ( empty( $language ) || empty( $url ) || false === filter_var( $url, FILTER_VALIDATE_URL ) ) {
+			return array();
+		}
+
+		return array(
+			'object_type' => $object_type,
+			'object_id'   => $object_id,
+			'language'    => $language,
+			'url'         => $url,
+		);
+	}
+
+	/** Normalize the common BCP 47 language, script, region, and variant structure. */
+	private function normalize_hreflang_language( $language ) {
+		$language = str_replace( '_', '-', trim( sanitize_text_field( (string) $language ) ) );
+
+		if ( 'x-default' === strtolower( $language ) ) {
+			return 'x-default';
+		}
+
+		if ( 1 !== preg_match( '/^[A-Za-z]{2,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|[0-9]{3}))?(?:-[A-Za-z0-9]{5,8})*$/', $language ) ) {
+			return '';
+		}
+
+		$parts = explode( '-', $language );
+
+		foreach ( $parts as $index => $part ) {
+			if ( 0 === $index ) {
+				$parts[ $index ] = strtolower( $part );
+			} elseif ( 4 === strlen( $part ) ) {
+				$parts[ $index ] = ucfirst( strtolower( $part ) );
+			} elseif ( 2 === strlen( $part ) && ctype_alpha( $part ) ) {
+				$parts[ $index ] = strtoupper( $part );
+			} else {
+				$parts[ $index ] = strtolower( $part );
+			}
+		}
+
+		return implode( '-', $parts );
 	}
 
 	/**
@@ -478,11 +570,22 @@ class Lightweight_SEO_Settings {
 			$rule = $this->parse_redirect_rule_line( $line );
 
 			if ( ! empty( $rule ) ) {
-				$normalized_rules[] = $rule['source'] . ' ' . $rule['target'] . ' ' . $rule['status'];
+				$normalized_rules[ $rule['source'] ] = $rule;
 			}
 		}
 
-		return implode( "\n", array_values( array_unique( $normalized_rules ) ) );
+		$normalized_rules = $this->remove_redirect_loops( array_values( $normalized_rules ) );
+		$normalized_rules = array_slice( $normalized_rules, 0, self::MAX_MANUAL_REDIRECTS );
+
+		return implode(
+			"\n",
+			array_map(
+				function ( $rule ) {
+					return $rule['source'] . ' ' . $rule['target'] . ' ' . $rule['status'];
+				},
+				$normalized_rules
+			)
+		);
 	}
 
 	/**
@@ -521,6 +624,14 @@ class Lightweight_SEO_Settings {
 			if ( ! in_array( $scheme, array( 'http', 'https' ), true ) ) {
 				return array();
 			}
+
+			if ( ! $this->is_redirect_target_allowed( $target ) ) {
+				return array();
+			}
+		}
+
+		if ( $source === $target ) {
+			return array();
 		}
 
 		return array(
@@ -539,10 +650,7 @@ class Lightweight_SEO_Settings {
 	 */
 	private function normalize_redirect_path( $path ) {
 		$normalized_path = trim( (string) $path );
-
-		if ( false !== strpos( $normalized_path, '://' ) ) {
-			$normalized_path = (string) wp_parse_url( $normalized_path, PHP_URL_PATH );
-		}
+		$normalized_path = (string) wp_parse_url( $normalized_path, PHP_URL_PATH );
 
 		if ( '' === $normalized_path ) {
 			return '';
@@ -555,6 +663,50 @@ class Lightweight_SEO_Settings {
 		}
 
 		return $normalized_path;
+	}
+
+	/** Reject any local rule that participates in a redirect loop. */
+	private function remove_redirect_loops( $rules ) {
+		$rule_map     = array_column( $rules, 'target', 'source' );
+		$loop_sources = array();
+
+		foreach ( array_keys( $rule_map ) as $source ) {
+			$visited = array();
+			$current = $source;
+
+			while ( isset( $rule_map[ $current ] ) && 0 === strpos( $rule_map[ $current ], '/' ) ) {
+				if ( isset( $visited[ $current ] ) ) {
+					$loop_sources = array_merge( $loop_sources, array_keys( $visited ) );
+					break;
+				}
+
+				$visited[ $current ] = true;
+				$current             = $rule_map[ $current ];
+			}
+		}
+
+		return array_values(
+			array_filter(
+				$rules,
+				function ( $rule ) use ( $loop_sources ) {
+					return ! in_array( $rule['source'], $loop_sources, true );
+				}
+			)
+		);
+	}
+
+	/** Allow same-host redirects and external hosts explicitly approved by WordPress. */
+	private function is_redirect_target_allowed( $target ) {
+		$target_host = strtolower( (string) wp_parse_url( $target, PHP_URL_HOST ) );
+		$home_host   = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+
+		if ( empty( $target_host ) || $target_host === $home_host ) {
+			return ! empty( $target_host );
+		}
+
+		$allowed_hosts = (array) apply_filters( 'allowed_redirect_hosts', array(), $target_host );
+
+		return in_array( $target_host, array_map( 'strtolower', $allowed_hosts ), true );
 	}
 
 	/**

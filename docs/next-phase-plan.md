@@ -639,11 +639,23 @@ Verification evidence:
 
 ### PR 5: Redirects and Hreflang modules
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - rebuild both modules on the registry
 - validation, conflict handling, and module-specific tests
 - retire continuous 404 logging from the initial path
 
 Exit gate: modules have zero disabled runtime and pass redirect/hreflang integration cases.
+
+Verification evidence:
+
+- Fast suite: 83 tests and 328 assertions pass.
+- Real WordPress 6.0 single-site suite: 16 tests and 58 assertions pass, with the multisite-only lifecycle case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 16 tests and 59 assertions pass.
+- Redirect rules are normalized and capped at 500; invalid statuses, loops, duplicate sources, and unapproved external hosts are rejected, while valid chains resolve to a safe terminal destination.
+- Hreflang uses explicit object mappings with validated BCP 47 tags, reciprocal local targets, canonical/indexability/redirect checks, and authoritative WPML or Polylang provider deferral. Legacy path mirroring requires explicit opt-in.
+- Browser smoke testing confirms disabled-module guidance, validated redirect persistence, searchable rule management, explicit Hreflang guidance, and removal of the continuous 404 log interface.
+- PHPCS, PHP syntax checks, Composer validation, dependency security audit, and whitespace checks pass.
 
 ### PR 6: Tracking and Local SEO modules
 

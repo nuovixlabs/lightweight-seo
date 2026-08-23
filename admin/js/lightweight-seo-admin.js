@@ -20,6 +20,14 @@
 			$('.lightweight-seo-setup').attr('hidden', true);
 		}
 
+		$('#lightweight-seo-redirect-search').on('input', function() {
+			var query = $.trim($(this).val()).toLowerCase();
+
+			$('.lightweight-seo-redirect-table tbody tr').each(function() {
+				$(this).toggle(!query || $(this).text().toLowerCase().indexOf(query) !== -1);
+			});
+		});
+
         // Media uploader for social image
         var mediaUploader;
 

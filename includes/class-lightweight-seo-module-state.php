@@ -96,7 +96,7 @@ class Lightweight_SEO_Module_State {
 		$redirect_rules = trim( (string) ( $settings['redirect_rules'] ?? '' ) );
 
 		return array(
-			'redirects' => '1' === (string) ( $settings['enable_404_monitor'] ?? '' ) || '1' === (string) ( $settings['enable_auto_redirects'] ?? '' ) || '' !== $redirect_rules,
+			'redirects' => '1' === (string) ( $settings['enable_auto_redirects'] ?? '' ) || '' !== $redirect_rules,
 			'hreflang'  => '1' === (string) ( $settings['enable_hreflang_output'] ?? '' ),
 			'tracking'  => self::has_tracking_identifier( $settings ),
 			'local-seo' => '1' === (string) ( $settings['enable_local_business_schema'] ?? '' ),

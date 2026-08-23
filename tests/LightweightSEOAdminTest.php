@@ -452,6 +452,10 @@ final class LightweightSEOAdminTest extends TestCase {
 	}
 
 	public function test_redirect_health_render_outputs_detected_issues(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'redirects' => true );
+
 		$settings = new class() {
 			public function get_all() {
 				return array();
@@ -501,6 +505,7 @@ final class LightweightSEOAdminTest extends TestCase {
 	public function test_redirect_export_render_outputs_normalized_rules(): void {
 		global $lightweight_seo_test_options;
 
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]                            = array( 'redirects' => true );
 		$lightweight_seo_test_options[ Lightweight_SEO_Redirects_Service::GENERATED_RULES_OPTION_NAME ] = array(
 			array(
 				'source'     => '/legacy-page',
