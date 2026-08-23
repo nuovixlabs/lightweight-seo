@@ -1,6 +1,6 @@
 # Lightweight SEO Next-Phase Plan
 
-Status: Approved product direction, implementation not started
+Status: Implementation in progress; PR 1 lifecycle foundation complete locally
 
 Planning date: 2026-08-24
 
@@ -555,6 +555,8 @@ Each pull request should be independently testable and reversible.
 
 ### PR 1: Compatibility baseline and lifecycle
 
+Implementation status (2026-08-24): Complete locally; pending pull-request review and CI.
+
 - add WordPress/PHP requirement headers
 - move lifecycle hook registration to safe file scope
 - add deactivation and complete data ownership registry
@@ -562,6 +564,14 @@ Each pull request should be independently testable and reversible.
 - add real WordPress test bootstrap and compatibility matrix foundation
 
 Exit gate: activation, deactivation, upgrade fixture, and uninstall behavior pass in real WordPress.
+
+Verification evidence:
+
+- Fast suite: 68 tests and 259 assertions pass.
+- Real WordPress 6.0 single-site suite: 7 tests and 18 assertions pass, with the multisite-only case skipped as intended.
+- Real WordPress 6.0 multisite suite: all 7 tests and 19 assertions pass, including network activation.
+- PHPCS, PHP syntax checks, Composer validation, and dependency security audit pass.
+- CI now covers WordPress 6.0/PHP 7.4, latest WordPress on PHP 7.4/8.2/8.3, and latest WordPress multisite.
 
 ### PR 2: Core output correctness
 

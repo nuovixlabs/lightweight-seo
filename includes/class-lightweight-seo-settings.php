@@ -82,6 +82,7 @@ class Lightweight_SEO_Settings {
 			'ga4_measurement_id'                  => '',
 			'gtm_container_id'                    => '',
 			'facebook_pixel_id'                   => '',
+			'delete_data_on_uninstall'            => '0',
 		);
 	}
 

@@ -73,7 +73,6 @@ class Lightweight_SEO {
 		$this->settings     = new Lightweight_SEO_Settings();
 		$this->post_meta    = new Lightweight_SEO_Post_Meta();
 		$this->archive_meta = new Lightweight_SEO_Archive_Meta( $this->settings );
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 	}
 
 	/**
@@ -150,6 +149,8 @@ class Lightweight_SEO {
 	 * @since    1.0.0
 	 */
 	public function run() {
+		$this->load_textdomain();
+
 		// Initialize admin functionality
 		$plugin_admin = new Lightweight_SEO_Admin( $this->get_plugin_name(), $this->get_version(), $this->settings, $this->post_meta );
 
@@ -173,9 +174,6 @@ class Lightweight_SEO {
 
 		// Initialize Search Console sync hooks
 		new Lightweight_SEO_Search_Console_Service( $this->settings );
-
-		// Register activation hook
-		register_activation_hook( LIGHTWEIGHT_SEO_PLUGIN_FILE, array( $this, 'activate' ) );
 	}
 
 	/**
@@ -211,17 +209,5 @@ class Lightweight_SEO {
 	 */
 	public function get_version() {
 		return $this->version;
-	}
-
-	/**
-	 * Plugin activation
-	 *
-	 * @since     1.0.0
-	 */
-	public function activate() {
-		// Set default options if they don't exist
-		if ( ! get_option( LIGHTWEIGHT_SEO_OPTION_NAME ) ) {
-			update_option( LIGHTWEIGHT_SEO_OPTION_NAME, $this->settings->get_defaults() );
-		}
 	}
 }

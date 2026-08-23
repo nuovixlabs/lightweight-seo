@@ -566,6 +566,14 @@ class Lightweight_SEO_Admin {
 			'lightweight_seo_migration_section'
 		);
 
+		add_settings_field(
+			'delete_data_on_uninstall',
+			__( 'Uninstall Data', 'lightweight-seo' ),
+			array( $this, 'delete_data_on_uninstall_render' ),
+			$this->plugin_name,
+			'lightweight_seo_migration_section'
+		);
+
 		// Tracking Codes Section
 		add_settings_section(
 			'lightweight_seo_tracking_section',
@@ -1096,6 +1104,23 @@ class Lightweight_SEO_Admin {
 	 */
 	public function migration_section_callback() {
 		echo '<p>' . __( 'Import saved SEO metadata from Yoast SEO, Rank Math, or All in One SEO into Lightweight SEO fields.', 'lightweight-seo' ) . '</p>';
+	}
+
+	/**
+	 * Render the persistent-data uninstall setting.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function delete_data_on_uninstall_render() {
+		$options = $this->settings->get_all();
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[delete_data_on_uninstall]" value="1" <?php checked( $options['delete_data_on_uninstall'] ?? '0', '1' ); ?>>
+			<?php _e( 'Delete SEO settings and object metadata when the plugin is uninstalled', 'lightweight-seo' ); ?>
+		</label>
+		<p class="description"><?php _e( 'Leave this off to preserve titles, descriptions, canonicals, robots directives, and social metadata for a later reinstall.', 'lightweight-seo' ); ?></p>
+		<?php
 	}
 
 	/**
@@ -2179,6 +2204,7 @@ class Lightweight_SEO_Admin {
 		$sanitized_input['submit_sitemaps_to_search_console'] = isset( $input['submit_sitemaps_to_search_console'] ) ? '1' : '0';
 		$sanitized_input['enable_404_monitor']                = isset( $input['enable_404_monitor'] ) ? '1' : '0';
 		$sanitized_input['enable_auto_redirects']             = isset( $input['enable_auto_redirects'] ) ? '1' : '0';
+		$sanitized_input['delete_data_on_uninstall']          = isset( $input['delete_data_on_uninstall'] ) ? '1' : '0';
 		$sanitized_input['default_max_image_preview']         = $this->settings->normalize_max_image_preview(
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),
 			'large'
