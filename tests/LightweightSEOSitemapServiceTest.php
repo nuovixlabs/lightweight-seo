@@ -1,9 +1,6 @@
 <?php
 
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-sitemap-service.php';
-require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-image-sitemap-provider.php';
-require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-video-sitemap-provider.php';
-require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-news-sitemap-provider.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-redirects-service.php';
 
 use PHPUnit\Framework\TestCase;
@@ -63,27 +60,12 @@ final class LightweightSEOSitemapServiceTest extends TestCase {
 		$this->assertSame( '!=', $args['meta_query'][0][1]['compare'] );
 	}
 
-	public function test_register_image_sitemap_provider_registers_attachment_provider(): void {
+	public function test_specialized_sitemap_providers_are_not_registered_by_core(): void {
 		global $lightweight_seo_test_registered_sitemap_providers;
 
-		$service = $this->get_service();
-		$service->register_image_sitemap_provider();
+		$this->get_service();
 
-		$this->assertArrayHasKey( 'lightweightseoimages', $lightweight_seo_test_registered_sitemap_providers );
-		$this->assertInstanceOf( Lightweight_SEO_Image_Sitemap_Provider::class, $lightweight_seo_test_registered_sitemap_providers['lightweightseoimages'] );
-	}
-
-	public function test_register_video_and_news_sitemap_providers_register_custom_modules(): void {
-		global $lightweight_seo_test_registered_sitemap_providers;
-
-		$service = $this->get_service();
-		$service->register_video_sitemap_provider();
-		$service->register_news_sitemap_provider();
-
-		$this->assertArrayHasKey( 'lightweightseovideos', $lightweight_seo_test_registered_sitemap_providers );
-		$this->assertArrayHasKey( 'lightweightseonews', $lightweight_seo_test_registered_sitemap_providers );
-		$this->assertInstanceOf( Lightweight_SEO_Video_Sitemap_Provider::class, $lightweight_seo_test_registered_sitemap_providers['lightweightseovideos'] );
-		$this->assertInstanceOf( Lightweight_SEO_News_Sitemap_Provider::class, $lightweight_seo_test_registered_sitemap_providers['lightweightseonews'] );
+		$this->assertSame( array(), $lightweight_seo_test_registered_sitemap_providers );
 	}
 
 	public function test_filter_posts_query_args_excludes_redirected_posts(): void {

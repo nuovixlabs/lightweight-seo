@@ -90,18 +90,31 @@ class Lightweight_SEO_Page_Context_Service {
 		$settings = $this->settings->get_all();
 		$context  = array(
 			'document_title'   => '',
-			'description'      => $settings['meta_description'],
-			'keywords'         => $settings['meta_keywords'],
-			'keywords_enabled' => $this->settings->meta_keywords_enabled(),
+			'description'      => '',
 			'canonical_url'    => $this->get_current_url(),
+			'canonical_custom' => false,
 			'robots'           => $this->build_default_robots_directives(),
 			'og_title'         => get_bloginfo( 'name' ),
-			'og_description'   => $settings['meta_description'],
+			'og_description'   => '',
 			'og_image'         => $this->settings->get_social_image_url(),
+			'og_image_alt'     => '',
+			'og_image_width'   => 0,
+			'og_image_height'  => 0,
 			'og_type'          => 'website',
 			'og_url'           => $this->get_current_url(),
-			'twitter_card'     => 'summary_large_image',
+			'twitter_card'     => 'summary',
+			'is_404'           => is_404(),
 		);
+
+		if ( $context['is_404'] ) {
+			$context['canonical_url'] = '';
+			$context['og_title']      = '';
+			$context['og_url']        = '';
+			$context['og_image']      = '';
+			$context['robots']        = $this->ensure_robots_directive( $context['robots'], 'noindex' );
+
+			return apply_filters( 'lightweight_seo_page_context', $this->finalize_context( $context ) );
+		}
 
 		if ( is_singular() ) {
 			$post_id = get_queried_object_id();
@@ -118,15 +131,16 @@ class Lightweight_SEO_Page_Context_Service {
 					)
 				);
 
-				if ( ! empty( $post_meta['seo_description'] ) ) {
-					$context['description'] = $post_meta['seo_description'];
+				$context['description'] = ! empty( $post_meta['seo_description'] )
+					? $post_meta['seo_description']
+					: $this->get_post_description( $post );
+
+				if ( is_front_page() && empty( $post_meta['seo_description'] ) && ! empty( $settings['meta_description'] ) ) {
+					$context['description'] = $settings['meta_description'];
 				}
 
-				if ( ! empty( $post_meta['seo_keywords'] ) ) {
-					$context['keywords'] = $post_meta['seo_keywords'];
-				}
-
-				$context['canonical_url'] = ! empty( $post_meta['seo_canonical_url'] ) ? $post_meta['seo_canonical_url'] : get_permalink( $post_id );
+				$context['canonical_custom'] = ! empty( $post_meta['seo_canonical_url'] );
+				$context['canonical_url']    = $context['canonical_custom'] ? $post_meta['seo_canonical_url'] : get_permalink( $post_id );
 
 				$context['robots'] = $this->build_robots_directives( $post_meta, true );
 
@@ -141,21 +155,37 @@ class Lightweight_SEO_Page_Context_Service {
 				$context['og_title']       = ! empty( $post_meta['social_title'] ) ? $post_meta['social_title'] : $context['document_title'];
 				$context['og_description'] = ! empty( $post_meta['social_description'] ) ? $post_meta['social_description'] : $context['description'];
 				$context['og_url']         = $context['canonical_url'];
-				$context['og_type']        = is_single() ? 'article' : 'website';
+				$article_post_types        = (array) apply_filters( 'lightweight_seo_article_post_types', array( 'post' ) );
+				$context['og_type']        = in_array( (string) ( $post->post_type ?? '' ), $article_post_types, true ) ? 'article' : 'website';
 
 				$post_social_image = $this->post_meta->get_social_image_url( $post_id );
 
 				if ( ! empty( $post_social_image ) ) {
 					$context['og_image'] = $post_social_image;
+					$image_id            = absint( $post_meta['social_image_id'] ?? 0 );
 				} elseif ( has_post_thumbnail( $post_id ) ) {
-					$context['og_image'] = get_the_post_thumbnail_url( $post_id, 'large' );
+					$context['og_image'] = get_the_post_thumbnail_url( $post_id, 'full' );
+					$image_id            = get_post_thumbnail_id( $post_id );
+				} else {
+					$image_id = method_exists( $this->settings, 'get' ) ? absint( $this->settings->get( 'social_image_id', 0 ) ) : 0;
 				}
+
+				if ( function_exists( 'post_password_required' ) && post_password_required( $post ) ) {
+					$context['description']    = '';
+					$context['og_description'] = '';
+					$context['og_image']       = '';
+					$context['robots']         = $this->ensure_robots_directive( $context['robots'], 'noindex' );
+					$image_id                  = 0;
+				}
+
+				$context = $this->add_social_image_data( $context, $image_id );
 			}
 
-			return apply_filters( 'lightweight_seo_page_context', $context );
+			return apply_filters( 'lightweight_seo_page_context', $this->finalize_context( $context ) );
 		}
 
 		if ( is_home() || is_front_page() ) {
+			$context['description']    = $settings['meta_description'];
 			$context['document_title'] = $this->replace_title_template_vars(
 				$this->settings->get_home_title_format(),
 				array(
@@ -184,7 +214,7 @@ class Lightweight_SEO_Page_Context_Service {
 					'title' => $term_title,
 				)
 			);
-			$context['description']    = ! empty( $term_meta['seo_description'] ) ? $term_meta['seo_description'] : ( ! empty( $term->description ) ? $term->description : $context['description'] );
+			$context['description']    = ! empty( $term_meta['seo_description'] ) ? $term_meta['seo_description'] : ( $term->description ?? '' );
 			$context['canonical_url']  = ! empty( $term_meta['seo_canonical_url'] ) ? $term_meta['seo_canonical_url'] : $this->get_term_archive_url( $term, $context['canonical_url'] );
 			$context['robots']         = $this->build_robots_directives( $term_meta );
 			$context['og_title']       = $context['document_title'];
@@ -201,7 +231,7 @@ class Lightweight_SEO_Page_Context_Service {
 					'title' => $author_name,
 				)
 			);
-			$context['description']    = ! empty( $author_meta['seo_description'] ) ? $author_meta['seo_description'] : $this->get_author_description( $author, $author_id, $context['description'] );
+			$context['description']    = ! empty( $author_meta['seo_description'] ) ? $author_meta['seo_description'] : $this->get_author_description( $author, $author_id, '' );
 			$context['canonical_url']  = ! empty( $author_meta['seo_canonical_url'] ) ? $author_meta['seo_canonical_url'] : $this->get_author_archive_url( $author_id, $context['canonical_url'] );
 			$context['robots']         = $this->build_robots_directives( $author_meta );
 			$context['og_title']       = $context['document_title'];
@@ -216,13 +246,97 @@ class Lightweight_SEO_Page_Context_Service {
 					'title' => $archive_title,
 				)
 			);
-			$context['description']    = ! empty( $archive_description ) ? $archive_description : $context['description'];
+			$context['description']    = ! empty( $archive_description ) ? $archive_description : '';
 			$context['og_title']       = $context['document_title'];
 			$context['og_description'] = $context['description'];
 			$context['og_url']         = $context['canonical_url'];
 		}
 
-		return apply_filters( 'lightweight_seo_page_context', $context );
+		$image_id = method_exists( $this->settings, 'get' ) ? absint( $this->settings->get( 'social_image_id', 0 ) ) : 0;
+		$context  = $this->add_social_image_data( $context, $image_id );
+
+		return apply_filters( 'lightweight_seo_page_context', $this->finalize_context( $context ) );
+	}
+
+	/**
+	 * Resolve a useful singular description from the excerpt or visible content.
+	 *
+	 * @param WP_Post|object|null $post Current queried post.
+	 * @return string
+	 */
+	private function get_post_description( $post ) {
+		if ( empty( $post ) ) {
+			return '';
+		}
+
+		$description = (string) ( $post->post_excerpt ?? '' );
+
+		if ( '' === trim( $description ) ) {
+			$description = (string) ( $post->post_content ?? '' );
+		}
+
+		if ( function_exists( 'strip_shortcodes' ) ) {
+			$description = strip_shortcodes( $description );
+		}
+
+		return $this->normalize_text( $description );
+	}
+
+	/**
+	 * Add attachment metadata for the selected social image when available.
+	 *
+	 * @param array $context  Resolved page context.
+	 * @param int   $image_id WordPress attachment ID.
+	 * @return array
+	 */
+	private function add_social_image_data( $context, $image_id ) {
+		if ( empty( $context['og_image'] ) ) {
+			$context['twitter_card'] = 'summary';
+			return $context;
+		}
+
+		$context['twitter_card'] = 'summary_large_image';
+		$image_id                = absint( $image_id );
+
+		if ( ! $image_id ) {
+			return $context;
+		}
+
+		$metadata                   = wp_get_attachment_metadata( $image_id );
+		$context['og_image_alt']    = $this->normalize_text( get_post_meta( $image_id, '_wp_attachment_image_alt', true ) );
+		$context['og_image_width']  = absint( $metadata['width'] ?? 0 );
+		$context['og_image_height'] = absint( $metadata['height'] ?? 0 );
+
+		return $context;
+	}
+
+	/**
+	 * Normalize human-readable metadata before it reaches HTML attributes.
+	 *
+	 * @param mixed $value Raw metadata value.
+	 * @return string
+	 */
+	private function normalize_text( $value ) {
+		$value = html_entity_decode( (string) $value, ENT_QUOTES, 'UTF-8' );
+		$value = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $value, true ) : strip_tags( $value );
+
+		return trim( preg_replace( '/\s+/', ' ', $value ) );
+	}
+
+	/**
+	 * Normalize output-facing context values and social-card selection.
+	 *
+	 * @param array $context Resolved page context.
+	 * @return array
+	 */
+	private function finalize_context( $context ) {
+		foreach ( array( 'document_title', 'description', 'og_title', 'og_description', 'og_image_alt' ) as $field ) {
+			$context[ $field ] = $this->normalize_text( $context[ $field ] ?? '' );
+		}
+
+		$context['twitter_card'] = ! empty( $context['og_image'] ) ? 'summary_large_image' : 'summary';
+
+		return $context;
 	}
 
 	/**

@@ -223,7 +223,13 @@ class Lightweight_SEO_Archive_Meta {
 
 		unset( $this->term_cache[ (int) $term_id ] );
 
-		return update_term_meta( $term_id, $this->meta_keys[ $field ], $value );
+		$updated = update_term_meta( $term_id, $this->meta_keys[ $field ], $value );
+
+		if ( false !== $updated ) {
+			do_action( 'lightweight_seo_object_meta_updated', 'term', (int) $term_id, array( $field ) );
+		}
+
+		return $updated;
 	}
 
 	/**
@@ -242,7 +248,13 @@ class Lightweight_SEO_Archive_Meta {
 
 		unset( $this->user_cache[ (int) $user_id ] );
 
-		return update_user_meta( $user_id, $this->meta_keys[ $field ], $value );
+		$updated = update_user_meta( $user_id, $this->meta_keys[ $field ], $value );
+
+		if ( false !== $updated ) {
+			do_action( 'lightweight_seo_object_meta_updated', 'user', (int) $user_id, array( $field ) );
+		}
+
+		return $updated;
 	}
 
 	/**

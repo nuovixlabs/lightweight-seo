@@ -95,7 +95,7 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 
 		$this->assertSame( 'My Title', $post_meta->updates['seo_title'] );
 		$this->assertSame( 'My Description', $post_meta->updates['seo_description'] );
-		$this->assertSame( 'alpha, beta', $post_meta->updates['seo_keywords'] );
+		$this->assertArrayNotHasKey( 'seo_keywords', $post_meta->updates );
 		$this->assertSame( 'https://example.com/canonical-url', $post_meta->updates['seo_canonical_url'] );
 		$this->assertSame( '1', $post_meta->updates['seo_noindex'] );
 		$this->assertSame( '1', $post_meta->updates['seo_nofollow'] );
@@ -168,5 +168,66 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 
 		$this->assertSame( 'https://cdn.example.com/manual-image.jpg', $post_meta->updates['social_image'] );
 		$this->assertSame( 0, $post_meta->updates['social_image_id'] );
+	}
+
+	public function test_editor_renders_accessible_previews_checks_and_advanced_controls(): void {
+		global $lightweight_seo_test_posts;
+
+		$post                           = (object) array(
+			'ID'           => 99,
+			'post_title'   => 'A useful page title',
+			'post_excerpt' => '',
+			'post_content' => '<p>A concise page description for visitors and search previews.</p>',
+			'permalink'    => 'https://example.com/useful-page/',
+		);
+		$lightweight_seo_test_posts[99] = $post;
+		$lightweight_seo_test_posts[42] = (object) array(
+			'metadata' => array(
+				'width'  => 800,
+				'height' => 420,
+			),
+		);
+
+		$settings  = new class() {
+			public function get_all() {
+				return array();
+			}
+			public function get_title_format() {
+				return LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT;
+			}
+			public function get_social_image_url() {
+				return '';
+			}
+		};
+		$post_meta = new class() {
+			public function get_all( $post_id ) {
+				return array(
+					'seo_title'          => '',
+					'seo_description'    => '',
+					'seo_canonical_url'  => 'https://outside.example/canonical/',
+					'seo_noindex'        => '1',
+					'social_title'       => '',
+					'social_description' => '',
+					'social_image_id'    => 42,
+				);
+			}
+			public function get_social_image_url( $post_id ) {
+				return 'https://example.com/social.jpg';
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Meta_Boxes( $settings, $post_meta ) )->render_meta_box( $post );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'role="tablist"', $output );
+		$this->assertStringContainsString( 'Search appearance', $output );
+		$this->assertStringContainsString( 'lightweight-seo-search-preview', $output );
+		$this->assertStringContainsString( 'lightweight-seo-social-preview', $output );
+		$this->assertStringContainsString( 'Advanced canonical and robots controls', $output );
+		$this->assertStringContainsString( 'below the 1200px width recommendation', $output );
+		$this->assertStringContainsString( 'points to a different host', $output );
+		$this->assertStringContainsString( 'do not predict rankings', $output );
+		$this->assertStringNotContainsString( 'Meta Keywords', $output );
 	}
 }

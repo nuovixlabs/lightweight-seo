@@ -61,6 +61,15 @@ class Lightweight_SEO {
 	 */
 	protected $archive_meta;
 
+	/** @var Lightweight_SEO_Page_Context_Service */
+	protected $page_context;
+
+	/** @var Lightweight_SEO_Module_State */
+	protected $module_state;
+
+	/** @var Lightweight_SEO_Module_Registry */
+	protected $module_registry;
+
 	/**
 	 * Define the core functionality of the plugin.
 	 *
@@ -70,10 +79,12 @@ class Lightweight_SEO {
 		$this->plugin_name = 'lightweight-seo';
 		$this->version     = LIGHTWEIGHT_SEO_VERSION;
 		$this->load_dependencies();
-		$this->settings     = new Lightweight_SEO_Settings();
-		$this->post_meta    = new Lightweight_SEO_Post_Meta();
-		$this->archive_meta = new Lightweight_SEO_Archive_Meta( $this->settings );
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		$this->settings        = new Lightweight_SEO_Settings();
+		$this->post_meta       = new Lightweight_SEO_Post_Meta();
+		$this->archive_meta    = new Lightweight_SEO_Archive_Meta( $this->settings );
+		$this->page_context    = new Lightweight_SEO_Page_Context_Service( $this->settings, $this->post_meta, $this->archive_meta );
+		$this->module_state    = new Lightweight_SEO_Module_State();
+		$this->module_registry = new Lightweight_SEO_Module_Registry( $this->module_state );
 	}
 
 	/**
@@ -91,6 +102,11 @@ class Lightweight_SEO {
 
 		// Shared term and author meta service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-archive-meta.php';
+
+		// Versioned public API and the lightweight module boundary.
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-module-state.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-module-registry.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-api.php';
 
 		// Compatibility and safe-mode service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-compatibility-service.php';
@@ -113,29 +129,11 @@ class Lightweight_SEO {
 		// Frontend header service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-header-service.php';
 
-		// Frontend hreflang service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-hreflang-service.php';
-
-		// Frontend tracking service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-tracking-service.php';
-
 		// Sitemap integration service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-sitemap-service.php';
 
 		// Structured data service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-schema-service.php';
-
-		// Redirect and 404 monitoring service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirects-service.php';
-
-		// Internal link analysis service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-internal-links-service.php';
-
-		// Discover image audit service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-image-audit-service.php';
-
-		// Search Console sync service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-search-console-service.php';
 
 		// SEO metadata importer service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-importer-service.php';
@@ -150,6 +148,9 @@ class Lightweight_SEO {
 	 * @since    1.0.0
 	 */
 	public function run() {
+		$this->load_textdomain();
+		$this->initialize_module_registry();
+
 		// Initialize admin functionality
 		$plugin_admin = new Lightweight_SEO_Admin( $this->get_plugin_name(), $this->get_version(), $this->settings, $this->post_meta );
 
@@ -157,25 +158,149 @@ class Lightweight_SEO {
 		$plugin_meta_boxes = new Lightweight_SEO_Meta_Boxes( $this->settings, $this->post_meta );
 
 		// Initialize frontend functionality
-		$plugin_frontend = new Lightweight_SEO_Frontend( $this->settings, $this->post_meta, $this->archive_meta );
+		$plugin_frontend = new Lightweight_SEO_Frontend( $this->settings, $this->post_meta, $this->archive_meta, $this->page_context );
 
 		// Initialize sitemap integration
 		$plugin_sitemaps = new Lightweight_SEO_Sitemap_Service( $this->settings, $this->post_meta, $this->archive_meta );
 
-		// Initialize redirect handling and 404 monitoring
-		$plugin_redirects = new Lightweight_SEO_Redirects_Service( $this->settings );
+		$GLOBALS['lightweight_seo_api'] = new Lightweight_SEO_API( $this->page_context, $this->post_meta, $this->archive_meta, $this->module_registry );
+		do_action( 'lightweight_seo_loaded', $GLOBALS['lightweight_seo_api'] );
+	}
 
-		// Initialize internal link analysis hooks
-		new Lightweight_SEO_Internal_Links_Service( $this->post_meta, true, $this->settings );
+	/**
+	 * Register built-in modules, finalize the registry, and load this request context.
+	 *
+	 * @return void
+	 */
+	private function initialize_module_registry() {
+		$this->register_builtin_modules( $this->module_registry );
+		do_action( 'lightweight_seo_register_modules', $this->module_registry );
+		$this->module_registry->finalize();
+		do_action( 'lightweight_seo_modules_registered', $this->module_registry );
 
-		// Initialize image audit hooks
-		new Lightweight_SEO_Image_Audit_Service( $this->settings, $this->post_meta );
+		$context = $this->get_request_context();
 
-		// Initialize Search Console sync hooks
-		new Lightweight_SEO_Search_Console_Service( $this->settings );
+		if ( in_array( $context, array( 'admin', 'editor', 'cron' ), true ) ) {
+			$this->module_registry->load_context( $context );
+			return;
+		}
 
-		// Register activation hook
-		register_activation_hook( LIGHTWEIGHT_SEO_PLUGIN_FILE, array( $this, 'activate' ) );
+		add_action( 'rest_api_init', array( $this, 'load_rest_modules' ), 1, 0 );
+		add_action( 'wp', array( $this, 'load_frontend_modules' ), 1, 0 );
+	}
+
+	/** Load REST modules only after WordPress identifies a REST request. */
+	public function load_rest_modules() {
+		$this->module_registry->load_context( 'rest' );
+	}
+
+	/** Load frontend modules after the main query is available. */
+	public function load_frontend_modules() {
+		$this->module_registry->load_context( 'frontend' );
+	}
+
+	/**
+	 * Register metadata only; implementation files remain unloaded until enabled.
+	 *
+	 * @param Lightweight_SEO_Module_Registry $registry Module registry.
+	 * @return void
+	 */
+	private function register_builtin_modules( $registry ) {
+		$definitions = array(
+			'redirects' => array(
+				'name'        => __( 'Redirects', 'lightweight-seo' ),
+				'description' => __( 'Manage redirects and optional slug-change handling.', 'lightweight-seo' ),
+				'contexts'    => array( 'frontend', 'editor' ),
+			),
+			'hreflang'  => array(
+				'name'        => __( 'Hreflang', 'lightweight-seo' ),
+				'description' => __( 'Output alternate-language links.', 'lightweight-seo' ),
+				'contexts'    => array( 'frontend' ),
+			),
+			'tracking'  => array(
+				'name'        => __( 'Tracking', 'lightweight-seo' ),
+				'description' => __( 'Output configured analytics containers.', 'lightweight-seo' ),
+				'contexts'    => array( 'frontend' ),
+			),
+			'local-seo' => array(
+				'name'        => __( 'Local SEO', 'lightweight-seo' ),
+				'description' => __( 'Add single-location LocalBusiness data.', 'lightweight-seo' ),
+				'contexts'    => array( 'frontend' ),
+			),
+			'ai'        => array(
+				'name'         => __( 'AI Discovery', 'lightweight-seo' ),
+				'description'  => __( 'Experimental crawler policy controls.', 'lightweight-seo' ),
+				'contexts'     => array( 'frontend', 'admin' ),
+				'experimental' => true,
+			),
+		);
+
+		foreach ( $definitions as $module_id => $definition ) {
+			$definition['factory'] = array( $this, 'load_builtin_module' );
+			$registry->register( $module_id, $definition );
+		}
+	}
+
+	/**
+	 * Load one enabled built-in module implementation.
+	 *
+	 * @param string $context   Request context.
+	 * @param string $module_id Module identifier.
+	 * @return void
+	 */
+	public function load_builtin_module( $context, $module_id ) {
+		switch ( $module_id ) {
+			case 'redirects':
+				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirects-service.php';
+				new Lightweight_SEO_Redirects_Service( $this->settings, $context );
+				break;
+			case 'hreflang':
+				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-hreflang-service.php';
+				$service = new Lightweight_SEO_Hreflang_Service( $this->settings, $this->page_context );
+
+				if ( ! $service->multilingual_provider_active() && ( new Lightweight_SEO_Compatibility_Service() )->feature_output_allowed( 'hreflang' ) ) {
+					add_action( 'wp_head', array( $service, 'add_hreflang_links' ), 2 );
+				}
+				break;
+			case 'tracking':
+				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-tracking-service.php';
+				$service = new Lightweight_SEO_Tracking_Service( $this->settings );
+				add_action( 'wp_head', array( $service, 'add_tracking_codes' ), 1 );
+				add_action( 'wp_body_open', array( $service, 'add_gtm_noscript' ), 1 );
+				add_action( 'wp_footer', array( $service, 'add_gtm_theme_diagnostic' ), 100 );
+				break;
+			case 'local-seo':
+				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-local-seo-module.php';
+				new Lightweight_SEO_Local_SEO_Module( $this->settings );
+				break;
+			case 'ai':
+				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-ai-discovery-module.php';
+				new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), $context );
+				break;
+		}
+	}
+
+	/**
+	 * Resolve the broad execution context without loading module code.
+	 *
+	 * @return string
+	 */
+	private function get_request_context() {
+		if ( ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+			return 'cron';
+		}
+
+		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+			return 'rest';
+		}
+
+		if ( is_admin() ) {
+			global $pagenow;
+
+			return in_array( (string) $pagenow, array( 'post.php', 'post-new.php' ), true ) ? 'editor' : 'admin';
+		}
+
+		return 'frontend';
 	}
 
 	/**
@@ -211,17 +336,5 @@ class Lightweight_SEO {
 	 */
 	public function get_version() {
 		return $this->version;
-	}
-
-	/**
-	 * Plugin activation
-	 *
-	 * @since     1.0.0
-	 */
-	public function activate() {
-		// Set default options if they don't exist
-		if ( ! get_option( LIGHTWEIGHT_SEO_OPTION_NAME ) ) {
-			update_option( LIGHTWEIGHT_SEO_OPTION_NAME, $this->settings->get_defaults() );
-		}
 	}
 }

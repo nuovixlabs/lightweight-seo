@@ -18,6 +18,19 @@ concurrency:
 jobs:
   package:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: wordpress_package
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     env:
       PLUGIN_SLUG: lightweight-seo
       RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
@@ -25,6 +38,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up PHP and WP-CLI
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli
+          tools: wp-cli
 
       - name: Validate tag matches plugin version
         shell: bash
@@ -89,6 +109,18 @@ jobs:
           fi
 
           echo "Verified ${#required_files[@]} required plugin files in ${ZIP_NAME}"
+
+      - name: Smoke activate packaged plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          wp core download --path=/tmp/wordpress --quiet
+          wp config create --path=/tmp/wordpress --dbname=wordpress_package --dbuser=root --dbpass=root --dbhost=127.0.0.1 --quiet
+          wp core install --path=/tmp/wordpress --url=http://127.0.0.1 --title="Package Smoke" --admin_user=admin --admin_password=package-smoke-password --admin_email=admin@example.com --skip-email --quiet
+          unzip -q "${ZIP_NAME}" -d /tmp/wordpress/wp-content/plugins
+          wp plugin activate "${PLUGIN_SLUG}" --path=/tmp/wordpress
+          wp eval 'if ( ! lightweight_seo_get_api() ) { exit( 1 ); }' --path=/tmp/wordpress
 
       - name: Publish release asset
         env:

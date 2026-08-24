@@ -10,6 +10,30 @@ if (!defined('LIGHTWEIGHT_SEO_OPTION_NAME')) {
     define('LIGHTWEIGHT_SEO_OPTION_NAME', 'lightweight_seo_settings');
 }
 
+if (!defined('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME')) {
+    define('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME', 'lightweight_seo_modules');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
+    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 3);
+}
+
+if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
+    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.1');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_API_VERSION')) {
+    define('LIGHTWEIGHT_SEO_API_VERSION', '1.0');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION')) {
+    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION', 'lightweight_seo_schema_version');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_PLUGIN_DIR')) {
+    define('LIGHTWEIGHT_SEO_PLUGIN_DIR', dirname(__DIR__) . '/');
+}
+
 if (!defined('LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT')) {
     define('LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT', '%title% – %sitename%');
 }
@@ -28,6 +52,9 @@ if (!defined('LIGHTWEIGHT_SEO_PLUGIN_URL')) {
 
 $lightweight_seo_test_nonce_is_valid = true;
 $lightweight_seo_test_user_can = true;
+$lightweight_seo_test_user_roles = array();
+$lightweight_seo_test_environment_type = 'production';
+$lightweight_seo_test_filters = array();
 $lightweight_seo_test_settings_errors = array();
 $lightweight_seo_test_options = array();
 $lightweight_seo_test_post_meta = array();
@@ -39,6 +66,7 @@ $lightweight_seo_test_user_meta = array();
 $lightweight_seo_test_remote_post_responses = array();
 $lightweight_seo_test_remote_get_responses = array();
 $lightweight_seo_test_scheduled_events = array();
+$lightweight_seo_test_cleared_scheduled_events = array();
 $lightweight_seo_test_registered_sitemap_providers = array();
 $lightweight_seo_test_cache = array();
 $lightweight_seo_test_get_posts_calls = 0;
@@ -95,6 +123,12 @@ if (!function_exists('add_filter')) {
 
 if (!function_exists('apply_filters')) {
     function apply_filters($hook_name, $value, ...$args) {
+		global $lightweight_seo_test_filters;
+
+		if ( isset( $lightweight_seo_test_filters[ $hook_name ] ) && is_callable( $lightweight_seo_test_filters[ $hook_name ] ) ) {
+			return $lightweight_seo_test_filters[ $hook_name ]( $value, ...$args );
+		}
+
         return $value;
     }
 }
@@ -253,6 +287,30 @@ if (!function_exists('current_user_can')) {
     }
 }
 
+if (!function_exists('is_user_logged_in')) {
+    function is_user_logged_in() {
+		global $lightweight_seo_test_user_roles;
+
+		return ! empty( $lightweight_seo_test_user_roles );
+	}
+}
+
+if (!function_exists('wp_get_current_user')) {
+    function wp_get_current_user() {
+		global $lightweight_seo_test_user_roles;
+
+		return (object) array( 'roles' => $lightweight_seo_test_user_roles );
+	}
+}
+
+if (!function_exists('wp_get_environment_type')) {
+    function wp_get_environment_type() {
+		global $lightweight_seo_test_environment_type;
+
+		return $lightweight_seo_test_environment_type;
+	}
+}
+
 if (!function_exists('get_bloginfo')) {
     function get_bloginfo($show = '', $filter = 'raw') {
         if ('name' === $show) {
@@ -290,6 +348,16 @@ if (!function_exists('update_option')) {
         global $lightweight_seo_test_options;
 
         $lightweight_seo_test_options[$option] = $value;
+
+        return true;
+    }
+}
+
+if (!function_exists('delete_option')) {
+    function delete_option($option) {
+        global $lightweight_seo_test_options;
+
+        unset($lightweight_seo_test_options[$option]);
 
         return true;
     }
@@ -408,6 +476,16 @@ if (!function_exists('update_post_meta')) {
     }
 }
 
+if (!function_exists('delete_post_meta')) {
+    function delete_post_meta($post_id, $meta_key, $meta_value = '') {
+        global $lightweight_seo_test_post_meta;
+
+        unset($lightweight_seo_test_post_meta[$post_id][$meta_key]);
+
+        return true;
+    }
+}
+
 if (!function_exists('get_post')) {
     function get_post($post = null, $output = 'OBJECT', $filter = 'raw') {
         global $lightweight_seo_test_posts;
@@ -423,6 +501,7 @@ if (!function_exists('get_post')) {
 if (!function_exists('get_posts')) {
     function get_posts($args = array()) {
         global $lightweight_seo_test_get_posts_calls;
+        global $lightweight_seo_test_post_meta;
         global $lightweight_seo_test_posts;
 
         $lightweight_seo_test_get_posts_calls++;
@@ -461,6 +540,13 @@ if (!function_exists('get_posts')) {
             }));
         }
 
+		if ( ! empty( $args['meta_key'] ) ) {
+			$meta_key = (string) $args['meta_key'];
+			$posts    = array_values( array_filter( $posts, function ( $post ) use ( $lightweight_seo_test_post_meta, $meta_key ) {
+				return '' !== (string) ( $lightweight_seo_test_post_meta[ (int) ( $post->ID ?? 0 ) ][ $meta_key ] ?? '' );
+			} ) );
+		}
+
         usort($posts, function ($left, $right) use ($args) {
             if ('date' === ($args['orderby'] ?? '')) {
                 return strcmp((string) ($right->post_date_gmt ?? ''), (string) ($left->post_date_gmt ?? ''));
@@ -473,9 +559,15 @@ if (!function_exists('get_posts')) {
         $paged = max(1, (int) ($args['paged'] ?? 1));
 
         if ($posts_per_page > -1) {
-            $offset = ($paged - 1) * $posts_per_page;
+            $offset = isset($args['offset']) ? max(0, (int) $args['offset']) : ($paged - 1) * $posts_per_page;
             $posts = array_slice($posts, $offset, $posts_per_page);
         }
+
+		if ( 'ids' === ( $args['fields'] ?? '' ) ) {
+			return array_map( function ( $post ) {
+				return (int) ( $post->ID ?? 0 );
+			}, $posts );
+		}
 
         if (($args['fields'] ?? '') === 'ids') {
             return array_map(function ($post) {
@@ -535,7 +627,7 @@ if (!function_exists('is_singular')) {
     function is_singular() {
         global $lightweight_seo_test_query_state;
 
-        return (bool) $lightweight_seo_test_query_state['is_singular'];
+        return (bool) ( $lightweight_seo_test_query_state['is_singular'] ?? false );
     }
 }
 
@@ -615,7 +707,7 @@ if (!function_exists('is_404')) {
     function is_404() {
         global $lightweight_seo_test_query_state;
 
-        return (bool) $lightweight_seo_test_query_state['is_404'];
+        return (bool) ( $lightweight_seo_test_query_state['is_404'] ?? false );
     }
 }
 
@@ -801,6 +893,24 @@ if (!function_exists('wp_schedule_event')) {
         $lightweight_seo_test_scheduled_events[$hook] = (int) $timestamp;
 
         return true;
+    }
+}
+
+if (!function_exists('wp_clear_scheduled_hook')) {
+    function wp_clear_scheduled_hook($hook, $args = array(), $wp_error = false) {
+        global $lightweight_seo_test_cleared_scheduled_events;
+        global $lightweight_seo_test_scheduled_events;
+
+        $lightweight_seo_test_cleared_scheduled_events[] = $hook;
+        unset($lightweight_seo_test_scheduled_events[$hook]);
+
+        return 1;
+    }
+}
+
+if (!function_exists('is_multisite')) {
+    function is_multisite() {
+        return false;
     }
 }
 
@@ -1098,4 +1208,57 @@ if (!function_exists('url_to_postid')) {
 
         return 0;
     }
+}
+
+if (!function_exists('get_post_type_object')) {
+    function get_post_type_object($post_type) {
+		if ( ! in_array( $post_type, array( 'post', 'page' ), true ) ) {
+			return null;
+		}
+
+		return (object) array( 'public' => true );
+	}
+}
+
+if (!function_exists('is_post_type_viewable')) {
+    function is_post_type_viewable($post_type) {
+		return is_object( $post_type ) && ! empty( $post_type->public );
+	}
+}
+
+if (!function_exists('strip_shortcodes')) {
+    function strip_shortcodes($content) {
+		return $content;
+	}
+}
+
+if (!function_exists('wp_strip_all_tags')) {
+    function wp_strip_all_tags($text, $remove_breaks = false) {
+		$text = strip_tags( $text );
+
+		return $remove_breaks ? preg_replace( '/[\r\n\t ]+/', ' ', $text ) : $text;
+	}
+}
+
+if (!function_exists('wp_trim_words')) {
+    function wp_trim_words($text, $num_words = 55, $more = null) {
+		$words = preg_split( '/\s+/', trim( $text ) );
+
+		if ( count( $words ) <= $num_words ) {
+			return $text;
+		}
+
+		return implode( ' ', array_slice( $words, 0, $num_words ) ) . ( null === $more ? '&hellip;' : $more );
+	}
+}
+
+if (!function_exists('wp_list_pluck')) {
+    function wp_list_pluck($input_list, $field) {
+		return array_map(
+			static function ( $item ) use ( $field ) {
+				return is_array( $item ) ? ( $item[ $field ] ?? null ) : ( $item->$field ?? null );
+			},
+			$input_list
+		);
+	}
 }

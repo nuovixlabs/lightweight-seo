@@ -42,28 +42,27 @@ class Lightweight_SEO_Meta_Tags_Service {
 	 * @return   void
 	 */
 	public function add_meta_tags() {
-		$context = $this->page_context->get_context();
-		$links   = array(
+		$context = array_merge(
 			array(
-				'rel'  => 'canonical',
-				'href' => $context['canonical_url'] ?? '',
+				'description'     => '',
+				'og_title'        => '',
+				'og_description'  => '',
+				'og_type'         => '',
+				'og_url'          => '',
+				'og_image'        => '',
+				'og_image_alt'    => '',
+				'og_image_width'  => 0,
+				'og_image_height' => 0,
+				'twitter_card'    => 'summary',
+				'is_404'          => false,
 			),
+			$this->page_context->get_context()
 		);
 		$tags    = array(
 			array(
 				'attribute' => 'name',
 				'key'       => 'description',
 				'value'     => $context['description'],
-			),
-			array(
-				'attribute' => 'name',
-				'key'       => 'keywords',
-				'value'     => ! empty( $context['keywords_enabled'] ) ? $context['keywords'] : '',
-			),
-			array(
-				'attribute' => 'name',
-				'key'       => 'robots',
-				'value'     => $context['robots'],
 			),
 			array(
 				'attribute' => 'property',
@@ -92,6 +91,21 @@ class Lightweight_SEO_Meta_Tags_Service {
 			),
 			array(
 				'attribute' => 'property',
+				'key'       => 'og:image:alt',
+				'value'     => $context['og_image_alt'] ?? '',
+			),
+			array(
+				'attribute' => 'property',
+				'key'       => 'og:image:width',
+				'value'     => $context['og_image_width'] ?? 0,
+			),
+			array(
+				'attribute' => 'property',
+				'key'       => 'og:image:height',
+				'value'     => $context['og_image_height'] ?? 0,
+			),
+			array(
+				'attribute' => 'property',
 				'key'       => 'og:site_name',
 				'value'     => get_bloginfo( 'name' ),
 			),
@@ -115,7 +129,16 @@ class Lightweight_SEO_Meta_Tags_Service {
 				'key'       => 'twitter:image',
 				'value'     => $context['og_image'],
 			),
+			array(
+				'attribute' => 'name',
+				'key'       => 'twitter:image:alt',
+				'value'     => $context['og_image_alt'] ?? '',
+			),
 		);
+
+		if ( ! empty( $context['is_404'] ) ) {
+			$tags = array();
+		}
 
 		$tags = array_filter(
 			$tags,
@@ -126,24 +149,7 @@ class Lightweight_SEO_Meta_Tags_Service {
 
 		$tags = apply_filters( 'lightweight_seo_meta_tags', $tags, $context );
 
-		$links = array_filter(
-			$links,
-			function ( $link ) {
-				return ! empty( $link['href'] );
-			}
-		);
-
-		$links = apply_filters( 'lightweight_seo_link_tags', $links, $context );
-
 		do_action( 'lightweight_seo_before_meta_tags', $tags, $context );
-
-		foreach ( $links as $link ) {
-			if ( ! isset( $link['rel'], $link['href'] ) ) {
-				continue;
-			}
-
-			echo '<link rel="' . esc_attr( $link['rel'] ) . '" href="' . esc_url( $link['href'] ) . '" />' . "\n";
-		}
 
 		foreach ( $tags as $tag ) {
 			if ( ! isset( $tag['attribute'], $tag['key'], $tag['value'] ) ) {
@@ -154,9 +160,108 @@ class Lightweight_SEO_Meta_Tags_Service {
 				continue;
 			}
 
-			echo '<meta ' . esc_attr( $tag['attribute'] ) . '="' . esc_attr( $tag['key'] ) . '" content="' . esc_attr( $tag['value'] ) . '" />' . "\n";
+			echo '<meta ' . esc_attr( $tag['attribute'] ) . '="' . esc_attr( $tag['key'] ) . '" content="' . esc_attr( $this->normalize_attribute_value( $tag['value'] ) ) . '" />' . "\n";
 		}
 
 		do_action( 'lightweight_seo_after_meta_tags', $tags, $context );
+	}
+
+	/**
+	 * Merge plugin directives into the WordPress robots API result.
+	 *
+	 * @param array $robots Existing WordPress robots directives.
+	 * @return array
+	 */
+	public function filter_robots( $robots ) {
+		$context = $this->page_context->get_context();
+
+		foreach ( explode( ',', (string) ( $context['robots'] ?? '' ) ) as $directive ) {
+			$directive = trim( $directive );
+
+			if ( '' === $directive ) {
+				continue;
+			}
+
+			$parts = array_map( 'trim', explode( ':', $directive, 2 ) );
+			$key   = $parts[0];
+			$value = isset( $parts[1] ) ? $parts[1] : true;
+
+			$robots[ $key ] = $value;
+		}
+
+		return $robots;
+	}
+
+	/**
+	 * Resolve singular canonicals through the WordPress canonical API.
+	 *
+	 * @param string  $canonical_url WordPress canonical URL.
+	 * @param WP_Post $post          Current post object.
+	 * @return string
+	 */
+	public function filter_canonical_url( $canonical_url, $post ) {
+		$context = $this->page_context->get_context();
+
+		if ( ! empty( $context['is_404'] ) ) {
+			return '';
+		}
+
+		if ( is_singular() && empty( $context['canonical_custom'] ) ) {
+			return $canonical_url;
+		}
+
+		return ! empty( $context['canonical_url'] ) ? (string) $context['canonical_url'] : $canonical_url;
+	}
+
+	/**
+	 * Output canonical and extension link tags for non-singular requests.
+	 *
+	 * Singular canonicals remain owned by WordPress core's rel_canonical().
+	 *
+	 * @return void
+	 */
+	public function add_non_singular_canonical() {
+		$context = $this->page_context->get_context();
+		$links   = array();
+
+		if ( ! is_singular() && empty( $context['is_404'] ) && ! empty( $context['canonical_url'] ) ) {
+			$links[] = array(
+				'rel'  => 'canonical',
+				'href' => $context['canonical_url'],
+			);
+		}
+
+		$links = apply_filters( 'lightweight_seo_link_tags', $links, $context );
+
+		$canonical_output = false;
+
+		foreach ( $links as $link ) {
+			if ( ! isset( $link['rel'], $link['href'] ) || empty( $link['href'] ) ) {
+				continue;
+			}
+
+			if ( 'canonical' === strtolower( (string) $link['rel'] ) ) {
+				if ( ! empty( $context['is_404'] ) || is_singular() || $canonical_output ) {
+					continue;
+				}
+
+				$canonical_output = true;
+			}
+
+			echo '<link rel="' . esc_attr( $link['rel'] ) . '" href="' . esc_url( $link['href'] ) . '" />' . "\n";
+		}
+	}
+
+	/**
+	 * Normalize whitespace and markup before HTML attribute escaping.
+	 *
+	 * @param mixed $value Raw tag value.
+	 * @return string
+	 */
+	private function normalize_attribute_value( $value ) {
+		$value = html_entity_decode( (string) $value, ENT_QUOTES, 'UTF-8' );
+		$value = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $value, true ) : strip_tags( $value );
+
+		return trim( preg_replace( '/\s+/', ' ', $value ) );
 	}
 }

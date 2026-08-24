@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="tests/bootstrap.php" colors="true" cacheDirectory=".cache/phpunit">
+<phpunit bootstrap="tests/bootstrap.php" colors="true">
     <testsuites>
         <testsuite name="Lightweight SEO">
             <directory>tests</directory>
+            <exclude>tests/integration</exclude>
         </testsuite>
     </testsuites>
 </phpunit>

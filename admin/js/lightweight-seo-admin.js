@@ -11,6 +11,23 @@
         var mediaButton = seoAdminStrings.mediaButton || 'Use this image';
         var previewAlt = seoAdminStrings.previewAlt || 'Preview';
 
+		$('.lightweight-seo-dismiss-checklist').on('click', function() {
+			$('.lightweight-seo-setup').attr('hidden', true);
+			window.localStorage.setItem('lightweightSeoChecklistDismissed', '1');
+		});
+
+		if (window.localStorage.getItem('lightweightSeoChecklistDismissed') === '1') {
+			$('.lightweight-seo-setup').attr('hidden', true);
+		}
+
+		$('#lightweight-seo-redirect-search').on('input', function() {
+			var query = $.trim($(this).val()).toLowerCase();
+
+			$('.lightweight-seo-redirect-table tbody tr').each(function() {
+				$(this).toggle(!query || $(this).text().toLowerCase().indexOf(query) !== -1);
+			});
+		});
+
         // Media uploader for social image
         var mediaUploader;
 
@@ -83,6 +100,13 @@
                 } else {
                     previewContainer.find('img').attr('src', attachment.url);
                 }
+                var socialPreviewImage = $('.lightweight-seo-social-preview img');
+
+                if (!socialPreviewImage.length) {
+                    socialPreviewImage = $('<img>', {alt: ''}).prependTo('.lightweight-seo-social-preview');
+                }
+
+                socialPreviewImage.attr('src', attachment.url);
             });
             
             // Open the uploader
@@ -95,17 +119,66 @@
         });
         
         // Meta box tabs
-        $('.lightweight-seo-tab-nav .nav-tab').on('click', function() {
-            var tabId = $(this).data('tab');
-            
-            // Remove active class from all tabs and content
-            $('.lightweight-seo-tab-nav .nav-tab').removeClass('nav-tab-active');
-            $('.lightweight-seo-tab-content .tab-content').removeClass('active');
-            
-            // Add active class to clicked tab and corresponding content
-            $(this).addClass('nav-tab-active');
-            $('#' + tabId).addClass('active');
+		function activateTab(tab) {
+            var tabId = tab.data('tab');
+			var tabs = tab.closest('.lightweight-seo-tabs').find('[role="tab"]');
+            var panels = tab.closest('.lightweight-seo-tabs').find('[role="tabpanel"]');
+
+            tabs.removeClass('nav-tab-active').attr({'aria-selected': 'false', 'tabindex': '-1'});
+            panels.removeClass('active').attr('hidden', true);
+            tab.addClass('nav-tab-active').attr({'aria-selected': 'true', 'tabindex': '0'}).focus();
+            panels.filter('[data-panel="' + tabId + '"]').addClass('active').removeAttr('hidden');
+		}
+
+        $('.lightweight-seo-tab-nav [role="tab"]').on('click', function() {
+			activateTab($(this));
         });
+
+		$('.lightweight-seo-tab-nav [role="tab"]').on('keydown', function(event) {
+			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+				return;
+			}
+
+			event.preventDefault();
+			var tabs = $(this).closest('[role="tablist"]').find('[role="tab"]');
+			var index = tabs.index(this) + (event.key === 'ArrowRight' ? 1 : -1);
+			activateTab(tabs.eq((index + tabs.length) % tabs.length));
+		});
+
+		$('.lightweight-seo-checks a[href^="#"]').on('click', function(event) {
+			var target = $(this.hash);
+
+			if (!target.length) {
+				return;
+			}
+
+			event.preventDefault();
+			var panel = target.closest('[role="tabpanel"]');
+			activateTab($('#' + panel.attr('aria-labelledby')));
+			target.closest('details').attr('open', true);
+			target.trigger('focus');
+		});
+
+		function fieldValue(selector) {
+			var field = $(selector);
+			return $.trim(field.val()) || field.data('fallback') || '';
+		}
+
+		function updateEditorPreviews() {
+			var title = fieldValue('#lightweight_seo_title');
+			var description = fieldValue('#lightweight_seo_description');
+			var socialTitle = $.trim($('#lightweight_seo_social_title').val()) || title;
+			var socialDescription = $.trim($('#lightweight_seo_social_description').val()) || description;
+
+			$('.lightweight-seo-preview-title').text(title);
+			$('.lightweight-seo-preview-description').text(description);
+			$('.lightweight-seo-social-title-preview').text(socialTitle);
+			$('.lightweight-seo-social-description-preview').text(socialDescription);
+			$('[data-count-for="lightweight_seo_title"]').text(title.length);
+			$('[data-count-for="lightweight_seo_description"]').text(description.length);
+		}
+
+		$('#lightweight_seo_title, #lightweight_seo_description, #lightweight_seo_social_title, #lightweight_seo_social_description').on('input', updateEditorPreviews);
     });
 
 })(jQuery);

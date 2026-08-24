@@ -1,0 +1,47 @@
+<?php
+
+$tests_dir = getenv( 'WP_TESTS_DIR' );
+
+if ( ! $tests_dir ) {
+	$tests_dir = sys_get_temp_dir() . '/wordpress-tests-lib';
+}
+
+if ( ! file_exists( $tests_dir . '/includes/functions.php' ) ) {
+	echo "WordPress test library not found. Set WP_TESTS_DIR or run tests/bin/install-wp-tests.sh.\n";
+	exit( 1 );
+}
+
+require_once $tests_dir . '/includes/functions.php';
+
+define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', dirname( __DIR__, 2 ) . '/vendor/yoast/phpunit-polyfills' );
+
+if ( 'true' === getenv( 'WP_TESTS_MULTISITE' ) ) {
+	define( 'WP_TESTS_MULTISITE', true );
+}
+
+tests_add_filter(
+	'muplugins_loaded',
+	static function () {
+		$woocommerce_bootstrap = getenv( 'WP_TESTS_WOOCOMMERCE' );
+
+		if ( $woocommerce_bootstrap && file_exists( $woocommerce_bootstrap ) ) {
+			require $woocommerce_bootstrap;
+
+			if ( class_exists( 'WC_Install' ) ) {
+				add_action( 'init', array( 'WC_Install', 'install' ), -1 );
+			}
+		}
+
+		require dirname( __DIR__, 2 ) . '/lightweight-seo.php';
+	}
+);
+
+require $tests_dir . '/includes/bootstrap.php';
+
+$GLOBALS['lightweight_seo_disabled_module_classes_at_boot'] = array(
+	'redirects' => class_exists( 'Lightweight_SEO_Redirects_Service', false ),
+	'hreflang'  => class_exists( 'Lightweight_SEO_Hreflang_Service', false ),
+	'tracking'  => class_exists( 'Lightweight_SEO_Tracking_Service', false ),
+	'local-seo' => class_exists( 'Lightweight_SEO_Local_SEO_Module', false ),
+	'ai'        => class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ),
+);

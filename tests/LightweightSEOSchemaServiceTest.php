@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-schema-service.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-local-seo-module.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -85,12 +86,18 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 	}
 
 	public function test_single_post_schema_outputs_article_and_breadcrumbs(): void {
+		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_query_state;
 
 		$lightweight_seo_test_query_state['is_singular']       = true;
 		$lightweight_seo_test_query_state['is_single']         = true;
 		$lightweight_seo_test_query_state['queried_object_id'] = 42;
 		$lightweight_seo_test_query_state['thumbnail_url']     = 'https://example.com/post-image.jpg';
+		$lightweight_seo_test_posts[42]                        = (object) array(
+			'ID'          => 42,
+			'post_type'   => 'post',
+			'post_status' => 'publish',
+		);
 
 		$page_context = new class() {
 			public function get_context() {
@@ -232,6 +239,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 
 			public function get_local_business_data() {
 				return array(
+					'valid'         => true,
 					'type'          => 'Restaurant',
 					'name'          => 'Example Cafe',
 					'telephone'     => '+1-555-555-5555',
@@ -244,6 +252,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 					'latitude'      => '32.7157',
 					'longitude'     => '-117.1611',
 					'opening_hours' => array( 'Mo-Fr 09:00-17:00' ),
+					'image'         => 'https://example.com/business.jpg',
 				);
 			}
 
@@ -252,18 +261,30 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 			}
 		};
 
-		$service = new Lightweight_SEO_Schema_Service( $page_context, $settings );
+		$module = new Lightweight_SEO_Local_SEO_Module( $settings );
+		$graph  = $module->add_local_business(
+			array(
+				array(
+					'@type'  => 'Organization',
+					'@id'    => 'https://example.com/#organization',
+					'name'   => 'Test Site',
+					'sameAs' => array( 'https://example.com/profile' ),
+				),
+			),
+			$page_context->get_context()
+		);
+		$output = wp_json_encode( $graph );
 
-		ob_start();
-		$service->add_schema();
-		$output = ob_get_clean();
-
+		$this->assertCount( 1, $graph );
 		$this->assertStringContainsString( '"@type":"Restaurant"', $output );
+		$this->assertStringContainsString( '"@id":"https:\/\/example.com\/#organization"', $output );
 		$this->assertStringContainsString( '"telephone":"+1-555-555-5555"', $output );
 		$this->assertStringContainsString( '"openingHours":["Mo-Fr 09:00-17:00"]', $output );
+		$this->assertStringContainsString( '"image":"https:\/\/example.com\/business.jpg"', $output );
+		$this->assertStringNotContainsString( 'logo.png', $output );
 	}
 
-	public function test_single_product_schema_outputs_product_with_offer(): void {
+	public function test_single_product_schema_is_deferred_to_woocommerce(): void {
 		global $lightweight_seo_test_post_meta;
 		global $lightweight_seo_test_posts;
 		global $lightweight_seo_test_query_state;
@@ -331,8 +352,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 		$service->add_schema();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( '"@type":"Product"', $output );
-		$this->assertStringContainsString( '"price":"19.99"', $output );
-		$this->assertStringContainsString( '"sku":"SKU-123"', $output );
+		$this->assertStringNotContainsString( '"@type":"Product"', $output );
+		$this->assertStringNotContainsString( '"@type":"Article"', $output );
 	}
 }

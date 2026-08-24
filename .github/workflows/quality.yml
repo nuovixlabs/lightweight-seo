@@ -29,3 +29,103 @@ jobs:
 
       - name: PHPUnit
         run: composer run test
+
+  wordpress-integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wordpress: '6.0'
+            php: '7.4'
+            multisite: false
+          - wordpress: 'latest'
+            php: '7.4'
+            multisite: false
+          - wordpress: 'latest'
+            php: '8.2'
+            multisite: false
+          - wordpress: 'latest'
+            php: '8.3'
+            multisite: false
+          - wordpress: 'latest'
+            php: '8.3'
+            multisite: true
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: wordpress_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Install WordPress test library
+        run: tests/bin/install-wp-tests.sh "${{ matrix.wordpress }}"
+
+      - name: WordPress integration tests
+        env:
+          WP_TESTS_MULTISITE: ${{ matrix.multisite }}
+        run: composer run test:integration
+
+  woocommerce-compatibility:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: wordpress_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: intl, mbstring, mysqli
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Install WordPress and WooCommerce fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          tests/bin/install-wp-tests.sh latest
+          curl -fsSL https://downloads.wordpress.org/plugin/woocommerce.latest-stable.zip -o /tmp/woocommerce.zip
+          unzip -q /tmp/woocommerce.zip -d /tmp
+
+      - name: WooCommerce integration tests
+        env:
+          WP_TESTS_WOOCOMMERCE: /tmp/woocommerce/woocommerce.php
+        run: composer run test:integration

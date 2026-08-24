@@ -1,6 +1,6 @@
 <?php
 /**
- * Redirect and 404 monitoring service for Lightweight SEO.
+ * Redirect service for Lightweight SEO.
  *
  * @since      1.1.0
  * @package    Lightweight_SEO
@@ -12,17 +12,9 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
- * Redirect and 404 monitoring service.
+ * Redirect service.
  */
 class Lightweight_SEO_Redirects_Service {
-
-	/**
-	 * Recent 404 log option name.
-	 *
-	 * @since    1.1.0
-	 * @var      string
-	 */
-	const LOG_OPTION_NAME = 'lightweight_seo_404_logs';
 
 	/**
 	 * Generated redirect rule option name.
@@ -31,14 +23,6 @@ class Lightweight_SEO_Redirects_Service {
 	 * @var      string
 	 */
 	const GENERATED_RULES_OPTION_NAME = 'lightweight_seo_generated_redirect_rules';
-
-	/**
-	 * Maximum number of 404 log entries to retain.
-	 *
-	 * @since    1.1.0
-	 * @var      int
-	 */
-	const MAX_LOG_ENTRIES = 50;
 
 	/**
 	 * Maximum number of generated redirect entries to retain.
@@ -72,14 +56,14 @@ class Lightweight_SEO_Redirects_Service {
 	 * @since    1.1.0
 	 * @param    Lightweight_SEO_Settings    $settings    Shared settings service.
 	 */
-	public function __construct( $settings, $register_hooks = true ) {
+	public function __construct( $settings, $context = 'frontend' ) {
 		$this->settings = $settings;
 
-		if ( $register_hooks ) {
+		if ( 'editor' === $context ) {
 			add_action( 'pre_post_update', array( $this, 'capture_previous_post_path' ), 10, 2 );
 			add_action( 'post_updated', array( $this, 'maybe_store_slug_redirect' ), 10, 3 );
+		} elseif ( 'frontend' === $context ) {
 			add_action( 'template_redirect', array( $this, 'maybe_redirect_request' ), 0 );
-			add_action( 'template_redirect', array( $this, 'log_404_request' ), 99 );
 		}
 	}
 
@@ -99,8 +83,10 @@ class Lightweight_SEO_Redirects_Service {
 
 		$target_url  = $this->resolve_redirect_target( $rule['target'] );
 		$target_path = $this->normalize_path( (string) wp_parse_url( $target_url, PHP_URL_PATH ) );
+		$target_host = strtolower( (string) wp_parse_url( $target_url, PHP_URL_HOST ) );
+		$home_host   = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
 
-		if ( empty( $target_url ) || $target_path === $current_path ) {
+		if ( empty( $target_url ) || ( $target_host === $home_host && $target_path === $current_path ) ) {
 			return;
 		}
 
@@ -118,14 +104,28 @@ class Lightweight_SEO_Redirects_Service {
 	 */
 	public function find_matching_redirect( $path ) {
 		$normalized_path = $this->normalize_path( $path );
+		$rule_map        = $this->get_redirect_rule_map();
 
-		foreach ( $this->get_all_redirect_rules() as $rule ) {
-			if ( $rule['source'] === $normalized_path ) {
-				return $rule;
-			}
+		if ( ! isset( $rule_map[ $normalized_path ] ) ) {
+			return array();
 		}
 
-		return array();
+		$rule    = $rule_map[ $normalized_path ];
+		$target  = $rule['target'];
+		$visited = array( $normalized_path => true );
+
+		while ( 0 === strpos( $target, '/' ) && isset( $rule_map[ $target ] ) ) {
+			if ( isset( $visited[ $target ] ) || count( $visited ) >= 10 ) {
+				return array();
+			}
+
+			$visited[ $target ] = true;
+			$target             = $rule_map[ $target ]['target'];
+		}
+
+		$rule['target'] = $target;
+
+		return $rule;
 	}
 
 	/**
@@ -193,71 +193,6 @@ class Lightweight_SEO_Redirects_Service {
 	}
 
 	/**
-	 * Log current 404 requests into a capped option-backed store.
-	 *
-	 * @since    1.1.0
-	 * @return   void
-	 */
-	public function log_404_request() {
-		if ( ! $this->settings->not_found_monitor_enabled() || ! function_exists( 'is_404' ) || ! is_404() ) {
-			return;
-		}
-
-		$path = $this->get_current_request_path();
-
-		if ( empty( $path ) ) {
-			return;
-		}
-
-		$logs = get_option( self::LOG_OPTION_NAME, array() );
-		$log  = $logs[ $path ] ?? array(
-			'path'      => $path,
-			'hits'      => 0,
-			'last_seen' => '',
-			'referer'   => '',
-		);
-
-		$log['hits']      = (int) $log['hits'] + 1;
-		$log['last_seen'] = gmdate( 'c' );
-
-		if ( empty( $log['referer'] ) && ! empty( $_SERVER['HTTP_REFERER'] ) ) {
-			$log['referer'] = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
-		}
-
-		$logs[ $path ] = $log;
-
-		uasort(
-			$logs,
-			function ( $left, $right ) {
-				return strcmp( $right['last_seen'], $left['last_seen'] );
-			}
-		);
-
-		$logs = array_slice( $logs, 0, self::MAX_LOG_ENTRIES, true );
-
-		update_option( self::LOG_OPTION_NAME, $logs );
-	}
-
-	/**
-	 * Get recent 404 logs sorted by most recent hit.
-	 *
-	 * @since    1.1.0
-	 * @return   array
-	 */
-	public function get_recent_not_found_logs() {
-		$logs = get_option( self::LOG_OPTION_NAME, array() );
-
-		uasort(
-			$logs,
-			function ( $left, $right ) {
-				return strcmp( $right['last_seen'], $left['last_seen'] );
-			}
-		);
-
-		return array_values( $logs );
-	}
-
-	/**
 	 * Get generated redirect rules ordered by most recent update.
 	 *
 	 * @since    1.1.0
@@ -316,7 +251,9 @@ class Lightweight_SEO_Redirects_Service {
 		$loops    = array();
 
 		foreach ( $rules as $rule ) {
-			$rule_map[ $rule['source'] ] = $rule;
+			if ( ! isset( $rule_map[ $rule['source'] ] ) ) {
+				$rule_map[ $rule['source'] ] = $rule;
+			}
 		}
 
 		foreach ( array_keys( $rule_map ) as $source ) {
@@ -363,8 +300,8 @@ class Lightweight_SEO_Redirects_Service {
 	 * @return   bool
 	 */
 	protected function perform_redirect( $target_url, $status ) {
-		if ( $this->is_external_redirect_url( $target_url ) ) {
-			return wp_redirect( $target_url, $status, 'Lightweight SEO' );
+		if ( ! $this->is_redirect_target_allowed( $target_url ) ) {
+			return false;
 		}
 
 		return wp_safe_redirect( $target_url, $status, 'Lightweight SEO' );
@@ -377,7 +314,7 @@ class Lightweight_SEO_Redirects_Service {
 	 * @param    string    $target_url    Absolute redirect target URL.
 	 * @return   bool
 	 */
-	private function is_external_redirect_url( $target_url ) {
+	protected function is_redirect_target_allowed( $target_url ) {
 		$target_host = strtolower( (string) wp_parse_url( $target_url, PHP_URL_HOST ) );
 		$home_host   = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
 
@@ -385,7 +322,26 @@ class Lightweight_SEO_Redirects_Service {
 			return false;
 		}
 
-		return $target_host !== $home_host;
+		if ( $target_host === $home_host ) {
+			return true;
+		}
+
+		$allowed_hosts = (array) apply_filters( 'allowed_redirect_hosts', array(), $target_host );
+
+		return in_array( $target_host, array_map( 'strtolower', $allowed_hosts ), true );
+	}
+
+	/** Return redirect rules keyed by source with manual rules taking precedence. */
+	private function get_redirect_rule_map() {
+		$rule_map = array();
+
+		foreach ( $this->get_all_redirect_rules() as $rule ) {
+			if ( ! isset( $rule_map[ $rule['source'] ] ) ) {
+				$rule_map[ $rule['source'] ] = $rule;
+			}
+		}
+
+		return $rule_map;
 	}
 
 	/**
