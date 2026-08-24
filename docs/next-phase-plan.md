@@ -1,6 +1,6 @@
 # Lightweight SEO Next-Phase Plan
 
-Status: Implementation complete locally; PR 1 through PR 9 complete and release-candidate gates pass
+Status: Implementation complete; PR #8 is open for review and CI, and all release-candidate gates pass locally
 
 Planning date: 2026-08-24
 
