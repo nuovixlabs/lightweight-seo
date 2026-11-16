@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# Checks only read the repository; no job needs a write-scoped token.
+permissions:
+  contents: read
+
 jobs:
   quality:
     runs-on: ubuntu-latest

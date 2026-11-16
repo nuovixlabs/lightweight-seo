@@ -109,4 +109,62 @@ final class LightweightSEOMetaTagsServiceTest extends TestCase {
 		$this->assertSame( '', $output );
 		$this->assertSame( array( 'noindex' => true ), $service->filter_robots( array() ) );
 	}
+
+	public function test_custom_canonical_is_not_applied_to_other_posts_or_archives(): void {
+		global $lightweight_seo_test_query_state;
+
+		$page_context = new class() {
+			public function get_context() {
+				return array(
+					'canonical_url'    => 'https://example.com/custom-canonical',
+					'canonical_custom' => true,
+				);
+			}
+		};
+		$service      = new Lightweight_SEO_Meta_Tags_Service( $page_context );
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 42;
+
+		$this->assertSame(
+			'https://example.com/custom-canonical',
+			$service->filter_canonical_url( 'https://example.com/current/', (object) array( 'ID' => 42 ) )
+		);
+		$this->assertSame(
+			'https://example.com/another-post/',
+			$service->filter_canonical_url( 'https://example.com/another-post/', (object) array( 'ID' => 99 ) ),
+			'A canonical requested for a different post must keep the value WordPress calculated.'
+		);
+
+		$lightweight_seo_test_query_state['is_singular'] = false;
+
+		$this->assertSame(
+			'https://example.com/looped-post/',
+			$service->filter_canonical_url( 'https://example.com/looped-post/', (object) array( 'ID' => 42 ) ),
+			'Archives and admin screens must not rewrite post canonicals.'
+		);
+	}
+
+	public function test_open_graph_locale_and_article_times_are_emitted_when_known(): void {
+		$page_context = new class() {
+			public function get_context() {
+				return array(
+					'og_title'       => 'Article',
+					'og_type'        => 'article',
+					'og_locale'      => 'en_US',
+					'published_time' => '2024-01-01T12:00:00+00:00',
+					'modified_time'  => '2024-01-02T12:00:00+00:00',
+				);
+			}
+		};
+		$service      = new Lightweight_SEO_Meta_Tags_Service( $page_context );
+
+		ob_start();
+		$service->add_meta_tags();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'property="og:locale" content="en_US"', $output );
+		$this->assertStringContainsString( 'property="article:published_time" content="2024-01-01T12:00:00+00:00"', $output );
+		$this->assertStringContainsString( 'property="article:modified_time" content="2024-01-02T12:00:00+00:00"', $output );
+	}
 }

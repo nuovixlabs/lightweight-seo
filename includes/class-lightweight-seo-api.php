@@ -67,12 +67,22 @@ final class Lightweight_SEO_API {
 			return array();
 		}
 
+		$restricted = false;
+
 		if ( 'post' === $object_type ) {
 			$meta        = $this->post_meta->get_all( $object_id );
 			$canonical   = ! empty( $meta['seo_canonical_url'] ) ? $meta['seo_canonical_url'] : get_permalink( $object_id );
 			$post        = get_post( $object_id );
 			$title       = ! empty( $meta['seo_title'] ) ? $meta['seo_title'] : get_the_title( $object_id );
-			$description = ! empty( $meta['seo_description'] ) ? $meta['seo_description'] : ( $post->post_excerpt ?? ( $post->post_content ?? '' ) );
+			$excerpt     = trim( (string) ( $post->post_excerpt ?? '' ) );
+			$description = ! empty( $meta['seo_description'] ) ? $meta['seo_description'] : $this->summarize_text( '' !== $excerpt ? $excerpt : ( $post->post_content ?? '' ) );
+
+			// Unpublished and password-protected posts are never indexable, whatever their stored directives say.
+			$restricted = empty( $post ) || 'publish' !== (string) ( $post->post_status ?? 'publish' ) || '' !== (string) ( $post->post_password ?? '' );
+
+			if ( $restricted && empty( $meta['seo_description'] ) ) {
+				$description = '';
+			}
 		} elseif ( 'term' === $object_type ) {
 			$meta        = $this->archive_meta->get_term_all( $object_id );
 			$term_link   = get_term_link( $object_id );
@@ -94,7 +104,7 @@ final class Lightweight_SEO_API {
 			'title'         => $this->normalize_text( $title ),
 			'description'   => $this->normalize_text( $description ),
 			'canonical_url' => esc_url_raw( $canonical ),
-			'robots'        => $this->build_robots( $meta ),
+			'robots'        => $this->build_robots( $meta, $restricted ),
 		);
 		$context['indexable']     = $this->is_indexable( $object_type, $object_id, $context );
 		$context['canonical_url'] = $this->get_canonical_url( $object_type, $object_id, $context['canonical_url'] );
@@ -152,16 +162,26 @@ final class Lightweight_SEO_API {
 		return $normalized;
 	}
 
-	private function build_robots( $meta ) {
-		$robots = array();
+	private function build_robots( $meta, $force_noindex = false ) {
+		$robots = $force_noindex ? array( 'noindex' ) : array();
 
 		foreach ( array( 'noindex', 'nofollow', 'noarchive', 'nosnippet' ) as $directive ) {
-			if ( '1' === (string) ( $meta[ 'seo_' . $directive ] ?? '' ) ) {
+			if ( '1' === (string) ( $meta[ 'seo_' . $directive ] ?? '' ) && ! in_array( $directive, $robots, true ) ) {
 				$robots[] = $directive;
 			}
 		}
 
 		return implode( ', ', $robots );
+	}
+
+	/**
+	 * Reduce fallback content to a short public summary instead of exposing a full document.
+	 *
+	 * @param mixed $value Raw fallback text.
+	 * @return string
+	 */
+	private function summarize_text( $value ) {
+		return Lightweight_SEO_Text::summarize( $this->normalize_text( $value ) );
 	}
 
 	/**
@@ -171,8 +191,7 @@ final class Lightweight_SEO_API {
 	 * @return string
 	 */
 	private function normalize_text( $value ) {
-		$value = function_exists( 'strip_shortcodes' ) ? strip_shortcodes( (string) $value ) : (string) $value;
-		$value = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $value, true ) : strip_tags( $value );
+		$value = wp_strip_all_tags( strip_shortcodes( (string) $value ), true );
 
 		return trim( preg_replace( '/\s+/', ' ', $value ) );
 	}

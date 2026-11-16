@@ -111,12 +111,6 @@ class Lightweight_SEO {
 		// Compatibility and safe-mode service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-compatibility-service.php';
 
-		// Admin class for backend functionality
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-admin.php';
-
-		// Meta boxes class for per-page SEO controls
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-meta-boxes.php';
-
 		// Shared frontend page context service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-page-context-service.php';
 
@@ -135,11 +129,23 @@ class Lightweight_SEO {
 		// Structured data service
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-schema-service.php';
 
-		// SEO metadata importer service
-		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-importer-service.php';
-
 		// Frontend class for displaying SEO data
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-frontend.php';
+	}
+
+	/**
+	 * Load the settings screen, editor panel, and importer.
+	 *
+	 * These classes only register administration hooks, so visitor, REST, and
+	 * cron requests never parse them.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 */
+	private function load_admin_dependencies() {
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-importer-service.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-admin.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-meta-boxes.php';
 	}
 
 	/**
@@ -149,13 +155,16 @@ class Lightweight_SEO {
 	 */
 	public function run() {
 		$this->load_textdomain();
-		$this->initialize_module_registry();
 
-		// Initialize admin functionality
-		$plugin_admin = new Lightweight_SEO_Admin( $this->get_plugin_name(), $this->get_version(), $this->settings, $this->post_meta );
+		if ( is_admin() ) {
+			$this->load_admin_dependencies();
 
-		// Initialize meta boxes
-		$plugin_meta_boxes = new Lightweight_SEO_Meta_Boxes( $this->settings, $this->post_meta );
+			// Initialize admin functionality
+			$plugin_admin = new Lightweight_SEO_Admin( $this->get_plugin_name(), $this->get_version(), $this->settings, $this->post_meta );
+
+			// Initialize meta boxes
+			$plugin_meta_boxes = new Lightweight_SEO_Meta_Boxes( $this->settings, $this->post_meta );
+		}
 
 		// Initialize frontend functionality
 		$plugin_frontend = new Lightweight_SEO_Frontend( $this->settings, $this->post_meta, $this->archive_meta, $this->page_context );
@@ -163,7 +172,11 @@ class Lightweight_SEO {
 		// Initialize sitemap integration
 		$plugin_sitemaps = new Lightweight_SEO_Sitemap_Service( $this->settings, $this->post_meta, $this->archive_meta );
 
+		// The facade must exist before module factories run so every context receives it.
 		$GLOBALS['lightweight_seo_api'] = new Lightweight_SEO_API( $this->page_context, $this->post_meta, $this->archive_meta, $this->module_registry );
+
+		$this->initialize_module_registry();
+
 		do_action( 'lightweight_seo_loaded', $GLOBALS['lightweight_seo_api'] );
 	}
 
@@ -210,7 +223,8 @@ class Lightweight_SEO {
 			'redirects' => array(
 				'name'        => __( 'Redirects', 'lightweight-seo' ),
 				'description' => __( 'Manage redirects and optional slug-change handling.', 'lightweight-seo' ),
-				'contexts'    => array( 'frontend', 'editor' ),
+				// Slug changes arrive through the block editor (REST), Quick Edit (admin-ajax), and the classic editor.
+				'contexts'    => array( 'frontend', 'admin', 'editor', 'rest' ),
 			),
 			'hreflang'  => array(
 				'name'        => __( 'Hreflang', 'lightweight-seo' ),

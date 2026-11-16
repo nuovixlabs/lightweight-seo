@@ -88,4 +88,55 @@ final class LightweightSEOAPITest extends TestCase {
 		$this->assertTrue( $fixture->is_ready() );
 		$this->assertFalse( ( new Lightweight_SEO_Insights_Fixture() )->boot( null ) );
 	}
+
+	public function test_unpublished_and_protected_posts_are_never_reported_indexable(): void {
+		global $lightweight_seo_test_posts;
+
+		$post_meta    = new class() {
+			public function get_all( $post_id ) {
+				return array();
+			}
+		};
+		$archive_meta = new class() {
+		};
+		$api          = new Lightweight_SEO_API(
+			new class() {
+			},
+			$post_meta,
+			$archive_meta,
+			new Lightweight_SEO_Module_Registry( new Lightweight_SEO_Module_State() )
+		);
+
+		$lightweight_seo_test_posts = array(
+			7 => (object) array(
+				'post_status'  => 'draft',
+				'post_content' => 'Unpublished body.',
+				'permalink'    => 'https://example.com/?p=7',
+			),
+			8 => (object) array(
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+				'post_content'  => 'Protected body.',
+				'permalink'     => 'https://example.com/protected/',
+			),
+			9 => (object) array(
+				'post_status'  => 'publish',
+				'post_excerpt' => '',
+				'post_content' => str_repeat( 'Public body text. ', 60 ),
+				'permalink'    => 'https://example.com/public/',
+			),
+		);
+
+		$draft     = $api->get_object_context( 'post', 7 );
+		$protected = $api->get_object_context( 'post', 8 );
+		$public    = $api->get_object_context( 'post', 9 );
+
+		$this->assertFalse( $draft['indexable'] );
+		$this->assertSame( '', $draft['description'], 'Unpublished content must not leak through the facade.' );
+		$this->assertFalse( $protected['indexable'] );
+		$this->assertSame( '', $protected['description'] );
+		$this->assertTrue( $public['indexable'] );
+		$this->assertStringEndsWith( '…', $public['description'] );
+		$this->assertLessThanOrEqual( 161, Lightweight_SEO_Text::length( $public['description'] ) );
+	}
 }

@@ -1,5 +1,8 @@
 <?php
 
+// The importer is an administration tool, so visitor requests do not load it.
+require_once dirname( __DIR__, 2 ) . '/includes/class-lightweight-seo-importer-service.php';
+
 final class LightweightSEOImporterIntegrationTest extends WP_UnitTestCase {
 
 	protected function setUp(): void {

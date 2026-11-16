@@ -68,4 +68,19 @@ final class LightweightSEOCompatibilityServiceTest extends TestCase {
 		$this->assertFalse( $service->feature_output_allowed( 'canonical' ) );
 		$this->assertTrue( $service->feature_output_allowed( 'schema' ) );
 	}
+
+	public function test_additional_full_seo_suites_trigger_safe_mode(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options['active_plugins'] = array(
+			'wp-seopress/seopress.php',
+			'autodescription/autodescription.php',
+			'slim-seo/slim-seo.php',
+		);
+
+		$service = new Lightweight_SEO_Compatibility_Service();
+
+		$this->assertSame( array( 'SEOPress', 'The SEO Framework', 'Slim SEO' ), $service->get_conflicting_plugins() );
+		$this->assertFalse( $service->feature_output_allowed( 'canonical' ) );
+	}
 }

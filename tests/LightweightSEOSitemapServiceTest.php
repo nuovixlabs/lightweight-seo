@@ -101,6 +101,33 @@ final class LightweightSEOSitemapServiceTest extends TestCase {
 		$this->assertSame( 0, $lightweight_seo_test_get_posts_calls );
 	}
 
+	public function test_password_protected_posts_are_excluded_with_noindexed_content(): void {
+		$args = $this->get_service()->filter_posts_query_args( array( 'post_type' => 'post' ), 'post' );
+
+		$this->assertFalse( $args['has_password'] );
+	}
+
+	public function test_redirected_posts_are_resolved_once_and_scoped_to_their_post_type(): void {
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_posts[21] = (object) array(
+			'ID'          => 21,
+			'post_type'   => 'post',
+			'post_status' => 'publish',
+			'permalink'   => 'https://example.com/old-url/',
+		);
+
+		$service                    = $this->get_service();
+		$post_args                  = $service->filter_posts_query_args( array(), 'post' );
+		$lightweight_seo_test_posts = array();
+		$page_args                  = $service->filter_posts_query_args( array(), 'page' );
+		$post_again                 = $service->filter_posts_query_args( array(), 'post' );
+
+		$this->assertSame( array( 21 ), $post_args['post__not_in'] );
+		$this->assertArrayNotHasKey( 'post__not_in', $page_args );
+		$this->assertSame( array( 21 ), $post_again['post__not_in'], 'The second lookup must reuse the per-request result.' );
+	}
+
 	private function get_service() {
 		$settings = new class() {
 			public function exclude_noindex_from_sitemaps_enabled() {

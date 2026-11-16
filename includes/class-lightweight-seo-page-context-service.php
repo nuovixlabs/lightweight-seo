@@ -90,6 +90,7 @@ class Lightweight_SEO_Page_Context_Service {
 		$settings = $this->settings->get_all();
 		$context  = array(
 			'document_title'   => '',
+			'object_title'     => '',
 			'description'      => '',
 			'canonical_url'    => $this->get_current_url(),
 			'canonical_custom' => false,
@@ -102,6 +103,9 @@ class Lightweight_SEO_Page_Context_Service {
 			'og_image_height'  => 0,
 			'og_type'          => 'website',
 			'og_url'           => $this->get_current_url(),
+			'og_locale'        => $this->get_open_graph_locale(),
+			'published_time'   => '',
+			'modified_time'    => '',
 			'twitter_card'     => 'summary',
 			'is_404'           => is_404(),
 		);
@@ -123,16 +127,16 @@ class Lightweight_SEO_Page_Context_Service {
 				$post           = get_post( $post_id );
 				$post_meta      = $this->post_meta->get_all( $post_id );
 				$title_template = is_front_page() ? $this->settings->get_home_title_format() : $this->settings->get_title_format();
+				$tokens         = array( 'title' => get_the_title( $post_id ) );
 
-				$context['document_title'] = ! empty( $post_meta['seo_title'] ) ? $post_meta['seo_title'] : $this->replace_title_template_vars(
-					$title_template,
-					array(
-						'title' => get_the_title( $post_id ),
-					)
+				$context['object_title']   = $tokens['title'];
+				$context['document_title'] = $this->replace_title_template_vars(
+					! empty( $post_meta['seo_title'] ) ? $post_meta['seo_title'] : $title_template,
+					$tokens
 				);
 
 				$context['description'] = ! empty( $post_meta['seo_description'] )
-					? $post_meta['seo_description']
+					? $this->replace_title_template_vars( $post_meta['seo_description'], $tokens )
 					: $this->get_post_description( $post );
 
 				if ( is_front_page() && empty( $post_meta['seo_description'] ) && ! empty( $settings['meta_description'] ) ) {
@@ -152,11 +156,16 @@ class Lightweight_SEO_Page_Context_Service {
 					$context['canonical_url'] = get_permalink( $post_id );
 				}
 
-				$context['og_title']       = ! empty( $post_meta['social_title'] ) ? $post_meta['social_title'] : $context['document_title'];
-				$context['og_description'] = ! empty( $post_meta['social_description'] ) ? $post_meta['social_description'] : $context['description'];
+				$context['og_title']       = ! empty( $post_meta['social_title'] ) ? $this->replace_title_template_vars( $post_meta['social_title'], $tokens ) : $context['document_title'];
+				$context['og_description'] = ! empty( $post_meta['social_description'] ) ? $this->replace_title_template_vars( $post_meta['social_description'], $tokens ) : $context['description'];
 				$context['og_url']         = $context['canonical_url'];
 				$article_post_types        = (array) apply_filters( 'lightweight_seo_article_post_types', array( 'post' ) );
 				$context['og_type']        = in_array( (string) ( $post->post_type ?? '' ), $article_post_types, true ) ? 'article' : 'website';
+
+				if ( 'article' === $context['og_type'] ) {
+					$context['published_time'] = (string) get_the_date( DATE_W3C, $post_id );
+					$context['modified_time']  = (string) get_the_modified_date( DATE_W3C, $post_id );
+				}
 
 				$post_social_image = $this->post_meta->get_social_image_url( $post_id );
 
@@ -174,6 +183,8 @@ class Lightweight_SEO_Page_Context_Service {
 					$context['description']    = '';
 					$context['og_description'] = '';
 					$context['og_image']       = '';
+					$context['published_time'] = '';
+					$context['modified_time']  = '';
 					$context['robots']         = $this->ensure_robots_directive( $context['robots'], 'noindex' );
 					$image_id                  = 0;
 				}
@@ -184,7 +195,27 @@ class Lightweight_SEO_Page_Context_Service {
 			return apply_filters( 'lightweight_seo_page_context', $this->finalize_context( $context ) );
 		}
 
-		if ( is_home() || is_front_page() ) {
+		$posts_page_id = is_home() && ! is_front_page() ? absint( get_option( 'page_for_posts', 0 ) ) : 0;
+
+		if ( $posts_page_id ) {
+			// A static "Posts page" is its own document, not a second copy of the homepage.
+			$post_meta = $this->post_meta->get_all( $posts_page_id );
+			$tokens    = array( 'title' => get_the_title( $posts_page_id ) );
+
+			$context['object_title']     = $tokens['title'];
+			$context['document_title']   = $this->replace_title_template_vars(
+				! empty( $post_meta['seo_title'] ) ? $post_meta['seo_title'] : $this->settings->get_title_format(),
+				$tokens
+			);
+			$context['description']      = ! empty( $post_meta['seo_description'] ) ? $this->replace_title_template_vars( $post_meta['seo_description'], $tokens ) : '';
+			$context['canonical_custom'] = ! empty( $post_meta['seo_canonical_url'] );
+			$context['canonical_url']    = $context['canonical_custom'] ? $post_meta['seo_canonical_url'] : $this->add_pagination_to_url( (string) get_permalink( $posts_page_id ) );
+			$context['robots']           = $this->build_robots_directives( $post_meta );
+			$context['og_title']         = ! empty( $post_meta['social_title'] ) ? $this->replace_title_template_vars( $post_meta['social_title'], $tokens ) : $context['document_title'];
+			$context['og_description']   = ! empty( $post_meta['social_description'] ) ? $this->replace_title_template_vars( $post_meta['social_description'], $tokens ) : $context['description'];
+			$context['og_url']           = $context['canonical_url'];
+		} elseif ( is_home() || is_front_page() ) {
+			$context['object_title']   = get_bloginfo( 'name' );
 			$context['description']    = $settings['meta_description'];
 			$context['document_title'] = $this->replace_title_template_vars(
 				$this->settings->get_home_title_format(),
@@ -195,6 +226,7 @@ class Lightweight_SEO_Page_Context_Service {
 			$context['og_title']       = $context['document_title'];
 			$context['og_description'] = $context['description'];
 		} elseif ( is_search() ) {
+			$context['object_title']   = get_search_query();
 			$context['document_title'] = $this->replace_title_template_vars(
 				$this->settings->get_search_title_format(),
 				array(
@@ -205,48 +237,49 @@ class Lightweight_SEO_Page_Context_Service {
 			$context['og_title']       = $context['document_title'];
 			$context['og_description'] = $context['description'];
 		} elseif ( is_category() || is_tag() || is_tax() ) {
-			$term                      = get_queried_object();
-			$term_meta                 = ! empty( $term->term_id ) ? $this->archive_meta->get_term_all( $term->term_id ) : array();
-			$term_title                = isset( $term->name ) ? $term->name : '';
-			$context['document_title'] = ! empty( $term_meta['seo_title'] ) ? $term_meta['seo_title'] : $this->replace_title_template_vars(
-				$this->settings->get_archive_title_format(),
-				array(
-					'title' => $term_title,
-				)
+			$term                        = get_queried_object();
+			$term_meta                   = ! empty( $term->term_id ) ? $this->archive_meta->get_term_all( $term->term_id ) : array();
+			$tokens                      = array( 'title' => isset( $term->name ) ? $term->name : '' );
+			$context['object_title']     = $tokens['title'];
+			$context['document_title']   = $this->replace_title_template_vars(
+				! empty( $term_meta['seo_title'] ) ? $term_meta['seo_title'] : $this->settings->get_archive_title_format(),
+				$tokens
 			);
-			$context['description']    = ! empty( $term_meta['seo_description'] ) ? $term_meta['seo_description'] : ( $term->description ?? '' );
-			$context['canonical_url']  = ! empty( $term_meta['seo_canonical_url'] ) ? $term_meta['seo_canonical_url'] : $this->get_term_archive_url( $term, $context['canonical_url'] );
-			$context['robots']         = $this->build_robots_directives( $term_meta );
-			$context['og_title']       = $context['document_title'];
-			$context['og_description'] = $context['description'];
-			$context['og_url']         = $context['canonical_url'];
+			$context['description']      = ! empty( $term_meta['seo_description'] ) ? $this->replace_title_template_vars( $term_meta['seo_description'], $tokens ) : $this->summarize_text( $term->description ?? '' );
+			$context['canonical_custom'] = ! empty( $term_meta['seo_canonical_url'] );
+			$context['canonical_url']    = $context['canonical_custom'] ? $term_meta['seo_canonical_url'] : $this->add_pagination_to_url( $this->get_term_archive_url( $term, $context['canonical_url'] ) );
+			$context['robots']           = $this->build_robots_directives( $term_meta );
+			$context['og_title']         = $context['document_title'];
+			$context['og_description']   = $context['description'];
+			$context['og_url']           = $context['canonical_url'];
 		} elseif ( is_author() ) {
-			$author                    = get_queried_object();
-			$author_id                 = isset( $author->ID ) ? (int) $author->ID : get_queried_object_id();
-			$author_meta               = $author_id ? $this->archive_meta->get_user_all( $author_id ) : array();
-			$author_name               = $this->get_author_display_name( $author, $author_id );
-			$context['document_title'] = ! empty( $author_meta['seo_title'] ) ? $author_meta['seo_title'] : $this->replace_title_template_vars(
-				$this->settings->get_archive_title_format(),
-				array(
-					'title' => $author_name,
-				)
+			$author                      = get_queried_object();
+			$author_id                   = isset( $author->ID ) ? (int) $author->ID : get_queried_object_id();
+			$author_meta                 = $author_id ? $this->archive_meta->get_user_all( $author_id ) : array();
+			$tokens                      = array( 'title' => $this->get_author_display_name( $author, $author_id ) );
+			$context['object_title']     = $tokens['title'];
+			$context['document_title']   = $this->replace_title_template_vars(
+				! empty( $author_meta['seo_title'] ) ? $author_meta['seo_title'] : $this->settings->get_archive_title_format(),
+				$tokens
 			);
-			$context['description']    = ! empty( $author_meta['seo_description'] ) ? $author_meta['seo_description'] : $this->get_author_description( $author, $author_id, '' );
-			$context['canonical_url']  = ! empty( $author_meta['seo_canonical_url'] ) ? $author_meta['seo_canonical_url'] : $this->get_author_archive_url( $author_id, $context['canonical_url'] );
-			$context['robots']         = $this->build_robots_directives( $author_meta );
-			$context['og_title']       = $context['document_title'];
-			$context['og_description'] = $context['description'];
-			$context['og_url']         = $context['canonical_url'];
+			$context['description']      = ! empty( $author_meta['seo_description'] ) ? $this->replace_title_template_vars( $author_meta['seo_description'], $tokens ) : $this->summarize_text( $this->get_author_description( $author, $author_id, '' ) );
+			$context['canonical_custom'] = ! empty( $author_meta['seo_canonical_url'] );
+			$context['canonical_url']    = $context['canonical_custom'] ? $author_meta['seo_canonical_url'] : $this->add_pagination_to_url( $this->get_author_archive_url( $author_id, $context['canonical_url'] ) );
+			$context['robots']           = $this->build_robots_directives( $author_meta );
+			$context['og_title']         = $context['document_title'];
+			$context['og_description']   = $context['description'];
+			$context['og_url']           = $context['canonical_url'];
 		} elseif ( is_archive() ) {
 			$archive_title             = get_the_archive_title();
 			$archive_description       = get_the_archive_description();
+			$context['object_title']   = $archive_title;
 			$context['document_title'] = $this->replace_title_template_vars(
 				$this->settings->get_archive_title_format(),
 				array(
 					'title' => $archive_title,
 				)
 			);
-			$context['description']    = ! empty( $archive_description ) ? $archive_description : '';
+			$context['description']    = ! empty( $archive_description ) ? $this->summarize_text( $archive_description ) : '';
 			$context['og_title']       = $context['document_title'];
 			$context['og_description'] = $context['description'];
 			$context['og_url']         = $context['canonical_url'];
@@ -279,7 +312,60 @@ class Lightweight_SEO_Page_Context_Service {
 			$description = strip_shortcodes( $description );
 		}
 
-		return $this->normalize_text( $description );
+		return $this->summarize_text( $description );
+	}
+
+	/**
+	 * Reduce derived text to a search-snippet sized summary.
+	 *
+	 * Editor-written descriptions are never shortened. Only content, term, and
+	 * biography fallbacks pass through here, so a long article is not repeated
+	 * in full across the description, Open Graph, X, and schema output.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed $value Raw fallback text.
+	 * @return   string
+	 */
+	private function summarize_text( $value ) {
+		return Lightweight_SEO_Text::summarize( $this->normalize_text( $value ) );
+	}
+
+	/**
+	 * Get the Open Graph locale for the current site language.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	private function get_open_graph_locale() {
+		$locale = function_exists( 'get_locale' ) ? (string) get_locale() : '';
+
+		// Open Graph expects language_TERRITORY; drop variants such as de_DE_formal.
+		return 1 === preg_match( '/^[a-z]{2,3}(?:_[A-Z]{2})?/', $locale, $matches ) ? $matches[0] : '';
+	}
+
+	/**
+	 * Keep later archive pages self-canonical instead of pointing them at page one.
+	 *
+	 * @since    1.1.0
+	 * @param    string $url First-page archive URL.
+	 * @return   string
+	 */
+	private function add_pagination_to_url( $url ) {
+		$paged = function_exists( 'get_query_var' ) ? absint( get_query_var( 'paged' ) ) : 0;
+
+		if ( $paged < 2 || '' === (string) $url ) {
+			return $url;
+		}
+
+		$rewrite = $GLOBALS['wp_rewrite'] ?? null;
+
+		if ( is_object( $rewrite ) && method_exists( $rewrite, 'using_permalinks' ) && $rewrite->using_permalinks() && false === strpos( $url, '?' ) ) {
+			$paged_url = trailingslashit( $url ) . ( ! empty( $rewrite->pagination_base ) ? $rewrite->pagination_base : 'page' ) . '/' . $paged;
+
+			return function_exists( 'user_trailingslashit' ) ? user_trailingslashit( $paged_url, 'paged' ) : $paged_url;
+		}
+
+		return add_query_arg( 'paged', $paged, $url );
 	}
 
 	/**
@@ -318,7 +404,7 @@ class Lightweight_SEO_Page_Context_Service {
 	 */
 	private function normalize_text( $value ) {
 		$value = html_entity_decode( (string) $value, ENT_QUOTES, 'UTF-8' );
-		$value = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $value, true ) : strip_tags( $value );
+		$value = wp_strip_all_tags( $value, true );
 
 		return trim( preg_replace( '/\s+/', ' ', $value ) );
 	}
@@ -330,7 +416,7 @@ class Lightweight_SEO_Page_Context_Service {
 	 * @return array
 	 */
 	private function finalize_context( $context ) {
-		foreach ( array( 'document_title', 'description', 'og_title', 'og_description', 'og_image_alt' ) as $field ) {
+		foreach ( array( 'document_title', 'object_title', 'description', 'og_title', 'og_description', 'og_image_alt' ) as $field ) {
 			$context[ $field ] = $this->normalize_text( $context[ $field ] ?? '' );
 		}
 
@@ -474,6 +560,12 @@ class Lightweight_SEO_Page_Context_Service {
 	 * @return   string
 	 */
 	private function replace_title_template_vars( $template, $variables = array() ) {
+		$template = (string) $template;
+
+		if ( false === strpos( $template, '%' ) ) {
+			return $template;
+		}
+
 		$replacements = array(
 			'%title%'    => $variables['title'] ?? '',
 			'%search%'   => $variables['search'] ?? '',
@@ -587,14 +679,15 @@ class Lightweight_SEO_Page_Context_Service {
 			}
 		}
 
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( (string) $_SERVER['REQUEST_URI'] ) : '';
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( (string) $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only the parsed path and allowlisted query arguments are used, and the URL is escaped on output.
 
 		if ( '' !== $request_uri ) {
 			$request_path  = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
 			$request_query = $this->get_canonical_query_string( (string) wp_parse_url( $request_uri, PHP_URL_QUERY ) );
 
 			if ( '' !== $request_path || '' !== $request_query ) {
-				$url = home_url( '' !== $request_path ? $request_path : '/' );
+				// REQUEST_URI already contains a subdirectory install's path, so join it to the origin.
+				$url = Lightweight_SEO_Url::from_path( '' !== $request_path ? $request_path : '/' );
 
 				if ( '' !== $request_query ) {
 					$url .= '?' . $request_query;

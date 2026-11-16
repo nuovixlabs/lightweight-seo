@@ -24,7 +24,10 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 ## Core frontend output
 
 - Confirm one document title, one canonical, and one coherent robots result.
-- Confirm homepage, post, page, term, author, search, attachment, password-protected, and 404 behavior.
+- Confirm homepage, static Posts page, post, page, term, author, search, attachment, password-protected, and 404 behavior.
+- Confirm page two of a term and author archive carries a self-referencing canonical.
+- On a subdirectory install, confirm canonical, `og:url`, and redirect targets contain the install path exactly once.
+- Confirm a long post without an excerpt emits a short description summary, not the full content.
 - Confirm Open Graph and X/Twitter fallbacks and social image validation.
 - Confirm schema JSON parses and uses Organization, WebSite, BreadcrumbList, ProfilePage, and scoped Article nodes only.
 - Confirm a WooCommerce Product page receives no Product graph from Lightweight SEO.
@@ -42,6 +45,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 
 - Toggle every module repeatedly and confirm disabled implementation classes do not load.
 - Redirects: test exact rules, malformed destinations, external-host rejection, loops, chains, automatic slug redirects, export, and the documented high-rule boundary.
+- Redirects: change a published slug in the block editor, in Quick Edit, and in the classic editor; each must record a generated redirect.
 - Hreflang: test reciprocal mappings, `x-default`, invalid locale/URL rejection, path mirroring, and WPML or Polylang ownership.
 - Tracking: test GTM precedence, direct GA4/Meta alternatives, consent filters, role/environment exclusions, CSP nonce, and a missing `wp_body_open` diagnostic.
 - Local SEO: test required fields, supported subtype, address, coordinates, hours, image, and disabled behavior.
@@ -64,6 +68,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Export retained keyword values and confirm they are not emitted on the frontend.
 - Preview a supported-source import, confirm it is read-only, then import in batches of at most 50.
 - Confirm occupied Lightweight SEO fields are never overwritten and roll back the latest batch.
+- Import a source title containing template variables and confirm the page title shows resolved text, with unsupported variables reported rather than imported.
 
 ## Security and privacy
 

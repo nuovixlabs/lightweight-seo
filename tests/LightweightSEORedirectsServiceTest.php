@@ -246,4 +246,64 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 		$this->assertSame( 302, $lightweight_seo_test_wp_safe_redirect_calls[0]['status'] );
 		$this->assertSame( array(), $lightweight_seo_test_wp_redirect_calls );
 	}
+
+	public function test_slug_tracking_is_registered_for_every_writing_context(): void {
+		global $lightweight_seo_test_hooks;
+
+		$settings = new class() {
+			public function get_manual_redirect_rules() {
+				return array();
+			}
+		};
+
+		foreach ( array( 'admin', 'editor', 'rest' ) as $context ) {
+			$lightweight_seo_test_hooks = array();
+			new Lightweight_SEO_Redirects_Service( $settings, $context );
+
+			$this->assertSame( array( 'pre_post_update', 'post_updated' ), $lightweight_seo_test_hooks, $context . ' must track slug changes.' );
+		}
+
+		$lightweight_seo_test_hooks = array();
+		new Lightweight_SEO_Redirects_Service( $settings, 'frontend' );
+		$this->assertSame( array( 'template_redirect' ), $lightweight_seo_test_hooks );
+
+		$lightweight_seo_test_hooks = array();
+		new Lightweight_SEO_Redirects_Service( $settings, false );
+		$this->assertSame( array(), $lightweight_seo_test_hooks, 'Read-only reporting must not register hooks.' );
+	}
+
+	public function test_local_target_on_a_subdirectory_install_does_not_repeat_the_home_path(): void {
+		global $lightweight_seo_test_home_url;
+
+		$lightweight_seo_test_home_url = 'https://example.com/blog';
+		$_SERVER['REQUEST_URI']        = '/blog/old-page/?utm_source=test';
+
+		$settings = new class() {
+			public function get_manual_redirect_rules() {
+				return array(
+					array(
+						'source' => '/blog/old-page',
+						'target' => '/blog/new-page',
+						'status' => 301,
+					),
+				);
+			}
+		};
+
+		$service = new class( $settings, false ) extends Lightweight_SEO_Redirects_Service {
+			public $redirects = array();
+
+			protected function perform_redirect( $target_url, $status ) {
+				$this->redirects[] = array( $target_url, $status );
+
+				return false;
+			}
+		};
+
+		$service->maybe_redirect_request();
+
+		$lightweight_seo_test_home_url = 'https://example.com';
+
+		$this->assertSame( array( array( 'https://example.com/blog/new-page', 301 ) ), $service->redirects );
+	}
 }

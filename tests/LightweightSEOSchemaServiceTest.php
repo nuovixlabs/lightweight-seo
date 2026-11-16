@@ -355,4 +355,100 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 		$this->assertStringNotContainsString( '"@type":"Product"', $output );
 		$this->assertStringNotContainsString( '"@type":"Article"', $output );
 	}
+
+	public function test_graph_values_cannot_close_the_script_element(): void {
+		global $lightweight_seo_test_filters;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']              = false;
+		$lightweight_seo_test_query_state['is_home']                  = true;
+		$lightweight_seo_test_filters['lightweight_seo_schema_graph'] = static function ( $graph ) {
+			$graph[] = array(
+				'@type' => 'Thing',
+				'name'  => '</script><script>alert(1)</script>',
+			);
+
+			return $graph;
+		};
+
+		$page_context = new class() {
+			public function get_context() {
+				return array(
+					'document_title' => 'Home',
+					'canonical_url'  => 'https://example.com/',
+				);
+			}
+		};
+		$settings     = new class() {
+			public function schema_output_enabled() {
+				return true;
+			}
+
+			public function get_social_image_url() {
+				return '';
+			}
+
+			public function get_organization_same_as() {
+				return array();
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Schema_Service( $page_context, $settings ) )->add_schema();
+		$output = ob_get_clean();
+
+		$lightweight_seo_test_filters                = array();
+		$lightweight_seo_test_query_state['is_home'] = false;
+
+		$this->assertSame( 1, substr_count( $output, '</script>' ), 'Only the closing tag written by the service may appear.' );
+		$this->assertStringContainsString( '</script>', $output );
+		$this->assertNotNull( json_decode( substr( $output, strlen( '<script type="application/ld+json">' ), -strlen( "</script>\n" ) ), true ) );
+	}
+
+	public function test_article_headline_and_breadcrumb_use_the_visible_title_not_the_title_tag(): void {
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['is_home']           = false;
+		$lightweight_seo_test_query_state['is_front_page']     = false;
+		$lightweight_seo_test_query_state['queried_object_id'] = 42;
+		$lightweight_seo_test_posts[42]                        = (object) array(
+			'ID'        => 42,
+			'post_type' => 'post',
+		);
+
+		$page_context = new class() {
+			public function get_context() {
+				return array(
+					'document_title' => 'My Post Title – Test Site',
+					'object_title'   => 'My Post Title',
+					'canonical_url'  => 'https://example.com/my-post',
+				);
+			}
+		};
+		$settings     = new class() {
+			public function schema_output_enabled() {
+				return true;
+			}
+
+			public function get_social_image_url() {
+				return '';
+			}
+
+			public function get_organization_same_as() {
+				return array();
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Schema_Service( $page_context, $settings ) )->add_schema();
+		$output = ob_get_clean();
+
+		$lightweight_seo_test_query_state['is_singular'] = false;
+
+		$this->assertStringContainsString( '"headline":"My Post Title"', $output );
+		$this->assertStringContainsString( '"name":"My Post Title","item":"https://example.com/my-post"', $output );
+		$this->assertStringNotContainsString( 'My Post Title – Test Site', $output );
+	}
 }

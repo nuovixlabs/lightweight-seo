@@ -66,4 +66,15 @@ final class LightweightSEOPostMetaTest extends TestCase {
 		$this->assertSame( 'https://example.com/uploads/current-image.jpg', $image_url );
 		$this->assertSame( 42, $image_id );
 	}
+
+	public function test_retired_keyword_meta_is_not_exposed_through_rest(): void {
+		global $lightweight_seo_test_registered_post_meta;
+
+		$lightweight_seo_test_registered_post_meta = array();
+
+		( new Lightweight_SEO_Post_Meta() )->register_meta();
+
+		$this->assertFalse( $lightweight_seo_test_registered_post_meta['_lightweight_seo_keywords']['show_in_rest'] );
+		$this->assertTrue( $lightweight_seo_test_registered_post_meta['_lightweight_seo_title']['show_in_rest'] );
+	}
 }

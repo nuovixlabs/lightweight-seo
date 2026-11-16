@@ -68,7 +68,7 @@ class Lightweight_SEO_Tracking_Service {
 				new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 				j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 				'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-				})(window,document,'script','dataLayer','<?php echo esc_attr( $configuration['gtm'] ); ?>');
+				})(window,document,'script','dataLayer','<?php echo esc_js( $configuration['gtm'] ); ?>');
 			</script>
 			<?php
 		}
@@ -77,12 +77,14 @@ class Lightweight_SEO_Tracking_Service {
 			$nonce = $this->get_script_nonce( 'ga4' );
 			?>
 			<!-- Google Analytics 4 -->
+			<?php // phpcs:disable WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Printed inline so the consent, role, and CSP nonce filters apply to the loader itself. ?>
 			<script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr( $configuration['ga4'] ); ?>"<?php echo $nonce; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Fully escaped attribute. ?>></script>
+			<?php // phpcs:enable WordPress.WP.EnqueuedResources.NonEnqueuedScript ?>
 			<script<?php echo $nonce; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Fully escaped attribute. ?>>
 				window.dataLayer = window.dataLayer || [];
 				function gtag(){dataLayer.push(arguments);}
 				gtag('js', new Date());
-				gtag('config', '<?php echo esc_attr( $configuration['ga4'] ); ?>');
+				gtag('config', '<?php echo esc_js( $configuration['ga4'] ); ?>');
 			</script>
 			<?php
 		}
@@ -100,12 +102,12 @@ class Lightweight_SEO_Tracking_Service {
 				t.src=v;s=b.getElementsByTagName(e)[0];
 				s.parentNode.insertBefore(t,s)}(window, document,'script',
 				'https://connect.facebook.net/en_US/fbevents.js');
-				fbq('init', '<?php echo esc_attr( $configuration['meta'] ); ?>');
+				fbq('init', '<?php echo esc_js( $configuration['meta'] ); ?>');
 				fbq('track', 'PageView');
 			</script>
 			<noscript>
 				<img height="1" width="1" style="display:none" 
-					src="https://www.facebook.com/tr?id=<?php echo esc_attr( $configuration['meta'] ); ?>&ev=PageView&noscript=1"/>
+					src="https://www.facebook.com/tr?id=<?php echo esc_attr( $configuration['meta'] ); ?>&amp;ev=PageView&amp;noscript=1" alt=""/>
 			</noscript>
 			<?php
 		}

@@ -37,11 +37,13 @@ If `lightweight_seo_get_api()` does not exist or returns `null`, core is missing
 
 Returned values are copies of normalized public data. They never contain settings arrays, credentials, tokens, nonces, module factories, or mutable internal services.
 
+For posts, `get_object_context()` reports unpublished and password-protected content as not indexable and returns no derived description for it. A description derived from an excerpt or content is a summary of at most 160 characters, never the full body.
+
 ## Stable lifecycle hooks
 
 | Hook | Arguments | Contract |
 |---|---|---|
-| `lightweight_seo_loaded` | `Lightweight_SEO_API $api` | Fires after the facade is available. |
+| `lightweight_seo_loaded` | `Lightweight_SEO_API $api` | Fires after the facade is available and module registration is finalized. The facade already exists when module factories run. |
 | `lightweight_seo_register_modules` | `Lightweight_SEO_Module_Registry $registry` | Registration window for module metadata and a lazy factory. |
 | `lightweight_seo_modules_registered` | `Lightweight_SEO_Module_Registry $registry` | Fires after registration is finalized. |
 | `lightweight_seo_object_meta_updated` | `string $type, int $id, string[] $fields` | Announces normalized post, term, or user SEO field changes; no request data is passed. |
@@ -70,7 +72,7 @@ The consent filter supports a basic blocking integration; Lightweight SEO does n
 
 | Hook | Arguments | Contract |
 |---|---|---|
-| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. |
+| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. Besides the title, description, canonical, robots, and Open Graph keys, the context carries `object_title` (the visible name without the title template), `og_locale`, and `published_time`/`modified_time` for article content. |
 | `lightweight_seo_document_title` | `string $title, array $context` | Filters the final plugin document title. |
 | `lightweight_seo_meta_tags` | `array $tags, array $context` | Filters normalized name/property meta-tag definitions before escaping. |
 | `lightweight_seo_before_meta_tags` | `array $tags, array $context` | Fires before meta tags are printed. |
@@ -93,6 +95,8 @@ The consent filter supports a basic blocking integration; Lightweight SEO does n
 | `lightweight_seo_llms_txt_conflict` | `bool $conflict` | Return `true` when another owner serves `/llms.txt`. |
 | `lightweight_seo_physical_robots_path` | `string $path` | Changes the physical `robots.txt` conflict-check path. |
 | `lightweight_seo_physical_llms_path` | `string $path` | Changes the physical `llms.txt` conflict-check path. |
+
+The built-in Redirects module loads in the `frontend`, `admin`, `editor`, and `rest` contexts so slug changes are tracked wherever a post can be saved; only the `frontend` context matches requests.
 
 Redirect, Hreflang, Tracking, Local SEO, and AI Discovery implementation classes are private runtime details. Integrations should use the registry and documented hooks, not instantiate those classes.
 

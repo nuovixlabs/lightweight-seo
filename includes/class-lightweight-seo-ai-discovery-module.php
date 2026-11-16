@@ -154,6 +154,9 @@ class Lightweight_SEO_AI_Discovery_Module {
 		$body = $this->build_llms_txt();
 		$etag = '"' . md5( $body ) . '"';
 
+		header( 'Cache-Control: public, max-age=300' );
+		header( 'ETag: ' . $etag );
+
 		if ( isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) && trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_IF_NONE_MATCH'] ) ) ) === $etag ) {
 			status_header( 304 );
 			exit;
@@ -161,8 +164,6 @@ class Lightweight_SEO_AI_Discovery_Module {
 
 		status_header( 200 );
 		header( 'Content-Type: text/plain; charset=utf-8' );
-		header( 'Cache-Control: public, max-age=300' );
-		header( 'ETag: ' . $etag );
 		header( 'X-Content-Type-Options: nosniff' );
 		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Plain text is normalized in build_llms_txt().
 		exit;
@@ -183,7 +184,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 			$lines[] = '## ' . __( 'Authoritative pages', 'lightweight-seo' );
 
 			foreach ( $entries as $entry ) {
-				$line = '- [' . $entry['title'] . '](' . $entry['url'] . ')';
+				$line = '- [' . $entry['title'] . '](' . str_replace( array( '(', ')' ), array( '%28', '%29' ), $entry['url'] ) . ')';
 
 				if ( '' !== $entry['description'] ) {
 					$line .= ': ' . $entry['description'];
@@ -275,7 +276,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 	}
 
 	private function is_llms_txt_request() {
-		$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ), PHP_URL_PATH );
+		$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ), PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only compared against the fixed llms.txt path.
 		$llms_path    = wp_parse_url( home_url( '/llms.txt' ), PHP_URL_PATH );
 
 		return (string) $request_path === (string) $llms_path;

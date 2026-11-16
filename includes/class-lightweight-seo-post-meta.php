@@ -154,7 +154,8 @@ class Lightweight_SEO_Post_Meta {
 					$this->meta_keys[ $field ],
 					array(
 						'single'            => true,
-						'show_in_rest'      => true,
+						// Retired focus keywords stay exportable but are not published through the REST API.
+						'show_in_rest'      => 'seo_keywords' !== $field,
 						'type'              => $args['type'],
 						'sanitize_callback' => $args['sanitize_callback'],
 						'auth_callback'     => array( $this, 'can_edit_post_meta' ),

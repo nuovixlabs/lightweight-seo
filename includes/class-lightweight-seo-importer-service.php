@@ -21,6 +21,9 @@ class Lightweight_SEO_Importer_Service {
 	/** Option containing the bounded rollback snapshot for the latest batch. */
 	const ROLLBACK_OPTION = 'lightweight_seo_import_rollback';
 
+	/** Text fields whose source values may contain the other plugin's template variables. */
+	const TEMPLATED_FIELDS = array( 'seo_title', 'seo_description', 'social_title', 'social_description' );
+
 	/**
 	 * Shared post meta service.
 	 *
@@ -29,6 +32,15 @@ class Lightweight_SEO_Importer_Service {
 	 * @var      Lightweight_SEO_Post_Meta
 	 */
 	private $post_meta;
+
+	/**
+	 * Fields left out of the current batch because their variables cannot be converted.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      int
+	 */
+	private $unsupported_fields = 0;
 
 	/**
 	 * Initialize the service.
@@ -106,16 +118,17 @@ class Lightweight_SEO_Importer_Service {
 	private function process_batch( $source, $offset, $write ) {
 		$source = sanitize_key( $source );
 		$report = array(
-			'source'         => $source,
-			'offset'         => max( 0, absint( $offset ) ),
-			'batch_size'     => self::BATCH_SIZE,
-			'scanned_posts'  => 0,
-			'eligible_posts' => 0,
-			'imported_posts' => 0,
-			'updated_fields' => 0,
-			'skipped_fields' => 0,
-			'next_offset'    => max( 0, absint( $offset ) ),
-			'has_more'       => false,
+			'source'             => $source,
+			'offset'             => max( 0, absint( $offset ) ),
+			'batch_size'         => self::BATCH_SIZE,
+			'scanned_posts'      => 0,
+			'eligible_posts'     => 0,
+			'imported_posts'     => 0,
+			'updated_fields'     => 0,
+			'skipped_fields'     => 0,
+			'unsupported_fields' => 0,
+			'next_offset'        => max( 0, absint( $offset ) ),
+			'has_more'           => false,
 		);
 
 		if ( ! in_array( $source, array( 'yoast', 'rank_math', 'aioseo' ), true ) ) {
@@ -138,6 +151,8 @@ class Lightweight_SEO_Importer_Service {
 		$report['has_more'] = count( $posts ) > self::BATCH_SIZE;
 		$posts              = array_slice( $posts, 0, self::BATCH_SIZE );
 		$rollback_changes   = array();
+
+		$this->unsupported_fields = 0;
 
 		foreach ( $posts as $post ) {
 			++$report['scanned_posts'];
@@ -192,7 +207,8 @@ class Lightweight_SEO_Importer_Service {
 			}
 		}
 
-		$report['next_offset'] = $report['offset'] + $report['scanned_posts'];
+		$report['next_offset']        = $report['offset'] + $report['scanned_posts'];
+		$report['unsupported_fields'] = $this->unsupported_fields;
 
 		if ( $write ) {
 			if ( ! empty( $rollback_changes ) ) {
@@ -224,55 +240,120 @@ class Lightweight_SEO_Importer_Service {
 	private function map_source_meta( $post_id, $source ) {
 		switch ( $source ) {
 			case 'yoast':
-				return array_filter(
-					array(
-						'seo_title'          => $this->get_source_meta( $post_id, '_yoast_wpseo_title' ),
-						'seo_description'    => $this->get_source_meta( $post_id, '_yoast_wpseo_metadesc' ),
-						'seo_keywords'       => $this->get_source_meta( $post_id, '_yoast_wpseo_focuskw' ),
-						'seo_canonical_url'  => $this->get_source_meta( $post_id, '_yoast_wpseo_canonical' ),
-						'seo_noindex'        => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_yoast_wpseo_meta-robots-noindex' ) ),
-						'seo_nofollow'       => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_yoast_wpseo_meta-robots-nofollow' ) ),
-						'social_title'       => $this->get_source_meta( $post_id, '_yoast_wpseo_opengraph-title' ),
-						'social_description' => $this->get_source_meta( $post_id, '_yoast_wpseo_opengraph-description' ),
-						'social_image'       => $this->get_source_meta( $post_id, '_yoast_wpseo_opengraph-image' ),
-					),
-					array( $this, 'keep_mapped_value' )
+				$mapped = array(
+					'seo_title'          => $this->get_source_meta( $post_id, '_yoast_wpseo_title' ),
+					'seo_description'    => $this->get_source_meta( $post_id, '_yoast_wpseo_metadesc' ),
+					'seo_keywords'       => $this->get_source_meta( $post_id, '_yoast_wpseo_focuskw' ),
+					'seo_canonical_url'  => $this->get_source_meta( $post_id, '_yoast_wpseo_canonical' ),
+					'seo_noindex'        => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_yoast_wpseo_meta-robots-noindex' ) ),
+					'seo_nofollow'       => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_yoast_wpseo_meta-robots-nofollow' ) ),
+					'social_title'       => $this->get_source_meta( $post_id, '_yoast_wpseo_opengraph-title' ),
+					'social_description' => $this->get_source_meta( $post_id, '_yoast_wpseo_opengraph-description' ),
+					'social_image'       => $this->get_source_meta( $post_id, '_yoast_wpseo_opengraph-image' ),
 				);
+				break;
 			case 'rank_math':
 				$robots = $this->get_source_meta( $post_id, 'rank_math_robots' );
-
-				return array_filter(
-					array(
-						'seo_title'          => $this->get_source_meta( $post_id, 'rank_math_title' ),
-						'seo_description'    => $this->get_source_meta( $post_id, 'rank_math_description' ),
-						'seo_keywords'       => $this->get_source_meta( $post_id, 'rank_math_focus_keyword' ),
-						'seo_canonical_url'  => $this->get_source_meta( $post_id, 'rank_math_canonical_url' ),
-						'seo_noindex'        => $this->normalize_rank_math_robot_flag( $robots, 'noindex' ),
-						'seo_nofollow'       => $this->normalize_rank_math_robot_flag( $robots, 'nofollow' ),
-						'social_title'       => $this->get_source_meta( $post_id, 'rank_math_facebook_title' ),
-						'social_description' => $this->get_source_meta( $post_id, 'rank_math_facebook_description' ),
-						'social_image'       => $this->get_source_meta( $post_id, 'rank_math_facebook_image' ),
-					),
-					array( $this, 'keep_mapped_value' )
+				$mapped = array(
+					'seo_title'          => $this->get_source_meta( $post_id, 'rank_math_title' ),
+					'seo_description'    => $this->get_source_meta( $post_id, 'rank_math_description' ),
+					'seo_keywords'       => $this->get_source_meta( $post_id, 'rank_math_focus_keyword' ),
+					'seo_canonical_url'  => $this->get_source_meta( $post_id, 'rank_math_canonical_url' ),
+					'seo_noindex'        => $this->normalize_rank_math_robot_flag( $robots, 'noindex' ),
+					'seo_nofollow'       => $this->normalize_rank_math_robot_flag( $robots, 'nofollow' ),
+					'social_title'       => $this->get_source_meta( $post_id, 'rank_math_facebook_title' ),
+					'social_description' => $this->get_source_meta( $post_id, 'rank_math_facebook_description' ),
+					'social_image'       => $this->get_source_meta( $post_id, 'rank_math_facebook_image' ),
 				);
+				break;
 			case 'aioseo':
-				return array_filter(
-					array(
-						'seo_title'          => $this->get_source_meta( $post_id, '_aioseo_title' ),
-						'seo_description'    => $this->get_source_meta( $post_id, '_aioseo_description' ),
-						'seo_keywords'       => $this->normalize_aioseo_keywords( $this->get_source_meta( $post_id, '_aioseo_keywords' ) ),
-						'seo_canonical_url'  => $this->get_source_meta( $post_id, '_aioseo_canonical_url' ),
-						'seo_noindex'        => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_aioseo_robots_noindex' ) ),
-						'seo_nofollow'       => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_aioseo_robots_nofollow' ) ),
-						'social_title'       => $this->get_source_meta( $post_id, '_aioseo_og_title' ),
-						'social_description' => $this->get_source_meta( $post_id, '_aioseo_og_description' ),
-						'social_image'       => $this->get_source_meta( $post_id, '_aioseo_og_image' ),
-					),
-					array( $this, 'keep_mapped_value' )
+				$mapped = array(
+					'seo_title'          => $this->get_source_meta( $post_id, '_aioseo_title' ),
+					'seo_description'    => $this->get_source_meta( $post_id, '_aioseo_description' ),
+					'seo_keywords'       => $this->normalize_aioseo_keywords( $this->get_source_meta( $post_id, '_aioseo_keywords' ) ),
+					'seo_canonical_url'  => $this->get_source_meta( $post_id, '_aioseo_canonical_url' ),
+					'seo_noindex'        => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_aioseo_robots_noindex' ) ),
+					'seo_nofollow'       => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_aioseo_robots_nofollow' ) ),
+					'social_title'       => $this->get_source_meta( $post_id, '_aioseo_og_title' ),
+					'social_description' => $this->get_source_meta( $post_id, '_aioseo_og_description' ),
+					'social_image'       => $this->get_source_meta( $post_id, '_aioseo_og_image' ),
 				);
+				break;
+			default:
+				return array();
 		}
 
-		return array();
+		foreach ( self::TEMPLATED_FIELDS as $field ) {
+			if ( ! is_string( $mapped[ $field ] ?? null ) || '' === $mapped[ $field ] ) {
+				continue;
+			}
+
+			$converted = $this->convert_template_variables( $mapped[ $field ], $source );
+
+			if ( null === $converted ) {
+				// Importing an unresolved variable would print it literally in the page head.
+				++$this->unsupported_fields;
+				$converted = '';
+			}
+
+			$mapped[ $field ] = $converted;
+		}
+
+		return array_filter( $mapped, array( $this, 'keep_mapped_value' ) );
+	}
+
+	/**
+	 * Translate another plugin's template variables into Lightweight SEO tokens.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $value     Stored source value.
+	 * @param    string    $source    Import source.
+	 * @return   string|null Converted text, or null when a variable has no equivalent.
+	 */
+	private function convert_template_variables( $value, $source ) {
+		$value = (string) $value;
+
+		switch ( $source ) {
+			case 'yoast':
+				$map     = array(
+					'%%title%%'      => '%title%',
+					'%%sitename%%'   => '%sitename%',
+					'%%sitedesc%%'   => '%tagline%',
+					'%%sep%%'        => '%sep%',
+					'%%page%%'       => '',
+					'%%pagenumber%%' => '',
+					'%%pagetotal%%'  => '',
+				);
+				$unknown = '/%%[a-z0-9_\-]+%%/i';
+				break;
+			case 'rank_math':
+				$map     = array(
+					'%sitedesc%' => '%tagline%',
+					'%page%'     => '',
+				);
+				$unknown = '/%(?!(?:title|sitename|tagline|sep)%)[a-z0-9_]+(?:\([^)]*\))?%/i';
+				break;
+			case 'aioseo':
+				$map     = array(
+					'#post_title'   => '%title%',
+					'#site_title'   => '%sitename%',
+					'#tagline'      => '%tagline%',
+					'#separator_sa' => '%sep%',
+					'#page_number'  => '',
+				);
+				$unknown = '/#(?:archive_|attachment_|author_|breadcrumb_|categories|category_title|current_|custom_field-|parent_title|permalink|post_|search_term|tax_name-|taxonomy_)[a-z0-9_\-]*/i';
+				break;
+			default:
+				return $value;
+		}
+
+		$converted = str_ireplace( array_keys( $map ), array_values( $map ), $value );
+
+		if ( 1 === preg_match( $unknown, $converted ) ) {
+			return null;
+		}
+
+		return trim( preg_replace( '/[ \t]{2,}/', ' ', $converted ) );
 	}
 
 	/**

@@ -44,6 +44,18 @@ class Lightweight_SEO_Sitemap_Service {
 	private $archive_meta;
 
 	/**
+	 * Redirect source paths resolved to posts during this request.
+	 *
+	 * Core asks for the same exclusions once per post type and again for the
+	 * sitemap index, so each rule is resolved a single time.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      array<string,array{id:int,type:string}>|null
+	 */
+	private $redirected_posts;
+
+	/**
 	 * Initialize the service.
 	 *
 	 * @since    1.1.0
@@ -75,6 +87,9 @@ class Lightweight_SEO_Sitemap_Service {
 				$args,
 				$this->post_meta->get_meta_key( 'seo_noindex' )
 			);
+
+			// Password-protected content is always served noindex, so it does not belong in a sitemap.
+			$args['has_password'] = false;
 		}
 
 		if ( $this->settings->exclude_redirected_from_sitemaps_enabled() ) {
@@ -171,20 +186,11 @@ class Lightweight_SEO_Sitemap_Service {
 			return $args;
 		}
 
-		$redirects_service = new Lightweight_SEO_Redirects_Service( $this->settings, false );
-		$excluded_ids      = array();
+		$excluded_ids = array();
 
-		foreach ( $redirects_service->get_all_redirect_rules() as $rule ) {
-			$source = $this->normalize_path( $rule['source'] ?? '' );
-
-			if ( empty( $source ) ) {
-				continue;
-			}
-
-			$post_id = $this->find_redirected_post_id( $source, $post_type );
-
-			if ( $post_id ) {
-				$excluded_ids[] = $post_id;
+		foreach ( $this->get_redirected_posts() as $redirected_post ) {
+			if ( $redirected_post['type'] === $post_type ) {
+				$excluded_ids[] = $redirected_post['id'];
 			}
 		}
 
@@ -205,21 +211,54 @@ class Lightweight_SEO_Sitemap_Service {
 	}
 
 	/**
-	 * Resolve a redirect source path to a published post ID for the given post type.
+	 * Resolve every redirect source that is the live path of a published post.
 	 *
 	 * @since    1.1.0
-	 * @param    string    $source       Normalized redirect source path.
-	 * @param    string    $post_type    Post type being queried.
-	 * @return   int
+	 * @return   array<string,array{id:int,type:string}>
 	 */
-	private function find_redirected_post_id( $source, $post_type ) {
+	private function get_redirected_posts() {
+		if ( null !== $this->redirected_posts ) {
+			return $this->redirected_posts;
+		}
+
+		$this->redirected_posts = array();
+		$redirects_service      = new Lightweight_SEO_Redirects_Service( $this->settings, false );
+
+		foreach ( $redirects_service->get_all_redirect_rules() as $rule ) {
+			$source = $this->normalize_path( $rule['source'] ?? '' );
+
+			if ( empty( $source ) || isset( $this->redirected_posts[ $source ] ) ) {
+				continue;
+			}
+
+			$post = $this->find_redirected_post( $source );
+
+			if ( $post ) {
+				$this->redirected_posts[ $source ] = array(
+					'id'   => (int) $post->ID,
+					'type' => (string) $post->post_type,
+				);
+			}
+		}
+
+		return $this->redirected_posts;
+	}
+
+	/**
+	 * Resolve a redirect source path to the published post currently served there.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $source    Normalized, host-absolute redirect source path.
+	 * @return   WP_Post|object|null
+	 */
+	private function find_redirected_post( $source ) {
 		$candidate_urls = array();
 
 		if ( '/' === $source ) {
-			$candidate_urls[] = home_url( '/' );
+			$candidate_urls[] = Lightweight_SEO_Url::from_path( '/' );
 		} else {
-			$candidate_urls[] = home_url( trailingslashit( $source ) );
-			$candidate_urls[] = home_url( $source );
+			$candidate_urls[] = Lightweight_SEO_Url::from_path( trailingslashit( $source ) );
+			$candidate_urls[] = Lightweight_SEO_Url::from_path( $source );
 		}
 
 		foreach ( array_unique( $candidate_urls ) as $candidate_url ) {
@@ -231,18 +270,18 @@ class Lightweight_SEO_Sitemap_Service {
 
 			$post = get_post( $post_id );
 
-			if ( empty( $post ) || (string) ( $post->post_type ?? '' ) !== $post_type || 'publish' !== (string) ( $post->post_status ?? '' ) ) {
+			if ( empty( $post ) || empty( $post->post_type ) || 'publish' !== (string) ( $post->post_status ?? '' ) ) {
 				continue;
 			}
 
 			$current_path = $this->normalize_path( (string) wp_parse_url( (string) get_permalink( $post ), PHP_URL_PATH ) );
 
 			if ( $current_path === $source ) {
-				return $post_id;
+				return $post;
 			}
 		}
 
-		return 0;
+		return null;
 	}
 
 	/**
