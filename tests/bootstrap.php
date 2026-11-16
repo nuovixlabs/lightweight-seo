@@ -74,6 +74,10 @@ $lightweight_seo_test_blog_id = 1;
 $lightweight_seo_test_network_admin = false;
 $lightweight_seo_test_wp_redirect_calls = array();
 $lightweight_seo_test_wp_safe_redirect_calls = array();
+$lightweight_seo_test_option_autoload = array();
+$lightweight_seo_test_transients = array();
+$lightweight_seo_test_registered_settings = array();
+$lightweight_seo_test_menu_pages = array();
 $lightweight_seo_test_authors = array(
     17 => array(
         'display_name' => 'Author Name',
@@ -139,13 +143,16 @@ if (!function_exists('user_trailingslashit')) {
 }
 
 $lightweight_seo_test_hooks = array();
+$lightweight_seo_test_hook_callbacks = array();
 $lightweight_seo_test_home_url = 'https://example.com';
 
 if (!function_exists('add_action')) {
     function add_action(...$args) {
         global $lightweight_seo_test_hooks;
+        global $lightweight_seo_test_hook_callbacks;
 
         $lightweight_seo_test_hooks[] = (string) $args[0];
+        $lightweight_seo_test_hook_callbacks[(string) $args[0]][] = $args[1] ?? null;
 
         return true;
     }
@@ -154,8 +161,10 @@ if (!function_exists('add_action')) {
 if (!function_exists('add_filter')) {
     function add_filter(...$args) {
         global $lightweight_seo_test_hooks;
+        global $lightweight_seo_test_hook_callbacks;
 
         $lightweight_seo_test_hooks[] = (string) $args[0];
+        $lightweight_seo_test_hook_callbacks[(string) $args[0]][] = $args[1] ?? null;
 
         return true;
     }
@@ -386,8 +395,10 @@ if (!function_exists('wp_parse_args')) {
 if (!function_exists('update_option')) {
     function update_option($option, $value, $autoload = null) {
         global $lightweight_seo_test_options;
+        global $lightweight_seo_test_option_autoload;
 
         $lightweight_seo_test_options[$option] = $value;
+        $lightweight_seo_test_option_autoload[$option] = $autoload;
 
         return true;
     }
@@ -1146,7 +1157,7 @@ if (!function_exists('settings_fields')) {
 
 if (!function_exists('wp_nonce_field')) {
     function wp_nonce_field($action = -1, $name = '_wpnonce', $referer = true, $display = true) {
-        $field = '<input type="hidden" name="' . esc_attr($name) . '" value="nonce">';
+        $field = '<input type="hidden" name="' . esc_attr($name) . '" value="' . esc_attr(wp_create_nonce($action)) . '">';
 
         if ($display) {
             echo $field;
@@ -1307,4 +1318,117 @@ if (!function_exists('wp_list_pluck')) {
 			$input_list
 		);
 	}
+}
+
+/**
+ * Thrown by the wp_die() stub so a test can observe a request being stopped.
+ */
+class Lightweight_SEO_Test_WP_Die_Exception extends RuntimeException {
+}
+
+if (!function_exists('wp_die')) {
+    function wp_die($message = '', $title = '', $args = array()) {
+        throw new Lightweight_SEO_Test_WP_Die_Exception((string) $message);
+    }
+}
+
+if (!function_exists('wp_create_nonce')) {
+    function wp_create_nonce($action = -1) {
+        return 'nonce-' . $action;
+    }
+}
+
+if (!function_exists('wp_nonce_url')) {
+    function wp_nonce_url($actionurl, $action = -1, $name = '_wpnonce') {
+        return $actionurl . (false === strpos($actionurl, '?') ? '?' : '&') . $name . '=' . wp_create_nonce($action);
+    }
+}
+
+if (!function_exists('check_admin_referer')) {
+    // Like WordPress, stop the request unless the named field carries the nonce created for this exact action.
+    function check_admin_referer($action = -1, $query_arg = '_wpnonce') {
+        global $lightweight_seo_test_nonce_is_valid;
+
+        $submitted = $_POST[$query_arg] ?? ($_GET[$query_arg] ?? null);
+
+        if (!$lightweight_seo_test_nonce_is_valid || wp_create_nonce($action) !== $submitted) {
+            wp_die('The link you followed has expired.');
+        }
+
+        return 1;
+    }
+}
+
+if (!function_exists('esc_attr__')) {
+    function esc_attr__($text, $domain = null) {
+        return esc_attr($text);
+    }
+}
+
+if (!function_exists('get_settings_errors')) {
+    function get_settings_errors($setting = '', $sanitize = false) {
+        global $lightweight_seo_test_settings_errors;
+
+        return $lightweight_seo_test_settings_errors;
+    }
+}
+
+if (!function_exists('set_transient')) {
+    function set_transient($transient, $value, $expiration = 0) {
+        global $lightweight_seo_test_transients;
+
+        $lightweight_seo_test_transients[$transient] = $value;
+
+        return true;
+    }
+}
+
+if (!function_exists('register_setting')) {
+    function register_setting($option_group, $option_name, $args = array()) {
+        global $lightweight_seo_test_registered_settings;
+
+        $lightweight_seo_test_registered_settings[$option_name] = array(
+            'group' => $option_group,
+            'args' => $args,
+        );
+    }
+}
+
+if (!function_exists('add_settings_section')) {
+    // Mirrors the globals WordPress fills, which the settings page reads to render a tab.
+    function add_settings_section($id, $title, $callback, $page, $args = array()) {
+        global $wp_settings_sections;
+
+        $wp_settings_sections[$page][$id] = array(
+            'id' => $id,
+            'title' => $title,
+            'callback' => $callback,
+        );
+    }
+}
+
+if (!function_exists('add_settings_field')) {
+    function add_settings_field($id, $title, $callback, $page, $section = 'default', $args = array()) {
+        global $wp_settings_fields;
+
+        $wp_settings_fields[$page][$section][$id] = array(
+            'id' => $id,
+            'title' => $title,
+            'callback' => $callback,
+            'args' => $args,
+        );
+    }
+}
+
+if (!function_exists('add_menu_page')) {
+    function add_menu_page($page_title, $menu_title, $capability, $menu_slug, $callback = '', $icon_url = '', $position = null) {
+        global $lightweight_seo_test_menu_pages;
+
+        $lightweight_seo_test_menu_pages[$menu_slug] = array(
+            'capability' => $capability,
+            'callback' => $callback,
+        );
+
+        return 'toplevel_page_' . $menu_slug;
+    }
 }

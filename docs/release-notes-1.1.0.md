@@ -34,6 +34,7 @@ Security and robustness:
 - Retired focus-keyword values are no longer exposed through the REST API.
 - The safe-mode notice is shown to administrators on the dashboard, Plugins, and SEO screens only.
 - The settings screen, editor panel, and importer load only in the administration area.
+- Import preview, import, rollback, and legacy 404-log deletion are separate administrator actions, each with its own nonce. Saving settings never runs an import or deletes data.
 - `Update URI` prevents an unrelated WordPress.org plugin with the same slug from being offered as an update.
 - The coding-standard gate now enforces output escaping, nonce verification, input sanitization, and the text domain.
 - SEOPress, The SEO Framework, and Slim SEO also trigger safe mode.

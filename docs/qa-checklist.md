@@ -67,6 +67,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Confirm Search Console credentials require explicit copy/delete and are never reused automatically.
 - Export retained keyword values and confirm they are not emitted on the frontend.
 - Preview a supported-source import, confirm it is read-only, then import in batches of at most 50.
+- Save the Tools tab and confirm it runs no import, rollback, or deletion; delete retained 404 log entries with their own confirmation box and button.
 - Confirm occupied Lightweight SEO fields are never overwritten and roll back the latest batch.
 - Import a source title containing template variables and confirm the page title shows resolved text, with unsupported variables reported rather than imported.
 

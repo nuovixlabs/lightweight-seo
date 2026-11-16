@@ -74,8 +74,6 @@ class Lightweight_SEO_Settings {
 			'enable_auto_redirects'              => '0',
 			'redirect_rules'                     => '',
 			'import_source'                      => '',
-			'import_cursor'                      => 0,
-			'last_import_report'                 => '',
 			'default_max_image_preview'          => 'large',
 			'social_image'                       => '',
 			'social_image_id'                    => 0,
