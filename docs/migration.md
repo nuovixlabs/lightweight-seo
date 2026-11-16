@@ -12,7 +12,7 @@
 
 The idempotent schema migration preserves supported settings and post, term, and user SEO metadata. Existing valid tracking IDs enable Tracking; explicit Redirects, Hreflang, and Local SEO choices are preserved.
 
-The migration stops meta-keywords output, removes retired specialized sitemap settings, report caches, Search Console tokens, and its scheduled synchronization event. Stored global and post-level keyword values remain available for CSV export. Search Console property/private-key values remain visible only to administrators until explicitly copied or deleted.
+The migration stops meta-keywords output, removes retired specialized sitemap settings, report caches, Search Console tokens, and its scheduled synchronization event. Stored global and post-level keyword values remain available for CSV export. Search Console property/private-key values remain visible only to administrators until explicitly copied or deleted. Retained legacy 404 log entries are deleted from the same screen with a confirmation box and their own button.
 
 A one-time administrator notice summarizes these changes. Dismissing it does not delete retained migration data.
 
@@ -20,6 +20,7 @@ A one-time administrator notice summarizes these changes. Dismissing it does not
 
 The Tools screen supports Yoast SEO, Rank Math, and All in One SEO metadata.
 
+- Choose the source, then use **Preview next batch** or **Import next batch**. The source is remembered together with the import position; **Save Changes** does not store it.
 - Preview is read-only.
 - Each batch scans at most 50 posts.
 - Only empty Lightweight SEO fields are filled.
