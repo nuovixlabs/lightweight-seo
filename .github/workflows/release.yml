@@ -129,8 +129,15 @@ jobs:
         run: |
           set -euo pipefail
 
+          # A hyphenated tag such as v1.1.0-rc.2 is a candidate, so it must not become the latest release.
+          release_flags=(--title "${RELEASE_TAG}" --generate-notes --verify-tag)
+
+          if [[ "${RELEASE_TAG}" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" "${ZIP_NAME}" --clobber
           else
-            gh release create "${RELEASE_TAG}" "${ZIP_NAME}" --title "${RELEASE_TAG}" --generate-notes --verify-tag
+            gh release create "${RELEASE_TAG}" "${ZIP_NAME}" "${release_flags[@]}"
           fi

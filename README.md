@@ -73,7 +73,7 @@ The public extension contract and stable hooks are documented in [Developer API]
 
 The plugin is distributed through GitHub releases. Its `Update URI` header stops WordPress.org from offering a same-named directory plugin as an update; remove or change that header if the plugin is ever published to the directory.
 
-Tags must exactly match the `Version:` header, for example `v1.1.0-rc.1`. The release workflow creates and verifies the ZIP, checks required runtime files, and smoke-activates the packaged plugin in WordPress.
+Tags must exactly match the `Version:` header, for example `v1.1.0-rc.2`. The release workflow creates and verifies the ZIP, checks required runtime files, and smoke-activates the packaged plugin in WordPress. A tag with a hyphen, such as a release candidate, is published as a prerelease and does not replace the latest stable release.
 
 See [Release Notes](docs/release-notes-1.1.0.md) and [Release Baselines](docs/release-baselines.md) for the current candidate.
 
