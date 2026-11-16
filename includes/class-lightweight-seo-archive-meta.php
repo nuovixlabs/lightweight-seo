@@ -321,6 +321,11 @@ class Lightweight_SEO_Archive_Meta {
 			return;
 		}
 
+		// The created_/edited_ hooks fire for every term write, so confirm this user may edit this term.
+		if ( ! current_user_can( 'edit_term', $term_id ) ) {
+			return;
+		}
+
 		$this->save_meta_values(
 			(int) $term_id,
 			array( $this, 'update_term' )
@@ -537,10 +542,10 @@ class Lightweight_SEO_Archive_Meta {
 		if ( 'seo_max_image_preview' === $field ) {
 			?>
 			<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $field_name ); ?>">
-				<option value="" <?php selected( $value, '' ); ?>><?php _e( 'Use global default', 'lightweight-seo' ); ?></option>
-				<option value="large" <?php selected( $value, 'large' ); ?>><?php _e( 'Large', 'lightweight-seo' ); ?></option>
-				<option value="standard" <?php selected( $value, 'standard' ); ?>><?php _e( 'Standard', 'lightweight-seo' ); ?></option>
-				<option value="none" <?php selected( $value, 'none' ); ?>><?php _e( 'None', 'lightweight-seo' ); ?></option>
+				<option value="" <?php selected( $value, '' ); ?>><?php esc_html_e( 'Use global default', 'lightweight-seo' ); ?></option>
+				<option value="large" <?php selected( $value, 'large' ); ?>><?php esc_html_e( 'Large', 'lightweight-seo' ); ?></option>
+				<option value="standard" <?php selected( $value, 'standard' ); ?>><?php esc_html_e( 'Standard', 'lightweight-seo' ); ?></option>
+				<option value="none" <?php selected( $value, 'none' ); ?>><?php esc_html_e( 'None', 'lightweight-seo' ); ?></option>
 			</select>
 			<?php
 
@@ -567,6 +572,7 @@ class Lightweight_SEO_Archive_Meta {
 	private function get_posted_value( $field ) {
 		$post_key = 'lightweight_seo_archive_' . $field;
 
+		// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The calling save handlers verify the nonce and capability; sanitize_meta_value() sanitizes each field by type.
 		if ( in_array( $field, array( 'seo_noindex', 'seo_nofollow', 'seo_noarchive', 'seo_nosnippet' ), true ) ) {
 			return isset( $_POST[ $post_key ] ) ? '1' : '0';
 		}
@@ -576,6 +582,7 @@ class Lightweight_SEO_Archive_Meta {
 		}
 
 		return wp_unslash( $_POST[ $post_key ] );
+		// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 	}
 
 	/**

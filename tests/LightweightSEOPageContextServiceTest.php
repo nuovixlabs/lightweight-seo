@@ -531,6 +531,164 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertStringContainsString( 'noindex', $context['robots'] );
 	}
 
+	public function test_content_fallback_description_is_summarized_not_repeated_in_full(): void {
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 42;
+		$lightweight_seo_test_posts[42]                        = (object) array(
+			'ID'           => 42,
+			'post_type'    => 'post',
+			'post_excerpt' => '',
+			'post_content' => '<p>' . str_repeat( 'A long article sentence. ', 400 ) . '</p>',
+		);
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( false ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() );
+		$context = $service->get_context();
+
+		$this->assertLessThanOrEqual( 161, Lightweight_SEO_Text::length( $context['description'] ) );
+		$this->assertStringEndsWith( '…', $context['description'] );
+		$this->assertSame( $context['description'], $context['og_description'] );
+	}
+
+	public function test_editor_written_description_is_never_shortened(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 42;
+		$description = trim( str_repeat( 'Deliberately long editor copy. ', 12 ) );
+
+		$service = new Lightweight_SEO_Page_Context_Service(
+			$this->get_settings_stub( false ),
+			$this->get_post_meta_stub( array( 'seo_description' => $description ) ),
+			$this->get_archive_meta_stub()
+		);
+
+		$this->assertSame( $description, $service->get_context()['description'] );
+	}
+
+	public function test_custom_seo_title_resolves_template_tokens(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 42;
+		$lightweight_seo_test_query_state['title']             = 'Original Post';
+
+		$service = new Lightweight_SEO_Page_Context_Service(
+			$this->get_settings_stub( false ),
+			$this->get_post_meta_stub( array( 'seo_title' => '%title% %sep% Imported Suffix' ) ),
+			$this->get_archive_meta_stub()
+		);
+		$context = $service->get_context();
+
+		$this->assertSame( 'Original Post – Imported Suffix', $context['document_title'] );
+		$this->assertSame( 'Original Post', $context['object_title'] );
+	}
+
+	public function test_paginated_term_archive_keeps_a_self_referencing_canonical(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_category']    = true;
+		$lightweight_seo_test_query_state['is_archive']     = true;
+		$lightweight_seo_test_query_state['query_vars']     = array( 'paged' => 3 );
+		$lightweight_seo_test_query_state['queried_object'] = (object) array(
+			'term_id'     => 5,
+			'name'        => 'News',
+			'taxonomy'    => 'category',
+			'description' => '',
+		);
+		$_SERVER['REQUEST_URI']                             = '/category/news/page/3/?utm_source=newsletter';
+		$GLOBALS['wp_rewrite']                              = new class() {
+			public $pagination_base = 'page';
+
+			public function using_permalinks() {
+				return true;
+			}
+		};
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( false ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() );
+		$context = $service->get_context();
+
+		unset( $GLOBALS['wp_rewrite'] );
+
+		$this->assertSame( 'https://example.com/term/5/page/3/', $context['canonical_url'] );
+		$this->assertFalse( $context['canonical_custom'] );
+	}
+
+	public function test_static_posts_page_uses_its_own_title_not_the_homepage_title(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_options['page_for_posts']    = 77;
+		$lightweight_seo_test_posts[77]                    = (object) array(
+			'ID'        => 77,
+			'permalink' => 'https://example.com/blog/',
+		);
+		$lightweight_seo_test_query_state['is_home']       = true;
+		$lightweight_seo_test_query_state['is_front_page'] = false;
+		$lightweight_seo_test_query_state['title']         = 'Blog';
+		$_SERVER['REQUEST_URI']                            = '/blog/';
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( false ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() );
+		$context = $service->get_context();
+
+		unset( $lightweight_seo_test_options['page_for_posts'] );
+
+		$this->assertSame( 'Blog – Test Site', $context['document_title'] );
+		$this->assertSame( 'https://example.com/blog/', $context['canonical_url'] );
+		$this->assertSame( '', $context['description'] );
+	}
+
+	public function test_archive_url_on_a_subdirectory_install_does_not_repeat_the_home_path(): void {
+		global $lightweight_seo_test_home_url;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_home_url                  = 'https://example.com/blog';
+		$lightweight_seo_test_query_state['is_archive'] = true;
+		$lightweight_seo_test_query_state['title']      = 'May 2024';
+		$_SERVER['REQUEST_URI']                         = '/blog/2024/05/';
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( false ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() );
+		$context = $service->get_context();
+
+		$lightweight_seo_test_home_url = 'https://example.com';
+
+		$this->assertSame( 'https://example.com/blog/2024/05/', $context['canonical_url'] );
+		$this->assertSame( 'https://example.com/blog/2024/05/', $context['og_url'] );
+	}
+
+	private function get_post_meta_stub( array $meta = array() ) {
+		return new class( $meta ) {
+			private $meta;
+
+			public function __construct( array $meta ) {
+				$this->meta = $meta;
+			}
+
+			public function get_all( $post_id ) {
+				return $this->meta;
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+	}
+
+	private function get_archive_meta_stub() {
+		return new class() {
+			public function get_term_all( $term_id ) {
+				return array();
+			}
+
+			public function get_user_all( $user_id ) {
+				return array();
+			}
+		};
+	}
+
 	private function get_settings_stub( $keywords_enabled ) {
 		return new class( $keywords_enabled ) {
 			private $keywords_enabled;

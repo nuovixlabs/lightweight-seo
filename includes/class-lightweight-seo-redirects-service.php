@@ -53,17 +53,22 @@ class Lightweight_SEO_Redirects_Service {
 	/**
 	 * Initialize the service.
 	 *
+	 * Visitor requests only match rules. Every writing context (classic editor,
+	 * Quick Edit over admin-ajax, and block-editor saves over REST) tracks slug
+	 * changes. Passing false registers no hooks for read-only reporting.
+	 *
 	 * @since    1.1.0
 	 * @param    Lightweight_SEO_Settings    $settings    Shared settings service.
+	 * @param    string|false                $context     Request context, or false for read-only use.
 	 */
 	public function __construct( $settings, $context = 'frontend' ) {
 		$this->settings = $settings;
 
-		if ( 'editor' === $context ) {
+		if ( 'frontend' === $context ) {
+			add_action( 'template_redirect', array( $this, 'maybe_redirect_request' ), 0 );
+		} elseif ( in_array( $context, array( 'admin', 'editor', 'rest' ), true ) ) {
 			add_action( 'pre_post_update', array( $this, 'capture_previous_post_path' ), 10, 2 );
 			add_action( 'post_updated', array( $this, 'maybe_store_slug_redirect' ), 10, 3 );
-		} elseif ( 'frontend' === $context ) {
-			add_action( 'template_redirect', array( $this, 'maybe_redirect_request' ), 0 );
 		}
 	}
 
@@ -285,7 +290,8 @@ class Lightweight_SEO_Redirects_Service {
 	 */
 	private function resolve_redirect_target( $target ) {
 		if ( 0 === strpos( $target, '/' ) ) {
-			return home_url( $target );
+			// Rule paths are host-absolute, so home_url() would repeat a subdirectory install's path.
+			return Lightweight_SEO_Url::from_path( $target );
 		}
 
 		return $target;
@@ -538,7 +544,7 @@ class Lightweight_SEO_Redirects_Service {
 	 * @return   string
 	 */
 	private function get_current_request_path() {
-		$request_uri  = $_SERVER['REQUEST_URI'] ?? '/';
+		$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( (string) $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only the parsed path is compared against stored rules.
 		$request_path = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
 
 		return $this->normalize_path( $request_path );

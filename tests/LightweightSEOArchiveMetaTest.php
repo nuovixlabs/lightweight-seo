@@ -74,6 +74,25 @@ final class LightweightSEOArchiveMetaTest extends TestCase {
 		$this->assertSame( 'none', $values['seo_max_image_preview'] );
 	}
 
+	public function test_save_term_fields_requires_the_edit_term_capability(): void {
+		global $lightweight_seo_test_user_can;
+
+		$lightweight_seo_test_user_can = false;
+		$service                       = new Lightweight_SEO_Archive_Meta( $this->get_settings_stub() );
+
+		$_POST = array(
+			'lightweight_seo_term_meta_nonce'           => 'nonce',
+			'lightweight_seo_archive_seo_canonical_url' => 'https://attacker.example/',
+			'lightweight_seo_archive_seo_noindex'       => '1',
+		);
+
+		$service->save_term_fields( 23 );
+		$values = $service->get_term_all( 23 );
+
+		$this->assertSame( '', $values['seo_canonical_url'] );
+		$this->assertSame( '', $values['seo_noindex'] );
+	}
+
 	private function get_settings_stub() {
 		return new class() {
 			public function normalize_max_image_preview( $value, $fallback = '' ) {

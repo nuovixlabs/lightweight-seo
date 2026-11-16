@@ -24,6 +24,8 @@ The Tools screen supports Yoast SEO, Rank Math, and All in One SEO metadata.
 - Each batch scans at most 50 posts.
 - Only empty Lightweight SEO fields are filled.
 - The latest imported batch can be rolled back until another import replaces its rollback snapshot.
+- Title and description variables are translated to Lightweight SEO tokens (`%title%`, `%sitename%`, `%tagline%`, `%sep%`), which are resolved when the page renders. Pagination variables are dropped.
+- A field that uses any other source variable (for example Yoast `%%primary_category%%`) is not imported, because it would otherwise print literally in the page head. The import report counts these fields so they can be rewritten by hand.
 - Run the preview again after changing sources; changing source resets the cursor.
 
 ## RC acceptance

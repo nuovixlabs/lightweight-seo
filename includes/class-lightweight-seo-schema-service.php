@@ -95,13 +95,39 @@ class Lightweight_SEO_Schema_Service {
 			return;
 		}
 
-		echo '<script type="application/ld+json">' . wp_json_encode(
+		// JSON_HEX_TAG keeps any "<" in graph values (including third-party filter data) from closing the script element.
+		echo '<script type="application/ld+json">' . wp_json_encode( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON encoded with JSON_HEX_TAG for a script data block.
 			array(
 				'@context' => 'https://schema.org',
 				'@graph'   => $graph,
 			),
-			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG
 		) . '</script>' . "\n";
+	}
+
+	/**
+	 * Reduce a title or name to plain text for schema values.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed $value Raw title or name.
+	 * @return   string
+	 */
+	private function plain_text( $value ) {
+		$value = html_entity_decode( (string) $value, ENT_QUOTES, 'UTF-8' );
+		$value = wp_strip_all_tags( $value, true );
+
+		return trim( preg_replace( '/\s+/', ' ', $value ) );
+	}
+
+	/**
+	 * Get the visible name of the current object rather than its templated title tag.
+	 *
+	 * @since    1.1.0
+	 * @param    array $context Resolved page context.
+	 * @return   string
+	 */
+	private function get_object_title( $context ) {
+		return ! empty( $context['object_title'] ) ? (string) $context['object_title'] : (string) ( $context['document_title'] ?? '' );
 	}
 
 	/**
@@ -171,7 +197,7 @@ class Lightweight_SEO_Schema_Service {
 		$schema = array(
 			'@type'            => 'Article',
 			'@id'              => $context['canonical_url'] . '#article',
-			'headline'         => ! empty( $context['document_title'] ) ? $context['document_title'] : get_the_title( $post_id ),
+			'headline'         => '' !== $this->get_object_title( $context ) ? $this->get_object_title( $context ) : $this->plain_text( get_the_title( $post_id ) ),
 			'mainEntityOfPage' => array(
 				'@id' => $context['canonical_url'],
 			),
@@ -294,7 +320,7 @@ class Lightweight_SEO_Schema_Service {
 				$items[] = array(
 					'@type'    => 'ListItem',
 					'position' => count( $items ) + 1,
-					'name'     => get_the_title( $ancestor_id ),
+					'name'     => $this->plain_text( get_the_title( $ancestor_id ) ),
 					'item'     => get_permalink( $ancestor_id ),
 				);
 			}
@@ -315,7 +341,7 @@ class Lightweight_SEO_Schema_Service {
 				$items[] = array(
 					'@type'    => 'ListItem',
 					'position' => count( $items ) + 1,
-					'name'     => $ancestor->name,
+					'name'     => $this->plain_text( $ancestor->name ),
 					'item'     => $link,
 				);
 			}
@@ -324,7 +350,7 @@ class Lightweight_SEO_Schema_Service {
 		$items[] = array(
 			'@type'    => 'ListItem',
 			'position' => count( $items ) + 1,
-			'name'     => $context['document_title'],
+			'name'     => $this->get_object_title( $context ),
 			'item'     => $context['canonical_url'],
 		);
 
@@ -357,19 +383,5 @@ class Lightweight_SEO_Schema_Service {
 		}
 
 		return array( $image_url );
-	}
-
-	/**
-	 * Get plain text content for a post object.
-	 *
-	 * @since    1.1.0
-	 * @param    WP_Post|object|null    $post    Current post object.
-	 * @return   string
-	 */
-	private function get_post_plain_text( $post ) {
-		$content = (string) ( $post->post_content ?? '' );
-		$content = html_entity_decode( preg_replace( '/<[^>]+>/', ' ', $content ), ENT_QUOTES, 'UTF-8' );
-
-		return trim( preg_replace( '/\s+/', ' ', $content ) );
 	}
 }

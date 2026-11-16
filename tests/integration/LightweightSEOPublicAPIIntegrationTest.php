@@ -16,6 +16,17 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$this->assertFalse( has_action( 'template_redirect', array( 'Lightweight_SEO_Redirects_Service', 'maybe_redirect_request' ) ) );
 	}
 
+	public function test_visitor_requests_load_no_administration_classes(): void {
+		$this->assertSame(
+			array(
+				'admin'      => false,
+				'meta-boxes' => false,
+				'importer'   => false,
+			),
+			$GLOBALS['lightweight_seo_admin_classes_at_boot']
+		);
+	}
+
 	public function test_insights_style_fixture_consumes_only_the_public_facade(): void {
 		$api = lightweight_seo_get_api();
 

@@ -45,3 +45,9 @@ $GLOBALS['lightweight_seo_disabled_module_classes_at_boot'] = array(
 	'local-seo' => class_exists( 'Lightweight_SEO_Local_SEO_Module', false ),
 	'ai'        => class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ),
 );
+
+$GLOBALS['lightweight_seo_admin_classes_at_boot'] = array(
+	'admin'      => class_exists( 'Lightweight_SEO_Admin', false ),
+	'meta-boxes' => class_exists( 'Lightweight_SEO_Meta_Boxes', false ),
+	'importer'   => class_exists( 'Lightweight_SEO_Importer_Service', false ),
+);

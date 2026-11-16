@@ -11,13 +11,34 @@
         var mediaButton = seoAdminStrings.mediaButton || 'Use this image';
         var previewAlt = seoAdminStrings.previewAlt || 'Preview';
 
+		// Storage can be unavailable (private browsing, blocked site data), so never let it break the screen.
+		function readDismissedChecklist() {
+			try {
+				return window.localStorage.getItem('lightweightSeoChecklistDismissed') === '1';
+			} catch (error) {
+				return false;
+			}
+		}
+
 		$('.lightweight-seo-dismiss-checklist').on('click', function() {
 			$('.lightweight-seo-setup').attr('hidden', true);
-			window.localStorage.setItem('lightweightSeoChecklistDismissed', '1');
+
+			try {
+				window.localStorage.setItem('lightweightSeoChecklistDismissed', '1');
+			} catch (error) {
+				// The checklist stays hidden for this page view only.
+			}
 		});
 
-		if (window.localStorage.getItem('lightweightSeoChecklistDismissed') === '1') {
+		if (readDismissedChecklist()) {
 			$('.lightweight-seo-setup').attr('hidden', true);
+		}
+
+		// Build previews as DOM nodes so URLs and translated text are never parsed as markup.
+		function buildImagePreview(url, maxWidth) {
+			return $('<div>', {'class': 'lightweight-seo-image-preview'}).append(
+				$('<img>', {src: url, alt: previewAlt}).css({maxWidth: maxWidth, marginTop: '10px'})
+			);
 		}
 
 		$('#lightweight-seo-redirect-search').on('input', function() {
@@ -59,7 +80,7 @@
                 // Add or update preview
                 var preview = $('.lightweight-seo-image-preview');
                 if (preview.length === 0) {
-                    $('.lightweight-seo-image-field').append('<div class="lightweight-seo-image-preview"><img src="' + attachment.url + '" alt="' + previewAlt + '" style="max-width: 200px; margin-top: 10px;"></div>');
+                    $('.lightweight-seo-image-field').append(buildImagePreview(attachment.url, '200px'));
                 } else {
                     preview.find('img').attr('src', attachment.url);
                 }
@@ -96,7 +117,7 @@
                 // Add or update preview
                 var previewContainer = fieldContainer.find('.lightweight-seo-image-preview');
                 if (previewContainer.length === 0) {
-                    fieldContainer.append('<div class="lightweight-seo-image-preview"><img src="' + attachment.url + '" alt="' + previewAlt + '" style="max-width: 300px; margin-top: 10px;"></div>');
+                    fieldContainer.append(buildImagePreview(attachment.url, '300px'));
                 } else {
                     previewContainer.find('img').attr('src', attachment.url);
                 }
@@ -159,23 +180,37 @@
 			target.trigger('focus');
 		});
 
+		var previewTokens = $('.lightweight-seo-meta-box').data('tokens') || {};
+
+		// Mirror the server: %title%, %sitename%, %tagline%, and %sep% are replaced in custom values.
+		function resolveTokens(text) {
+			$.each(previewTokens, function(token, value) {
+				text = text.split(token).join(value);
+			});
+
+			return text;
+		}
+
 		function fieldValue(selector) {
 			var field = $(selector);
-			return $.trim(field.val()) || field.data('fallback') || '';
+			var value = $.trim(field.val());
+
+			return value ? resolveTokens(value) : (field.data('fallback') || '');
 		}
 
 		function updateEditorPreviews() {
 			var title = fieldValue('#lightweight_seo_title');
 			var description = fieldValue('#lightweight_seo_description');
-			var socialTitle = $.trim($('#lightweight_seo_social_title').val()) || title;
-			var socialDescription = $.trim($('#lightweight_seo_social_description').val()) || description;
+			var socialTitle = resolveTokens($.trim($('#lightweight_seo_social_title').val())) || title;
+			var socialDescription = resolveTokens($.trim($('#lightweight_seo_social_description').val())) || description;
 
 			$('.lightweight-seo-preview-title').text(title);
 			$('.lightweight-seo-preview-description').text(description);
 			$('.lightweight-seo-social-title-preview').text(socialTitle);
 			$('.lightweight-seo-social-description-preview').text(socialDescription);
-			$('[data-count-for="lightweight_seo_title"]').text(title.length);
-			$('[data-count-for="lightweight_seo_description"]').text(description.length);
+			// Count characters (code points), matching the server-side guidance for non-Latin text.
+			$('[data-count-for="lightweight_seo_title"]').text(Array.from(String(title)).length);
+			$('[data-count-for="lightweight_seo_description"]').text(Array.from(String(description)).length);
 		}
 
 		$('#lightweight_seo_title, #lightweight_seo_description, #lightweight_seo_social_title, #lightweight_seo_social_description').on('input', updateEditorPreviews);

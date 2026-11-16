@@ -12,7 +12,7 @@ Core provides:
 - post, term, and author SEO controls
 - Organization, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
 - filtering of WordPress core XML sitemaps
-- safe mode when Yoast SEO, Rank Math, or All in One SEO is active
+- safe mode when Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, or Slim SEO is active
 - bounded migration tools and a versioned, read-only extension API
 
 Five optional modules are lazy-loaded only in their declared request contexts:
@@ -44,12 +44,14 @@ For a 1.0.3 upgrade or release-candidate test, follow [Migration and RC Testing]
 
 The SEO panel on supported posts and pages provides:
 
-- an optional SEO title and meta description
+- an optional SEO title and meta description, with `%title%`, `%sitename%`, `%tagline%`, and `%sep%` resolved on the page
 - canonical and robots controls
 - social title, description, and image overrides
 - deterministic checks explaining missing or conflicting inputs
 
-Legacy focus-keyword values are preserved for export but are not edited or emitted.
+When no description is written, a 160-character summary of the excerpt or content is used. Legacy focus-keyword values are preserved for export but are not edited or emitted.
+
+Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`.
 
 ## Development
 
@@ -63,11 +65,13 @@ composer test
 composer phpcs
 ```
 
-Real WordPress tests use `tests/bin/install-wp-tests.sh` and `composer test:integration`. CI covers the compatibility matrix documented in [QA Checklist](docs/qa-checklist.md).
+`composer phpcs` enforces WordPress core style plus output escaping, nonce, input-sanitization, and text-domain checks on shipped code. Real WordPress tests use `tests/bin/install-wp-tests.sh` and `composer test:integration`. CI covers the compatibility matrix documented in [QA Checklist](docs/qa-checklist.md).
 
 The public extension contract and stable hooks are documented in [Developer API](docs/developer-api.md).
 
 ## Release
+
+The plugin is distributed through GitHub releases. Its `Update URI` header stops WordPress.org from offering a same-named directory plugin as an update; remove or change that header if the plugin is ever published to the directory.
 
 Tags must exactly match the `Version:` header, for example `v1.1.0-rc.1`. The release workflow creates and verifies the ZIP, checks required runtime files, and smoke-activates the packaged plugin in WordPress.
 

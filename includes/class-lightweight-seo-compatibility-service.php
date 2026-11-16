@@ -27,6 +27,9 @@ class Lightweight_SEO_Compatibility_Service {
 		'seo-by-rank-math/rank-math.php'              => 'Rank Math SEO',
 		'all-in-one-seo-pack/all_in_one_seo_pack.php' => 'All in One SEO',
 		'aioseo/aioseo.php'                           => 'All in One SEO',
+		'wp-seopress/seopress.php'                    => 'SEOPress',
+		'autodescription/autodescription.php'         => 'The SEO Framework',
+		'slim-seo/slim-seo.php'                       => 'Slim SEO',
 	);
 
 	/** Features normally owned by a full SEO plugin. */
@@ -61,6 +64,18 @@ class Lightweight_SEO_Compatibility_Service {
 
 		if ( defined( 'AIOSEO_VERSION' ) || defined( 'AIOSEO_PLUGIN_NAME' ) ) {
 			$conflicting_plugins[] = 'All in One SEO';
+		}
+
+		if ( defined( 'SEOPRESS_VERSION' ) ) {
+			$conflicting_plugins[] = 'SEOPress';
+		}
+
+		if ( defined( 'THE_SEO_FRAMEWORK_VERSION' ) ) {
+			$conflicting_plugins[] = 'The SEO Framework';
+		}
+
+		if ( defined( 'SLIM_SEO_VER' ) ) {
+			$conflicting_plugins[] = 'Slim SEO';
 		}
 
 		return array_values( array_unique( $conflicting_plugins ) );

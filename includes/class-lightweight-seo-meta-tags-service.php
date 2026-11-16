@@ -53,6 +53,9 @@ class Lightweight_SEO_Meta_Tags_Service {
 				'og_image_alt'    => '',
 				'og_image_width'  => 0,
 				'og_image_height' => 0,
+				'og_locale'       => '',
+				'published_time'  => '',
+				'modified_time'   => '',
 				'twitter_card'    => 'summary',
 				'is_404'          => false,
 			),
@@ -108,6 +111,21 @@ class Lightweight_SEO_Meta_Tags_Service {
 				'attribute' => 'property',
 				'key'       => 'og:site_name',
 				'value'     => get_bloginfo( 'name' ),
+			),
+			array(
+				'attribute' => 'property',
+				'key'       => 'og:locale',
+				'value'     => $context['og_locale'],
+			),
+			array(
+				'attribute' => 'property',
+				'key'       => 'article:published_time',
+				'value'     => $context['published_time'],
+			),
+			array(
+				'attribute' => 'property',
+				'key'       => 'article:modified_time',
+				'value'     => $context['modified_time'],
 			),
 			array(
 				'attribute' => 'name',
@@ -193,24 +211,36 @@ class Lightweight_SEO_Meta_Tags_Service {
 	}
 
 	/**
-	 * Resolve singular canonicals through the WordPress canonical API.
+	 * Apply a custom canonical through the WordPress canonical API.
 	 *
-	 * @param string  $canonical_url WordPress canonical URL.
-	 * @param WP_Post $post          Current post object.
+	 * WordPress resolves canonicals for arbitrary posts (loops, embeds, other
+	 * plugins), so only the queried singular object with an editor-supplied
+	 * canonical is overridden. Everything else keeps the value core calculated.
+	 *
+	 * @param string       $canonical_url WordPress canonical URL.
+	 * @param WP_Post|null $post          Post the canonical was requested for.
 	 * @return string
 	 */
-	public function filter_canonical_url( $canonical_url, $post ) {
+	public function filter_canonical_url( $canonical_url, $post = null ) {
+		if ( ! is_singular() ) {
+			return $canonical_url;
+		}
+
+		if ( is_object( $post ) && isset( $post->ID ) && (int) get_queried_object_id() !== (int) $post->ID ) {
+			return $canonical_url;
+		}
+
 		$context = $this->page_context->get_context();
 
 		if ( ! empty( $context['is_404'] ) ) {
 			return '';
 		}
 
-		if ( is_singular() && empty( $context['canonical_custom'] ) ) {
+		if ( empty( $context['canonical_custom'] ) || empty( $context['canonical_url'] ) ) {
 			return $canonical_url;
 		}
 
-		return ! empty( $context['canonical_url'] ) ? (string) $context['canonical_url'] : $canonical_url;
+		return (string) $context['canonical_url'];
 	}
 
 	/**
@@ -260,7 +290,7 @@ class Lightweight_SEO_Meta_Tags_Service {
 	 */
 	private function normalize_attribute_value( $value ) {
 		$value = html_entity_decode( (string) $value, ENT_QUOTES, 'UTF-8' );
-		$value = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $value, true ) : strip_tags( $value );
+		$value = wp_strip_all_tags( $value, true );
 
 		return trim( preg_replace( '/\s+/', ' ', $value ) );
 	}

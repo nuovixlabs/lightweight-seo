@@ -15,6 +15,8 @@ Reference measurements for `1.1.0-rc.1` were recorded on 2026-08-24.
 | Autoloaded core settings size | 2,333 bytes |
 | Autoloaded module-state size | 97 bytes |
 
+Changes made after these measurements add two shared helper files (35 runtime package files) and stop loading the settings screen, editor panel, and importer on visitor requests. Re-measure every row before tagging the next candidate.
+
 Reference environment: local WordPress 6.0, Twenty Twenty-Two, PHP 8.5, MySQL 8, loopback HTTP, no persistent object cache. Each response-time result is the median of 100 sequential warm homepage requests after 10 warm-ups. Query and exact peak-memory values are averages of 20 instrumented warm requests.
 
 The all-modules case enables every built-in module. The local-environment tracking exclusion remains in force, so the benchmark measures plugin-side module overhead and does not fetch third-party scripts. Tracking is an explicit user-enabled exception to the no-frontend-script rule and its external network cost belongs to the selected provider and browser environment.

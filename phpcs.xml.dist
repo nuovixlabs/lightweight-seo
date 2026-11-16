@@ -6,6 +6,7 @@
     <arg name="colors"/>
 
     <file>lightweight-seo.php</file>
+    <file>uninstall.php</file>
     <file>includes</file>
     <file>tests</file>
 
@@ -19,5 +20,27 @@
         <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
         <exclude name="Squiz.Commenting.ClassComment.Missing"/>
         <exclude name="Squiz.Commenting.FileComment.Missing"/>
+    </rule>
+
+    <!-- Security and i18n gates for shipped code: escaping, nonces, input handling, and text domain. -->
+    <rule ref="WordPress.Security">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="WordPress.DB.PreparedSQL">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="WordPress.WP.EnqueuedResources">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="WordPress.WP.I18n">
+        <exclude-pattern>tests/*</exclude-pattern>
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="lightweight-seo"/>
+            </property>
+        </properties>
     </rule>
 </ruleset>

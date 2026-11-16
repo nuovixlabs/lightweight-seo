@@ -11,6 +11,7 @@
  * Text Domain: lightweight-seo
  * Domain Path: /languages
  * License: MIT
+ * Update URI: https://github.com/nuovixlabs/lightweight-seo
  */
 
 // If this file is called directly, abort.
@@ -18,17 +19,9 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-// Get plugin metadata
-$plugin_data = get_file_data(
-	__FILE__,
-	array(
-		'Version' => 'Version',
-	),
-	'plugin'
-);
-
-// Define plugin constants
-define( 'LIGHTWEIGHT_SEO_VERSION', $plugin_data['Version'] );
+// Define plugin constants. The version is read from the header above so the
+// release tag check has a single source of truth; no global variable is leaked.
+define( 'LIGHTWEIGHT_SEO_VERSION', get_file_data( __FILE__, array( 'Version' => 'Version' ), 'plugin' )['Version'] );
 define( 'LIGHTWEIGHT_SEO_API_VERSION', '1.0' );
 define( 'LIGHTWEIGHT_SEO_PLUGIN_FILE', __FILE__ );
 define( 'LIGHTWEIGHT_SEO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -43,6 +36,8 @@ define( 'LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR', '–' );
 /**
  * The core plugin class.
  */
+require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-url.php';
+require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-text.php';
 require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-data-registry.php';
 require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-migrator.php';
 require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-lifecycle.php';

@@ -135,4 +135,60 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 			}
 		};
 	}
+
+	public function test_source_template_variables_are_converted_or_left_for_review(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_post_meta = array(
+			91 => array(
+				'_yoast_wpseo_title'    => 'Guide %%page%% %%sep%% %%sitename%%',
+				'_yoast_wpseo_metadesc' => 'Read %%title%% in %%primary_category%%.',
+			),
+		);
+		$lightweight_seo_test_posts     = array(
+			91 => (object) array(
+				'ID'          => 91,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			),
+		);
+		$values                         = array();
+		$service                        = new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $values ) );
+
+		$report = $service->import_batch( 'yoast' );
+
+		$this->assertSame( 'Guide %sep% %sitename%', $values[91]['seo_title'] );
+		$this->assertArrayNotHasKey( 'seo_description', $values[91], 'An unconvertible variable must not be imported as literal text.' );
+		$this->assertSame( 1, $report['updated_fields'] );
+		$this->assertSame( 1, $report['unsupported_fields'] );
+	}
+
+	public function test_rank_math_and_aioseo_variables_map_to_native_tokens(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_post_meta = array(
+			92 => array(
+				'rank_math_title' => '%title% %page% %sep% %sitedesc%',
+				'_aioseo_title'   => '#post_title #separator_sa #site_title',
+			),
+		);
+		$lightweight_seo_test_posts     = array(
+			92 => (object) array(
+				'ID'          => 92,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			),
+		);
+
+		$rank_math_values = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $rank_math_values ) ) )->import_batch( 'rank_math' );
+
+		$aioseo_values = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $aioseo_values ) ) )->import_batch( 'aioseo' );
+
+		$this->assertSame( '%title% %sep% %tagline%', $rank_math_values[92]['seo_title'] );
+		$this->assertSame( '%title% %sep% %sitename%', $aioseo_values[92]['seo_title'] );
+	}
 }

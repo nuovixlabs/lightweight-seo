@@ -109,14 +109,54 @@ $GLOBALS['wp'] = (object) array(
     'request' => '',
 );
 
+require_once dirname(__DIR__) . '/includes/class-lightweight-seo-url.php';
+require_once dirname(__DIR__) . '/includes/class-lightweight-seo-text.php';
+
+if (!function_exists('esc_attr_e')) {
+    function esc_attr_e($text, $domain = null) {
+        echo esc_attr($text);
+    }
+}
+
+if (!function_exists('esc_js')) {
+    function esc_js($text) {
+        return addslashes(htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'));
+    }
+}
+
+if (!function_exists('get_query_var')) {
+    function get_query_var($query_var, $default_value = '') {
+        global $lightweight_seo_test_query_state;
+
+        return $lightweight_seo_test_query_state['query_vars'][$query_var] ?? $default_value;
+    }
+}
+
+if (!function_exists('user_trailingslashit')) {
+    function user_trailingslashit($url, $type_of_url = '') {
+        return rtrim($url, '/') . '/';
+    }
+}
+
+$lightweight_seo_test_hooks = array();
+$lightweight_seo_test_home_url = 'https://example.com';
+
 if (!function_exists('add_action')) {
     function add_action(...$args) {
+        global $lightweight_seo_test_hooks;
+
+        $lightweight_seo_test_hooks[] = (string) $args[0];
+
         return true;
     }
 }
 
 if (!function_exists('add_filter')) {
     function add_filter(...$args) {
+        global $lightweight_seo_test_hooks;
+
+        $lightweight_seo_test_hooks[] = (string) $args[0];
+
         return true;
     }
 }
@@ -419,6 +459,10 @@ if (!function_exists('taxonomy_exists')) {
 
 if (!function_exists('register_post_meta')) {
     function register_post_meta($post_type, $meta_key, $args) {
+        global $lightweight_seo_test_registered_post_meta;
+
+        $lightweight_seo_test_registered_post_meta[$meta_key] = $args;
+
         return true;
     }
 }
@@ -802,7 +846,9 @@ if (!function_exists('wp_get_attachment_metadata')) {
 
 if (!function_exists('home_url')) {
     function home_url($path = '') {
-        return 'https://example.com' . $path;
+        global $lightweight_seo_test_home_url;
+
+        return $lightweight_seo_test_home_url . $path;
     }
 }
 
@@ -1038,7 +1084,7 @@ if (!function_exists('get_the_date')) {
     function get_the_date($format = '', $post_id = 0) {
         global $lightweight_seo_test_query_state;
 
-        return $lightweight_seo_test_query_state['published_date'];
+        return $lightweight_seo_test_query_state['published_date'] ?? '';
     }
 }
 
@@ -1046,7 +1092,7 @@ if (!function_exists('get_the_modified_date')) {
     function get_the_modified_date($format = '', $post_id = 0) {
         global $lightweight_seo_test_query_state;
 
-        return $lightweight_seo_test_query_state['modified_date'];
+        return $lightweight_seo_test_query_state['modified_date'] ?? '';
     }
 }
 

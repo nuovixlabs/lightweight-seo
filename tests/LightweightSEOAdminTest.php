@@ -485,4 +485,46 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertArrayNotHasKey( 'search_console_service_account_json', $validated );
 		$this->assertArrayNotHasKey( 'lightweight_seo_404_logs', $lightweight_seo_test_options );
 	}
+
+	public function test_safe_mode_notice_is_limited_to_administrators_on_relevant_screens(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_screen;
+		global $lightweight_seo_test_user_can;
+
+		$lightweight_seo_test_options['active_plugins'] = array( 'wordpress-seo/wp-seo.php' );
+
+		$settings  = new class() {
+			public function get_all() {
+				return array();
+			}
+		};
+		$post_meta = new class() {
+			public function get_supported_post_types() {
+				return array( 'post', 'page' );
+			}
+		};
+		$admin     = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', $settings, $post_meta );
+
+		$lightweight_seo_test_user_can = false;
+		ob_start();
+		$admin->maybe_render_safe_mode_notice();
+		$without_capability = ob_get_clean();
+
+		$lightweight_seo_test_user_can = true;
+		$lightweight_seo_test_screen   = (object) array( 'id' => 'edit-post' );
+		ob_start();
+		$admin->maybe_render_safe_mode_notice();
+		$unrelated_screen = ob_get_clean();
+
+		$lightweight_seo_test_screen = (object) array( 'id' => 'plugins' );
+		ob_start();
+		$admin->maybe_render_safe_mode_notice();
+		$plugins_screen = ob_get_clean();
+
+		$lightweight_seo_test_screen = null;
+
+		$this->assertSame( '', $without_capability );
+		$this->assertSame( '', $unrelated_screen );
+		$this->assertStringContainsString( 'safe mode is active', $plugins_screen );
+	}
 }
