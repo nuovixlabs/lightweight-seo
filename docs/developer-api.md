@@ -10,7 +10,7 @@ The core plugin defines `LIGHTWEIGHT_SEO_API_VERSION` separately from its releas
 add_action(
 	'lightweight_seo_loaded',
 	static function ( $api ) {
-		if ( ! $api->is_compatible( '1.1.0-rc.1', '1.0' ) ) {
+		if ( ! $api->is_compatible( '1.1.0-rc.2', '1.0' ) ) {
 			return;
 		}
 

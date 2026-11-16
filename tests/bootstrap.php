@@ -19,7 +19,7 @@ if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
 }
 
 if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
-    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.1');
+    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.2');
 }
 
 if (!defined('LIGHTWEIGHT_SEO_API_VERSION')) {

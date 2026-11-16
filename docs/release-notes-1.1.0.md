@@ -1,6 +1,8 @@
 # Lightweight SEO 1.1 Release Notes
 
-Release candidate: `1.1.0-rc.1`
+Release candidate: `1.1.0-rc.2`
+
+`1.1.0-rc.1` was never published. This is the first 1.1 candidate available as a release package.
 
 ## Highlights
 
