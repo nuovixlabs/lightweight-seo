@@ -6,7 +6,7 @@
 2. Record any submitted image, video, or news sitemap URLs; those endpoints are retired.
 3. If Search Console credentials were stored, plan to copy or delete them explicitly. They are not reused by core or a future Insights connection.
 4. Record current Tracking, Redirects, Hreflang, and Local SEO behavior.
-5. Install the release-candidate ZIP over 1.0.3 and open **SEO → Tools and migration**.
+5. Install the release-candidate ZIP over 1.0.3 and open **SEO → Tools**.
 
 ## Automatic upgrade behavior
 

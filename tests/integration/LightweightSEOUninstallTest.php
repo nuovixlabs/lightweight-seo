@@ -36,10 +36,15 @@ final class LightweightSEOUninstallTest extends WP_UnitTestCase {
 		update_option( 'lightweight_seo_search_console_token', array( 'token' => 'temporary' ) );
 		wp_schedule_event( time() + 60, 'daily', 'lightweight_seo_search_console_sync' );
 
+		$user_id = self::factory()->user->create();
+		update_user_meta( $user_id, 'lightweight_seo_checklist_dismissed', '1' );
+
 		lightweight_seo_delete_plugin_data();
 
 		$settings = get_option( LIGHTWEIGHT_SEO_OPTION_NAME );
 
+		// A screen preference is not SEO data, so it goes even when SEO data is kept.
+		$this->assertSame( '', get_user_meta( $user_id, 'lightweight_seo_checklist_dismissed', true ) );
 		$this->assertSame( 'Preserve me', get_post_meta( $post_id, '_lightweight_seo_title', true ) );
 		$this->assertSame( 'Preserve me', $settings['title_format'] );
 		$this->assertArrayNotHasKey( 'search_console_service_account_json', $settings );

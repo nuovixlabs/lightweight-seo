@@ -63,7 +63,7 @@ class Lightweight_SEO_Meta_Boxes {
 		foreach ( $post_types as $post_type ) {
 			add_meta_box(
 				'lightweight_seo_meta_box',
-				__( 'SEO Settings', 'lightweight-seo' ),
+				__( 'SEO settings', 'lightweight-seo' ),
 				array( $this, 'render_meta_box' ),
 				$post_type,
 				'advanced',
@@ -91,8 +91,8 @@ class Lightweight_SEO_Meta_Boxes {
 		$seo_max_image_preview = $post_meta['seo_max_image_preview'] ?? '';
 		$social_title          = $post_meta['social_title'] ?? '';
 		$social_description    = $post_meta['social_description'] ?? '';
-		$social_image          = $this->post_meta->get_social_image_url( $post->ID );
-		$social_image_id       = absint( $post_meta['social_image_id'] ?? 0 );
+		$own_social_image      = (string) $this->post_meta->get_social_image_url( $post->ID );
+		$own_social_image_id   = absint( $post_meta['social_image_id'] ?? 0 );
 		$global_title_format   = $this->settings->get_title_format();
 		$tokens                = array(
 			'%title%'    => (string) $post->post_title,
@@ -101,7 +101,7 @@ class Lightweight_SEO_Meta_Boxes {
 			'%sep%'      => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
 		);
 		$resolve_tokens        = static function ( $text ) use ( $tokens ) {
-			return str_replace( array_keys( $tokens ), array_values( $tokens ), (string) $text );
+			return Lightweight_SEO_Text::resolve_tokens( $text, $tokens );
 		};
 		$current_title         = $resolve_tokens( $global_title_format );
 		// Mirror the frontend fallback: a short summary of the excerpt or content, never the whole document.
@@ -112,24 +112,41 @@ class Lightweight_SEO_Meta_Boxes {
 		$social_preview_title = $this->normalize_preview_text( $social_title ? $resolve_tokens( $social_title ) : $preview_title );
 		$social_preview_desc  = $this->normalize_preview_text( $social_description ? $resolve_tokens( $social_description ) : $preview_description );
 
-		if ( empty( $social_image ) && has_post_thumbnail( $post->ID ) ) {
-			$social_image    = get_the_post_thumbnail_url( $post->ID, 'full' );
-			$social_image_id = get_post_thumbnail_id( $post->ID );
+		// The field holds only this page's own image. The featured image and the site default are fallbacks
+		// for the preview and checks, and are never written back as the page's own choice.
+		$featured_image    = has_post_thumbnail( $post->ID ) ? (string) get_the_post_thumbnail_url( $post->ID, 'full' ) : '';
+		$featured_image_id = '' !== $featured_image ? absint( get_post_thumbnail_id( $post->ID ) ) : 0;
+		$default_image     = (string) $this->settings->get_social_image_url();
+		$social_image      = $own_social_image;
+		$social_image_id   = $own_social_image_id;
+
+		if ( '' === $social_image && '' !== $featured_image ) {
+			$social_image    = $featured_image;
+			$social_image_id = $featured_image_id;
 		}
 
-		if ( empty( $social_image ) ) {
-			$social_image = $this->settings->get_social_image_url();
+		if ( '' === $social_image ) {
+			$social_image    = $default_image;
+			$social_image_id = 0;
 		}
 
-		$checks        = $this->get_editor_checks( $post, $post_meta, $preview_title, $preview_description, $social_image, $social_image_id );
-		$to_review     = count(
+		$checks    = $this->get_editor_checks( $post_meta, $preview_title, $preview_description, $social_image, $social_image_id );
+		$to_review = count(
 			array_filter(
 				$checks,
 				static function ( $check ) {
-					return 'success' !== $check['status'];
+					return 'warning' === $check['status'] && empty( $check['hidden'] );
 				}
 			)
 		);
+		// The script re-counts as the page is edited, so it needs both forms of the label.
+		/* translators: %d: number of on-page checks that need a review. */
+		$review_one = _n( '%d check to review', '%d checks to review', 1, 'lightweight-seo' );
+		/* translators: %d: number of on-page checks that need a review. */
+		$review_many  = _n( '%d check to review', '%d checks to review', 2, 'lightweight-seo' );
+		$review_clear = __( 'All checks passed', 'lightweight-seo' );
+		/* translators: %d: number of on-page checks that need a review. */
+		$review_label  = $to_review ? sprintf( _n( '%d check to review', '%d checks to review', $to_review, 'lightweight-seo' ), $to_review ) : $review_clear;
 		$title_tokens  = array( '%title%', '%sitename%', '%tagline%', '%sep%' );
 		$robots_fields = array(
 			'noindex'   => array( $seo_noindex, __( 'Prevent search engines from indexing this page', 'lightweight-seo' ) ),
@@ -138,32 +155,40 @@ class Lightweight_SEO_Meta_Boxes {
 			'nosnippet' => array( $seo_nosnippet, __( 'Prevent text snippets from showing in search results', 'lightweight-seo' ) ),
 		);
 		?>
-		<div class="lwseo lwseo-metabox" data-tokens="<?php echo esc_attr( wp_json_encode( $tokens ) ); ?>">
+		<div
+			class="lwseo lwseo-metabox"
+			data-tokens="<?php echo esc_attr( wp_json_encode( $tokens ) ); ?>"
+			data-title-format="<?php echo esc_attr( $global_title_format ); ?>"
+			data-home-host="<?php echo esc_attr( strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ) ); ?>"
+			data-featured-image="<?php echo esc_url( $featured_image ); ?>"
+			data-featured-width="<?php echo esc_attr( (string) $this->get_image_width( $featured_image_id ) ); ?>"
+			data-default-image="<?php echo esc_url( $default_image ); ?>"
+		>
 			<div class="lwseo-tabs" role="tablist" aria-label="<?php echo esc_attr( __( 'SEO editor panels', 'lightweight-seo' ) ); ?>">
 				<button type="button" class="lwseo-tabs__tab is-active" role="tab" aria-selected="true" aria-controls="lightweight-seo-search-panel" id="lightweight-seo-search-tab"><?php esc_html_e( 'Search appearance', 'lightweight-seo' ); ?></button>
 				<button type="button" class="lwseo-tabs__tab" role="tab" aria-selected="false" aria-controls="lightweight-seo-social-panel" id="lightweight-seo-social-tab" tabindex="-1"><?php esc_html_e( 'Social appearance', 'lightweight-seo' ); ?></button>
 				<button type="button" class="lwseo-tabs__tab" role="tab" aria-selected="false" aria-controls="lightweight-seo-checks-panel" id="lightweight-seo-checks-tab" tabindex="-1">
-					<?php
-					esc_html_e( 'Checks', 'lightweight-seo' );
-
-					if ( $to_review ) {
-						/* translators: %d: number of on-page checks that need a review. */
-						$review_label = sprintf( _n( '%d check to review', '%d checks to review', $to_review, 'lightweight-seo' ), $to_review );
-
-						echo ' <span class="lwseo-badge is-warning"><span aria-hidden="true">' . esc_html( (string) $to_review ) . '</span><span class="screen-reader-text">' . esc_html( $review_label ) . '</span></span>';
-					}
-					?>
+					<?php esc_html_e( 'Checks', 'lightweight-seo' ); ?>
+					<span class="lwseo-badge lwseo-checks-badge <?php echo $to_review ? 'is-warning' : 'is-success'; ?>" data-review-one="<?php echo esc_attr( $review_one ); ?>" data-review-many="<?php echo esc_attr( $review_many ); ?>" data-review-clear="<?php echo esc_attr( $review_clear ); ?>">
+						<span class="lwseo-checks-badge__count<?php echo $to_review ? '' : ' dashicons dashicons-yes'; ?>" aria-hidden="true"><?php echo $to_review ? esc_html( (string) $to_review ) : ''; ?></span>
+						<span class="screen-reader-text"><?php echo esc_html( $review_label ); ?></span>
+					</span>
 				</button>
 			</div>
+			<?php // Announces a changed count once, instead of on every keystroke. ?>
+			<span class="screen-reader-text lwseo-checks-live" aria-live="polite"></span>
 			<div class="lwseo-panel" id="lightweight-seo-search-panel" role="tabpanel" aria-labelledby="lightweight-seo-search-tab">
 				<p class="lwseo-preview__caption"><?php esc_html_e( 'Search result preview', 'lightweight-seo' ); ?></p>
-				<div class="lwseo-preview lwseo-preview--search" aria-live="polite">
-					<div class="lwseo-preview__body">
-						<p class="lwseo-preview__url"><?php echo esc_html( $preview_url ); ?></p>
-						<p class="lwseo-preview__title" data-preview="title"><?php echo esc_html( $preview_title ); ?></p>
-						<p class="lwseo-preview__description" data-preview="description"><?php echo esc_html( $preview_description ); ?></p>
-					</div>
-				</div>
+				<?php
+				Lightweight_SEO_Admin_UI::search_preview(
+					array(
+						'url'         => $preview_url,
+						'title'       => $preview_title,
+						'description' => $preview_description,
+						'live'        => true,
+					)
+				);
+				?>
 				<div class="lwseo-field lwseo-field--stacked">
 					<label class="lwseo-field__label" for="lightweight_seo_title"><?php esc_html_e( 'SEO title', 'lightweight-seo' ); ?></label>
 					<div class="lwseo-field__control">
@@ -188,7 +213,7 @@ class Lightweight_SEO_Meta_Boxes {
 							<label class="lwseo-field__label" for="lightweight_seo_canonical_url"><?php esc_html_e( 'Canonical URL', 'lightweight-seo' ); ?></label>
 							<div class="lwseo-field__control">
 								<input type="url" id="lightweight_seo_canonical_url" name="lightweight_seo_canonical_url" value="<?php echo esc_url( $seo_canonical_url ); ?>" class="large-text">
-								<p class="lwseo-help"><?php esc_html_e( 'Leave empty to use this page’s permalink.', 'lightweight-seo' ); ?></p>
+								<p class="lwseo-help"><?php esc_html_e( 'Leave empty to use this page’s own address. Set it only when this page is a copy of another page.', 'lightweight-seo' ); ?></p>
 							</div>
 						</div>
 						<fieldset class="lwseo-field lwseo-field--stacked">
@@ -202,7 +227,7 @@ class Lightweight_SEO_Meta_Boxes {
 							</div>
 						</fieldset>
 						<div class="lwseo-field lwseo-field--stacked">
-							<label class="lwseo-field__label" for="lightweight_seo_max_image_preview"><?php esc_html_e( 'Max image preview', 'lightweight-seo' ); ?></label>
+							<label class="lwseo-field__label" for="lightweight_seo_max_image_preview"><?php esc_html_e( 'Image preview size', 'lightweight-seo' ); ?></label>
 							<div class="lwseo-field__control">
 								<select id="lightweight_seo_max_image_preview" name="lightweight_seo_max_image_preview">
 									<option value="" <?php selected( $seo_max_image_preview, '' ); ?>><?php esc_html_e( 'Use global default', 'lightweight-seo' ); ?></option>
@@ -217,30 +242,28 @@ class Lightweight_SEO_Meta_Boxes {
 			</div>
 			<div class="lwseo-panel" id="lightweight-seo-social-panel" role="tabpanel" aria-labelledby="lightweight-seo-social-tab" hidden>
 				<p class="lwseo-preview__caption"><?php esc_html_e( 'Share preview', 'lightweight-seo' ); ?></p>
-				<div class="lwseo-preview lwseo-preview--social" aria-live="polite">
-					<div class="lwseo-preview__media">
-						<?php if ( $social_image ) : ?>
-							<img src="<?php echo esc_url( $social_image ); ?>" alt="">
-						<?php endif; ?>
-					</div>
-					<div class="lwseo-preview__body">
-						<p class="lwseo-preview__site"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></p>
-						<p class="lwseo-preview__title" data-preview="social-title"><?php echo esc_html( $social_preview_title ); ?></p>
-						<p class="lwseo-preview__description" data-preview="social-description"><?php echo esc_html( $social_preview_desc ); ?></p>
-					</div>
-				</div>
+				<?php
+				Lightweight_SEO_Admin_UI::share_preview(
+					array(
+						'image'       => $social_image,
+						'title'       => $social_preview_title,
+						'description' => $social_preview_desc,
+						'live'        => true,
+					)
+				);
+				?>
 				<div class="lwseo-field lwseo-field--stacked">
 					<label class="lwseo-field__label" for="lightweight_seo_social_title"><?php esc_html_e( 'Social title', 'lightweight-seo' ); ?></label>
 					<div class="lwseo-field__control">
 						<input type="text" id="lightweight_seo_social_title" name="lightweight_seo_social_title" value="<?php echo esc_attr( $social_title ); ?>" class="large-text" data-fallback="<?php echo esc_attr( $preview_title ); ?>">
-						<p class="lwseo-help"><?php esc_html_e( 'Title used when shared on social media. If empty, the SEO title or post title will be used.', 'lightweight-seo' ); ?></p>
+						<p class="lwseo-help"><?php esc_html_e( 'Leave empty to use the SEO title.', 'lightweight-seo' ); ?></p>
 					</div>
 				</div>
 				<div class="lwseo-field lwseo-field--stacked">
 					<label class="lwseo-field__label" for="lightweight_seo_social_description"><?php esc_html_e( 'Social description', 'lightweight-seo' ); ?></label>
 					<div class="lwseo-field__control">
 						<textarea id="lightweight_seo_social_description" name="lightweight_seo_social_description" rows="3" class="large-text" data-fallback="<?php echo esc_attr( $preview_description ); ?>"><?php echo esc_textarea( $social_description ); ?></textarea>
-						<p class="lwseo-help"><?php esc_html_e( 'Description used when shared on social media. If empty, the Meta Description will be used.', 'lightweight-seo' ); ?></p>
+						<p class="lwseo-help"><?php esc_html_e( 'Leave empty to use the meta description.', 'lightweight-seo' ); ?></p>
 					</div>
 				</div>
 				<div class="lwseo-field lwseo-field--stacked">
@@ -249,8 +272,9 @@ class Lightweight_SEO_Meta_Boxes {
 						<?php
 						Lightweight_SEO_Admin_UI::image_field(
 							array(
-								'url'      => $social_image,
-								'id'       => $social_image_id,
+								'url'      => $own_social_image,
+								'id'       => $own_social_image_id,
+								'width'    => $this->get_image_width( $own_social_image_id ),
 								'url_name' => 'lightweight_seo_social_image',
 								'id_name'  => 'lightweight_seo_social_image_id',
 								'url_id'   => 'lightweight_seo_social_image',
@@ -259,21 +283,36 @@ class Lightweight_SEO_Meta_Boxes {
 							)
 						);
 						?>
-						<p class="lwseo-help"><?php esc_html_e( 'Image used when shared on social media. Recommended size: 1200x630px.', 'lightweight-seo' ); ?></p>
+						<p class="lwseo-help"><?php esc_html_e( 'Leave empty to use the featured image, or the site default when there is none. Recommended size: 1200 × 630 pixels.', 'lightweight-seo' ); ?></p>
 					</div>
 				</div>
 			</div>
 			<div class="lwseo-panel" id="lightweight-seo-checks-panel" role="tabpanel" aria-labelledby="lightweight-seo-checks-tab" hidden>
 				<p class="lwseo-help"><?php esc_html_e( 'These checks report facts and preview guidance only. They do not predict rankings.', 'lightweight-seo' ); ?></p>
-				<ul class="lwseo-status-list lwseo-checks">
+				<ul class="lwseo-status-list lwseo-checks" data-edit-label="<?php echo esc_attr( __( 'Edit', 'lightweight-seo' ) ); ?>" data-prefix-success="<?php echo esc_attr( Lightweight_SEO_Admin_UI::status_prefix( 'success' ) ); ?>" data-prefix-warning="<?php echo esc_attr( Lightweight_SEO_Admin_UI::status_prefix( 'warning' ) ); ?>">
 					<?php
 					foreach ( $checks as $check ) {
-						$action = empty( $check['target'] ) ? array() : array(
+						$passes = 'success' === $check['status'];
+						$action = $passes || '' === $check['target'] ? array() : array(
 							'label' => __( 'Edit', 'lightweight-seo' ),
 							'url'   => $check['target'],
 						);
 
-						Lightweight_SEO_Admin_UI::status( $check['status'], $check['label'], $check['message'], $action );
+						// Both outcomes travel with the row so the script can switch it as the page is edited.
+						$attributes = array(
+							'data-check'  => $check['id'],
+							'data-pass'   => $check['pass'],
+							'data-fail'   => $check['fail'],
+							'data-target' => $check['target'],
+						);
+
+						foreach ( $check['variants'] as $variant => $message ) {
+							$attributes[ 'data-fail-' . $variant ] = $message;
+						}
+
+						$attributes['hidden'] = ! empty( $check['hidden'] );
+
+						Lightweight_SEO_Admin_UI::status( $check['status'], $check['label'], $check['message'], $action, $attributes );
 					}
 					?>
 				</ul>
@@ -287,56 +326,89 @@ class Lightweight_SEO_Meta_Boxes {
 	 *
 	 * @return array
 	 */
-	private function get_editor_checks( $post, $post_meta, $title, $description, $social_image, $social_image_id ) {
+	private function get_editor_checks( $post_meta, $title, $description, $social_image, $social_image_id ) {
 		$checks             = array();
-		$checks[]           = $this->make_check( $title, __( 'SEO title', 'lightweight-seo' ), __( 'A title is available for the search preview.', 'lightweight-seo' ), __( 'Add a clear SEO title.', 'lightweight-seo' ), '#lightweight_seo_title' );
-		$checks[]           = $this->make_check( $description, __( 'Meta description', 'lightweight-seo' ), __( 'A description is available for the search preview.', 'lightweight-seo' ), __( 'Add a useful description of this page.', 'lightweight-seo' ), '#lightweight_seo_description' );
+		$checks[]           = $this->make_check( 'title', '' !== (string) $title, __( 'SEO title', 'lightweight-seo' ), __( 'A title is available for the search preview.', 'lightweight-seo' ), __( 'Add a clear SEO title.', 'lightweight-seo' ), '#lightweight_seo_title' );
+		$checks[]           = $this->make_check( 'description', '' !== (string) $description, __( 'Meta description', 'lightweight-seo' ), __( 'A description is available for the search preview.', 'lightweight-seo' ), __( 'Add a useful description of this page.', 'lightweight-seo' ), '#lightweight_seo_description' );
 		$title_length       = Lightweight_SEO_Text::length( $title );
-		$checks[]           = $this->make_check( $title_length >= 30 && $title_length <= 60, __( 'Title preview length', 'lightweight-seo' ), __( 'The title is within the usual preview guidance range.', 'lightweight-seo' ), __( 'The title may be shortened or expanded in search results; review it for clarity.', 'lightweight-seo' ), '#lightweight_seo_title' );
+		$checks[]           = $this->make_check( 'title_length', $title_length >= 30 && $title_length <= 60, __( 'Title preview length', 'lightweight-seo' ), __( 'The title is within the usual preview guidance range.', 'lightweight-seo' ), __( 'The title may be shortened or expanded in search results; review it for clarity.', 'lightweight-seo' ), '#lightweight_seo_title' );
 		$description_length = Lightweight_SEO_Text::length( $description );
-		$checks[]           = $this->make_check( $description_length >= 120 && $description_length <= 160, __( 'Description preview length', 'lightweight-seo' ), __( 'The description is within the usual preview guidance range.', 'lightweight-seo' ), __( 'The description may truncate or leave unused preview space; review it for clarity.', 'lightweight-seo' ), '#lightweight_seo_description' );
-		$checks[]           = $this->make_check( $social_image, __( 'Social image', 'lightweight-seo' ), __( 'A social image is available.', 'lightweight-seo' ), __( 'Choose an image for richer social previews.', 'lightweight-seo' ), '#lightweight_seo_social_image' );
+		$checks[]           = $this->make_check( 'description_length', $description_length >= 120 && $description_length <= 160, __( 'Description preview length', 'lightweight-seo' ), __( 'The description is within the usual preview guidance range.', 'lightweight-seo' ), __( 'The description may truncate or leave unused preview space; review it for clarity.', 'lightweight-seo' ), '#lightweight_seo_description' );
+		$checks[]           = $this->make_check( 'social_image', '' !== (string) $social_image, __( 'Social image', 'lightweight-seo' ), __( 'A social image is available.', 'lightweight-seo' ), __( 'Choose an image for richer social previews.', 'lightweight-seo' ), '#lightweight_seo_social_image' );
 
-		if ( $social_image_id ) {
-			$image_data  = wp_get_attachment_metadata( $social_image_id );
-			$image_width = absint( $image_data['width'] ?? 0 );
+		// A null result means the check does not apply yet; the row is printed hidden so the script can show it later.
+		$image_width = $this->get_image_width( $social_image_id );
+		$checks[]    = $this->make_check( 'social_image_width', $image_width ? $image_width >= 1200 : null, __( 'Social image width', 'lightweight-seo' ), __( 'The selected image meets the 1200px width recommendation.', 'lightweight-seo' ), __( 'The selected image is below the 1200px width recommendation.', 'lightweight-seo' ), '#lightweight_seo_social_image' );
+		$checks[]    = $this->make_check( 'indexing', '1' !== (string) ( $post_meta['seo_noindex'] ?? '' ), __( 'Indexing', 'lightweight-seo' ), __( 'This page can be indexed.', 'lightweight-seo' ), __( 'This page is intentionally set to noindex. Confirm that is expected.', 'lightweight-seo' ), '#lightweight_seo_noindex' );
+		$canonical   = (string) ( $post_meta['seo_canonical_url'] ?? '' );
+		$valid_url   = '' !== $canonical && false !== filter_var( $canonical, FILTER_VALIDATE_URL );
+		$same_host   = $valid_url && strtolower( (string) wp_parse_url( $canonical, PHP_URL_HOST ) ) === strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+		$invalid_url = __( 'The custom canonical URL is invalid.', 'lightweight-seo' );
+		$check       = $this->make_check( 'canonical', '' === $canonical ? null : $valid_url && $same_host, __( 'Custom canonical', 'lightweight-seo' ), __( 'The custom canonical uses this site’s host.', 'lightweight-seo' ), __( 'The custom canonical points to a different host. Confirm that this is intentional.', 'lightweight-seo' ), '#lightweight_seo_canonical_url' );
 
-			if ( $image_width ) {
-				$checks[] = $this->make_check( $image_width >= 1200, __( 'Social image width', 'lightweight-seo' ), __( 'The selected image meets the 1200px width recommendation.', 'lightweight-seo' ), __( 'The selected image is below the 1200px width recommendation.', 'lightweight-seo' ), '#lightweight_seo_social_image' );
-			}
+		$check['variants']['invalid'] = $invalid_url;
+
+		if ( '' !== $canonical && ! $valid_url ) {
+			$check['message'] = $invalid_url;
 		}
 
-		$checks[]  = $this->make_check( '1' !== (string) ( $post_meta['seo_noindex'] ?? '' ), __( 'Indexing', 'lightweight-seo' ), __( 'This page can be indexed.', 'lightweight-seo' ), __( 'This page is intentionally set to noindex. Confirm that is expected.', 'lightweight-seo' ), '#lightweight_seo_noindex' );
-		$canonical = (string) ( $post_meta['seo_canonical_url'] ?? '' );
-
-		if ( $canonical ) {
-			$valid_url = false !== filter_var( $canonical, FILTER_VALIDATE_URL );
-			$same_host = $valid_url && strtolower( (string) wp_parse_url( $canonical, PHP_URL_HOST ) ) === strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
-			$checks[]  = $this->make_check( $valid_url && $same_host, __( 'Custom canonical', 'lightweight-seo' ), __( 'The custom canonical uses this site’s host.', 'lightweight-seo' ), $valid_url ? __( 'The custom canonical points to a different host. Confirm that this is intentional.', 'lightweight-seo' ) : __( 'The custom canonical URL is invalid.', 'lightweight-seo' ), '#lightweight_seo_canonical_url' );
-		}
+		$checks[] = $check;
 
 		if ( class_exists( 'Lightweight_SEO_Compatibility_Service' ) ) {
 			$conflicts = ( new Lightweight_SEO_Compatibility_Service() )->get_conflicting_plugins();
 			/* translators: %s: comma-separated list of conflicting SEO plugins. */
-			$checks[] = $this->make_check( empty( $conflicts ), __( 'SEO output conflicts', 'lightweight-seo' ), __( 'No conflicting SEO plugin was detected.', 'lightweight-seo' ), sprintf( __( 'Another SEO plugin is active: %s. Lightweight SEO suppresses overlapping output.', 'lightweight-seo' ), implode( ', ', $conflicts ) ), '' );
+			$checks[] = $this->make_check( 'conflicts', empty( $conflicts ), __( 'SEO output conflicts', 'lightweight-seo' ), __( 'No conflicting SEO plugin was detected.', 'lightweight-seo' ), sprintf( __( 'Another SEO plugin is active: %s. Lightweight SEO suppresses overlapping output.', 'lightweight-seo' ), implode( ', ', $conflicts ) ), '' );
 		}
 
 		return $checks;
 	}
 
-	private function make_check( $passes, $label, $success, $warning, $target ) {
+	/**
+	 * Describe one check with both of its outcomes.
+	 *
+	 * The IDs match the rules in admin/js/lightweight-seo-admin.js, which re-evaluate
+	 * every check except "conflicts" while the page is being edited.
+	 *
+	 * @param string    $id      Stable check ID.
+	 * @param bool|null $passes  Result, or null when the check does not apply.
+	 * @param string    $label   Check name.
+	 * @param string    $success Message shown when the check passes.
+	 * @param string    $warning Message shown when it does not.
+	 * @param string    $target  Fragment of the field that fixes it, or an empty string.
+	 * @return array
+	 */
+	private function make_check( $id, $passes, $label, $success, $warning, $target ) {
 		return array(
-			'status'  => $passes ? 'success' : 'warning',
-			'label'   => $label,
-			'message' => $passes ? $success : $warning,
-			'target'  => $passes ? '' : $target,
+			'id'       => $id,
+			'status'   => false === $passes ? 'warning' : 'success',
+			'label'    => $label,
+			'message'  => false === $passes ? $warning : $success,
+			'pass'     => $success,
+			'fail'     => $warning,
+			'variants' => array(),
+			'target'   => $target,
+			'hidden'   => null === $passes,
 		);
 	}
 
-	private function normalize_preview_text( $value ) {
-		$value = wp_strip_all_tags( strip_shortcodes( (string) $value ), true );
+	/**
+	 * Get the stored width of an attachment, or 0 when it is unknown.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return int
+	 */
+	private function get_image_width( $attachment_id ) {
+		if ( ! $attachment_id ) {
+			return 0;
+		}
 
-		return trim( preg_replace( '/\s+/', ' ', $value ) );
+		$image_data = wp_get_attachment_metadata( $attachment_id );
+
+		return absint( $image_data['width'] ?? 0 );
+	}
+
+	private function normalize_preview_text( $value ) {
+		return Lightweight_SEO_Text::plain( $value );
 	}
 
 	/**

@@ -1,6 +1,6 @@
 <?php
 /**
- * Settings fields and action forms for the Tools and migration tab.
+ * Settings fields and action forms for the Tools tab.
  *
  * @since      1.1.0
  * @package    Lightweight_SEO
@@ -12,7 +12,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
- * Renders the Tools and migration tab.
+ * Renders the Tools tab.
  *
  * Import and deletion controls belong to standalone forms that post to the
  * handlers in Lightweight_SEO_Admin_Tools. The controls keep their place in the
@@ -53,6 +53,15 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	 * @var      Lightweight_SEO_Import_State    $import_state
 	 */
 	private $import_state;
+
+	/**
+	 * What is still stored from retired features, read once per request.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      array|null    $legacy_state
+	 */
+	private $legacy_state = null;
 
 	/**
 	 * Initialize the renderer.
@@ -138,12 +147,47 @@ class Lightweight_SEO_Admin_Tools_Fields {
 		echo '<p class="lwseo-log">' . esc_html( $state['report'] ) . '</p>';
 	}
 
+	/**
+	 * Find what is still stored from retired features.
+	 *
+	 * Read once per request, because the keyword check is a database query.
+	 *
+	 * @return array Keys: options, logs, has_credentials, and has_keywords.
+	 */
+	private function get_legacy_state() {
+		if ( null === $this->legacy_state ) {
+			$options = (array) get_option( LIGHTWEIGHT_SEO_OPTION_NAME, array() );
+
+			$this->legacy_state = array(
+				'options'         => $options,
+				'logs'            => (array) get_option( 'lightweight_seo_404_logs', array() ),
+				'has_credentials' => ! empty( $options['search_console_property'] ) || ! empty( $options['search_console_service_account_json'] ),
+				'has_keywords'    => ! empty( $options['meta_keywords'] ) || $this->has_legacy_post_keywords(),
+			);
+		}
+
+		return $this->legacy_state;
+	}
+
+	/**
+	 * Tell whether anything from a retired feature is left to export or delete.
+	 *
+	 * @since    1.1.0
+	 * @return   bool
+	 */
+	public function has_legacy_data() {
+		$state = $this->get_legacy_state();
+
+		return $state['has_credentials'] || $state['has_keywords'] || ! empty( $state['logs'] );
+	}
+
 	/** Render explicit export/delete choices for retained legacy data. */
 	public function legacy_data_transition_render() {
-		$options         = (array) get_option( LIGHTWEIGHT_SEO_OPTION_NAME, array() );
-		$legacy_404_logs = (array) get_option( 'lightweight_seo_404_logs', array() );
-		$has_credentials = ! empty( $options['search_console_property'] ) || ! empty( $options['search_console_service_account_json'] );
-		$has_keywords    = ! empty( $options['meta_keywords'] ) || $this->has_legacy_post_keywords();
+		$state           = $this->get_legacy_state();
+		$options         = $state['options'];
+		$legacy_404_logs = $state['logs'];
+		$has_credentials = $state['has_credentials'];
+		$has_keywords    = $state['has_keywords'];
 		$export_url      = wp_nonce_url(
 			admin_url( 'admin-post.php?action=lightweight_seo_export_legacy_keywords' ),
 			'lightweight_seo_export_legacy_keywords'

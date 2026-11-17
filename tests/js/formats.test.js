@@ -1,0 +1,170 @@
+'use strict';
+
+// Run with: node --test tests/js/*.test.js
+// The stored formats are defined by Lightweight_SEO_Settings. These tests pin the
+// script's reading and writing of them, so the row editors never change what is saved.
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const formats = require('../../admin/js/lightweight-seo-formats.js');
+
+const {read, write, redirects, hreflang, hours, ids} = formats;
+
+test('redirect rules round-trip in the shape the server stores', () => {
+	const stored = '/old-page /new-page 301\n/moved https://example.org/landing 302\n/gone /here 308';
+	const parsed = read(stored, redirects);
+
+	assert.deepEqual(parsed.leftover, []);
+	assert.deepEqual(parsed.rows, [
+		{source: '/old-page', target: '/new-page', status: 301},
+		{source: '/moved', target: 'https://example.org/landing', status: 302},
+		{source: '/gone', target: '/here', status: 308},
+	]);
+	assert.equal(write(parsed.rows, parsed.leftover, redirects), stored);
+});
+
+test('a redirect without a status, or with an unknown one, is a 301', () => {
+	assert.deepEqual(redirects.parse('/a /b'), {source: '/a', target: '/b', status: 301});
+	assert.deepEqual(redirects.parse('/a /b 999'), {source: '/a', target: '/b', status: 301});
+	assert.deepEqual(redirects.parse('/a /b permanent'), {source: '/a', target: '/b', status: 301});
+	assert.equal(redirects.format({source: '/a', target: '/b', status: '307'}), '/a /b 307');
+	assert.equal(redirects.format({source: '/a', target: '/b', status: 'nonsense'}), '/a /b 301');
+});
+
+test('an incomplete redirect row is shown but not written', () => {
+	assert.deepEqual(redirects.parse('/only-a-source'), {source: '/only-a-source', target: '', status: 301});
+	assert.equal(redirects.format({source: '/only-a-source', target: '', status: 301}), '');
+	assert.equal(redirects.format({source: '', target: '/b', status: 301}), '');
+	assert.equal(write([{source: '/a', target: '/b', status: 301}, {source: '', target: '', status: 301}], [], redirects), '/a /b 301');
+});
+
+test('a space typed into a redirect cell cannot split the stored line', () => {
+	assert.equal(redirects.format({source: '/old page', target: ' /new  page ', status: 301}), '/old%20page /new%20page 301');
+});
+
+test('blank lines are dropped and unreadable lines are kept verbatim', () => {
+	const parsed = read('\n/a /b 301\n\n/too many words in this line\r\n/c /d 302\n', redirects);
+
+	assert.equal(parsed.rows.length, 2);
+	assert.deepEqual(parsed.leftover, ['/too many words in this line']);
+	assert.equal(write(parsed.rows, parsed.leftover, redirects), '/a /b 301\n/c /d 302\n/too many words in this line');
+});
+
+test('redirect hints flag incomplete, self-pointing, and overridden rows', () => {
+	assert.deepEqual(
+		redirects.check([
+			{source: '/a', target: '/b', status: 301},
+			{source: '/c', target: '', status: 301},
+			{source: '/d', target: '/d', status: 301},
+			{source: '/a', target: '/z', status: 302},
+			{source: '', target: '', status: 301},
+		]),
+		['duplicate', 'incomplete', 'same', '', '']
+	);
+});
+
+test('hreflang mappings round-trip, including a retained legacy line', () => {
+	const stored = 'post:123 en-GB https://example.co.uk/page/\nterm:7 de-DE https://example.de/thema/\nuser:2 x-default https://example.com/author/\nfr-FR https://example.fr';
+	const parsed = read(stored, hreflang);
+
+	assert.deepEqual(parsed.leftover, []);
+	assert.deepEqual(parsed.rows, [
+		{type: 'post', id: 123, language: 'en-GB', url: 'https://example.co.uk/page/'},
+		{type: 'term', id: 7, language: 'de-DE', url: 'https://example.de/thema/'},
+		{type: 'user', id: 2, language: 'x-default', url: 'https://example.com/author/'},
+		{type: 'mirror', id: 0, language: 'fr-FR', url: 'https://example.fr'},
+	]);
+	assert.equal(write(parsed.rows, parsed.leftover, hreflang), stored);
+});
+
+test('an hreflang row without a page is never written as a legacy line', () => {
+	// "en-GB https://…" on its own means "every page" to the server, so a half-filled row must not produce it.
+	assert.equal(hreflang.format({type: 'post', id: 0, language: 'en-GB', url: 'https://example.co.uk/'}), '');
+	assert.equal(hreflang.format({type: '', id: 12, language: 'en-GB', url: 'https://example.co.uk/'}), '');
+	assert.equal(hreflang.format({type: 'post', id: 12, language: '', url: 'https://example.co.uk/'}), '');
+	assert.equal(hreflang.format({type: 'post', id: 12, language: 'en-GB', url: ''}), '');
+	assert.equal(hreflang.format({type: 'post', id: '12', language: 'en-GB', url: 'https://example.co.uk/'}), 'post:12 en-GB https://example.co.uk/');
+});
+
+test('hreflang lines in no known shape are kept as text', () => {
+	const parsed = read('page:12 en https://example.com/\npost:12 en https://example.com/ extra words', hreflang);
+
+	assert.deepEqual(parsed.rows, []);
+	assert.equal(parsed.leftover.length, 2);
+});
+
+test('hreflang hints flag incomplete rows and a repeated page and language', () => {
+	assert.deepEqual(
+		hreflang.check([
+			{type: 'post', id: 12, language: 'en-GB', url: 'https://example.co.uk/'},
+			{type: 'post', id: 12, language: 'EN-gb', url: 'https://example.co.uk/other/'},
+			{type: 'post', id: 0, language: 'fr', url: 'https://example.fr/'},
+			{type: 'post', id: 0, language: '', url: ''},
+			{type: 'mirror', id: 0, language: 'de', url: 'https://example.de'},
+		]),
+		['', 'duplicate', 'incomplete', '', '']
+	);
+});
+
+test('opening hours expand day ranges and compress them again', () => {
+	const stored = 'Mo-Fr 09:00-17:00\nSa 10:00-14:00';
+	const parsed = hours.parse(stored);
+
+	assert.deepEqual(parsed.leftover, []);
+	assert.deepEqual(parsed.days.Mo, [['09:00', '17:00']]);
+	assert.deepEqual(parsed.days.Fr, [['09:00', '17:00']]);
+	assert.deepEqual(parsed.days.Sa, [['10:00', '14:00']]);
+	assert.deepEqual(parsed.days.Su, []);
+	assert.equal(hours.format(parsed.days, parsed.leftover), stored);
+});
+
+test('split shifts keep one line per time range', () => {
+	const stored = 'Tu-Sa 12:00-14:30\nTu-Sa 18:00-22:00';
+	const parsed = hours.parse(stored);
+
+	assert.deepEqual(parsed.days.We, [['12:00', '14:30'], ['18:00', '22:00']]);
+	assert.deepEqual(parsed.days.Mo, []);
+	assert.equal(hours.format(parsed.days), stored);
+});
+
+test('a day range that runs over the weekend wraps around the week', () => {
+	const parsed = hours.parse('Fr-Mo 10:00-16:00');
+
+	assert.deepEqual(Object.keys(parsed.days).filter((day) => parsed.days[day].length), ['Mo', 'Fr', 'Sa', 'Su']);
+	// Written back in week order: Monday on its own, then Friday to Sunday.
+	assert.equal(hours.format(parsed.days), 'Mo 10:00-16:00\nFr-Su 10:00-16:00');
+});
+
+test('changing one day splits it from its neighbours', () => {
+	const parsed = hours.parse('Mo-Fr 09:00-17:00');
+
+	parsed.days.We = [['09:00', '13:00']];
+
+	assert.equal(hours.format(parsed.days), 'Mo-Tu 09:00-17:00\nWe 09:00-13:00\nTh-Fr 09:00-17:00');
+});
+
+test('half-entered hours are not written and unreadable lines are kept', () => {
+	const parsed = hours.parse('Mo 09:00-17:00\nweekdays nine to five\nTu 9:00-17:00');
+
+	assert.deepEqual(parsed.leftover, ['weekdays nine to five', 'Tu 9:00-17:00']);
+
+	parsed.days.Tu = [['09:00', '']];
+
+	assert.equal(hours.format(parsed.days, parsed.leftover), 'Mo 09:00-17:00\nweekdays nine to five\nTu 9:00-17:00');
+});
+
+test('every line the validator accepts is read as hours', () => {
+	// Mirrors the pattern in Lightweight_SEO_Settings::normalize_local_business_input().
+	const accepted = ['Mo 00:00-23:59', 'Su-Sa 08:30-20:15', 'Th-Th 19:00-02:00'];
+
+	accepted.forEach((line) => {
+		assert.deepEqual(hours.parse(line).leftover, [], line);
+	});
+});
+
+test('page IDs are read from any separator and written comma-separated', () => {
+	assert.deepEqual(ids.parse('12, 40 7;7,0,abc 12'), [12, 40, 7]);
+	assert.deepEqual(ids.parse(''), []);
+	assert.equal(ids.format([12, 40, 7]), '12,40,7');
+	assert.equal(ids.format(['5', 5, 0, 9]), '5,9');
+});

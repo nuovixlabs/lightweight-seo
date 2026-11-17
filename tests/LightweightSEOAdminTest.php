@@ -34,9 +34,11 @@ final class LightweightSEOAdminTest extends TestCase {
 		global $lightweight_seo_test_post_meta;
 		global $lightweight_seo_test_registered_settings;
 		global $lightweight_seo_test_screen;
+		global $lightweight_seo_test_user_meta;
 		global $wp_settings_fields;
 		global $wp_settings_sections;
 
+		$lightweight_seo_test_user_meta           = array();
 		$lightweight_seo_test_hook_callbacks      = array();
 		$lightweight_seo_test_menu_pages          = array();
 		$lightweight_seo_test_post_meta           = array();
@@ -67,6 +69,22 @@ final class LightweightSEOAdminTest extends TestCase {
 		return new class() {
 			public function get_supported_post_types() {
 				return array( 'post', 'page' );
+			}
+
+			public function get_all( $post_id ) {
+				global $lightweight_seo_test_post_meta;
+
+				$values = array();
+
+				foreach ( (array) ( $lightweight_seo_test_post_meta[ $post_id ] ?? array() ) as $meta_key => $value ) {
+					$values[ str_replace( array( '_lightweight_seo_social_', '_lightweight_seo_' ), array( 'social_', 'seo_' ), $meta_key ) ] = $value;
+				}
+
+				return $values;
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return (string) ( $this->get_all( $post_id )['social_image'] ?? '' );
 			}
 		};
 	}
@@ -398,12 +416,8 @@ final class LightweightSEOAdminTest extends TestCase {
 	public function test_display_plugin_admin_page_renders_settings_errors(): void {
 		global $lightweight_seo_test_rendered_settings_errors;
 
-		$settings = new class() {
-			public function get_all() {
-				return array();
-			}
-		};
-		$page     = new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) );
+		$settings = new Lightweight_SEO_Settings();
+		$page     = new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() );
 
 		ob_start();
 		$page->display_plugin_admin_page();
@@ -412,7 +426,9 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'settings-errors', $output );
 		$this->assertStringContainsString( 'Essential setup', $output );
 		$this->assertStringContainsString( 'Search appearance', $output );
-		$this->assertStringContainsString( 'Developer API', $output );
+		$this->assertStringContainsString( 'tab=tools">Tools</a>', $output );
+		// The developer reference lives on the Tools tab, not in the tab bar.
+		$this->assertStringNotContainsString( 'Developer API', $output );
 		$this->assertSame( array( LIGHTWEIGHT_SEO_OPTION_NAME ), $lightweight_seo_test_rendered_settings_errors );
 	}
 
@@ -603,7 +619,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$_GET['tab'] = 'tools';
 
 		ob_start();
-		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
 		$output = ob_get_clean();
 
 		// The tool forms follow the settings form; they are never nested inside it.
@@ -639,7 +655,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$_GET['tab'] = 'appearance';
 
 		ob_start();
-		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'lightweight_seo_settings[title_format]', $output );
@@ -656,7 +672,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$_GET['tab'] = 'modules';
 
 		ob_start();
-		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( '<details class="lwseo-card" id="lwseo-module-redirects" open>', $output );
@@ -675,13 +691,13 @@ final class LightweightSEOAdminTest extends TestCase {
 		$_GET['tab'] = 'appearance';
 
 		ob_start();
-		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
 		$appearance = ob_get_clean();
 
 		$_GET['tab'] = 'indexation';
 
 		ob_start();
-		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
 		$indexation = ob_get_clean();
 
 		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_title_format">', $appearance );
@@ -694,7 +710,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		global $lightweight_seo_test_settings_errors;
 
 		$settings = new Lightweight_SEO_Settings();
-		$page     = new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) );
+		$page     = new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() );
 
 		$_GET['settings-updated'] = 'true';
 
@@ -725,6 +741,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				array( 'Lightweight_SEO_Admin_Notices', 'maybe_render_upgrade_summary' ),
 			),
 			'admin_post_lightweight_seo_dismiss_upgrade_summary' => array( array( 'Lightweight_SEO_Admin_Notices', 'dismiss_upgrade_summary' ) ),
+			'admin_post_lightweight_seo_setup_checklist' => array( array( 'Lightweight_SEO_Admin_Page', 'handle_setup_checklist' ) ),
 			'admin_post_lightweight_seo_export_legacy_keywords' => array( array( 'Lightweight_SEO_Admin_Tools', 'export_legacy_keywords' ) ),
 			'admin_post_lightweight_seo_import_preview'  => array( array( 'Lightweight_SEO_Admin_Tools', 'handle_import_preview' ) ),
 			'admin_post_lightweight_seo_import_batch'    => array( array( 'Lightweight_SEO_Admin_Tools', 'handle_import_batch' ) ),
@@ -750,6 +767,477 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 'manage_options', $lightweight_seo_test_menu_pages['lightweight-seo']['capability'] );
 		$this->assertInstanceOf( Lightweight_SEO_Admin_Page::class, $lightweight_seo_test_menu_pages['lightweight-seo']['callback'][0] );
 		$this->assertSame( 'display_plugin_admin_page', $lightweight_seo_test_menu_pages['lightweight-seo']['callback'][1] );
+	}
+
+	private function render_tab( $tab, $settings = null ) {
+		$settings = $settings ? $settings : new Lightweight_SEO_Settings();
+
+		$this->get_admin_settings( $settings )->register_settings();
+		$_GET = array( 'tab' => $tab );
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+
+		return ob_get_clean();
+	}
+
+	public function test_tracking_exclusions_are_tick_boxes_that_keep_the_stored_format(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'tracking_excluded_roles'        => "administrator\neditor",
+			'tracking_excluded_environments' => "local\nstaging",
+		);
+
+		$output = $this->render_tab( 'modules' );
+
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[tracking_excluded_roles][]" value="editor" checked="checked">', $output );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[tracking_excluded_roles][]" value="subscriber">', $output );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[tracking_excluded_environments][]" value="staging" checked="checked">', $output );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[tracking_excluded_environments][]" value="production">', $output );
+		// Several boxes form a named group instead of pretending to be one labelled control.
+		$this->assertStringContainsString( 'role="group" aria-labelledby="lwseo-label-tracking_excluded_roles"', $output );
+
+		$admin_settings = $this->get_admin_settings( new Lightweight_SEO_Settings() );
+		$validated      = $admin_settings->validate_settings(
+			array(
+				'settings_tab'                   => 'modules',
+				'tracking_excluded_roles'        => array( '', 'editor', 'subscriber' ),
+				'tracking_excluded_environments' => array( '', 'production', 'unknown' ),
+			)
+		);
+
+		$this->assertSame( "editor\nsubscriber", $validated['tracking_excluded_roles'] );
+		$this->assertSame( 'production', $validated['tracking_excluded_environments'] );
+
+		// The empty first entry is all that arrives when every box is cleared, and it clears the list.
+		$cleared = $admin_settings->validate_settings(
+			array(
+				'settings_tab'                   => 'modules',
+				'tracking_excluded_roles'        => array( '' ),
+				'tracking_excluded_environments' => array( '' ),
+			)
+		);
+
+		$this->assertSame( '', $cleared['tracking_excluded_roles'] );
+		$this->assertSame( '', $cleared['tracking_excluded_environments'] );
+
+		// Saving another tab leaves both lists alone.
+		$other_tab = $admin_settings->validate_settings( array( 'settings_tab' => 'appearance' ) );
+
+		$this->assertSame( "administrator\neditor", $other_tab['tracking_excluded_roles'] );
+		$this->assertSame( "local\nstaging", $other_tab['tracking_excluded_environments'] );
+	}
+
+	public function test_business_image_uses_the_media_picker_without_an_attachment_id(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'local_business_image' => 'https://example.com/shop.jpg' );
+
+		$output = $this->render_tab( 'modules' );
+
+		$this->assertStringContainsString( '<label class="lwseo-subfield__label" for="lightweight_seo_local_business_image">', $output );
+		$this->assertStringContainsString( 'id="lightweight_seo_local_business_image" name="lightweight_seo_settings[local_business_image]" value="https://example.com/shop.jpg" class="lwseo-image__url">', $output );
+		$this->assertStringContainsString( 'lwseo-image__choose', $output );
+		$this->assertStringNotContainsString( 'lwseo-image__id', $output );
+	}
+
+	public function test_a_module_that_is_off_shows_only_what_turns_it_on(): void {
+		global $lightweight_seo_test_options;
+
+		$off = $this->render_tab( 'modules' );
+
+		$this->assertStringContainsString( 'lightweight_seo_settings[redirect_rules]', $off );
+		$this->assertStringContainsString( 'lightweight_seo_settings[enable_ai_discovery]', $off );
+
+		foreach ( array( 'lwseo-label-generated_redirect_rules', 'lwseo-label-redirect_export', 'lwseo-label-redirect_health', 'lwseo-label-ai_readiness', 'The Redirects module is disabled.', 'Enable and save the module to run readiness checks.' ) as $absent ) {
+			$this->assertStringNotContainsString( $absent, $off );
+		}
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'redirects' => true );
+
+		$on = $this->render_tab( 'modules' );
+
+		foreach ( array( 'lwseo-label-generated_redirect_rules', 'lwseo-label-redirect_export', 'lwseo-label-redirect_health' ) as $present ) {
+			$this->assertStringContainsString( $present, $on );
+		}
+	}
+
+	public function test_legacy_path_mirroring_is_offered_only_to_sites_that_still_use_it(): void {
+		global $lightweight_seo_test_options;
+
+		$this->assertStringNotContainsString( 'enable_hreflang_path_mirroring', $this->render_tab( 'modules' ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'hreflang_mappings' => "post:12 en-GB https://example.co.uk/page/\nde-DE https://example.de" );
+
+		$this->assertStringContainsString( 'lightweight_seo_settings[enable_hreflang_path_mirroring]', $this->render_tab( 'modules' ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'enable_hreflang_path_mirroring' => '1' );
+
+		$this->assertStringContainsString( 'lightweight_seo_settings[enable_hreflang_path_mirroring]', $this->render_tab( 'modules' ) );
+	}
+
+	public function test_tools_tab_hides_legacy_data_until_there_is_some_and_holds_the_developer_reference(): void {
+		global $lightweight_seo_test_options;
+
+		$clean = $this->render_tab( 'tools' );
+
+		$this->assertStringNotContainsString( 'Legacy data', $clean );
+		$this->assertStringNotContainsString( 'No legacy', $clean );
+		$this->assertStringContainsString( 'lightweight_seo_settings[delete_data_on_uninstall]', $clean );
+		$this->assertStringContainsString( '<details class="lwseo-card" id="lwseo-developer-api">', $clean );
+		$this->assertStringContainsString( 'lightweight_seo_get_api()', $clean );
+		// The reference sits inside the form, above the save bar, and adds no field to it.
+		$this->assertLessThan( strpos( $clean, 'lwseo-actions' ), strpos( $clean, 'lwseo-developer-api' ) );
+
+		$lightweight_seo_test_options['lightweight_seo_404_logs'] = array( '/missing' );
+
+		$this->assertStringContainsString( 'Legacy data', $this->render_tab( 'tools' ) );
+
+		// A link to the old Developer API tab lands on Tools with the card open.
+		$alias = $this->render_tab( 'developer' );
+
+		$this->assertStringContainsString( '<details class="lwseo-card" id="lwseo-developer-api" open>', $alias );
+		$this->assertMatchesRegularExpression( '/class="lwseo-tabs__tab is-active" aria-current="page" href="[^"]*tab=tools"/', $alias );
+	}
+
+	public function test_structured_editors_sit_beside_the_fields_that_are_still_saved(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_posts[12]            = (object) array(
+			'ID'            => 12,
+			'post_status'   => 'publish',
+			'post_password' => '',
+		);
+		$lightweight_seo_test_posts[13]            = (object) array(
+			'ID'            => 13,
+			'post_status'   => 'draft',
+			'post_password' => '',
+		);
+		$previous_title                            = $lightweight_seo_test_query_state['title'];
+		$lightweight_seo_test_query_state['title'] = 'A "quoted" <b>title</b>';
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'redirects' => true );
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]         = array(
+			'redirect_rules'               => "/old /new 301\n/moved /here 302",
+			'hreflang_mappings'            => "post:12 en-GB https://example.co.uk/page/\nfr-FR https://example.fr",
+			'local_business_opening_hours' => "Mo-Fr 09:00-17:00\nSa 10:00-14:00",
+			'llms_txt_post_ids'            => '12,13,99',
+		);
+
+		$output = $this->render_tab( 'modules' );
+
+		$lightweight_seo_test_query_state['title'] = $previous_title;
+
+		// Every stored field is still printed, with the name that saves it, so nothing depends on the script.
+		$this->assertStringContainsString( '<textarea id="lightweight_seo_redirect_rules" name="lightweight_seo_settings[redirect_rules]"', $output );
+		$this->assertStringContainsString( "/old /new 301\n/moved /here 302</textarea>", $output );
+		$this->assertStringContainsString( '<textarea id="lightweight_seo_hreflang_mappings" name="lightweight_seo_settings[hreflang_mappings]"', $output );
+		$this->assertStringContainsString( '<textarea id="lightweight_seo_local_business_opening_hours" name="lightweight_seo_settings[local_business_opening_hours]"', $output );
+		$this->assertStringContainsString( '<input type="text" id="lightweight_seo_llms_txt_post_ids" name="lightweight_seo_settings[llms_txt_post_ids]" value="12,13,99"', $output );
+
+		// The editors start hidden and point at those fields.
+		$this->assertStringContainsString( '<div class="lwseo-rows lwseo-rows--redirects" data-format="redirects" data-field="lightweight_seo_redirect_rules" data-limit="500"', $output );
+		$this->assertStringContainsString( '<div class="lwseo-rows lwseo-rows--hreflang" data-format="hreflang" data-field="lightweight_seo_hreflang_mappings" data-limit="500"', $output );
+		$this->assertStringContainsString( '<div class="lwseo-hours" data-field="lightweight_seo_local_business_opening_hours"', $output );
+		$this->assertStringContainsString( '<div class="lwseo-picker" data-field="lightweight_seo_llms_txt_post_ids" data-limit="50"', $output );
+		$this->assertSame( 4, preg_match_all( '/<div class="lwseo-(?:rows[^"]*|hours|picker)" [^>]* hidden>/', $output ) );
+
+		// Each field keeps an accessible name now that its row is a group.
+		foreach ( array( 'redirect_rules', 'hreflang_mappings', 'llms_txt_post_ids' ) as $field ) {
+			$this->assertStringContainsString( 'role="group" aria-labelledby="lwseo-label-' . $field . '"', $output );
+			$this->assertMatchesRegularExpression( '/id="lightweight_seo_' . $field . '"[^>]* aria-labelledby="lwseo-label-' . $field . '"/', $output );
+		}
+
+		// Row controls carry no name, so only the stored field is ever submitted.
+		preg_match_all( '/<template>(.*?)<\/template>/s', $output, $templates );
+
+		$this->assertCount( 3, $templates[1] );
+
+		foreach ( $templates[1] as $template ) {
+			$this->assertStringNotContainsString( ' name="', $template );
+		}
+
+		$this->assertStringContainsString( '<input type="text" data-field="source" aria-label="From"', $output );
+		$this->assertStringContainsString( '<select data-field="status" aria-label="Type">', $output );
+		$this->assertStringContainsString( '<input type="hidden" data-field="type" value="post">', $output );
+		$this->assertStringContainsString( 'data-field="language" aria-label="Language" placeholder="en-GB" list="lwseo-hreflang-languages"', $output );
+		$this->assertStringContainsString( '<datalist id="lwseo-hreflang-languages">', $output );
+		$this->assertSame( 7, substr_count( $output, 'class="lwseo-hours__day"' ) );
+		$this->assertMatchesRegularExpression( '/data-day="Mo" role="group" aria-label="Monday">.*data-day="Su" role="group" aria-label="Sunday">/s', $output );
+
+		// Stored pages are named for the script, as escaped text. A legacy line has no page to name.
+		$this->assertStringContainsString( 'data-labels="{&quot;post:12&quot;:&quot;A \\&quot;quoted\\&quot; title&quot;}"', $output );
+		$this->assertStringContainsString( '&quot;12&quot;:{&quot;title&quot;:&quot;A \\&quot;quoted\\&quot; title&quot;,&quot;note&quot;:&quot;&quot;}', $output );
+		$this->assertStringContainsString( '&quot;13&quot;:{&quot;title&quot;:&quot;A \\&quot;quoted\\&quot; title&quot;,&quot;note&quot;:&quot;Not public, so it is left out&quot;}', $output );
+		$this->assertStringContainsString( '&quot;99&quot;:{&quot;title&quot;:&quot;&quot;,&quot;note&quot;:&quot;No longer exists&quot;}', $output );
+		$this->assertStringNotContainsString( '<b>title</b>', $output );
+	}
+
+	public function test_a_modules_save_says_when_lines_were_left_out(): void {
+		global $lightweight_seo_test_settings_errors;
+
+		$admin_settings = $this->get_admin_settings( new Lightweight_SEO_Settings() );
+		$validated      = $admin_settings->validate_settings(
+			array(
+				'settings_tab'      => 'modules',
+				'redirect_rules'    => "/a /b 301\n/only-a-source\n/a /c 302\n\n/d /e",
+				'hreflang_mappings' => "post:12 en-GB https://example.co.uk/a/\nthis is not a mapping",
+			)
+		);
+
+		// The later rule for /a wins, and the line without a destination is dropped.
+		$this->assertSame( "/a /c 302\n/d /e 301", $validated['redirect_rules'] );
+		$this->assertSame( 'post:12 en-GB https://example.co.uk/a/', $validated['hreflang_mappings'] );
+
+		$messages = array_column( $lightweight_seo_test_settings_errors, 'message', 'code' );
+
+		$this->assertStringContainsString( 'Settings saved. 2 redirect rules were left out', $messages['redirect_rules_dropped'] );
+		$this->assertStringContainsString( 'Settings saved. 1 translation was left out', $messages['hreflang_mappings_dropped'] );
+		$this->assertSame( array( 'warning', 'warning' ), array_column( $lightweight_seo_test_settings_errors, 'type' ) );
+
+		// Nothing is said when every line was kept, or when another screen saved.
+		$lightweight_seo_test_settings_errors = array();
+
+		$admin_settings->validate_settings(
+			array(
+				'settings_tab'      => 'modules',
+				'redirect_rules'    => "/a /b 301\n/d /e 302",
+				'hreflang_mappings' => 'post:12 en-GB https://example.co.uk/a/',
+			)
+		);
+		$admin_settings->validate_settings(
+			array(
+				'settings_tab'   => 'appearance',
+				'redirect_rules' => '/only-a-source',
+			)
+		);
+
+		$this->assertSame( array(), $lightweight_seo_test_settings_errors );
+	}
+
+	public function test_format_script_loads_on_the_settings_screen_only(): void {
+		global $lightweight_seo_test_enqueued_scripts;
+		global $lightweight_seo_test_localized_scripts;
+		global $lightweight_seo_test_screen;
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', new Lightweight_SEO_Settings(), $this->get_post_meta() );
+
+		$lightweight_seo_test_enqueued_scripts  = array();
+		$lightweight_seo_test_localized_scripts = array();
+		$lightweight_seo_test_screen            = (object) array(
+			'base'      => 'toplevel_page_lightweight-seo',
+			'post_type' => '',
+		);
+
+		$admin->enqueue_admin_scripts( 'toplevel_page_lightweight-seo' );
+
+		$this->assertSame( array(), $lightweight_seo_test_enqueued_scripts['lightweight-seo-formats'] );
+		$this->assertSame( array( 'jquery', 'lightweight-seo-formats' ), $lightweight_seo_test_enqueued_scripts['lightweight-seo-admin-script'] );
+		$this->assertSame( 'https://example.com/wp-json/', $lightweight_seo_test_localized_scripts['lightweight-seo-admin-script']['restUrl'] );
+		$this->assertSame( 'nonce-wp_rest', $lightweight_seo_test_localized_scripts['lightweight-seo-admin-script']['restNonce'] );
+
+		// The editor panel needs none of the setting formats.
+		$lightweight_seo_test_enqueued_scripts = array();
+		$lightweight_seo_test_screen           = (object) array(
+			'base'      => 'post',
+			'post_type' => 'post',
+		);
+
+		$admin->enqueue_admin_scripts( 'post.php' );
+
+		$lightweight_seo_test_screen = null;
+
+		$this->assertArrayNotHasKey( 'lightweight-seo-formats', $lightweight_seo_test_enqueued_scripts );
+		$this->assertSame( array( 'jquery' ), $lightweight_seo_test_enqueued_scripts['lightweight-seo-admin-script'] );
+	}
+
+	public function test_settings_forms_carry_an_unsaved_changes_status(): void {
+		$this->assertStringContainsString( '<span class="lwseo-actions__status" role="status" data-unsaved="Unsaved changes"></span>', $this->render_tab( 'appearance' ) );
+		$this->assertStringNotContainsString( 'lwseo-actions__status', $this->render_overview( new Lightweight_SEO_Settings() ) );
+	}
+
+	private function render_overview( $settings ) {
+		$_GET = array();
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+
+		return ob_get_clean();
+	}
+
+	public function test_setup_checklist_counts_only_steps_that_are_really_done(): void {
+		global $lightweight_seo_test_options;
+
+		$fresh = $this->render_overview( new Lightweight_SEO_Settings() );
+
+		// The test site has a name and tagline; nothing else is set on a fresh install.
+		$this->assertStringContainsString( '1 of 3 ready', $fresh );
+		$this->assertStringContainsString( 'Write a homepage description', $fresh );
+		$this->assertStringContainsString( 'Select a default social image', $fresh );
+		$this->assertStringNotContainsString( 'Verify generated output', $fresh );
+		// Optional steps are offered as neutral facts and never counted.
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-info">.*?Review optional modules.*?Optional/s', $fresh );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'meta_description' => 'A short description of the homepage.',
+			'social_image'     => 'https://example.com/share.jpg',
+		);
+
+		$configured = $this->render_overview( new Lightweight_SEO_Settings() );
+
+		$this->assertStringContainsString( '3 of 3 ready', $configured );
+		$this->assertStringContainsString( 'The essentials are set', $configured );
+		$this->assertStringNotContainsString( 'Write a homepage description', $configured );
+		$this->assertStringContainsString( 'Review optional modules', $configured );
+	}
+
+	public function test_setup_checklist_accepts_a_description_written_on_the_static_front_page(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_posts[12]                                     = (object) array(
+			'ID'           => 12,
+			'post_excerpt' => '',
+			'post_content' => '',
+			'permalink'    => 'https://example.com/',
+		);
+		$lightweight_seo_test_options['show_on_front']                      = 'page';
+		$lightweight_seo_test_options['page_on_front']                      = 12;
+		$lightweight_seo_test_post_meta[12]['_lightweight_seo_description'] = 'Written on the front page itself.';
+
+		$this->assertStringContainsString( '2 of 3 ready', $this->render_overview( new Lightweight_SEO_Settings() ) );
+	}
+
+	public function test_overview_previews_a_posts_homepage_from_the_homepage_defaults(): void {
+		global $lightweight_seo_test_options;
+
+		$empty = $this->render_overview( new Lightweight_SEO_Settings() );
+
+		$this->assertStringContainsString( 'Your homepage', $empty );
+		$this->assertStringContainsString( '<p class="lwseo-preview__title" data-preview="title">Test Site – Test Tagline</p>', $empty );
+		$this->assertStringContainsString( 'No description is set, so search engines will pick text from the page.', $empty );
+		$this->assertMatchesRegularExpression( '/<div class="lwseo-preview__media">\s*<\/div>/', $empty );
+		$this->assertStringContainsString( 'tab=appearance">Edit homepage defaults</a>', $empty );
+		// The homepage preview comes first, so the screen opens with the site rather than a status list.
+		$this->assertLessThan( strpos( $empty, 'Essential setup' ), strpos( $empty, 'Your homepage' ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'home_title_format' => '%sitename% | Photography',
+			'meta_description'  => 'Portraits and weddings in <em>Leeds</em>.',
+			'social_image'      => 'https://example.com/share.jpg',
+		);
+
+		$configured = $this->render_overview( new Lightweight_SEO_Settings() );
+
+		$this->assertStringContainsString( 'data-preview="title">Test Site | Photography</p>', $configured );
+		$this->assertStringContainsString( 'data-preview="description">Portraits and weddings in Leeds.</p>', $configured );
+		$this->assertStringContainsString( 'data-preview="social-title">Test Site | Photography</p>', $configured );
+		$this->assertStringContainsString( '<img src="https://example.com/share.jpg" alt="">', $configured );
+		// A static preview is not a live region.
+		$this->assertStringNotContainsString( 'aria-live', $configured );
+	}
+
+	public function test_overview_previews_a_static_front_page_from_its_own_seo_fields(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_posts[12]                = (object) array(
+			'ID'            => 12,
+			'post_excerpt'  => '',
+			'post_content'  => '<p>Welcome to the studio.</p>',
+			'permalink'     => 'https://example.com/',
+			'thumbnail_id'  => 40,
+			'thumbnail_url' => 'https://example.com/featured.jpg',
+		);
+		$previous_title                                = $lightweight_seo_test_query_state['title'];
+		$lightweight_seo_test_query_state['title']     = 'Home';
+		$lightweight_seo_test_options['show_on_front'] = 'page';
+		$lightweight_seo_test_options['page_on_front'] = 12;
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'meta_description' => 'The homepage default.',
+			'social_image'     => 'https://example.com/default.jpg',
+		);
+
+		$defaults = $this->render_overview( new Lightweight_SEO_Settings() );
+
+		$lightweight_seo_test_post_meta[12] = array(
+			'_lightweight_seo_title'        => '%title% %sep% Studio',
+			'_lightweight_seo_description'  => 'Written on the front page.',
+			'_lightweight_seo_social_title' => 'Share me',
+			'_lightweight_seo_social_image' => 'https://example.com/own.jpg',
+		);
+
+		$own = $this->render_overview( new Lightweight_SEO_Settings() );
+
+		$lightweight_seo_test_query_state['title'] = $previous_title;
+
+		// Without its own fields the page follows the homepage format, the homepage default, then its featured image.
+		$this->assertStringContainsString( 'data-preview="title">Test Site – Test Tagline</p>', $defaults );
+		$this->assertStringContainsString( 'data-preview="description">The homepage default.</p>', $defaults );
+		$this->assertStringContainsString( '<img src="https://example.com/featured.jpg" alt="">', $defaults );
+		$this->assertStringContainsString( 'post=12&amp;action=edit">Edit front page</a>', $defaults );
+
+		$this->assertStringContainsString( 'data-preview="title">Home – Studio</p>', $own );
+		$this->assertStringContainsString( 'data-preview="description">Written on the front page.</p>', $own );
+		$this->assertStringContainsString( 'data-preview="social-title">Share me</p>', $own );
+		$this->assertStringContainsString( 'data-preview="social-description">Written on the front page.</p>', $own );
+		$this->assertStringContainsString( '<img src="https://example.com/own.jpg" alt="">', $own );
+	}
+
+	public function test_setup_checklist_is_dismissed_and_restored_per_user(): void {
+		global $lightweight_seo_test_nonce_is_valid;
+		global $lightweight_seo_test_user_meta;
+
+		$settings = new Lightweight_SEO_Settings();
+		$page     = new class( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) extends Lightweight_SEO_Admin_Page {
+			public $redirects = array();
+
+			protected function redirect( $url ) {
+				$this->redirects[] = $url;
+
+				return false;
+			}
+		};
+
+		$this->assertStringContainsString( 'admin-post.php?action=lightweight_seo_setup_checklist&amp;_wpnonce=nonce-lightweight_seo_setup_checklist', $this->render_overview( $settings ) );
+
+		$_GET = array( '_wpnonce' => 'nonce-lightweight_seo_setup_checklist' );
+		$page->handle_setup_checklist();
+
+		$this->assertSame( '1', $lightweight_seo_test_user_meta[1]['lightweight_seo_checklist_dismissed'] );
+		$this->assertSame( array( 'https://example.com/wp-admin/admin.php?page=lightweight-seo' ), $page->redirects );
+
+		$dismissed = $this->render_overview( $settings );
+
+		$this->assertStringNotContainsString( 'Essential setup', $dismissed );
+		$this->assertStringContainsString( 'Show setup checklist', $dismissed );
+		$this->assertStringContainsString( 'show=1', $dismissed );
+
+		$_GET = array(
+			'_wpnonce' => 'nonce-lightweight_seo_setup_checklist',
+			'show'     => '1',
+		);
+		$page->handle_setup_checklist();
+
+		$this->assertArrayNotHasKey( 'lightweight_seo_checklist_dismissed', $lightweight_seo_test_user_meta[1] );
+		$this->assertStringContainsString( 'Essential setup', $this->render_overview( $settings ) );
+
+		// A request without the action's own nonce changes nothing.
+		$lightweight_seo_test_nonce_is_valid = false;
+		$_GET                                = array( '_wpnonce' => 'nonce-lightweight_seo_setup_checklist' );
+
+		try {
+			$page->handle_setup_checklist();
+			$this->fail( 'A bad nonce should stop the request.' );
+		} catch ( Lightweight_SEO_Test_WP_Die_Exception $exception ) {
+			$this->assertArrayNotHasKey( 'lightweight_seo_checklist_dismissed', $lightweight_seo_test_user_meta[1] );
+		}
 	}
 
 	public function test_safe_mode_notice_is_limited_to_administrators_on_relevant_screens(): void {

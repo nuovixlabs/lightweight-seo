@@ -81,7 +81,7 @@ class Lightweight_SEO_Admin {
 		);
 		$notices        = new Lightweight_SEO_Admin_Notices( $plugin_name );
 		$tools          = new Lightweight_SEO_Admin_Tools( $plugin_name, $importer, $import_state );
-		$this->page     = new Lightweight_SEO_Admin_Page( $plugin_name, $settings, $tools_fields );
+		$this->page     = new Lightweight_SEO_Admin_Page( $plugin_name, $settings, $tools_fields, $post_meta );
 
 		// Add menu item
 		add_action( 'admin_menu', array( $this, 'add_plugin_admin_menu' ) );
@@ -96,6 +96,9 @@ class Lightweight_SEO_Admin {
 		add_action( 'admin_notices', array( $notices, 'maybe_render_safe_mode_notice' ) );
 		add_action( 'admin_notices', array( $notices, 'maybe_render_upgrade_summary' ) );
 		add_action( 'admin_post_lightweight_seo_dismiss_upgrade_summary', array( $notices, 'dismiss_upgrade_summary' ) );
+
+		// Hide or show the overview's setup checklist for the current user
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Page::CHECKLIST_ACTION, array( $this->page, 'handle_setup_checklist' ) );
 
 		// Handle Tools tab actions, each behind its own nonce
 		add_action( 'admin_post_lightweight_seo_export_legacy_keywords', array( $tools, 'export_legacy_keywords' ) );
@@ -119,7 +122,7 @@ class Lightweight_SEO_Admin {
 		}
 
 		add_menu_page(
-			__( 'Lightweight SEO Settings', 'lightweight-seo' ),
+			__( 'Lightweight SEO settings', 'lightweight-seo' ),
 			__( 'SEO', 'lightweight-seo' ),
 			'manage_options',
 			$this->plugin_name,
@@ -161,11 +164,26 @@ class Lightweight_SEO_Admin {
 		// Enqueue the WordPress media uploader
 		wp_enqueue_media();
 
+		$dependencies = array( 'jquery' );
+
+		// The settings screen shows some stored line formats as rows. The editor screens never need them.
+		if ( $is_plugin_page ) {
+			wp_enqueue_script(
+				$this->plugin_name . '-formats',
+				LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-formats.js',
+				array(),
+				$this->version,
+				true
+			);
+
+			$dependencies[] = $this->plugin_name . '-formats';
+		}
+
 		// Enqueue our admin script
 		wp_enqueue_script(
 			$this->plugin_name . '-admin-script',
 			LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-admin.js',
-			array( 'jquery' ),
+			$dependencies,
 			$this->version,
 			true
 		);
@@ -176,6 +194,9 @@ class Lightweight_SEO_Admin {
 			array(
 				'mediaTitle'  => __( 'Select or Upload Image', 'lightweight-seo' ),
 				'mediaButton' => __( 'Use this image', 'lightweight-seo' ),
+				// The page pickers search this site's own REST API from the administrator's browser.
+				'restUrl'     => esc_url_raw( rest_url() ),
+				'restNonce'   => wp_create_nonce( 'wp_rest' ),
 			)
 		);
 

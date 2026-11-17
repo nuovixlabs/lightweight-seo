@@ -17,6 +17,16 @@ if ( ! defined( 'WPINC' ) ) {
 class Lightweight_SEO_Admin_Page {
 
 	/**
+	 * The admin-post action that hides or shows the setup checklist.
+	 */
+	const CHECKLIST_ACTION = 'lightweight_seo_setup_checklist';
+
+	/**
+	 * The user meta key that remembers a dismissed setup checklist.
+	 */
+	const CHECKLIST_META_KEY = 'lightweight_seo_checklist_dismissed';
+
+	/**
 	 * The ID of this plugin.
 	 *
 	 * @since    1.1.0
@@ -44,17 +54,28 @@ class Lightweight_SEO_Admin_Page {
 	private $tools_fields;
 
 	/**
+	 * Shared post meta service, used to read the static front page's own SEO fields.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Post_Meta    $post_meta
+	 */
+	private $post_meta;
+
+	/**
 	 * Initialize the page.
 	 *
 	 * @since    1.1.0
 	 * @param    string                                $plugin_name     The name of this plugin.
 	 * @param    Lightweight_SEO_Settings              $settings        Shared settings service.
 	 * @param    Lightweight_SEO_Admin_Tools_Fields    $tools_fields    Tools tab renderer.
+	 * @param    Lightweight_SEO_Post_Meta             $post_meta       Shared post meta service.
 	 */
-	public function __construct( $plugin_name, $settings, $tools_fields ) {
+	public function __construct( $plugin_name, $settings, $tools_fields, $post_meta ) {
 		$this->plugin_name  = $plugin_name;
 		$this->settings     = $settings;
 		$this->tools_fields = $tools_fields;
+		$this->post_meta    = $post_meta;
 	}
 
 	/**
@@ -65,6 +86,13 @@ class Lightweight_SEO_Admin_Page {
 	public function display_plugin_admin_page() {
 		$tabs        = $this->get_admin_tabs();
 		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'overview'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab selection checked against an allowlist.
+
+		// The Developer API tab moved into Tools. Links to it still work and open that card.
+		$show_developer = 'developer' === $current_tab;
+
+		if ( $show_developer ) {
+			$current_tab = 'tools';
+		}
 
 		if ( ! isset( $tabs[ $current_tab ] ) ) {
 			$current_tab = 'overview';
@@ -94,12 +122,21 @@ class Lightweight_SEO_Admin_Page {
 			</nav>
 			<?php
 			if ( 'overview' === $current_tab ) {
-				$this->render_setup_checklist();
+				$checklist_dismissed = $this->is_checklist_dismissed();
+
+				$this->render_home_preview();
+
+				if ( ! $checklist_dismissed ) {
+					$this->render_setup_checklist();
+				}
+
 				$this->render_site_status();
-			} elseif ( 'developer' === $current_tab ) {
-				$this->render_developer_information();
+
+				if ( $checklist_dismissed ) {
+					echo '<p class="lwseo-help"><a href="' . esc_url( $this->get_checklist_url( true ) ) . '">' . esc_html__( 'Show setup checklist', 'lightweight-seo' ) . '</a></p>';
+				}
 			} else {
-				$this->render_settings_tab( $current_tab );
+				$this->render_settings_tab( $current_tab, $show_developer );
 			}
 			?>
 		</div>
@@ -114,8 +151,7 @@ class Lightweight_SEO_Admin_Page {
 			'indexation' => __( 'Content and indexation', 'lightweight-seo' ),
 			'identity'   => __( 'Schema and identity', 'lightweight-seo' ),
 			'modules'    => __( 'Modules', 'lightweight-seo' ),
-			'tools'      => __( 'Tools and migration', 'lightweight-seo' ),
-			'developer'  => __( 'Developer API', 'lightweight-seo' ),
+			'tools'      => __( 'Tools', 'lightweight-seo' ),
 		);
 	}
 
@@ -139,10 +175,32 @@ class Lightweight_SEO_Admin_Page {
 	 * (collapsible card with a status badge), badge, and plain (hide the field
 	 * label when the card title already says it).
 	 *
-	 * @return array
+	 * A module that is off shows only what turns it on. Its reports appear once it is in use.
+	 *
+	 * @param string $tab Tab ID.
+	 * @return array Cards of that tab.
 	 */
-	private function get_tab_cards() {
-		return array(
+	private function get_tab_cards( $tab ) {
+		$hreflang_fields  = array( 'enable_hreflang_output', 'hreflang_mappings' );
+		$redirects_fields = array( 'enable_auto_redirects', 'redirect_rules' );
+		$ai_fields        = array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids' );
+
+		if ( 'modules' === $tab ) {
+			// Path mirroring is a retained 1.0 behavior, offered only to sites that still hold its data.
+			if ( $this->settings->hreflang_path_mirroring_enabled() || $this->settings->has_legacy_hreflang_mirrors() ) {
+				$hreflang_fields[] = 'enable_hreflang_path_mirroring';
+			}
+
+			if ( $this->is_module_enabled( 'redirects' ) ) {
+				array_push( $redirects_fields, 'generated_redirect_rules', 'redirect_export', 'redirect_health' );
+			}
+
+			if ( $this->is_module_enabled( 'ai' ) ) {
+				$ai_fields[] = 'ai_readiness';
+			}
+		}
+
+		$cards = array(
 			'appearance' => array(
 				array(
 					'section'     => 'lightweight_seo_general_section',
@@ -189,13 +247,14 @@ class Lightweight_SEO_Admin_Page {
 				),
 				array(
 					'section'     => 'lightweight_seo_schema_section',
-					'fields'      => array( 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
+					'fields'      => $hreflang_fields,
 					'title'       => __( 'Hreflang', 'lightweight-seo' ),
 					'description' => __( 'Alternate-language links for translated or regional pages.', 'lightweight-seo' ),
 					'module'      => 'hreflang',
 				),
 				array(
 					'section'     => 'lightweight_seo_redirects_section',
+					'fields'      => $redirects_fields,
 					'description' => __( 'Exact redirect rules, plus automatic redirects when a published slug changes.', 'lightweight-seo' ),
 					'intro'       => true,
 					'module'      => 'redirects',
@@ -208,6 +267,7 @@ class Lightweight_SEO_Admin_Page {
 				),
 				array(
 					'section'     => 'lightweight_seo_ai_discovery_section',
+					'fields'      => $ai_fields,
 					'description' => __( 'Separate AI search access from model-training access, and publish a curated llms.txt.', 'lightweight-seo' ),
 					'intro'       => true,
 					'module'      => 'ai',
@@ -222,7 +282,7 @@ class Lightweight_SEO_Admin_Page {
 					'description' => __( 'Preview and import saved metadata from Yoast SEO, Rank Math, or All in One SEO, 50 posts at a time.', 'lightweight-seo' ),
 					'intro'       => true,
 				),
-				array(
+				'legacy' => array(
 					'section'     => 'lightweight_seo_migration_section',
 					'fields'      => array( 'legacy_data_transition' ),
 					'title'       => __( 'Legacy data', 'lightweight-seo' ),
@@ -238,6 +298,13 @@ class Lightweight_SEO_Admin_Page {
 				),
 			),
 		);
+
+		// A site that never used the retired features has nothing to export or delete.
+		if ( 'tools' === $tab && ! $this->tools_fields->has_legacy_data() ) {
+			unset( $cards['tools']['legacy'] );
+		}
+
+		return $cards[ $tab ] ?? array();
 	}
 
 	/** @return array Module IDs and their display names. */
@@ -258,25 +325,250 @@ class Lightweight_SEO_Admin_Page {
 		return ! empty( $states[ $module_id ] );
 	}
 
+	/**
+	 * Hide or show the setup checklist for the current user, then return to the overview.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function handle_setup_checklist() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to change this screen.', 'lightweight-seo' ) );
+		}
+
+		check_admin_referer( self::CHECKLIST_ACTION );
+
+		if ( empty( $_GET['show'] ) ) {
+			update_user_meta( get_current_user_id(), self::CHECKLIST_META_KEY, '1' );
+		} else {
+			delete_user_meta( get_current_user_id(), self::CHECKLIST_META_KEY );
+		}
+
+		if ( $this->redirect( admin_url( 'admin.php?page=' . $this->plugin_name ) ) ) {
+			exit;
+		}
+	}
+
+	/**
+	 * Send the redirect. Kept separate so the response can be observed without ending the process.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $url    Destination inside the administration area.
+	 * @return   bool Whether the redirect was sent.
+	 */
+	protected function redirect( $url ) {
+		return wp_safe_redirect( $url );
+	}
+
+	/** @return bool Whether the current user dismissed the setup checklist. */
+	private function is_checklist_dismissed() {
+		return '1' === (string) get_user_meta( get_current_user_id(), self::CHECKLIST_META_KEY, true );
+	}
+
+	/**
+	 * Build the link that hides or shows the setup checklist.
+	 *
+	 * @param bool $show Whether the link brings the checklist back.
+	 * @return string
+	 */
+	private function get_checklist_url( $show ) {
+		return wp_nonce_url( admin_url( 'admin-post.php?action=' . self::CHECKLIST_ACTION . ( $show ? '&show=1' : '' ) ), self::CHECKLIST_ACTION );
+	}
+
+	/**
+	 * Tell whether the homepage has a description of its own.
+	 *
+	 * A static front page can carry one in its SEO fields. Otherwise the homepage
+	 * description on the Search appearance tab is used.
+	 *
+	 * @param array $options Plugin settings.
+	 * @return bool
+	 */
+	private function home_has_description( $options ) {
+		if ( '' !== trim( (string) ( $options['meta_description'] ?? '' ) ) ) {
+			return true;
+		}
+
+		$front_page_id = $this->get_front_page_id();
+
+		if ( ! $front_page_id ) {
+			return false;
+		}
+
+		$post_meta = $this->post_meta->get_all( $front_page_id );
+
+		return '' !== trim( (string) ( $post_meta['seo_description'] ?? '' ) );
+	}
+
+	/** @return int ID of the static front page, or 0 when the homepage lists posts. */
+	private function get_front_page_id() {
+		$front_page_id = 'page' === get_option( 'show_on_front' ) ? absint( get_option( 'page_on_front', 0 ) ) : 0;
+
+		return $front_page_id && get_post( $front_page_id ) ? $front_page_id : 0;
+	}
+
+	/**
+	 * Resolve what the homepage shows in search results and when shared.
+	 *
+	 * Follows the same order as the frontend: a static front page's own SEO fields
+	 * first, then the homepage defaults from the Search appearance tab.
+	 *
+	 * @since    1.1.0
+	 * @return   array Preview values: url, title, description, image, edit_url, and edit_label.
+	 */
+	private function get_home_preview() {
+		$options     = $this->settings->get_all();
+		$tokens      = array(
+			'%title%'    => (string) get_bloginfo( 'name' ),
+			'%sitename%' => (string) get_bloginfo( 'name' ),
+			'%tagline%'  => (string) get_bloginfo( 'description' ),
+			'%sep%'      => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+		);
+		$title       = $this->settings->get_home_title_format();
+		$description = (string) ( $options['meta_description'] ?? '' );
+		$preview     = array(
+			'url'        => home_url( '/' ),
+			'image'      => (string) $this->settings->get_social_image_url(),
+			'edit_url'   => $this->get_tab_url( 'appearance' ),
+			'edit_label' => __( 'Edit homepage defaults', 'lightweight-seo' ),
+		);
+		$social      = array(
+			'title'       => '',
+			'description' => '',
+		);
+
+		$front_page_id = $this->get_front_page_id();
+
+		if ( $front_page_id ) {
+			$front_page        = get_post( $front_page_id );
+			$post_meta         = $this->post_meta->get_all( $front_page_id );
+			$tokens['%title%'] = (string) get_the_title( $front_page_id );
+
+			if ( ! empty( $post_meta['seo_title'] ) ) {
+				$title = $post_meta['seo_title'];
+			}
+
+			if ( ! empty( $post_meta['seo_description'] ) ) {
+				$description = $post_meta['seo_description'];
+			} elseif ( '' === $description ) {
+				$description = Lightweight_SEO_Text::summarize( Lightweight_SEO_Text::plain( ! empty( $front_page->post_excerpt ) ? $front_page->post_excerpt : ( $front_page->post_content ?? '' ) ) );
+			}
+
+			$own_image = (string) $this->post_meta->get_social_image_url( $front_page_id );
+
+			if ( '' !== $own_image ) {
+				$preview['image'] = $own_image;
+			} elseif ( has_post_thumbnail( $front_page_id ) ) {
+				$preview['image'] = (string) get_the_post_thumbnail_url( $front_page_id, 'full' );
+			}
+
+			$social                = array(
+				'title'       => (string) ( $post_meta['social_title'] ?? '' ),
+				'description' => (string) ( $post_meta['social_description'] ?? '' ),
+			);
+			$preview['url']        = (string) get_permalink( $front_page_id );
+			$preview['edit_url']   = (string) get_edit_post_link( $front_page_id );
+			$preview['edit_label'] = __( 'Edit front page', 'lightweight-seo' );
+		}
+
+		$preview['title']              = Lightweight_SEO_Text::plain( Lightweight_SEO_Text::resolve_tokens( $title, $tokens ) );
+		$preview['description']        = Lightweight_SEO_Text::plain( Lightweight_SEO_Text::resolve_tokens( $description, $tokens ) );
+		$preview['social_title']       = '' !== $social['title'] ? Lightweight_SEO_Text::plain( Lightweight_SEO_Text::resolve_tokens( $social['title'], $tokens ) ) : $preview['title'];
+		$preview['social_description'] = '' !== $social['description'] ? Lightweight_SEO_Text::plain( Lightweight_SEO_Text::resolve_tokens( $social['description'], $tokens ) ) : $preview['description'];
+
+		return $preview;
+	}
+
+	/** Render the homepage as it appears in search results and when shared. */
+	private function render_home_preview() {
+		$preview = $this->get_home_preview();
+		?>
+		<section class="lwseo-card" aria-labelledby="lightweight-seo-home-preview-title">
+			<div class="lwseo-card__header">
+				<div>
+					<h2 class="lwseo-card__title" id="lightweight-seo-home-preview-title"><?php esc_html_e( 'Your homepage', 'lightweight-seo' ); ?></h2>
+					<p class="lwseo-card__description"><?php esc_html_e( 'What your current settings send to search engines and social networks. Each service decides how it is finally shown.', 'lightweight-seo' ); ?></p>
+				</div>
+				<?php if ( '' !== $preview['edit_url'] ) : ?>
+					<div class="lwseo-card__meta">
+						<a href="<?php echo esc_url( $preview['edit_url'] ); ?>"><?php echo esc_html( $preview['edit_label'] ); ?></a>
+					</div>
+				<?php endif; ?>
+			</div>
+			<div class="lwseo-card__body lwseo-previews">
+				<div>
+					<p class="lwseo-preview__caption"><?php esc_html_e( 'Search result preview', 'lightweight-seo' ); ?></p>
+					<?php
+					Lightweight_SEO_Admin_UI::search_preview(
+						array(
+							'url'         => $preview['url'],
+							'title'       => $preview['title'],
+							'description' => $preview['description'],
+							'placeholder' => __( 'No description is set, so search engines will pick text from the page.', 'lightweight-seo' ),
+						)
+					);
+					?>
+				</div>
+				<div>
+					<p class="lwseo-preview__caption"><?php esc_html_e( 'Share preview', 'lightweight-seo' ); ?></p>
+					<?php
+					Lightweight_SEO_Admin_UI::share_preview(
+						array(
+							'image'       => $preview['image'],
+							'title'       => $preview['social_title'],
+							'description' => $preview['social_description'],
+						)
+					);
+					?>
+				</div>
+			</div>
+		</section>
+		<?php
+	}
+
 	/** Render the short, dismissible setup checklist. */
 	private function render_setup_checklist() {
-		$options = $this->settings->get_all();
-		// A null state marks a step only the site owner can judge, so it never counts against progress.
-		$items   = array(
-			array( ! empty( get_bloginfo( 'name' ) ), __( 'Confirm site identity', 'lightweight-seo' ), 'identity' ),
-			array( ! empty( $options['title_format'] ) && ! empty( $options['meta_description'] ), __( 'Choose title and description defaults', 'lightweight-seo' ), 'appearance' ),
-			array( isset( $options['noindex_search_results'] ), __( 'Review indexation defaults', 'lightweight-seo' ), 'indexation' ),
-			array( ! empty( $options['social_image'] ) || ! empty( $options['social_image_id'] ), __( 'Select a default social image', 'lightweight-seo' ), 'appearance' ),
-			array( null, __( 'Review optional modules', 'lightweight-seo' ), 'modules' ),
-			array( null, __( 'Verify generated output on one published page', 'lightweight-seo' ), '' ),
+		$options       = $this->settings->get_all();
+		$needs_tagline = false !== strpos( (string) ( $options['home_title_format'] ?? '%sitename% %sep% %tagline%' ), '%tagline%' );
+		$has_identity  = '' !== trim( (string) get_bloginfo( 'name' ) ) && ( ! $needs_tagline || '' !== trim( (string) get_bloginfo( 'description' ) ) );
+		$review        = __( 'Review', 'lightweight-seo' );
+		// Each step reports something that is true of the site right now, so it turns green only when it is done.
+		$tracked = array(
+			array(
+				$has_identity,
+				__( 'Set a site name and tagline', 'lightweight-seo' ),
+				$needs_tagline ? __( 'The homepage title format uses both.', 'lightweight-seo' ) : '',
+				array(
+					'label' => __( 'General settings', 'lightweight-seo' ),
+					'url'   => admin_url( 'options-general.php' ),
+				),
+			),
+			array(
+				$this->home_has_description( $options ),
+				__( 'Write a homepage description', 'lightweight-seo' ),
+				'',
+				array(
+					'label' => $review,
+					'url'   => $this->get_tab_url( 'appearance' ),
+				),
+			),
+			array(
+				! empty( $options['social_image'] ) || ! empty( $options['social_image_id'] ),
+				__( 'Select a default social image', 'lightweight-seo' ),
+				'',
+				array(
+					'label' => $review,
+					'url'   => $this->get_tab_url( 'appearance' ),
+				),
+			),
 		);
-		$tracked = array_filter(
-			array_column( $items, 0 ),
-			static function ( $state ) {
-				return null !== $state;
-			}
+		// Only the site owner can judge these, so they are offered, never counted.
+		$optional = array(
+			array( __( 'Review what search engines may index', 'lightweight-seo' ), 'indexation' ),
+			array( __( 'Review optional modules', 'lightweight-seo' ), 'modules' ),
 		);
-		$done    = count( array_filter( $tracked ) );
+		$done     = count( array_filter( array_column( $tracked, 0 ) ) );
+		$all_done = count( $tracked ) === $done;
 		?>
 		<section class="lwseo-card lwseo-setup" aria-labelledby="lightweight-seo-setup-title">
 			<div class="lwseo-card__header">
@@ -289,28 +581,33 @@ class Lightweight_SEO_Admin_Page {
 					Lightweight_SEO_Admin_UI::badge(
 						/* translators: 1: number of completed setup steps, 2: total number of tracked setup steps. */
 						sprintf( __( '%1$d of %2$d ready', 'lightweight-seo' ), $done, count( $tracked ) ),
-						count( $tracked ) === $done ? 'success' : ''
+						$all_done ? 'success' : ''
 					);
 					?>
-					<button type="button" class="button-link lwseo-setup__dismiss"><?php esc_html_e( 'Dismiss checklist', 'lightweight-seo' ); ?></button>
+					<a class="lwseo-setup__dismiss" href="<?php echo esc_url( $this->get_checklist_url( false ) ); ?>"><?php esc_html_e( 'Dismiss checklist', 'lightweight-seo' ); ?></a>
 				</div>
 			</div>
 			<div class="lwseo-card__body">
 				<ul class="lwseo-status-list">
 					<?php
-					foreach ( $items as $item ) {
-						$action = $item[2]
-							? array(
-								'label' => __( 'Review', 'lightweight-seo' ),
-								'url'   => $this->get_tab_url( $item[2] ),
-							)
-							: array(
-								'label'   => __( 'Open site', 'lightweight-seo' ),
-								'url'     => home_url( '/' ),
-								'new_tab' => true,
-							);
+					if ( $all_done ) {
+						Lightweight_SEO_Admin_UI::status( 'success', __( 'The essentials are set', 'lightweight-seo' ), __( 'Your site identity, homepage description, and default social image are in place.', 'lightweight-seo' ) );
+					} else {
+						foreach ( $tracked as $item ) {
+							Lightweight_SEO_Admin_UI::status( $item[0] ? 'success' : 'pending', $item[1], $item[0] ? '' : $item[2], $item[3] );
+						}
+					}
 
-						Lightweight_SEO_Admin_UI::status( $item[0] ? 'success' : 'pending', $item[1], '', $action );
+					foreach ( $optional as $item ) {
+						Lightweight_SEO_Admin_UI::status(
+							'info',
+							$item[0],
+							__( 'Optional', 'lightweight-seo' ),
+							array(
+								'label' => $review,
+								'url'   => $this->get_tab_url( $item[1] ),
+							)
+						);
 					}
 					?>
 				</ul>
@@ -392,19 +689,30 @@ class Lightweight_SEO_Admin_Page {
 		<?php
 	}
 
-	/** Render the cards of one settings tab inside the settings form. */
-	private function render_settings_tab( $tab ) {
-		$cards = $this->get_tab_cards();
+	/**
+	 * Render the cards of one settings tab inside the settings form.
+	 *
+	 * @param string $tab            Tab ID.
+	 * @param bool   $open_developer Whether the developer card on the Tools tab starts open.
+	 */
+	private function render_settings_tab( $tab, $open_developer = false ) {
 		?>
 		<form method="post" action="options.php" class="lwseo-form">
 			<?php settings_fields( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>
 			<input type="hidden" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[settings_tab]" value="<?php echo esc_attr( $tab ); ?>">
 			<?php
-			foreach ( $cards[ $tab ] ?? array() as $card ) {
+			foreach ( $this->get_tab_cards( $tab ) as $card ) {
 				$this->render_card( $card );
 			}
+
+			if ( 'tools' === $tab ) {
+				$this->render_developer_information( $open_developer );
+			}
 			?>
-			<div class="lwseo-actions"><?php submit_button( null, 'primary', 'submit', false ); ?></div>
+			<div class="lwseo-actions">
+				<?php submit_button( null, 'primary', 'submit', false ); ?>
+				<span class="lwseo-actions__status" role="status" data-unsaved="<?php echo esc_attr( __( 'Unsaved changes', 'lightweight-seo' ) ); ?>"></span>
+			</div>
 		</form>
 		<?php
 
@@ -512,8 +820,12 @@ class Lightweight_SEO_Admin_Page {
 		echo '</div></div>';
 	}
 
-	/** Render the stable public extension contract summary. */
-	private function render_developer_information() {
+	/**
+	 * Render the stable public extension contract summary as a card that starts collapsed.
+	 *
+	 * @param bool $open Whether the card starts open.
+	 */
+	private function render_developer_information( $open = false ) {
 		$rows = array(
 			__( 'Plugin version', 'lightweight-seo' ) => LIGHTWEIGHT_SEO_VERSION,
 			__( 'API version', 'lightweight-seo' )    => LIGHTWEIGHT_SEO_API_VERSION,
@@ -521,13 +833,16 @@ class Lightweight_SEO_Admin_Page {
 			__( 'Ready hook', 'lightweight-seo' )     => 'lightweight_seo_loaded',
 		);
 		?>
-		<section class="lwseo-card" aria-labelledby="lightweight-seo-developer-title">
-			<div class="lwseo-card__header">
+		<details class="lwseo-card" id="lwseo-developer-api"<?php echo $open ? ' open' : ''; ?>>
+			<summary class="lwseo-card__header">
 				<div>
 					<h2 class="lwseo-card__title" id="lightweight-seo-developer-title"><?php esc_html_e( 'Developer API', 'lightweight-seo' ); ?></h2>
 					<p class="lwseo-card__description"><?php esc_html_e( 'Extensions can read normalized SEO facts through the versioned facade without reading private settings or credentials.', 'lightweight-seo' ); ?></p>
 				</div>
-			</div>
+				<div class="lwseo-card__meta">
+					<span class="lwseo-card__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+				</div>
+			</summary>
 			<div class="lwseo-card__body">
 				<div class="lwseo-card__section lwseo-table-wrap">
 				<table class="lwseo-table">
@@ -539,7 +854,7 @@ class Lightweight_SEO_Admin_Page {
 				</table>
 				</div>
 			</div>
-		</section>
+		</details>
 		<?php
 	}
 }

@@ -57,6 +57,18 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Confirm visible focus, logical tab order, associated labels, and understandable validation errors.
 - Check desktop and narrow/mobile layouts.
 - Confirm the editor panel explains title, description, canonical, robots, and social-image issues without speculative scores.
+- In the block editor, change the post title, excerpt, content, and featured image; the previews, length meters, and checks must follow without a save. Clear the last warning and confirm the check count becomes a tick. Repeat the title and excerpt changes in the classic editor.
+- Save a post that has a featured image and no social image of its own; its social image field must stay empty and `og:image` must follow a later change of featured image.
+- Change a field on a settings tab and try to leave; the browser must ask first, and "Unsaved changes" must show beside Save. Saving must leave without a prompt.
+- On the overview, confirm the homepage preview matches the homepage's real title, description, and image, and that each setup step is green only when it is done. Dismiss the checklist, confirm it stays dismissed in another browser for the same user, and bring it back with "Show setup checklist".
+- Tick and clear every excluded role and environment, saving each time; an empty list must save as empty.
+- Open the Modules tab and change nothing; "Unsaved changes" must not appear.
+- Redirects: add, edit, and remove rows, then save and confirm a request to the old path redirects. Paste several rules through "Edit as text" and switch back to rows. Save a loop or a repeated path and confirm the notice says how many rules were left out.
+- Opening hours: set weekday hours with "Copy Monday to Tuesday–Friday", add a second time range to one day, leave one day closed, and save; the LocalBusiness schema must list the same hours.
+- `llms.txt`: search for pages, add and remove them, and save; `/llms.txt` must list the chosen pages.
+- Hreflang: add a translation by searching for a page, save, and confirm the `<link rel="alternate">` on that page. A retained legacy line must show as "Every page (legacy)" and survive a save.
+- With JavaScript disabled, each of those four settings must show its original text field and save from it.
+- Open `?page=lightweight-seo&tab=developer`; it must land on Tools with the Developer API card open.
 - Confirm no control promises ranking, crawling, citation, training, or inclusion.
 
 ## Migration

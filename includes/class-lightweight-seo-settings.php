@@ -525,6 +525,19 @@ class Lightweight_SEO_Settings {
 		return '1' === (string) $this->get( 'enable_hreflang_path_mirroring', '0' );
 	}
 
+	/** Tell whether any stored mapping is a retained legacy line that names no page of its own. */
+	public function has_legacy_hreflang_mirrors() {
+		foreach ( preg_split( "/\r\n|\n|\r/", (string) $this->get( 'hreflang_mappings', '' ) ) as $line ) {
+			$mapping = $this->parse_hreflang_mapping_line( $line );
+
+			if ( ! empty( $mapping ) && 'mirror' === $mapping['object_type'] ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	/** Parse one explicit `type:id language URL` line or a retained legacy mirror line. */
 	private function parse_hreflang_mapping_line( $line ) {
 		$parts = preg_split( '/\s+/', trim( (string) $line ) );

@@ -28,6 +28,11 @@ function lightweight_seo_delete_plugin_data() {
 		delete_option( $option_name );
 	}
 
+	// Screen preferences describe the plugin's own screens, so they never outlive it.
+	foreach ( Lightweight_SEO_Data_Registry::get_ephemeral_user_meta_keys() as $meta_key ) {
+		delete_metadata( 'user', 0, $meta_key, '', true );
+	}
+
 	if ( ! $delete_all ) {
 		if ( ! is_array( $settings ) ) {
 			return;

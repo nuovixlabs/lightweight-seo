@@ -53,7 +53,7 @@ class Lightweight_SEO_Admin_Settings {
 	private $module_fields;
 
 	/**
-	 * Renderer for the Tools and migration fields.
+	 * Renderer for the Tools tab fields.
 	 *
 	 * @since    1.1.0
 	 * @access   private
@@ -137,16 +137,16 @@ class Lightweight_SEO_Admin_Settings {
 				'fields'   => array(
 					'noindex_search_results'        => array( __( 'Search results pages', 'lightweight-seo' ), $core ),
 					'noindex_attachment_pages'      => array( __( 'Attachment pages', 'lightweight-seo' ), $core ),
-					'default_max_image_preview'     => array( __( 'Default max image preview', 'lightweight-seo' ), $core, true ),
-					'enable_media_x_robots_headers' => array( __( 'Media X-Robots headers', 'lightweight-seo' ), $core ),
+					'default_max_image_preview'     => array( __( 'Image preview size', 'lightweight-seo' ), $core, true ),
+					'enable_media_x_robots_headers' => array( __( 'Attachment page headers', 'lightweight-seo' ), $core ),
 				),
 			),
 			'lightweight_seo_sitemap_section'      => array(
 				'title'    => __( 'XML sitemaps', 'lightweight-seo' ),
 				'callback' => array( $core, 'sitemap_section_callback' ),
 				'fields'   => array(
-					'exclude_noindex_from_sitemaps'    => array( __( 'Exclude noindex content', 'lightweight-seo' ), $core ),
-					'exclude_redirected_from_sitemaps' => array( __( 'Exclude redirected URLs', 'lightweight-seo' ), $core ),
+					'exclude_noindex_from_sitemaps'    => array( __( 'Hidden pages', 'lightweight-seo' ), $core ),
+					'exclude_redirected_from_sitemaps' => array( __( 'Redirected pages', 'lightweight-seo' ), $core ),
 				),
 			),
 			'lightweight_seo_schema_section'       => array(
@@ -158,7 +158,7 @@ class Lightweight_SEO_Admin_Settings {
 					'enable_local_business_schema'   => array( __( 'Local business schema', 'lightweight-seo' ), $modules ),
 					'local_business_details'         => array( __( 'Business details', 'lightweight-seo' ), $modules ),
 					'enable_hreflang_output'         => array( __( 'Hreflang output', 'lightweight-seo' ), $modules ),
-					'hreflang_mappings'              => array( __( 'Hreflang mappings', 'lightweight-seo' ), $modules, true ),
+					'hreflang_mappings'              => array( __( 'Hreflang mappings', 'lightweight-seo' ), $modules ),
 					'enable_hreflang_path_mirroring' => array( __( 'Legacy path mirroring', 'lightweight-seo' ), $modules ),
 				),
 			),
@@ -167,7 +167,7 @@ class Lightweight_SEO_Admin_Settings {
 				'callback' => array( $modules, 'redirects_section_callback' ),
 				'fields'   => array(
 					'enable_auto_redirects'    => array( __( 'Automatic slug redirects', 'lightweight-seo' ), $modules ),
-					'redirect_rules'           => array( __( 'Manual redirect rules', 'lightweight-seo' ), $modules, true ),
+					'redirect_rules'           => array( __( 'Manual redirect rules', 'lightweight-seo' ), $modules ),
 					'generated_redirect_rules' => array( __( 'Generated redirects', 'lightweight-seo' ), $modules ),
 					'redirect_export'          => array( __( 'Redirect export', 'lightweight-seo' ), $modules ),
 					'redirect_health'          => array( __( 'Redirect health', 'lightweight-seo' ), $modules ),
@@ -192,8 +192,8 @@ class Lightweight_SEO_Admin_Settings {
 					'gtm_container_id'               => array( __( 'Google Tag Manager container ID', 'lightweight-seo' ), $modules, true ),
 					'ga4_measurement_id'             => array( __( 'Direct Google Analytics 4 measurement ID', 'lightweight-seo' ), $modules, true ),
 					'facebook_pixel_id'              => array( __( 'Direct Meta Pixel ID', 'lightweight-seo' ), $modules, true ),
-					'tracking_excluded_roles'        => array( __( 'Excluded roles', 'lightweight-seo' ), $modules, true ),
-					'tracking_excluded_environments' => array( __( 'Excluded environments', 'lightweight-seo' ), $modules, true ),
+					'tracking_excluded_roles'        => array( __( 'Excluded roles', 'lightweight-seo' ), $modules ),
+					'tracking_excluded_environments' => array( __( 'Excluded environments', 'lightweight-seo' ), $modules ),
 				),
 			),
 			'lightweight_seo_ai_discovery_section' => array(
@@ -204,7 +204,7 @@ class Lightweight_SEO_Admin_Settings {
 					'ai_search_crawlers_enabled'   => array( __( 'AI search visibility', 'lightweight-seo' ), $modules ),
 					'ai_training_crawlers_enabled' => array( __( 'Model training access', 'lightweight-seo' ), $modules ),
 					'enable_llms_txt'              => array( __( 'Curated llms.txt', 'lightweight-seo' ), $modules ),
-					'llms_txt_post_ids'            => array( __( 'Authoritative page IDs', 'lightweight-seo' ), $modules, true ),
+					'llms_txt_post_ids'            => array( __( 'Pages to list', 'lightweight-seo' ), $modules ),
 					'ai_readiness'                 => array( __( 'Readiness checks', 'lightweight-seo' ), $modules ),
 				),
 			),
@@ -241,6 +241,17 @@ class Lightweight_SEO_Admin_Settings {
 		add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, $settings_error, $message, 'error' );
 
 		return $existing_value;
+	}
+
+	/**
+	 * Count the lines of a submitted or stored value that hold something.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $value    Text with one item per line.
+	 * @return   int
+	 */
+	private function count_lines( $value ) {
+		return count( array_filter( array_map( 'trim', preg_split( "/\r\n|\n|\r/", (string) $value ) ), 'strlen' ) );
 	}
 
 	/**
@@ -355,6 +366,12 @@ class Lightweight_SEO_Admin_Settings {
 
 		if ( isset( $input['redirect_rules'] ) ) {
 			$sanitized_input['redirect_rules'] = $this->settings->normalize_redirect_rules_input( $input['redirect_rules'] );
+			$dropped                           = 'modules' === $active_tab ? $this->count_lines( $input['redirect_rules'] ) - $this->count_lines( $sanitized_input['redirect_rules'] ) : 0;
+
+			if ( $dropped > 0 ) {
+				/* translators: %d: number of redirect rules that were not saved. */
+				add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'redirect_rules_dropped', sprintf( _n( 'Settings saved. %d redirect rule was left out because it was incomplete, repeated another rule, looped, or pointed to a site that is not approved.', 'Settings saved. %d redirect rules were left out because they were incomplete, repeated another rule, looped, or pointed to a site that is not approved.', $dropped, 'lightweight-seo' ), $dropped ), 'warning' );
+			}
 		} else {
 			$sanitized_input['redirect_rules'] = $existing_settings['redirect_rules'] ?? '';
 		}
@@ -409,6 +426,12 @@ class Lightweight_SEO_Admin_Settings {
 
 		if ( isset( $input['hreflang_mappings'] ) ) {
 			$sanitized_input['hreflang_mappings'] = $this->settings->normalize_hreflang_mappings_input( $input['hreflang_mappings'] );
+			$dropped                              = 'modules' === $active_tab ? $this->count_lines( $input['hreflang_mappings'] ) - $this->count_lines( $sanitized_input['hreflang_mappings'] ) : 0;
+
+			if ( $dropped > 0 ) {
+				/* translators: %d: number of hreflang mappings that were not saved. */
+				add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'hreflang_mappings_dropped', sprintf( _n( 'Settings saved. %d translation was left out because its page, language tag, or address was not valid, or it repeated another line.', 'Settings saved. %d translations were left out because their page, language tag, or address was not valid, or they repeated another line.', $dropped, 'lightweight-seo' ), $dropped ), 'warning' );
+			}
 		} else {
 			$sanitized_input['hreflang_mappings'] = $existing_settings['hreflang_mappings'] ?? '';
 		}
@@ -489,7 +512,12 @@ class Lightweight_SEO_Admin_Settings {
 
 		foreach ( array( 'tracking_excluded_roles', 'tracking_excluded_environments' ) as $key ) {
 			$value = $input[ $key ] ?? ( $existing_settings[ $key ] ?? '' );
-			$keys  = method_exists( $this->settings, 'normalize_key_list' ) ? $this->settings->normalize_key_list( $value ) : array_filter( array_map( 'sanitize_key', preg_split( '/[\s,]+/', strtolower( (string) $value ) ) ) );
+
+			// The settings screen submits a list of ticked boxes; other callers may still pass one string.
+			if ( is_array( $value ) ) {
+				$value = implode( ' ', array_filter( $value, 'is_scalar' ) );
+			}
+			$keys = method_exists( $this->settings, 'normalize_key_list' ) ? $this->settings->normalize_key_list( $value ) : array_filter( array_map( 'sanitize_key', preg_split( '/[\s,]+/', strtolower( (string) $value ) ) ) );
 
 			if ( 'tracking_excluded_environments' === $key ) {
 				$keys = array_intersect( $keys, array( 'local', 'development', 'staging', 'production' ) );

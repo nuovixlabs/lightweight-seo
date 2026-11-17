@@ -431,6 +431,33 @@ a.lwseo-badge:hover {
 	gap: var(--lwseo-space-2);
 }
 
+/* The editor's check count. It becomes a tick when nothing is left to review. */
+
+.lwseo-checks-badge {
+	margin-left: var(--lwseo-space-1);
+	vertical-align: middle;
+}
+
+.lwseo-checks-badge .dashicons {
+	font-size: 16px;
+	height: 20px;
+	line-height: 20px;
+	vertical-align: top;
+	width: 16px;
+}
+
+/* Played once, when an edit clears the last check. */
+.lwseo-checks-badge.is-cleared {
+	animation: lwseo-cleared var(--lwseo-motion);
+}
+
+@keyframes lwseo-cleared {
+	from {
+		opacity: 0.4;
+		transform: scale(0.6);
+	}
+}
+
 /* Status list: checklists, health checks and at-a-glance facts. --------- */
 
 .lwseo .lwseo-status-list {
@@ -606,6 +633,234 @@ input[type="search"] + .lwseo-table-wrap {
 	white-space: pre-wrap;
 }
 
+/* Rows: a setting stored one item per line, edited one item per row. ---- */
+
+.lwseo-rows__head,
+.lwseo-rows__cells {
+	align-items: start;
+	display: grid;
+	gap: var(--lwseo-space-2);
+	grid-template-columns: var(--lwseo-rows-columns, repeat(3, minmax(0, 1fr)) var(--lwseo-control-height));
+}
+
+.lwseo-rows--redirects {
+	--lwseo-rows-columns: minmax(0, 1fr) minmax(0, 1.3fr) 190px var(--lwseo-control-height);
+}
+
+.lwseo-rows--hreflang {
+	--lwseo-rows-columns: minmax(0, 1.1fr) 120px minmax(0, 1.4fr) var(--lwseo-control-height);
+}
+
+.lwseo-rows__head {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	font-weight: 500;
+	padding-bottom: var(--lwseo-space-1);
+}
+
+.lwseo-rows__row {
+	padding: var(--lwseo-space-1) 0;
+}
+
+.lwseo .lwseo-rows__cell input,
+.lwseo .lwseo-rows__cell select {
+	margin: 0;
+	max-width: none;
+	width: 100%;
+}
+
+.lwseo .lwseo-rows__remove {
+	color: var(--lwseo-text-muted);
+	height: var(--lwseo-control-height);
+	text-align: center;
+	text-decoration: none;
+	width: var(--lwseo-control-height);
+}
+
+.lwseo .lwseo-rows__remove:hover {
+	color: var(--lwseo-text);
+}
+
+/* Says why a row will not behave as entered. It never blocks saving. */
+.lwseo .lwseo-rows__hint {
+	color: var(--lwseo-warning);
+	font-size: var(--lwseo-text-sm);
+	margin: 2px 0 0;
+}
+
+.lwseo .lwseo-rows__empty {
+	margin: 0 0 var(--lwseo-space-2);
+}
+
+.lwseo-rows__actions {
+	margin-top: var(--lwseo-space-2);
+}
+
+.lwseo-rows__count {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+}
+
+.lwseo .lwseo-rows__filter {
+	margin: 0 0 var(--lwseo-space-3);
+}
+
+.lwseo .lwseo-rows__footer {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	margin: var(--lwseo-space-2) 0 0;
+}
+
+/* Picker: pages chosen by searching instead of typing IDs. --------------- */
+
+.lwseo .lwseo-picker__chosen,
+.lwseo .lwseo-picker__results {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.lwseo .lwseo-picker__item {
+	align-items: center;
+	border-bottom: 1px solid var(--lwseo-border-subtle);
+	display: flex;
+	gap: var(--lwseo-space-2);
+	margin: 0;
+	max-width: 36em;
+	padding: 2px 0;
+}
+
+.lwseo-picker__title {
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.lwseo-picker__note {
+	color: var(--lwseo-warning);
+	font-size: var(--lwseo-text-sm);
+}
+
+.lwseo .lwseo-picker__search {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lwseo-space-3);
+	margin: var(--lwseo-space-3) 0 0;
+}
+
+.lwseo .lwseo-picker__search input {
+	margin: 0;
+}
+
+.lwseo .lwseo-picker__results {
+	border: 1px solid var(--lwseo-border);
+	border-radius: var(--lwseo-radius-sm);
+	margin-top: var(--lwseo-space-1);
+	max-width: 25em;
+	overflow: hidden;
+}
+
+.lwseo .lwseo-picker__results:empty {
+	display: none;
+}
+
+.lwseo .lwseo-picker__results li {
+	margin: 0;
+}
+
+.lwseo .lwseo-picker__results li + li {
+	border-top: 1px solid var(--lwseo-border-subtle);
+}
+
+.lwseo .lwseo-picker__result {
+	background: var(--lwseo-surface);
+	color: var(--lwseo-text);
+	display: block;
+	padding: var(--lwseo-space-2) var(--lwseo-space-3);
+	text-align: left;
+	text-decoration: none;
+	width: 100%;
+}
+
+.lwseo .lwseo-picker__result:hover,
+.lwseo .lwseo-picker__result:focus {
+	background: var(--lwseo-accent-soft);
+	color: var(--lwseo-text);
+}
+
+.lwseo-picker__path {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	margin-left: var(--lwseo-space-2);
+}
+
+.lwseo-picker__status {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+}
+
+/* A row cell that holds one page: a button naming it, which opens a search. */
+
+.lwseo .lwseo-pagecell__current {
+	margin: 0;
+	overflow: hidden;
+	text-align: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	width: 100%;
+}
+
+.lwseo-pagecell__search {
+	display: block;
+	margin-top: var(--lwseo-space-1);
+}
+
+/* Hours: opening times, one row per day. --------------------------------- */
+
+.lwseo-hours__day {
+	align-items: center;
+	display: grid;
+	gap: var(--lwseo-space-2) var(--lwseo-space-3);
+	grid-template-columns: 110px minmax(0, 1fr) auto;
+	min-height: calc(var(--lwseo-control-height) + var(--lwseo-space-2));
+	padding: var(--lwseo-space-1) 0;
+}
+
+.lwseo-hours__day + .lwseo-hours__day {
+	border-top: 1px solid var(--lwseo-border-subtle);
+}
+
+.lwseo-hours__name {
+	font-weight: 500;
+}
+
+.lwseo-hours__ranges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lwseo-space-2) var(--lwseo-space-4);
+}
+
+.lwseo-hours__range {
+	align-items: center;
+	display: inline-flex;
+	gap: var(--lwseo-space-1);
+}
+
+/* Subfield inputs fill their column; a time is only as wide as it needs to be. */
+.lwseo .lwseo-hours input[type="time"] {
+	margin: 0;
+	width: auto;
+}
+
+.lwseo-hours__closed {
+	color: var(--lwseo-text-muted);
+}
+
+.lwseo .lwseo-hours__tools {
+	margin: var(--lwseo-space-2) 0 0;
+}
+
 /* Details: progressive disclosure for advanced controls. ---------------- */
 
 .lwseo-details > summary {
@@ -637,6 +892,12 @@ input[type="search"] + .lwseo-table-wrap {
 	padding: var(--lwseo-space-3) 0;
 	position: sticky;
 	z-index: 2;
+}
+
+/* Says when the form holds edits that have not been saved. */
+.lwseo-actions__status {
+	color: var(--lwseo-warning);
+	font-weight: 500;
 }
 
 .lwseo-buttons {
@@ -704,11 +965,60 @@ input[type="search"] + .lwseo-table-wrap {
 	overflow-wrap: anywhere;
 }
 
+/* The search result's source line: site icon, site name, and address. */
+
+.lwseo-preview__source {
+	align-items: center;
+	display: flex;
+	gap: var(--lwseo-space-2);
+	margin-bottom: var(--lwseo-space-2);
+}
+
+.lwseo-preview__source p {
+	margin: 0;
+}
+
+.lwseo-preview__source .lwseo-preview__site {
+	color: var(--lwseo-text);
+	font-size: var(--lwseo-text-base);
+}
+
+.lwseo-preview__icon {
+	background: var(--lwseo-surface-subtle);
+	border-radius: var(--lwseo-radius-pill);
+	flex: none;
+	height: 28px;
+	width: 28px;
+}
+
 .lwseo .lwseo-preview__title {
 	color: var(--lwseo-preview-link);
 	font-size: 18px;
 	line-height: 1.3;
 	margin: 0 0 var(--lwseo-space-1);
+}
+
+/* Previews side by side on the overview. They stack when there is no room for two. */
+
+.lwseo-previews {
+	display: grid;
+	gap: var(--lwseo-space-5);
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Each column fills its row, so two previews side by side end at the same height. */
+.lwseo-previews > div {
+	display: flex;
+	flex-direction: column;
+}
+
+.lwseo-previews .lwseo-preview {
+	flex: 1;
+}
+
+.lwseo-card__body.lwseo-previews {
+	padding-bottom: var(--lwseo-space-5);
+	padding-top: var(--lwseo-space-5);
 }
 
 .lwseo .lwseo-preview__description {
@@ -814,6 +1124,42 @@ input[type="search"] + .lwseo-table-wrap {
 
 	.lwseo-subfields {
 		grid-template-columns: minmax(0, 1fr);
+	}
+
+	/* Each row becomes a short stack, and every cell names itself because the header is gone. */
+	.lwseo-rows__head {
+		display: none;
+	}
+
+	.lwseo-rows__cells {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.lwseo-rows__cell::before {
+		color: var(--lwseo-text-muted);
+		content: attr(data-label);
+		display: block;
+		font-size: var(--lwseo-text-sm);
+		margin-bottom: var(--lwseo-space-1);
+	}
+
+	.lwseo-rows__row + .lwseo-rows__row {
+		border-top: 1px solid var(--lwseo-border-subtle);
+		margin-top: var(--lwseo-space-2);
+		padding-top: var(--lwseo-space-3);
+	}
+
+	.lwseo .lwseo-rows__remove {
+		justify-self: end;
+	}
+
+	.lwseo-hours__day {
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
+
+	.lwseo-hours__times {
+		grid-column: 1 / -1;
+		grid-row: 2;
 	}
 
 	.lwseo-card__header,

@@ -168,7 +168,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function noindex_search_results_render() {
-		$this->render_choice( 'noindex_search_results', '1', __( 'Add a noindex directive to internal search result pages', 'lightweight-seo' ), __( 'Recommended for most sites to prevent low-value internal search pages from being indexed.', 'lightweight-seo' ) );
+		$this->render_choice( 'noindex_search_results', '1', __( 'Hide internal search result pages from search engines', 'lightweight-seo' ), __( 'Adds a noindex directive, which is recommended for most sites.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -177,7 +177,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function noindex_attachment_pages_render() {
-		$this->render_choice( 'noindex_attachment_pages', '1', __( 'Add a noindex directive to attachment pages by default', 'lightweight-seo' ), __( 'Recommended for most sites unless attachment pages are being used as standalone landing pages.', 'lightweight-seo' ) );
+		$this->render_choice( 'noindex_attachment_pages', '1', __( 'Hide attachment pages from search engines', 'lightweight-seo' ), __( 'Adds a noindex directive, which is recommended unless attachment pages are used as landing pages.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -196,7 +196,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 			<option value="standard" <?php selected( $normalized_value, 'standard' ); ?>><?php esc_html_e( 'Standard', 'lightweight-seo' ); ?></option>
 			<option value="none" <?php selected( $normalized_value, 'none' ); ?>><?php esc_html_e( 'None', 'lightweight-seo' ); ?></option>
 		</select>
-		<p class="lwseo-help"><?php esc_html_e( 'Sets the default max-image-preview robots directive for your content.', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'Sets how large an image search engines may show beside your pages, through the max-image-preview directive.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -206,7 +206,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function enable_media_x_robots_headers_render() {
-		$this->render_choice( 'enable_media_x_robots_headers', '1', __( 'Send X-Robots-Tag headers for WordPress attachment pages', 'lightweight-seo' ), __( 'Static files served directly by the web server or CDN require server-level header configuration.', 'lightweight-seo' ) );
+		$this->render_choice( 'enable_media_x_robots_headers', '1', __( 'Send the same instruction as an HTTP header on attachment pages', 'lightweight-seo' ), __( 'Adds an X-Robots-Tag header; files served directly by the web server or a CDN need it set there instead.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -226,7 +226,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function exclude_noindex_from_sitemaps_render() {
-		$this->render_choice( 'exclude_noindex_from_sitemaps', '1', __( 'Exclude noindexed posts from WordPress core XML sitemaps', 'lightweight-seo' ), __( 'Recommended to keep your sitemap focused on indexable content.', 'lightweight-seo' ) );
+		$this->render_choice( 'exclude_noindex_from_sitemaps', '1', __( 'Leave hidden pages out of the sitemap', 'lightweight-seo' ), __( 'Keeps the sitemap to pages that search engines may show, which is recommended.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -235,7 +235,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function exclude_redirected_from_sitemaps_render() {
-		$this->render_choice( 'exclude_redirected_from_sitemaps', '1', __( 'Exclude content whose live paths are redirected elsewhere', 'lightweight-seo' ), __( 'Prevents sitemap entries from pointing at URLs that are currently redirected.', 'lightweight-seo' ) );
+		$this->render_choice( 'exclude_redirected_from_sitemaps', '1', __( 'Leave redirected pages out of the sitemap', 'lightweight-seo' ), __( 'Keeps the sitemap from listing addresses that currently redirect somewhere else.', 'lightweight-seo' ) );
 	}
 
 	/**

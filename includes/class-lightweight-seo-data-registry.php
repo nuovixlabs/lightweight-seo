@@ -71,6 +71,15 @@ class Lightweight_SEO_Data_Registry {
 	}
 
 	/**
+	 * Get per-user screen preferences that are always removed during uninstall.
+	 *
+	 * @return array
+	 */
+	public static function get_ephemeral_user_meta_keys() {
+		return array( 'lightweight_seo_checklist_dismissed' );
+	}
+
+	/**
 	 * Get plugin-owned cron hooks.
 	 *
 	 * @return array

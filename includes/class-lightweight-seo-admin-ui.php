@@ -78,22 +78,48 @@ class Lightweight_SEO_Admin_UI {
 	}
 
 	/**
+	 * Get the screen reader prefix of a status, for scripts that change a row in place.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $state    One of success, warning, pending, or info.
+	 * @return   string
+	 */
+	public static function status_prefix( $state ) {
+		$definitions = self::get_status_definitions();
+
+		return isset( $definitions[ $state ] ) ? $definitions[ $state ][1] : '';
+	}
+
+	/**
 	 * Print one row of a status list.
 	 *
 	 * @since    1.1.0
-	 * @param    string    $state     One of success, warning, pending, or info.
-	 * @param    string    $title     What is being reported.
-	 * @param    string    $text      Optional. Supporting detail.
-	 * @param    array     $action    Optional. Link with label, url, and new_tab keys.
+	 * @param    string    $state         One of success, warning, pending, or info.
+	 * @param    string    $title         What is being reported.
+	 * @param    string    $text          Optional. Supporting detail.
+	 * @param    array     $action        Optional. Link with label, url, and new_tab keys.
+	 * @param    array     $attributes    Optional. Extra attributes for the row. A true value prints a bare attribute.
 	 * @return   void
 	 */
-	public static function status( $state, $title, $text = '', $action = array() ) {
+	public static function status( $state, $title, $text = '', $action = array(), $attributes = array() ) {
 		$definitions = self::get_status_definitions();
 		$state       = isset( $definitions[ $state ] ) ? $state : 'info';
 
 		list( $icon, $prefix ) = $definitions[ $state ];
 
-		echo '<li class="lwseo-status is-' . esc_attr( $state ) . '">';
+		echo '<li class="lwseo-status is-' . esc_attr( $state ) . '"';
+
+		foreach ( $attributes as $name => $value ) {
+			$name = preg_replace( '/[^a-z0-9-]/', '', strtolower( (string) $name ) );
+
+			if ( '' === $name || false === $value || null === $value ) {
+				continue;
+			}
+
+			echo ' ' . esc_attr( $name ) . ( true === $value ? '' : '="' . esc_attr( (string) $value ) . '"' );
+		}
+
+		echo '>';
 		echo '<span class="lwseo-status__icon dashicons ' . esc_attr( $icon ) . '" aria-hidden="true"></span>';
 		echo '<div class="lwseo-status__body"><span class="lwseo-status__title">';
 
@@ -136,10 +162,11 @@ class Lightweight_SEO_Admin_UI {
 	 * @param    string    $label      Label text.
 	 * @param    string    $help       Optional. Help text shown under the label.
 	 * @param    string    $id         Optional. Input ID.
+	 * @param    string    $value      Optional. Submitted value, for a box that is one of a list. Default 1.
 	 * @return   void
 	 */
-	public static function choice( $name, $checked, $label, $help = '', $id = '' ) {
-		echo '<label class="lwseo-choice"><input type="checkbox"' . ( $id ? ' id="' . esc_attr( $id ) . '"' : '' ) . ' name="' . esc_attr( $name ) . '" value="1"' . ( $checked ? ' checked="checked"' : '' ) . '>';
+	public static function choice( $name, $checked, $label, $help = '', $id = '', $value = '1' ) {
+		echo '<label class="lwseo-choice"><input type="checkbox"' . ( $id ? ' id="' . esc_attr( $id ) . '"' : '' ) . ' name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '"' . ( $checked ? ' checked="checked"' : '' ) . '>';
 		echo '<span>' . esc_html( $label ) . '</span></label>';
 
 		if ( '' !== (string) $help ) {
@@ -165,17 +192,306 @@ class Lightweight_SEO_Admin_UI {
 	}
 
 	/**
+	 * Print a search result preview: site icon and name, address, title, and description.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $args    Preview values: url, title, description, placeholder (shown for an empty
+	 *                             description), and live (announce changes made by the editor script).
+	 * @return   void
+	 */
+	public static function search_preview( $args ) {
+		$icon        = (string) get_site_icon_url( 64 );
+		$description = (string) ( $args['description'] ?? '' );
+		?>
+		<div class="lwseo-preview lwseo-preview--search"<?php echo empty( $args['live'] ) ? '' : ' aria-live="polite"'; ?>>
+			<div class="lwseo-preview__body">
+				<div class="lwseo-preview__source">
+					<?php if ( '' !== $icon ) : ?>
+						<img class="lwseo-preview__icon" src="<?php echo esc_url( $icon ); ?>" alt="">
+					<?php endif; ?>
+					<div>
+						<p class="lwseo-preview__site"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></p>
+						<p class="lwseo-preview__url"><?php echo esc_html( (string) ( $args['url'] ?? '' ) ); ?></p>
+					</div>
+				</div>
+				<p class="lwseo-preview__title" data-preview="title"><?php echo esc_html( (string) ( $args['title'] ?? '' ) ); ?></p>
+				<p class="lwseo-preview__description" data-preview="description"><?php echo esc_html( '' !== $description ? $description : (string) ( $args['placeholder'] ?? '' ) ); ?></p>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Print a share preview: image, site name, title, and description.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $args    Preview values: image, title, description, and live.
+	 * @return   void
+	 */
+	public static function share_preview( $args ) {
+		$image = (string) ( $args['image'] ?? '' );
+		?>
+		<div class="lwseo-preview lwseo-preview--social"<?php echo empty( $args['live'] ) ? '' : ' aria-live="polite"'; ?>>
+			<div class="lwseo-preview__media">
+				<?php if ( '' !== $image ) : ?>
+					<img src="<?php echo esc_url( $image ); ?>" alt="">
+				<?php endif; ?>
+			</div>
+			<div class="lwseo-preview__body">
+				<p class="lwseo-preview__site"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></p>
+				<p class="lwseo-preview__title" data-preview="social-title"><?php echo esc_html( (string) ( $args['title'] ?? '' ) ); ?></p>
+				<p class="lwseo-preview__description" data-preview="social-description"><?php echo esc_html( (string) ( $args['description'] ?? '' ) ); ?></p>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Print a row editor for a field that stores one item per line.
+	 *
+	 * The caller prints the field itself, which stays the only submitted control and
+	 * works on its own. The script fills these rows from it, hides the field, and
+	 * writes the same line format back on every change. Row controls carry no name,
+	 * so they are never submitted.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $args    Editor settings:
+	 *                             format   Key of the line format in lightweight-seo-formats.js.
+	 *                             field    ID of the field the rows are read from and written to.
+	 *                             columns  Columns in order. Each has key, label, and type (text, url,
+	 *                                      select, or page), plus optional placeholder, options, and list.
+	 *                                      A page column stores a type and an ID, chosen by searching.
+	 *                             labels   Optional. Names of the pages already stored, keyed "type:id".
+	 *                             add      Label of the button that adds a row.
+	 *                             item     Name of one row with a %d for its number.
+	 *                             empty    Text shown while there are no rows.
+	 *                             removed  Announcement made when a row is removed.
+	 *                             filter   Optional. Label of the filter shown for a long list.
+	 *                             limit    Optional. Most rows the setting keeps.
+	 *                             hints    Optional. Messages keyed by the hint the format reports.
+	 * @return   void
+	 */
+	public static function rows( $args ) {
+		$format  = sanitize_key( $args['format'] );
+		$columns = (array) $args['columns'];
+		$limit   = absint( $args['limit'] ?? 0 );
+		?>
+		<div class="lwseo-rows lwseo-rows--<?php echo esc_attr( $format ); ?>" data-format="<?php echo esc_attr( $format ); ?>" data-field="<?php echo esc_attr( $args['field'] ); ?>" data-limit="<?php echo esc_attr( (string) $limit ); ?>" data-item="<?php echo esc_attr( $args['item'] ); ?>" data-removed="<?php echo esc_attr( $args['removed'] ); ?>" data-hints="<?php echo esc_attr( wp_json_encode( (object) ( $args['hints'] ?? array() ) ) ); ?>" data-labels="<?php echo esc_attr( wp_json_encode( (object) ( $args['labels'] ?? array() ) ) ); ?>" <?php self::search_attributes(); ?> hidden>
+			<div class="lwseo-rows__editor">
+				<?php if ( ! empty( $args['filter'] ) ) : ?>
+					<p class="lwseo-rows__filter" hidden>
+						<label class="screen-reader-text" for="<?php echo esc_attr( $args['field'] . '_filter' ); ?>"><?php echo esc_html( $args['filter'] ); ?></label>
+						<input type="search" id="<?php echo esc_attr( $args['field'] . '_filter' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( $args['filter'] ); ?>">
+					</p>
+				<?php endif; ?>
+				<div class="lwseo-rows__head" aria-hidden="true">
+					<?php foreach ( $columns as $column ) : ?>
+						<span><?php echo esc_html( $column['label'] ); ?></span>
+					<?php endforeach; ?>
+					<span></span>
+				</div>
+				<div class="lwseo-rows__list"></div>
+				<p class="lwseo-help lwseo-rows__empty"><?php echo esc_html( $args['empty'] ); ?></p>
+				<div class="lwseo-buttons lwseo-rows__actions">
+					<button type="button" class="button lwseo-rows__add"><?php echo esc_html( $args['add'] ); ?></button>
+					<span class="lwseo-rows__count" data-template="<?php echo esc_attr( self::count_template() ); ?>"></span>
+				</div>
+			</div>
+			<?php self::editor_footer(); ?>
+			<template>
+				<div class="lwseo-rows__row" role="group">
+					<div class="lwseo-rows__cells">
+						<?php foreach ( $columns as $column ) : ?>
+							<span class="lwseo-rows__cell" data-label="<?php echo esc_attr( $column['label'] ); ?>">
+								<?php if ( 'select' === $column['type'] ) : ?>
+									<select data-field="<?php echo esc_attr( $column['key'] ); ?>" aria-label="<?php echo esc_attr( $column['label'] ); ?>">
+										<?php foreach ( (array) $column['options'] as $value => $label ) : ?>
+											<option value="<?php echo esc_attr( (string) $value ); ?>"><?php echo esc_html( $label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								<?php elseif ( 'page' === $column['type'] ) : ?>
+									<span class="lwseo-pagecell" data-mirror="<?php echo esc_attr( $column['mirror'] ?? '' ); ?>">
+										<input type="hidden" data-field="type" value="post">
+										<input type="hidden" data-field="id" value="">
+										<button type="button" class="button lwseo-pagecell__current" aria-expanded="false"><?php echo esc_html( $column['choose'] ); ?></button>
+										<span class="lwseo-pagecell__search" hidden>
+											<input type="search" aria-label="<?php echo esc_attr( $column['search'] ); ?>" placeholder="<?php echo esc_attr( $column['search'] ); ?>" autocomplete="off">
+											<ul class="lwseo-picker__results"></ul>
+											<span class="lwseo-picker__status" role="status"></span>
+										</span>
+									</span>
+								<?php else : ?>
+									<input type="<?php echo 'url' === $column['type'] ? 'url' : 'text'; ?>" data-field="<?php echo esc_attr( $column['key'] ); ?>" aria-label="<?php echo esc_attr( $column['label'] ); ?>" placeholder="<?php echo esc_attr( $column['placeholder'] ?? '' ); ?>"<?php echo empty( $column['list'] ) ? '' : ' list="' . esc_attr( $column['list'] ) . '"'; ?> autocomplete="off">
+								<?php endif; ?>
+							</span>
+						<?php endforeach; ?>
+						<button type="button" class="button-link lwseo-rows__remove">
+							<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+							<span class="screen-reader-text"><?php esc_html_e( 'Remove', 'lightweight-seo' ); ?></span>
+						</button>
+					</div>
+					<p class="lwseo-rows__hint" hidden></p>
+				</div>
+			</template>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get the template for "3 of 50": how many items a setting holds out of the most it keeps.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	private static function count_template() {
+		/* translators: 1: number of items, 2: most items the setting keeps. */
+		return __( '%1$d of %2$d', 'lightweight-seo' );
+	}
+
+	/**
+	 * Print the messages a page search shows, as attributes of the element that holds the search.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	private static function search_attributes() {
+		echo 'data-search-searching="' . esc_attr( __( 'Searching…', 'lightweight-seo' ) ) . '"';
+		echo ' data-search-none="' . esc_attr( __( 'Nothing matches that search.', 'lightweight-seo' ) ) . '"';
+		echo ' data-search-error="' . esc_attr( __( 'Search is not available right now. Use “Edit as text” instead.', 'lightweight-seo' ) ) . '"';
+	}
+
+	/**
+	 * Print a page picker for a field that stores a list of post IDs.
+	 *
+	 * Like rows(), it reads and writes a field the caller prints, which stays the
+	 * only submitted control. Pages are found by searching this site's REST API
+	 * from the browser; nothing is requested by PHP.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $args    Picker settings:
+	 *                             field    ID of the field that stores the IDs.
+	 *                             items    Stored pages keyed by ID, each with title and an optional note.
+	 *                             limit    Most pages the setting keeps.
+	 *                             search   Label of the search box.
+	 *                             chosen   Name of the list of chosen pages.
+	 *                             empty    Text shown while nothing is chosen.
+	 *                             removed  Announcement made when a page is removed.
+	 *                             fallback Name for a page whose title is unknown, with a %d for its ID.
+	 * @return   void
+	 */
+	public static function picker( $args ) {
+		$field = (string) $args['field'];
+		?>
+		<div class="lwseo-picker" data-field="<?php echo esc_attr( $field ); ?>" data-limit="<?php echo esc_attr( (string) absint( $args['limit'] ?? 0 ) ); ?>" data-items="<?php echo esc_attr( wp_json_encode( (object) ( $args['items'] ?? array() ) ) ); ?>" data-fallback="<?php echo esc_attr( $args['fallback'] ); ?>" data-removed="<?php echo esc_attr( $args['removed'] ); ?>" data-remove="<?php echo esc_attr( __( 'Remove', 'lightweight-seo' ) ); ?>" <?php self::search_attributes(); ?> hidden>
+			<div class="lwseo-picker__editor">
+				<ul class="lwseo-picker__chosen" aria-label="<?php echo esc_attr( $args['chosen'] ); ?>"></ul>
+				<p class="lwseo-help lwseo-picker__empty"><?php echo esc_html( $args['empty'] ); ?></p>
+				<p class="lwseo-picker__search">
+					<label class="screen-reader-text" for="<?php echo esc_attr( $field . '_search' ); ?>"><?php echo esc_html( $args['search'] ); ?></label>
+					<input type="search" id="<?php echo esc_attr( $field . '_search' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( $args['search'] ); ?>" autocomplete="off">
+					<span class="lwseo-rows__count" data-template="<?php echo esc_attr( self::count_template() ); ?>"></span>
+				</p>
+				<ul class="lwseo-picker__results"></ul>
+				<p class="lwseo-help lwseo-picker__status" role="status"></p>
+			</div>
+			<?php self::editor_footer(); ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Print what every editor over a raw field ends with: the switch back to the
+	 * field, the note for lines kept as text, and the region that announces changes.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	private static function editor_footer() {
+		/* translators: %d: number of lines that are kept as text. */
+		$kept_one = _n( '%d line could not be shown as a row and is kept as text.', '%d lines could not be shown as rows and are kept as text.', 1, 'lightweight-seo' );
+		/* translators: %d: number of lines that are kept as text. */
+		$kept_many = _n( '%d line could not be shown as a row and is kept as text.', '%d lines could not be shown as rows and are kept as text.', 2, 'lightweight-seo' );
+		?>
+		<p class="lwseo-rows__footer">
+			<button type="button" class="button-link lwseo-rows__toggle" data-as-text="<?php echo esc_attr( __( 'Edit as text', 'lightweight-seo' ) ); ?>" data-as-rows="<?php echo esc_attr( __( 'Edit as rows', 'lightweight-seo' ) ); ?>"><?php esc_html_e( 'Edit as text', 'lightweight-seo' ); ?></button>
+			<span class="lwseo-rows__leftover" data-one="<?php echo esc_attr( $kept_one ); ?>" data-many="<?php echo esc_attr( $kept_many ); ?>" hidden></span>
+		</p>
+		<span class="screen-reader-text lwseo-rows__live" aria-live="polite"></span>
+		<?php
+	}
+
+	/**
+	 * Print an opening hours editor: one row per day, each with any number of time ranges.
+	 *
+	 * Like rows(), it reads and writes a field the caller prints, which stays the
+	 * only submitted control.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $field    ID of the field that stores the opening hours.
+	 * @return   void
+	 */
+	public static function hours( $field ) {
+		global $wp_locale;
+
+		// Schema.org day codes in week order, with the weekday index WordPress uses for its names.
+		$days = array(
+			'Mo' => 1,
+			'Tu' => 2,
+			'We' => 3,
+			'Th' => 4,
+			'Fr' => 5,
+			'Sa' => 6,
+			'Su' => 0,
+		);
+		?>
+		<div class="lwseo-hours" data-field="<?php echo esc_attr( $field ); ?>" data-removed="<?php echo esc_attr( __( 'Hours removed.', 'lightweight-seo' ) ); ?>" data-copied="<?php echo esc_attr( __( 'Monday’s hours copied to Tuesday to Friday.', 'lightweight-seo' ) ); ?>" hidden>
+			<div class="lwseo-hours__editor">
+				<?php foreach ( $days as $code => $weekday ) : ?>
+					<div class="lwseo-hours__day" data-day="<?php echo esc_attr( $code ); ?>" role="group" aria-label="<?php echo esc_attr( $wp_locale->get_weekday( $weekday ) ); ?>">
+						<span class="lwseo-hours__name"><?php echo esc_html( $wp_locale->get_weekday( $weekday ) ); ?></span>
+						<div class="lwseo-hours__times">
+							<div class="lwseo-hours__ranges"></div>
+							<span class="lwseo-hours__closed"><?php esc_html_e( 'Closed', 'lightweight-seo' ); ?></span>
+						</div>
+						<button type="button" class="button-link lwseo-hours__add"><?php esc_html_e( 'Add hours', 'lightweight-seo' ); ?></button>
+					</div>
+				<?php endforeach; ?>
+				<p class="lwseo-hours__tools">
+					<button type="button" class="button-link lwseo-hours__copy"><?php esc_html_e( 'Copy Monday to Tuesday–Friday', 'lightweight-seo' ); ?></button>
+				</p>
+			</div>
+			<?php self::editor_footer(); ?>
+			<template>
+				<span class="lwseo-hours__range">
+					<input type="time" data-time="open" aria-label="<?php echo esc_attr( __( 'Opens', 'lightweight-seo' ) ); ?>">
+					<span aria-hidden="true">–</span>
+					<input type="time" data-time="close" aria-label="<?php echo esc_attr( __( 'Closes', 'lightweight-seo' ) ); ?>">
+					<button type="button" class="button-link lwseo-rows__remove">
+						<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+						<span class="screen-reader-text"><?php esc_html_e( 'Remove', 'lightweight-seo' ); ?></span>
+					</button>
+				</span>
+			</template>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Print an image field: URL input, media picker, and thumbnail.
 	 *
 	 * @since    1.1.0
-	 * @param    array    $args    Field settings: url, id, url_name, id_name, url_id, id_id, alt.
+	 * @param    array    $args    Field settings: url, id, url_name, id_name, url_id, id_id, alt, and width.
+	 *                             Leave id_name out for an image stored as a URL only.
 	 * @return   void
 	 */
 	public static function image_field( $args ) {
-		$url = (string) ( $args['url'] ?? '' );
+		$url   = (string) ( $args['url'] ?? '' );
+		$width = absint( $args['width'] ?? 0 );
 		?>
-		<div class="lwseo-image">
-			<input type="hidden" id="<?php echo esc_attr( $args['id_id'] ); ?>" name="<?php echo esc_attr( $args['id_name'] ); ?>" value="<?php echo esc_attr( absint( $args['id'] ?? 0 ) ); ?>" class="lwseo-image__id">
+		<div class="lwseo-image"<?php echo $width ? ' data-width="' . esc_attr( (string) $width ) . '"' : ''; ?>>
+			<?php if ( ! empty( $args['id_name'] ) ) : ?>
+				<input type="hidden" id="<?php echo esc_attr( $args['id_id'] ?? '' ); ?>" name="<?php echo esc_attr( $args['id_name'] ); ?>" value="<?php echo esc_attr( absint( $args['id'] ?? 0 ) ); ?>" class="lwseo-image__id">
+			<?php endif; ?>
 			<div class="lwseo-image__row">
 				<input type="text" id="<?php echo esc_attr( $args['url_id'] ); ?>" name="<?php echo esc_attr( $args['url_name'] ); ?>" value="<?php echo esc_url( $url ); ?>" class="lwseo-image__url">
 				<button type="button" class="button lwseo-image__choose"><?php esc_html_e( 'Choose image', 'lightweight-seo' ); ?></button>

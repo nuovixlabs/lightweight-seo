@@ -171,7 +171,7 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		$this->assertSame( 0, $post_meta->updates['social_image_id'] );
 	}
 
-	public function test_editor_renders_accessible_previews_checks_and_advanced_controls(): void {
+	public function test_editor_renders_accessible_previews_checks_and_advanced_controls(): string {
 		global $lightweight_seo_test_posts;
 
 		$post                           = (object) array(
@@ -230,5 +230,97 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		$this->assertStringContainsString( 'points to a different host', $output );
 		$this->assertStringContainsString( 'do not predict rankings', $output );
 		$this->assertStringNotContainsString( 'Meta Keywords', $output );
+
+		return $output;
+	}
+
+	/**
+	 * @depends test_editor_renders_accessible_previews_checks_and_advanced_controls
+	 */
+	public function test_every_check_carries_both_outcomes_for_the_live_script( string $output ): void {
+		preg_match_all( '/<li class="lwseo-status is-(success|warning)"([^>]*)>/', $output, $rows, PREG_SET_ORDER );
+
+		$this->assertNotEmpty( $rows );
+
+		$states = array();
+
+		foreach ( $rows as $row ) {
+			$this->assertMatchesRegularExpression( '/ data-check="([a-z_]+)"/', $row[2] );
+			$this->assertStringContainsString( ' data-pass="', $row[2] );
+			$this->assertStringContainsString( ' data-fail="', $row[2] );
+			preg_match( '/ data-check="([a-z_]+)"/', $row[2], $id );
+
+			$states[ $id[1] ] = $row[1];
+		}
+
+		// The post has a foreign canonical, a noindex flag, and an 800px image; its short title is within range.
+		$this->assertSame( 'warning', $states['canonical'] );
+		$this->assertSame( 'warning', $states['indexing'] );
+		$this->assertSame( 'warning', $states['social_image_width'] );
+		$this->assertSame( 'success', $states['social_image'] );
+		$this->assertStringContainsString( 'data-fail-invalid="The custom canonical URL is invalid."', $output );
+		$this->assertStringContainsString( 'data-review-one="%d check to review"', $output );
+		$this->assertStringContainsString( 'data-home-host="example.com"', $output );
+	}
+
+	/**
+	 * @depends test_editor_renders_accessible_previews_checks_and_advanced_controls
+	 */
+	public function test_live_script_has_a_rule_for_every_check_the_server_prints( string $output ): void {
+		$script = (string) file_get_contents( dirname( __DIR__ ) . '/admin/js/lightweight-seo-admin.js' );
+
+		preg_match_all( '/ data-check="([a-z_]+)"/', $output, $ids );
+
+		$ids = array_diff( array_unique( $ids[1] ), array( 'conflicts' ) );
+
+		$this->assertNotEmpty( $ids );
+
+		foreach ( $ids as $id ) {
+			$this->assertMatchesRegularExpression( '/^\s*' . preg_quote( $id, '/' ) . ': function\(state\)/m', $script, 'No live rule for the "' . $id . '" check.' );
+		}
+	}
+
+	public function test_checks_that_do_not_apply_are_printed_hidden(): void {
+		global $lightweight_seo_test_posts;
+
+		$post                           = (object) array(
+			'ID'           => 77,
+			'post_title'   => 'A page without a custom canonical or image',
+			'post_excerpt' => '',
+			'post_content' => '',
+			'permalink'    => 'https://example.com/plain/',
+		);
+		$lightweight_seo_test_posts[77] = $post;
+
+		$settings  = new class() {
+			public function get_all() {
+				return array();
+			}
+			public function get_title_format() {
+				return LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT;
+			}
+			public function get_social_image_url() {
+				return 'https://example.com/default.jpg';
+			}
+		};
+		$post_meta = new class() {
+			public function get_all( $post_id ) {
+				return array();
+			}
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Meta_Boxes( $settings, $post_meta ) )->render_meta_box( $post );
+		$output = ob_get_clean();
+
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success" data-check="canonical"[^>]* hidden>/', $output );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success" data-check="social_image_width"[^>]* hidden>/', $output );
+		// The site default feeds the preview and the check, but is not written into this page's own field.
+		$this->assertStringContainsString( 'data-default-image="https://example.com/default.jpg"', $output );
+		$this->assertMatchesRegularExpression( '/name="lightweight_seo_social_image" value="" class="lwseo-image__url"/', $output );
+		$this->assertMatchesRegularExpression( '/<div class="lwseo-preview__media">\s*<img src="https:\/\/example\.com\/default\.jpg"/', $output );
 	}
 }
