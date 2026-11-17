@@ -10,6 +10,7 @@ Core provides:
 - meta descriptions, canonical URLs, and WordPress-native robots directives
 - Open Graph and X/Twitter metadata
 - post, term, and author SEO controls
+- search visibility, sitemap listing, and a title format for each post type and taxonomy
 - Organization, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
 - filtering of WordPress core XML sitemaps
 - safe mode when Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, or Slim SEO is active
@@ -45,7 +46,7 @@ For a 1.0.3 upgrade or release-candidate test, follow [Migration and RC Testing]
 The SEO panel on supported posts and pages provides:
 
 - an optional SEO title and meta description, with `%title%`, `%sitename%`, `%tagline%`, and `%sep%` resolved on the page
-- canonical and robots controls
+- canonical and robots controls, including a choice to show or hide the page whatever its content type is set to
 - social title, description, and image overrides
 - deterministic checks explaining missing or conflicting inputs
 

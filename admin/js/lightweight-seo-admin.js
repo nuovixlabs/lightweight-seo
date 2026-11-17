@@ -614,6 +614,13 @@
 			});
 		});
 
+		/* Matrix ------------------------------------------------------------- */
+
+		// A remark such as "Shown items only" applies while the row's box is clear.
+		$(document).on('change', '[data-lwseo-matrix-notes]', function() {
+			$(this).closest('tr').find('.lwseo-matrix__check + .lwseo-matrix__note').prop('hidden', this.checked);
+		});
+
 		/* Title variables ---------------------------------------------------- */
 
 		var lastTokenField = null;
@@ -821,7 +828,12 @@
 				return state.imageWidth ? state.imageWidth >= 1200 : null;
 			},
 			indexing: function(state) {
-				return !state.noindex;
+				// The page's own choice wins. Without one it follows its content type.
+				if (state.noindex === '1') {
+					return false;
+				}
+
+				return state.noindex === 'index' || !state.typeHidden ? true : 'type';
 			},
 			canonical: function(state) {
 				if (state.canonical === '') {
@@ -870,7 +882,8 @@
 					description: plainText(description ? resolveTokens(description) : post.descriptionFallback),
 					image: ownImage || post.featuredImage || defaultImage,
 					imageWidth: 0,
-					noindex: $('#lightweight_seo_noindex').prop('checked'),
+					noindex: $('#lightweight_seo_noindex').val() || '',
+					typeHidden: metabox.attr('data-type-noindex') === '1',
 					canonical: $.trim($('#lightweight_seo_canonical_url').val()),
 					homeHost: homeHost
 				};

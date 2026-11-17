@@ -37,6 +37,8 @@ If `lightweight_seo_get_api()` does not exist or returns `null`, core is missing
 
 Returned values are copies of normalized public data. They never contain settings arrays, credentials, tokens, nonces, module factories, or mutable internal services.
 
+`is_indexable()` and the `robots` and `indexable` values of `get_object_context()` follow the same rule as the page output: the object's own choice to show or hide wins, and without one the object follows the search visibility of its post type, taxonomy, or, for a user, author archives.
+
 For posts, `get_object_context()` reports unpublished and password-protected content as not indexable and returns no derived description for it. A description derived from an excerpt or content is a summary of at most 160 characters, never the full body.
 
 ## Stable lifecycle hooks

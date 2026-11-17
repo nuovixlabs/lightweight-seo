@@ -114,6 +114,10 @@ final class LightweightSEOAdminTest extends TestCase {
 		$lightweight_seo_test_attachment_urls[27] = 'https://example.com/new-image.jpg';
 
 		$settings = new class() {
+			public function normalize_content_types( $input, $existing, $post_types, $taxonomies ) {
+				return array();
+			}
+
 			public function get_all() {
 				return array(
 					'title_format'                        => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
@@ -235,6 +239,10 @@ final class LightweightSEOAdminTest extends TestCase {
 		$lightweight_seo_test_attachment_urls[14] = 'https://example.com/existing-image.jpg';
 
 		$settings = new class() {
+			public function normalize_content_types( $input, $existing, $post_types, $taxonomies ) {
+				return array();
+			}
+
 			public function get_all() {
 				return array(
 					'title_format'         => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
@@ -275,6 +283,10 @@ final class LightweightSEOAdminTest extends TestCase {
 		$lightweight_seo_test_attachment_urls[14] = 'https://example.com/uploads/current-image.jpg';
 
 		$settings = new class() {
+			public function normalize_content_types( $input, $existing, $post_types, $taxonomies ) {
+				return array();
+			}
+
 			public function get_all() {
 				return array(
 					'title_format'         => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
@@ -454,6 +466,187 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '1', $validated['enable_local_business_schema'] );
 	}
 
+	public function test_content_types_table_saves_from_its_tab_in_the_shape_it_is_stored(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = ( new Lightweight_SEO_Settings() )->get_defaults();
+		$admin_settings = $this->get_admin_settings( new Lightweight_SEO_Settings() );
+
+		// What the browser posts: a ticked "Show" box sends 0 after its hidden 1, and an unticked box sends only the hidden value.
+		$first = $admin_settings->validate_settings(
+			array(
+				'settings_tab'             => 'indexation',
+				'noindex_search_results'   => '1',
+				'noindex_attachment_pages' => '0',
+				'noindex_author_archives'  => '1',
+				'noindex_date_archives'    => '0',
+				'content_types'            => array(
+					'post_types' => array(
+						'post'    => array(
+							'noindex'      => '0',
+							'sitemap'      => '1',
+							'title_format' => '%title% %sep% Journal',
+						),
+						'page'    => array(
+							'noindex'      => '1',
+							'sitemap'      => '0',
+							'title_format' => '',
+						),
+						'retired' => array( 'noindex' => '1' ),
+					),
+					'taxonomies' => array(
+						'category' => array(
+							'noindex'      => '0',
+							'sitemap'      => '1',
+							'title_format' => '',
+						),
+						'post_tag' => array(
+							'noindex'      => '1',
+							'sitemap'      => '1',
+							'title_format' => '',
+						),
+					),
+				),
+			)
+		);
+		// WordPress sanitizes a second time when it has to create the option row.
+		$second = $admin_settings->validate_settings( $first );
+
+		$this->assertSame( '1', $first['noindex_search_results'] );
+		$this->assertSame( '0', $first['noindex_attachment_pages'] );
+		$this->assertSame( '1', $first['noindex_author_archives'] );
+		$this->assertSame( '0', $first['noindex_date_archives'] );
+		$this->assertSame(
+			array(
+				'post_types' => array(
+					'post' => array(
+						'noindex'      => '0',
+						'sitemap'      => '1',
+						'title_format' => '%title% %sep% Journal',
+					),
+					'page' => array(
+						'noindex'      => '1',
+						'sitemap'      => '0',
+						'title_format' => '',
+					),
+				),
+				'taxonomies' => array(
+					'post_tag' => array(
+						'noindex'      => '1',
+						'sitemap'      => '1',
+						'title_format' => '',
+					),
+				),
+			),
+			$first['content_types']
+		);
+		$this->assertSame( $first, $second );
+	}
+
+	public function test_saving_another_tab_leaves_the_content_types_table_alone(): void {
+		global $lightweight_seo_test_options;
+
+		$existing                            = ( new Lightweight_SEO_Settings() )->get_defaults();
+		$existing['noindex_author_archives'] = '1';
+		$existing['noindex_date_archives']   = '1';
+		$existing['content_types']           = array(
+			'post_types' => array(
+				'portfolio' => array(
+					'noindex'      => '1',
+					'sitemap'      => '0',
+					'title_format' => '%title% %sep% Work',
+				),
+			),
+		);
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $existing;
+
+		$validated = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab' => 'appearance',
+				'title_format' => '%title% | %sitename%',
+			)
+		);
+
+		$this->assertSame( $existing['content_types'], $validated['content_types'] );
+		$this->assertSame( '1', $validated['noindex_author_archives'] );
+		$this->assertSame( '1', $validated['noindex_date_archives'] );
+
+		// Saving the table itself keeps the row of a post type that is not registered right now.
+		$saved = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'  => 'indexation',
+				'content_types' => array( 'post_types' => array( 'post' => array( 'noindex' => '1' ) ) ),
+			)
+		);
+
+		$this->assertSame( array( 'post', 'portfolio' ), array_keys( $saved['content_types']['post_types'] ) );
+		$this->assertSame( '0', $saved['noindex_author_archives'], 'An unticked box on the saved tab is stored as off.' );
+	}
+
+	public function test_content_types_table_lists_every_public_content_type_with_its_stored_values(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'content_types' => array(
+				'post_types' => array(
+					'page' => array(
+						'noindex'      => '1',
+						'title_format' => '%title% &quot;page&quot;',
+					),
+				),
+				'taxonomies' => array( 'post_tag' => array( 'sitemap' => '0' ) ),
+			),
+		);
+
+		$settings = new Lightweight_SEO_Settings();
+		$this->get_admin_settings( $settings )->register_settings();
+		$_GET['tab'] = 'indexation';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+		$output = ob_get_clean();
+
+		$name = 'name="lightweight_seo_settings[content_types]';
+
+		// A shown post type: the hidden input carries "hidden", and the ticked box overrides it with "shown".
+		$this->assertStringContainsString( '<th scope="row">Posts</th>', $output );
+		$this->assertStringContainsString( '<input type="hidden" ' . $name . '[post_types][post][noindex]" value="1"><label class="lwseo-matrix__check"><input type="checkbox" ' . $name . '[post_types][post][noindex]" value="0" checked="checked" data-lwseo-matrix-notes><span class="screen-reader-text">Posts: Show in search results</span>', $output );
+		$this->assertStringContainsString( '<input type="checkbox" ' . $name . '[post_types][post][sitemap]" value="1" checked="checked">', $output );
+		$this->assertStringContainsString( $name . '[post_types][post][title_format]" value="" placeholder="%title% – %sitename%" aria-label="Posts: Title format"', $output );
+
+		// A hidden post type: the box is clear, its sitemap remark shows, and its own format is printed decoded.
+		$this->assertStringContainsString( '<input type="checkbox" ' . $name . '[post_types][page][noindex]" value="0" data-lwseo-matrix-notes>', $output );
+		$this->assertStringContainsString( '<span class="screen-reader-text">Pages: In sitemap</span></label><span class="lwseo-matrix__note">Shown items only</span>', $output );
+		$this->assertStringContainsString( $name . '[post_types][page][title_format]" value="%title% &quot;page&quot;"', $output );
+
+		// Taxonomies inherit the archive title format.
+		$this->assertStringContainsString( '<input type="checkbox" ' . $name . '[taxonomies][post_tag][sitemap]" value="1">', $output );
+		$this->assertStringContainsString( $name . '[taxonomies][category][title_format]" value="" placeholder="%title% %sep% %sitename%" aria-label="Categories: Title format"', $output );
+
+		// Archives and search keep their own settings; internal search pages start hidden.
+		$this->assertStringContainsString( '<input type="checkbox" name="lightweight_seo_settings[noindex_author_archives]" value="0" checked="checked"', $output );
+		$this->assertStringContainsString( '<input type="checkbox" name="lightweight_seo_settings[noindex_date_archives]" value="0" checked="checked"', $output );
+		$this->assertStringContainsString( '<input type="checkbox" name="lightweight_seo_settings[noindex_search_results]" value="0" data-lwseo-matrix-notes>', $output );
+
+		// Pages are hidden here, but the homepage lists posts, so there is nothing to warn about yet.
+		$this->assertStringNotContainsString( 'your homepage is a page', $output );
+
+		$lightweight_seo_test_options['show_on_front'] = 'page';
+		$lightweight_seo_test_options['page_on_front'] = 12;
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+		$with_static_front_page = ob_get_clean();
+
+		$this->assertStringContainsString( 'Pages are hidden from search results, and your homepage is a page.', $with_static_front_page );
+
+		// The card names the field for assistive technology, and the two moved tick boxes are gone.
+		$this->assertStringContainsString( 'role="group" aria-labelledby="lwseo-label-content_types"', $output );
+		$this->assertStringNotContainsString( 'Hide internal search result pages from search engines', $output );
+		$this->assertStringNotContainsString( 'Hide attachment pages from search engines', $output );
+		$this->assertStringContainsString( 'Previews and headers', $output );
+	}
+
 	public function test_tools_save_explicitly_deletes_retained_search_console_data(): void {
 		global $lightweight_seo_test_options;
 
@@ -570,7 +763,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame(
 			array(
 				'lightweight_seo_general_section'      => array( 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format', 'meta_description', 'social_image' ),
-				'lightweight_seo_indexation_section'   => array( 'noindex_search_results', 'noindex_attachment_pages', 'default_max_image_preview', 'enable_media_x_robots_headers' ),
+				'lightweight_seo_indexation_section'   => array( 'content_types', 'default_max_image_preview', 'enable_media_x_robots_headers' ),
 				'lightweight_seo_sitemap_section'      => array( 'exclude_noindex_from_sitemaps', 'exclude_redirected_from_sitemaps' ),
 				'lightweight_seo_schema_section'       => array( 'enable_schema_output', 'organization_same_as', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
 				'lightweight_seo_redirects_section'    => array( 'enable_auto_redirects', 'redirect_rules', 'generated_redirect_rules', 'redirect_export', 'redirect_health' ),
@@ -702,8 +895,8 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_title_format">', $appearance );
 		$this->assertStringContainsString( 'id="lightweight_seo_title_format"', $appearance );
-		$this->assertStringContainsString( 'role="group" aria-labelledby="lwseo-label-noindex_search_results"', $indexation );
-		$this->assertStringContainsString( 'id="lwseo-label-noindex_search_results"', $indexation );
+		$this->assertStringContainsString( 'role="group" aria-labelledby="lwseo-label-enable_media_x_robots_headers"', $indexation );
+		$this->assertStringContainsString( 'id="lwseo-label-enable_media_x_robots_headers"', $indexation );
 	}
 
 	public function test_saving_is_confirmed_unless_the_plugin_already_reported_something(): void {

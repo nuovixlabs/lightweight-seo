@@ -135,8 +135,7 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Indexation controls', 'lightweight-seo' ),
 				'callback' => array( $core, 'indexation_section_callback' ),
 				'fields'   => array(
-					'noindex_search_results'        => array( __( 'Search results pages', 'lightweight-seo' ), $core ),
-					'noindex_attachment_pages'      => array( __( 'Attachment pages', 'lightweight-seo' ), $core ),
+					'content_types'                 => array( __( 'Content types', 'lightweight-seo' ), $core ),
 					'default_max_image_preview'     => array( __( 'Image preview size', 'lightweight-seo' ), $core, true ),
 					'enable_media_x_robots_headers' => array( __( 'Attachment page headers', 'lightweight-seo' ), $core ),
 				),
@@ -346,6 +345,8 @@ class Lightweight_SEO_Admin_Settings {
 
 		$sanitized_input['noindex_search_results']           = $checkbox_value( 'noindex_search_results', 'indexation' );
 		$sanitized_input['noindex_attachment_pages']         = $checkbox_value( 'noindex_attachment_pages', 'indexation' );
+		$sanitized_input['noindex_author_archives']          = $checkbox_value( 'noindex_author_archives', 'indexation' );
+		$sanitized_input['noindex_date_archives']            = $checkbox_value( 'noindex_date_archives', 'indexation' );
 		$sanitized_input['enable_media_x_robots_headers']    = $checkbox_value( 'enable_media_x_robots_headers', 'indexation' );
 		$sanitized_input['exclude_noindex_from_sitemaps']    = $checkbox_value( 'exclude_noindex_from_sitemaps', 'indexation' );
 		$sanitized_input['exclude_redirected_from_sitemaps'] = $checkbox_value( 'exclude_redirected_from_sitemaps', 'indexation' );
@@ -362,6 +363,16 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['default_max_image_preview']        = $this->settings->normalize_max_image_preview(
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),
 			'large'
+		);
+
+		$content_types = isset( $input['content_types'] ) && is_array( $input['content_types'] ) ? $input['content_types'] : array();
+
+		// A row is accepted for a post type or taxonomy that exists; stored rows of the others are carried over.
+		$sanitized_input['content_types'] = $this->settings->normalize_content_types(
+			$content_types,
+			$existing_settings['content_types'] ?? array(),
+			array_filter( array_keys( (array) ( $content_types['post_types'] ?? array() ) ), 'post_type_exists' ),
+			array_filter( array_keys( (array) ( $content_types['taxonomies'] ?? array() ) ), 'taxonomy_exists' )
 		);
 
 		if ( isset( $input['redirect_rules'] ) ) {

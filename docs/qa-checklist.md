@@ -32,11 +32,17 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Confirm schema JSON parses and uses Organization, WebSite, BreadcrumbList, ProfilePage, and scoped Article nodes only.
 - Confirm a WooCommerce Product page receives no Product graph from Lightweight SEO.
 - Confirm an ordinary frontend request makes no remote request, recurring schedule, custom table, or plugin write.
+- Content types: on an upgraded site that has never saved the table, confirm the robots result and title of a post, page, attachment, custom post type item, term, author, date, and search page are unchanged.
+- Content types: hide a post type and confirm its items and its archive page carry `noindex`; set one item to "Show" and confirm only that item loses it. Hide one item of a shown post type and confirm only that item carries `noindex`.
+- Content types: repeat the hide, show, and per-item exception for a taxonomy with one term and for author archives with one author. Hide date archives and confirm a year and a month archive carry `noindex`.
+- Content types: give a post type and a taxonomy their own title format; confirm each is used, that a page with its own SEO title keeps it, and that the static front page keeps the homepage format.
 
 ## Sitemaps and headers
 
 - Open `/wp-sitemap.xml` and confirm valid XML.
 - Confirm noindexed and redirected content is excluded when configured.
+- Content types: clear "In sitemap" for a post type and a taxonomy and confirm each sub-sitemap leaves the index while its pages stay indexable.
+- Content types: hide a post type and confirm its sub-sitemap lists only the items set to "Show", and leaves the index when there are none. Repeat for a taxonomy and for author archives. With "Leave hidden pages out of the sitemap" off, confirm hidden content stays listed.
 - Confirm no image, video, or news sitemap provider is registered.
 - Confirm attachment responses receive configured WordPress-controlled X-Robots headers.
 - Confirm static media served directly by the web server is not claimed as plugin-controlled.
@@ -63,6 +69,13 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - On the overview, confirm the homepage preview matches the homepage's real title, description, and image, and that each setup step is green only when it is done. Dismiss the checklist, confirm it stays dismissed in another browser for the same user, and bring it back with "Show setup checklist".
 - Tick and clear every excluded role and environment, saving each time; an empty list must save as empty.
 - Open the Modules tab and change nothing; "Unsaved changes" must not appear.
+- Content types: open "Content and indexation" and change nothing; "Unsaved changes" must not appear. Confirm every public post type and taxonomy has a row, that Media and "Internal search pages" start hidden, and that an empty title format shows the site-wide format as its placeholder.
+- Content types: clear a "Show in search results" box and confirm "Shown items only" appears beside that row's sitemap box without moving the columns. Insert a variable into a title format with the variable buttons. Save, reload, and confirm every value held.
+- Content types: on a site whose homepage is a page, hide Pages and save; the card must warn that the homepage is hidden too, and setting the homepage to "Show" must keep it indexable.
+- Content types: use the table at 320 px wide and with the keyboard only, then save it with JavaScript disabled.
+- Content types: save another settings tab and confirm the table is unchanged. Deactivate a plugin that registers a post type, save the table, reactivate it, and confirm that post type's row kept its values.
+- Search visibility: in the block editor and the classic editor, confirm the "Search results" choice names the content type and its current default, and that the Indexing check follows the choice without a save, with its own message for a page hidden only by its content type. Confirm the same choice on a term's add and edit screens and on a user profile.
+- Search visibility: confirm a page saved before this change with "Prevent search engines from indexing this page" ticked opens as "Hide from search results", and one saved with it clear opens as "Default".
 - Redirects: add, edit, and remove rows, then save and confirm a request to the old path redirects. Paste several rules through "Edit as text" and switch back to rows. Save a loop or a repeated path and confirm the notice says how many rules were left out.
 - Opening hours: set weekday hours with "Copy Monday to Tuesday–Friday", add a second time range to one day, leave one day closed, and save; the LocalBusiness schema must list the same hours.
 - `llms.txt`: search for pages, add and remove them, and save; `/llms.txt` must list the chosen pages.

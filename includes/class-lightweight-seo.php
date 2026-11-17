@@ -184,7 +184,7 @@ class Lightweight_SEO {
 		$plugin_sitemaps = new Lightweight_SEO_Sitemap_Service( $this->settings, $this->post_meta, $this->archive_meta );
 
 		// The facade must exist before module factories run so every context receives it.
-		$GLOBALS['lightweight_seo_api'] = new Lightweight_SEO_API( $this->page_context, $this->post_meta, $this->archive_meta, $this->module_registry );
+		$GLOBALS['lightweight_seo_api'] = new Lightweight_SEO_API( $this->page_context, $this->post_meta, $this->archive_meta, $this->module_registry, $this->settings );
 
 		$this->initialize_module_registry();
 

@@ -152,7 +152,8 @@ class Lightweight_SEO_Admin_Core_Fields {
 	}
 
 	/**
-	 * Warn when WordPress itself discourages indexing, which outranks these controls.
+	 * Warn when WordPress itself discourages indexing, which outranks these controls,
+	 * and when hiding pages also hides a homepage that is a page.
 	 *
 	 * @since    1.1.0
 	 */
@@ -160,24 +161,170 @@ class Lightweight_SEO_Admin_Core_Fields {
 		if ( '0' === (string) get_option( 'blog_public', '1' ) ) {
 			Lightweight_SEO_Admin_UI::callout( __( 'WordPress is set to discourage search engines from indexing this site (Settings → Reading). That setting applies before the controls below.', 'lightweight-seo' ), 'warning' );
 		}
+
+		if ( 'page' === get_option( 'show_on_front' ) && absint( get_option( 'page_on_front', 0 ) ) && $this->settings->is_post_type_noindex( 'page' ) ) {
+			Lightweight_SEO_Admin_UI::callout( __( 'Pages are hidden from search results, and your homepage is a page. It stays in search results only while its own SEO settings say “Show in search results”.', 'lightweight-seo' ), 'warning' );
+		}
 	}
 
 	/**
-	 * Render the search results noindex field.
+	 * Render the content types table: search visibility, sitemap, and title format per kind of content.
 	 *
 	 * @since    1.1.0
 	 */
-	public function noindex_search_results_render() {
-		$this->render_choice( 'noindex_search_results', '1', __( 'Hide internal search result pages from search engines', 'lightweight-seo' ), __( 'Adds a noindex directive, which is recommended for most sites.', 'lightweight-seo' ) );
+	public function content_types_render() {
+		$option       = LIGHTWEIGHT_SEO_OPTION_NAME;
+		$sitemap_note = $this->settings->exclude_noindex_from_sitemaps_enabled() ? __( 'Shown items only', 'lightweight-seo' ) : '';
+		$post_types   = array();
+		$taxonomies   = array();
+
+		foreach ( get_post_types( array( 'public' => true ), 'names' ) as $post_type ) {
+			$object = get_post_type_object( $post_type );
+			$row    = $this->settings->get_content_type( 'post_types', $post_type );
+			$name   = $option . '[content_types][post_types][' . $post_type . ']';
+			$cells  = array(
+				'show'    => $this->get_show_cell( $name . '[noindex]', '1' !== $row['noindex'] ),
+				'sitemap' => $this->get_sitemap_cell( $name . '[sitemap]', $row, $sitemap_note ),
+				'title'   => $this->get_title_cell( $name . '[title_format]', $row, $this->settings->get_title_format() ),
+			);
+
+			if ( 'attachment' === $post_type ) {
+				// Attachment visibility predates this table and keeps its own setting.
+				$cells['show']    = $this->get_show_cell( $option . '[noindex_attachment_pages]', '1' !== $row['noindex'] );
+				$cells['sitemap'] = array(
+					'type' => 'none',
+					'text' => __( 'Not listed by WordPress', 'lightweight-seo' ),
+				);
+			}
+
+			$post_types[] = array(
+				'label' => (string) ( $object->labels->name ?? $post_type ),
+				'cells' => $cells,
+			);
+		}
+
+		foreach ( get_taxonomies( array( 'public' => true ), 'names' ) as $taxonomy ) {
+			// WordPress registers post formats on every site; they only have archives when the theme uses them.
+			if ( 'post_format' === $taxonomy && ! current_theme_supports( 'post-formats' ) ) {
+				continue;
+			}
+
+			$object = get_taxonomy( $taxonomy );
+			$row    = $this->settings->get_content_type( 'taxonomies', $taxonomy );
+			$name   = $option . '[content_types][taxonomies][' . $taxonomy . ']';
+
+			$taxonomies[] = array(
+				'label' => (string) ( $object->labels->name ?? $taxonomy ),
+				'cells' => array(
+					'show'    => $this->get_show_cell( $name . '[noindex]', '1' !== $row['noindex'] ),
+					'sitemap' => $this->get_sitemap_cell( $name . '[sitemap]', $row, $sitemap_note ),
+					'title'   => $this->get_title_cell( $name . '[title_format]', $row, $this->settings->get_archive_title_format() ),
+				),
+			);
+		}
+
+		$archives = array(
+			array(
+				'label' => __( 'Author archives', 'lightweight-seo' ),
+				'cells' => array( 'show' => $this->get_show_cell( $option . '[noindex_author_archives]', ! $this->settings->author_archives_noindex_enabled() ) ),
+			),
+			array(
+				'label' => __( 'Date archives', 'lightweight-seo' ),
+				'cells' => array( 'show' => $this->get_show_cell( $option . '[noindex_date_archives]', ! $this->settings->date_archives_noindex_enabled() ) ),
+			),
+			array(
+				'label' => __( 'Internal search pages', 'lightweight-seo' ),
+				'cells' => array( 'show' => $this->get_show_cell( $option . '[noindex_search_results]', ! $this->settings->search_results_noindex_enabled() ) ),
+			),
+		);
+
+		Lightweight_SEO_Admin_UI::matrix(
+			array(
+				'first'   => __( 'Content type', 'lightweight-seo' ),
+				'columns' => array(
+					'show'    => __( 'Show in search results', 'lightweight-seo' ),
+					'sitemap' => __( 'In sitemap', 'lightweight-seo' ),
+					'title'   => __( 'Title format', 'lightweight-seo' ),
+				),
+				'groups'  => array(
+					array(
+						'label' => __( 'Post types', 'lightweight-seo' ),
+						'rows'  => $post_types,
+					),
+					array(
+						'label' => __( 'Taxonomies', 'lightweight-seo' ),
+						'rows'  => $taxonomies,
+					),
+					array(
+						'label' => __( 'Archives and search', 'lightweight-seo' ),
+						'rows'  => $archives,
+					),
+				),
+			)
+		);
+		Lightweight_SEO_Admin_UI::tokens( array( '%title%', '%sitename%', '%tagline%', '%sep%' ) );
+		?>
+		<p class="lwseo-help"><?php esc_html_e( 'An empty title format uses the site-wide format shown in the field, and hiding a post type also hides its archive page.', 'lightweight-seo' ); ?></p>
+		<?php
 	}
 
 	/**
-	 * Render the attachment pages noindex field.
+	 * Describe a "Show in search results" tick box, which stores the opposite: a noindex flag.
 	 *
 	 * @since    1.1.0
+	 * @param    string    $name     Input name of the noindex setting.
+	 * @param    bool      $shown    Whether the content is shown in search results.
+	 * @return   array
 	 */
-	public function noindex_attachment_pages_render() {
-		$this->render_choice( 'noindex_attachment_pages', '1', __( 'Hide attachment pages from search engines', 'lightweight-seo' ), __( 'Adds a noindex directive, which is recommended unless attachment pages are used as landing pages.', 'lightweight-seo' ) );
+	private function get_show_cell( $name, $shown ) {
+		return array(
+			'type'          => 'check',
+			'name'          => $name,
+			'checked'       => $shown,
+			'on'            => '0',
+			'off'           => '1',
+			'toggles_notes' => true,
+		);
+	}
+
+	/**
+	 * Describe an "In sitemap" tick box, with the remark shown while its content type is hidden.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $name    Input name of the sitemap setting.
+	 * @param    array     $row     Stored row of the content type.
+	 * @param    string    $note    Remark for a hidden content type, or an empty string when hidden pages stay listed.
+	 * @return   array
+	 */
+	private function get_sitemap_cell( $name, $row, $note ) {
+		return array(
+			'type'        => 'check',
+			'name'        => $name,
+			'checked'     => '1' === $row['sitemap'],
+			'on'          => '1',
+			'off'         => '0',
+			'note'        => $note,
+			'note_hidden' => '1' !== $row['noindex'],
+		);
+	}
+
+	/**
+	 * Describe a title format field that shows the format it inherits while empty.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $name         Input name of the title format setting.
+	 * @param    array     $row          Stored row of the content type.
+	 * @param    string    $inherited    Site-wide format used while the field is empty.
+	 * @return   array
+	 */
+	private function get_title_cell( $name, $row, $inherited ) {
+		return array(
+			'type'        => 'text',
+			'name'        => $name,
+			'value'       => wp_specialchars_decode( $row['title_format'], ENT_QUOTES ),
+			'placeholder' => $inherited,
+			'tokens'      => true,
+		);
 	}
 
 	/**

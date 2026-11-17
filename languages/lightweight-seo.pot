@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T06:36:35+00:00\n"
+"POT-Creation-Date: 2026-11-17T07:30:43+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -64,94 +64,135 @@ msgstr ""
 msgid "Shown when a page without its own image is shared. Recommended size: 1200 × 630 pixels."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:161
+#: includes/class-lightweight-seo-admin-core-fields.php:162
 msgid "WordPress is set to discourage search engines from indexing this site (Settings → Reading). That setting applies before the controls below."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:171
-msgid "Hide internal search result pages from search engines"
+#: includes/class-lightweight-seo-admin-core-fields.php:166
+msgid "Pages are hidden from search results, and your homepage is a page. It stays in search results only while its own SEO settings say “Show in search results”."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:171
-msgid "Adds a noindex directive, which is recommended for most sites."
-msgstr ""
-
-#: includes/class-lightweight-seo-admin-core-fields.php:180
-msgid "Hide attachment pages from search engines"
-msgstr ""
-
-#: includes/class-lightweight-seo-admin-core-fields.php:180
-msgid "Adds a noindex directive, which is recommended unless attachment pages are used as landing pages."
-msgstr ""
-
-#: includes/class-lightweight-seo-admin-core-fields.php:195
-#: includes/class-lightweight-seo-archive-meta.php:546
-#: includes/class-lightweight-seo-meta-boxes.php:234
-msgid "Large"
+#: includes/class-lightweight-seo-admin-core-fields.php:177
+msgid "Shown items only"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:196
-#: includes/class-lightweight-seo-archive-meta.php:547
-#: includes/class-lightweight-seo-meta-boxes.php:235
+msgid "Not listed by WordPress"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:228
+msgid "Author archives"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:232
+msgid "Date archives"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:236
+msgid "Internal search pages"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:243
+msgid "Content type"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:245
+#: includes/class-lightweight-seo-admin-ui.php:291
+msgid "Show in search results"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:246
+msgid "In sitemap"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:247
+msgid "Title format"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:251
+msgid "Post types"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:255
+msgid "Taxonomies"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:259
+msgid "Archives and search"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:267
+msgid "An empty title format uses the site-wide format shown in the field, and hiding a post type also hides its archive page."
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:342
+#: includes/class-lightweight-seo-archive-meta.php:576
+#: includes/class-lightweight-seo-meta-boxes.php:245
+msgid "Large"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:343
+#: includes/class-lightweight-seo-archive-meta.php:577
+#: includes/class-lightweight-seo-meta-boxes.php:246
 msgid "Standard"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:197
-#: includes/class-lightweight-seo-archive-meta.php:548
-#: includes/class-lightweight-seo-meta-boxes.php:236
+#: includes/class-lightweight-seo-admin-core-fields.php:344
+#: includes/class-lightweight-seo-archive-meta.php:578
+#: includes/class-lightweight-seo-meta-boxes.php:247
 msgid "None"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:199
+#: includes/class-lightweight-seo-admin-core-fields.php:346
 msgid "Sets how large an image search engines may show beside your pages, through the max-image-preview directive."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:209
+#: includes/class-lightweight-seo-admin-core-fields.php:356
 msgid "Send the same instruction as an HTTP header on attachment pages"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:209
+#: includes/class-lightweight-seo-admin-core-fields.php:356
 msgid "Adds an X-Robots-Tag header; files served directly by the web server or a CDN need it set there instead."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:220
+#: includes/class-lightweight-seo-admin-core-fields.php:367
 msgid "Sitemap index:"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:220
+#: includes/class-lightweight-seo-admin-core-fields.php:367
 #: includes/class-lightweight-seo-admin-ui.php:144
 msgid "(opens in a new tab)"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:229
+#: includes/class-lightweight-seo-admin-core-fields.php:376
 msgid "Leave hidden pages out of the sitemap"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:229
+#: includes/class-lightweight-seo-admin-core-fields.php:376
 msgid "Keeps the sitemap to pages that search engines may show, which is recommended."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:238
+#: includes/class-lightweight-seo-admin-core-fields.php:385
 msgid "Leave redirected pages out of the sitemap"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:238
+#: includes/class-lightweight-seo-admin-core-fields.php:385
 msgid "Keeps the sitemap from listing addresses that currently redirect somewhere else."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:247
+#: includes/class-lightweight-seo-admin-core-fields.php:394
 msgid "The default social image is used as the organization logo when available."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:256
+#: includes/class-lightweight-seo-admin-core-fields.php:403
 msgid "Output core Organization, WebSite, Article, and Breadcrumb schema"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:256
+#: includes/class-lightweight-seo-admin-core-fields.php:403
 msgid "Disable this if your theme or another plugin already outputs equivalent structured data."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:268
+#: includes/class-lightweight-seo-admin-core-fields.php:415
 msgid "Add one profile URL per line for your organization, such as social profiles or knowledge sources."
 msgstr ""
 
@@ -651,7 +692,7 @@ msgid "Overview"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:150
-#: includes/class-lightweight-seo-meta-boxes.php:168
+#: includes/class-lightweight-seo-meta-boxes.php:172
 msgid "Search appearance"
 msgstr ""
 
@@ -664,7 +705,7 @@ msgid "Schema and identity"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:153
-#: includes/class-lightweight-seo-admin-page.php:669
+#: includes/class-lightweight-seo-admin-page.php:678
 msgid "Modules"
 msgstr ""
 
@@ -688,283 +729,296 @@ msgstr ""
 msgid "Defaults used when a page has no description or image of its own."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:222
-msgid "Keep low-value pages out of search results and choose how previews appear."
+#: includes/class-lightweight-seo-admin-page.php:223
+#: includes/class-lightweight-seo-admin-settings.php:138
+msgid "Content types"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:228
+#: includes/class-lightweight-seo-admin-page.php:224
+msgid "What search engines may show, what the sitemap lists, and how titles are built for each kind of content. Any page, term, or author can make its own choice."
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-page.php:231
+msgid "Previews and headers"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-page.php:232
+msgid "How large an image preview may be, and how attachment pages repeat their instructions."
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-page.php:237
 msgid "Lightweight SEO extends the WordPress core sitemap instead of replacing it."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:236
+#: includes/class-lightweight-seo-admin-page.php:245
 msgid "JSON-LD schema built from your site identity and SEO context."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:244
-#: includes/class-lightweight-seo-admin-page.php:313
+#: includes/class-lightweight-seo-admin-page.php:253
+#: includes/class-lightweight-seo-admin-page.php:322
 msgid "Local business"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:245
+#: includes/class-lightweight-seo-admin-page.php:254
 msgid "LocalBusiness schema for a business with a physical location."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:251
-#: includes/class-lightweight-seo-admin-page.php:314
+#: includes/class-lightweight-seo-admin-page.php:260
+#: includes/class-lightweight-seo-admin-page.php:323
 #: includes/class-lightweight-seo.php:241
 msgid "Hreflang"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:252
+#: includes/class-lightweight-seo-admin-page.php:261
 msgid "Alternate-language links for translated or regional pages."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:258
+#: includes/class-lightweight-seo-admin-page.php:267
 msgid "Exact redirect rules, plus automatic redirects when a published slug changes."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:264
+#: includes/class-lightweight-seo-admin-page.php:273
 msgid "Google Tag Manager, or direct GA4 and Meta Pixel IDs."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:271
+#: includes/class-lightweight-seo-admin-page.php:280
 msgid "Separate AI search access from model-training access, and publish a curated llms.txt."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:274
+#: includes/class-lightweight-seo-admin-page.php:283
 msgid "Experimental"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:281
+#: includes/class-lightweight-seo-admin-page.php:290
 msgid "Import from another SEO plugin"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:282
+#: includes/class-lightweight-seo-admin-page.php:291
 msgid "Preview and import saved metadata from Yoast SEO, Rank Math, or All in One SEO, 50 posts at a time."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:288
-#: includes/class-lightweight-seo-admin-settings.php:183
+#: includes/class-lightweight-seo-admin-page.php:297
+#: includes/class-lightweight-seo-admin-settings.php:182
 msgid "Legacy data"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:289
+#: includes/class-lightweight-seo-admin-page.php:298
 msgid "Export or delete data kept from features that have been retired."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:295
+#: includes/class-lightweight-seo-admin-page.php:304
 msgid "Uninstall"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:296
+#: includes/class-lightweight-seo-admin-page.php:305
 msgid "Choose what happens to your SEO data if the plugin is removed."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:315
-#: includes/class-lightweight-seo-admin-settings.php:166
+#: includes/class-lightweight-seo-admin-page.php:324
+#: includes/class-lightweight-seo-admin-settings.php:165
 #: includes/class-lightweight-seo.php:235
 msgid "Redirects"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:316
-#: includes/class-lightweight-seo-admin-settings.php:188
+#: includes/class-lightweight-seo-admin-page.php:325
+#: includes/class-lightweight-seo-admin-settings.php:187
 msgid "Tracking codes"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:317
-#: includes/class-lightweight-seo-admin-settings.php:200
+#: includes/class-lightweight-seo-admin-page.php:326
+#: includes/class-lightweight-seo-admin-settings.php:199
 #: includes/class-lightweight-seo.php:256
 msgid "AI Discovery"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:336
+#: includes/class-lightweight-seo-admin-page.php:345
 msgid "You are not allowed to change this screen."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:433
+#: includes/class-lightweight-seo-admin-page.php:442
 msgid "Edit homepage defaults"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:471
+#: includes/class-lightweight-seo-admin-page.php:480
 msgid "Edit front page"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:489
+#: includes/class-lightweight-seo-admin-page.php:498
 msgid "Your homepage"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:490
+#: includes/class-lightweight-seo-admin-page.php:499
 msgid "What your current settings send to search engines and social networks. Each service decides how it is finally shown."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:500
-#: includes/class-lightweight-seo-meta-boxes.php:181
+#: includes/class-lightweight-seo-admin-page.php:509
+#: includes/class-lightweight-seo-meta-boxes.php:185
 msgid "Search result preview"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:507
+#: includes/class-lightweight-seo-admin-page.php:516
 msgid "No description is set, so search engines will pick text from the page."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:513
-#: includes/class-lightweight-seo-meta-boxes.php:244
+#: includes/class-lightweight-seo-admin-page.php:522
+#: includes/class-lightweight-seo-meta-boxes.php:255
 msgid "Share preview"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:534
+#: includes/class-lightweight-seo-admin-page.php:543
 msgid "Review"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:539
+#: includes/class-lightweight-seo-admin-page.php:548
 msgid "Set a site name and tagline"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:540
+#: includes/class-lightweight-seo-admin-page.php:549
 msgid "The homepage title format uses both."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:542
+#: includes/class-lightweight-seo-admin-page.php:551
 msgid "General settings"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:548
+#: includes/class-lightweight-seo-admin-page.php:557
 msgid "Write a homepage description"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:557
+#: includes/class-lightweight-seo-admin-page.php:566
 msgid "Select a default social image"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:567
+#: includes/class-lightweight-seo-admin-page.php:576
 msgid "Review what search engines may index"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:568
+#: includes/class-lightweight-seo-admin-page.php:577
 msgid "Review optional modules"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:576
+#: includes/class-lightweight-seo-admin-page.php:585
 msgid "Essential setup"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:577
+#: includes/class-lightweight-seo-admin-page.php:586
 msgid "Finish the essentials in any order. This is a checklist, not a required wizard."
 msgstr ""
 
 #. translators: 1: number of completed setup steps, 2: total number of tracked setup steps.
-#: includes/class-lightweight-seo-admin-page.php:583
+#: includes/class-lightweight-seo-admin-page.php:592
 #, php-format
 msgid "%1$d of %2$d ready"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:587
+#: includes/class-lightweight-seo-admin-page.php:596
 msgid "Dismiss checklist"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:594
+#: includes/class-lightweight-seo-admin-page.php:603
 msgid "The essentials are set"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:594
+#: includes/class-lightweight-seo-admin-page.php:603
 msgid "Your site identity, homepage description, and default social image are in place."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:605
+#: includes/class-lightweight-seo-admin-page.php:614
 msgid "Optional"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:627
+#: includes/class-lightweight-seo-admin-page.php:636
 msgid "At a glance"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:628
+#: includes/class-lightweight-seo-admin-page.php:637
 msgid "What Lightweight SEO is doing on this site right now."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:635
-#: includes/class-lightweight-seo-admin-page.php:639
+#: includes/class-lightweight-seo-admin-page.php:644
+#: includes/class-lightweight-seo-admin-page.php:648
 msgid "Search visibility"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:635
+#: includes/class-lightweight-seo-admin-page.php:644
 msgid "Search engines are allowed to index this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:640
+#: includes/class-lightweight-seo-admin-page.php:649
 msgid "WordPress is set to discourage search engines from indexing this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:642
+#: includes/class-lightweight-seo-admin-page.php:651
 msgid "Reading settings"
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-admin-page.php:649
-#: includes/class-lightweight-seo-admin-page.php:652
+#: includes/class-lightweight-seo-admin-page.php:658
+#: includes/class-lightweight-seo-admin-page.php:661
 msgid "SEO output"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:649
+#: includes/class-lightweight-seo-admin-page.php:658
 msgid "Titles, descriptions, canonicals, robots directives, and schema are being written."
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-admin-page.php:652
+#: includes/class-lightweight-seo-admin-page.php:661
 #, php-format
 msgid "Safe mode is on because %s is also active. Overlapping output is paused to avoid duplicates."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:657
+#: includes/class-lightweight-seo-admin-page.php:666
 msgid "XML sitemap"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:660
+#: includes/class-lightweight-seo-admin-page.php:669
 msgid "Open"
 msgstr ""
 
 #. translators: 1: module name, 2: module status, either Active or Off.
-#: includes/class-lightweight-seo-admin-page.php:677
+#: includes/class-lightweight-seo-admin-page.php:686
 #, php-format
 msgid "%1$s: %2$s"
 msgstr ""
 
 #. translators: 1: module name, 2: module status, either Active or Off.
-#: includes/class-lightweight-seo-admin-page.php:677
-#: includes/class-lightweight-seo-admin-page.php:772
+#: includes/class-lightweight-seo-admin-page.php:686
+#: includes/class-lightweight-seo-admin-page.php:781
 msgid "Active"
 msgstr ""
 
 #. translators: 1: module name, 2: module status, either Active or Off.
-#: includes/class-lightweight-seo-admin-page.php:677
-#: includes/class-lightweight-seo-admin-page.php:772
+#: includes/class-lightweight-seo-admin-page.php:686
+#: includes/class-lightweight-seo-admin-page.php:781
 msgid "Off"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:714
+#: includes/class-lightweight-seo-admin-page.php:723
 msgid "Unsaved changes"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:830
+#: includes/class-lightweight-seo-admin-page.php:839
 msgid "Plugin version"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:831
+#: includes/class-lightweight-seo-admin-page.php:840
 msgid "API version"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:832
+#: includes/class-lightweight-seo-admin-page.php:841
 msgid "Accessor"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:833
+#: includes/class-lightweight-seo-admin-page.php:842
 msgid "Ready hook"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:839
+#: includes/class-lightweight-seo-admin-page.php:848
 msgid "Developer API"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:840
+#: includes/class-lightweight-seo-admin-page.php:849
 msgid "Extensions can read normalized SEO facts through the versioned facade without reading private settings or credentials."
 msgstr ""
 
@@ -996,154 +1050,146 @@ msgstr ""
 msgid "Indexation controls"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:138
-msgid "Search results pages"
-msgstr ""
-
 #: includes/class-lightweight-seo-admin-settings.php:139
-msgid "Attachment pages"
-msgstr ""
-
-#: includes/class-lightweight-seo-admin-settings.php:140
-#: includes/class-lightweight-seo-archive-meta.php:474
-#: includes/class-lightweight-seo-meta-boxes.php:230
+#: includes/class-lightweight-seo-archive-meta.php:481
+#: includes/class-lightweight-seo-meta-boxes.php:241
 msgid "Image preview size"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:141
+#: includes/class-lightweight-seo-admin-settings.php:140
 msgid "Attachment page headers"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:145
+#: includes/class-lightweight-seo-admin-settings.php:144
 msgid "XML sitemaps"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:148
+#: includes/class-lightweight-seo-admin-settings.php:147
 msgid "Hidden pages"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:149
+#: includes/class-lightweight-seo-admin-settings.php:148
 msgid "Redirected pages"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:153
+#: includes/class-lightweight-seo-admin-settings.php:152
 msgid "Structured data"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:156
+#: includes/class-lightweight-seo-admin-settings.php:155
 msgid "Core schema output"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:157
+#: includes/class-lightweight-seo-admin-settings.php:156
 msgid "Organization profiles"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:158
+#: includes/class-lightweight-seo-admin-settings.php:157
 msgid "Local business schema"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:159
+#: includes/class-lightweight-seo-admin-settings.php:158
 msgid "Business details"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:160
+#: includes/class-lightweight-seo-admin-settings.php:159
 msgid "Hreflang output"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:161
+#: includes/class-lightweight-seo-admin-settings.php:160
 msgid "Hreflang mappings"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:162
+#: includes/class-lightweight-seo-admin-settings.php:161
 msgid "Legacy path mirroring"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:169
+#: includes/class-lightweight-seo-admin-settings.php:168
 msgid "Automatic slug redirects"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:170
+#: includes/class-lightweight-seo-admin-settings.php:169
 msgid "Manual redirect rules"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:171
+#: includes/class-lightweight-seo-admin-settings.php:170
 msgid "Generated redirects"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:172
+#: includes/class-lightweight-seo-admin-settings.php:171
 msgid "Redirect export"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:173
+#: includes/class-lightweight-seo-admin-settings.php:172
 msgid "Redirect health"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:177
+#: includes/class-lightweight-seo-admin-settings.php:176
 msgid "Migration and imports"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:180
+#: includes/class-lightweight-seo-admin-settings.php:179
 msgid "Import source"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:181
+#: includes/class-lightweight-seo-admin-settings.php:180
 msgid "Preview or import"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:182
+#: includes/class-lightweight-seo-admin-settings.php:181
 msgid "Import status"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:184
+#: includes/class-lightweight-seo-admin-settings.php:183
 msgid "Uninstall data"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:192
+#: includes/class-lightweight-seo-admin-settings.php:191
 msgid "Google Tag Manager container ID"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:193
+#: includes/class-lightweight-seo-admin-settings.php:192
 msgid "Direct Google Analytics 4 measurement ID"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:194
+#: includes/class-lightweight-seo-admin-settings.php:193
 msgid "Direct Meta Pixel ID"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:195
+#: includes/class-lightweight-seo-admin-settings.php:194
 msgid "Excluded roles"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:196
+#: includes/class-lightweight-seo-admin-settings.php:195
 msgid "Excluded environments"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:203
+#: includes/class-lightweight-seo-admin-settings.php:202
 msgid "Enable module"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:204
+#: includes/class-lightweight-seo-admin-settings.php:203
 msgid "AI search visibility"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:205
+#: includes/class-lightweight-seo-admin-settings.php:204
 msgid "Model training access"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:206
+#: includes/class-lightweight-seo-admin-settings.php:205
 msgid "Curated llms.txt"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:207
+#: includes/class-lightweight-seo-admin-settings.php:206
 msgid "Pages to list"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:208
+#: includes/class-lightweight-seo-admin-settings.php:207
 msgid "Readiness checks"
 msgstr ""
 
 #. translators: %d: number of redirect rules that were not saved.
-#: includes/class-lightweight-seo-admin-settings.php:373
+#: includes/class-lightweight-seo-admin-settings.php:384
 #, php-format
 msgid "Settings saved. %d redirect rule was left out because it was incomplete, repeated another rule, looped, or pointed to a site that is not approved."
 msgid_plural "Settings saved. %d redirect rules were left out because they were incomplete, repeated another rule, looped, or pointed to a site that is not approved."
@@ -1151,22 +1197,22 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of hreflang mappings that were not saved.
-#: includes/class-lightweight-seo-admin-settings.php:433
+#: includes/class-lightweight-seo-admin-settings.php:444
 #, php-format
 msgid "Settings saved. %d translation was left out because its page, language tag, or address was not valid, or it repeated another line."
 msgid_plural "Settings saved. %d translations were left out because their page, language tag, or address was not valid, or they repeated another line."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-admin-settings.php:480
+#: includes/class-lightweight-seo-admin-settings.php:491
 msgid "Invalid Google Analytics 4 Measurement ID. Use a value like G-XXXXXXXXXX."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:493
+#: includes/class-lightweight-seo-admin-settings.php:504
 msgid "Invalid Google Tag Manager Container ID. Use a value like GTM-XXXXXX."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:506
+#: includes/class-lightweight-seo-admin-settings.php:517
 msgid "Invalid Facebook Pixel ID. Use a numeric value."
 msgstr ""
 
@@ -1351,80 +1397,107 @@ msgstr ""
 msgid "To do:"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:185
+#. translators: 1: name of a content type, such as Posts, 2: name of a setting, such as Title format.
+#: includes/class-lightweight-seo-admin-ui.php:221
+#, php-format
+msgctxt "matrix control label"
+msgid "%1$s: %2$s"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-ui.php:260
+msgid "No setting"
+msgstr ""
+
+#. translators: %s: plural name of a content type, such as Posts or Categories.
+#: includes/class-lightweight-seo-admin-ui.php:283
+#, php-format
+msgid "Default for %s (currently hidden)"
+msgstr ""
+
+#. translators: %s: plural name of a content type, such as Posts or Categories.
+#: includes/class-lightweight-seo-admin-ui.php:286
+#, php-format
+msgid "Default for %s (currently shown)"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-ui.php:292
+msgid "Hide from search results"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-ui.php:305
 msgid "Insert a variable:"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:330
-#: includes/class-lightweight-seo-admin-ui.php:385
-#: includes/class-lightweight-seo-admin-ui.php:471
+#: includes/class-lightweight-seo-admin-ui.php:450
+#: includes/class-lightweight-seo-admin-ui.php:505
+#: includes/class-lightweight-seo-admin-ui.php:591
 msgid "Remove"
 msgstr ""
 
 #. translators: 1: number of items, 2: most items the setting keeps.
-#: includes/class-lightweight-seo-admin-ui.php:348
+#: includes/class-lightweight-seo-admin-ui.php:468
 #, php-format
 msgid "%1$d of %2$d"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:358
+#: includes/class-lightweight-seo-admin-ui.php:478
 msgid "Searching…"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:359
+#: includes/class-lightweight-seo-admin-ui.php:479
 msgid "Nothing matches that search."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:360
+#: includes/class-lightweight-seo-admin-ui.php:480
 msgid "Search is not available right now. Use “Edit as text” instead."
 msgstr ""
 
 #. translators: %d: number of lines that are kept as text.
-#: includes/class-lightweight-seo-admin-ui.php:411
-#: includes/class-lightweight-seo-admin-ui.php:413
+#: includes/class-lightweight-seo-admin-ui.php:531
+#: includes/class-lightweight-seo-admin-ui.php:533
 #, php-format
 msgid "%d line could not be shown as a row and is kept as text."
 msgid_plural "%d lines could not be shown as rows and are kept as text."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-admin-ui.php:416
+#: includes/class-lightweight-seo-admin-ui.php:536
 msgid "Edit as text"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:416
+#: includes/class-lightweight-seo-admin-ui.php:536
 msgid "Edit as rows"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:447
+#: includes/class-lightweight-seo-admin-ui.php:567
 msgid "Hours removed."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:447
+#: includes/class-lightweight-seo-admin-ui.php:567
 msgid "Monday’s hours copied to Tuesday to Friday."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:454
+#: includes/class-lightweight-seo-admin-ui.php:574
 msgid "Closed"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:456
+#: includes/class-lightweight-seo-admin-ui.php:576
 msgid "Add hours"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:460
+#: includes/class-lightweight-seo-admin-ui.php:580
 msgid "Copy Monday to Tuesday–Friday"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:466
+#: includes/class-lightweight-seo-admin-ui.php:586
 msgid "Opens"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:468
+#: includes/class-lightweight-seo-admin-ui.php:588
 msgid "Closes"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:497
+#: includes/class-lightweight-seo-admin-ui.php:617
 msgid "Choose image"
 msgstr ""
 
@@ -1526,322 +1599,331 @@ msgstr ""
 msgid "No physical or routed llms.txt conflict was detected."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:345
+#: includes/class-lightweight-seo-archive-meta.php:348
+msgid "author archives"
+msgstr ""
+
+#: includes/class-lightweight-seo-archive-meta.php:352
 #: includes/class-lightweight-seo-meta-boxes.php:66
 msgid "SEO settings"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:439
-#: includes/class-lightweight-seo-meta-boxes.php:193
-#: includes/class-lightweight-seo-meta-boxes.php:331
+#: includes/class-lightweight-seo-archive-meta.php:446
+#: includes/class-lightweight-seo-meta-boxes.php:197
+#: includes/class-lightweight-seo-meta-boxes.php:342
 msgid "SEO title"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:440
+#: includes/class-lightweight-seo-archive-meta.php:447
 msgid "Optional title override for this archive page."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:444
-#: includes/class-lightweight-seo-meta-boxes.php:202
-#: includes/class-lightweight-seo-meta-boxes.php:332
+#: includes/class-lightweight-seo-archive-meta.php:451
+#: includes/class-lightweight-seo-meta-boxes.php:206
+#: includes/class-lightweight-seo-meta-boxes.php:343
 msgid "Meta description"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:445
+#: includes/class-lightweight-seo-archive-meta.php:452
 msgid "Optional description override for this archive page."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:449
-#: includes/class-lightweight-seo-meta-boxes.php:213
+#: includes/class-lightweight-seo-archive-meta.php:456
+#: includes/class-lightweight-seo-meta-boxes.php:217
 msgid "Canonical URL"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:450
+#: includes/class-lightweight-seo-archive-meta.php:457
 msgid "Leave empty to use the archive URL."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:454
-msgid "Noindex"
+#: includes/class-lightweight-seo-archive-meta.php:461
+#: includes/class-lightweight-seo-meta-boxes.php:224
+msgid "Search results"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:455
-msgid "Prevent this archive page from being indexed."
+#: includes/class-lightweight-seo-archive-meta.php:462
+msgid "Decides whether search engines may show this archive page, whatever its content type is set to."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:459
+#: includes/class-lightweight-seo-archive-meta.php:466
 msgid "Nofollow"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:460
+#: includes/class-lightweight-seo-archive-meta.php:467
 msgid "Prevent search engines from following links on this archive page."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:464
+#: includes/class-lightweight-seo-archive-meta.php:471
 msgid "Noarchive"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:465
+#: includes/class-lightweight-seo-archive-meta.php:472
 msgid "Prevent cached copies for this archive page."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:469
+#: includes/class-lightweight-seo-archive-meta.php:476
 msgid "Nosnippet"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:470
+#: includes/class-lightweight-seo-archive-meta.php:477
 msgid "Prevent text snippets in search results."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:475
+#: includes/class-lightweight-seo-archive-meta.php:482
 msgid "Override the global image preview robots directive for this archive page."
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:545
-#: includes/class-lightweight-seo-meta-boxes.php:233
+#: includes/class-lightweight-seo-archive-meta.php:575
+#: includes/class-lightweight-seo-meta-boxes.php:244
 msgid "Use global default"
 msgstr ""
 
-#: includes/class-lightweight-seo-archive-meta.php:556
+#: includes/class-lightweight-seo-archive-meta.php:586
 msgid "Enabled"
 msgstr ""
 
 #. translators: %d: number of on-page checks that need a review.
-#: includes/class-lightweight-seo-meta-boxes.php:144
-#: includes/class-lightweight-seo-meta-boxes.php:146
-#: includes/class-lightweight-seo-meta-boxes.php:149
+#: includes/class-lightweight-seo-meta-boxes.php:148
+#: includes/class-lightweight-seo-meta-boxes.php:150
+#: includes/class-lightweight-seo-meta-boxes.php:153
 #, php-format
 msgid "%d check to review"
 msgid_plural "%d checks to review"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:147
+#: includes/class-lightweight-seo-meta-boxes.php:151
 msgid "All checks passed"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:152
-msgid "Prevent search engines from indexing this page"
-msgstr ""
-
-#: includes/class-lightweight-seo-meta-boxes.php:153
+#: includes/class-lightweight-seo-meta-boxes.php:156
 msgid "Prevent search engines from following links on this page"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:154
+#: includes/class-lightweight-seo-meta-boxes.php:157
 msgid "Prevent search engines from showing cached copies"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:155
+#: includes/class-lightweight-seo-meta-boxes.php:158
 msgid "Prevent text snippets from showing in search results"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:167
+#: includes/class-lightweight-seo-meta-boxes.php:171
 msgid "SEO editor panels"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:169
+#: includes/class-lightweight-seo-meta-boxes.php:173
 msgid "Social appearance"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:171
+#: includes/class-lightweight-seo-meta-boxes.php:175
 msgid "Checks"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:197
+#: includes/class-lightweight-seo-meta-boxes.php:201
 msgid "characters. Aim for a clear, specific title; roughly 30–60 characters is useful preview guidance, not a ranking rule."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:206
+#: includes/class-lightweight-seo-meta-boxes.php:210
 msgid "characters. Roughly 120–160 characters often fits a search preview, but clarity matters more than hitting a number."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:210
+#: includes/class-lightweight-seo-meta-boxes.php:214
 msgid "Advanced canonical and robots controls"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:216
+#: includes/class-lightweight-seo-meta-boxes.php:220
 msgid "Leave empty to use this page’s own address. Set it only when this page is a copy of another page."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:220
+#: includes/class-lightweight-seo-meta-boxes.php:227
+msgid "Decides whether search engines may show this page, whatever its content type is set to."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:231
 msgid "Robots directives"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:256
+#: includes/class-lightweight-seo-meta-boxes.php:267
 msgid "Social title"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:259
+#: includes/class-lightweight-seo-meta-boxes.php:270
 msgid "Leave empty to use the SEO title."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:263
+#: includes/class-lightweight-seo-meta-boxes.php:274
 msgid "Social description"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:266
+#: includes/class-lightweight-seo-meta-boxes.php:277
 msgid "Leave empty to use the meta description."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:270
-#: includes/class-lightweight-seo-meta-boxes.php:337
+#: includes/class-lightweight-seo-meta-boxes.php:281
+#: includes/class-lightweight-seo-meta-boxes.php:348
 msgid "Social image"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:282
+#: includes/class-lightweight-seo-meta-boxes.php:293
 msgid "Selected social image"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:286
+#: includes/class-lightweight-seo-meta-boxes.php:297
 msgid "Leave empty to use the featured image, or the site default when there is none. Recommended size: 1200 × 630 pixels."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:291
+#: includes/class-lightweight-seo-meta-boxes.php:302
 msgid "These checks report facts and preview guidance only. They do not predict rankings."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:292
-#: includes/class-lightweight-seo-meta-boxes.php:297
+#: includes/class-lightweight-seo-meta-boxes.php:303
+#: includes/class-lightweight-seo-meta-boxes.php:308
 msgid "Edit"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:331
+#: includes/class-lightweight-seo-meta-boxes.php:342
 msgid "A title is available for the search preview."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:331
+#: includes/class-lightweight-seo-meta-boxes.php:342
 msgid "Add a clear SEO title."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:332
+#: includes/class-lightweight-seo-meta-boxes.php:343
 msgid "A description is available for the search preview."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:332
+#: includes/class-lightweight-seo-meta-boxes.php:343
 msgid "Add a useful description of this page."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:334
+#: includes/class-lightweight-seo-meta-boxes.php:345
 msgid "Title preview length"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:334
+#: includes/class-lightweight-seo-meta-boxes.php:345
 msgid "The title is within the usual preview guidance range."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:334
+#: includes/class-lightweight-seo-meta-boxes.php:345
 msgid "The title may be shortened or expanded in search results; review it for clarity."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:336
+#: includes/class-lightweight-seo-meta-boxes.php:347
 msgid "Description preview length"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:336
+#: includes/class-lightweight-seo-meta-boxes.php:347
 msgid "The description is within the usual preview guidance range."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:336
+#: includes/class-lightweight-seo-meta-boxes.php:347
 msgid "The description may truncate or leave unused preview space; review it for clarity."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:337
+#: includes/class-lightweight-seo-meta-boxes.php:348
 msgid "A social image is available."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:337
+#: includes/class-lightweight-seo-meta-boxes.php:348
 msgid "Choose an image for richer social previews."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:341
+#: includes/class-lightweight-seo-meta-boxes.php:352
 msgid "Social image width"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:341
+#: includes/class-lightweight-seo-meta-boxes.php:352
 msgid "The selected image meets the 1200px width recommendation."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:341
+#: includes/class-lightweight-seo-meta-boxes.php:352
 msgid "The selected image is below the 1200px width recommendation."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:342
+#: includes/class-lightweight-seo-meta-boxes.php:356
+msgid "This content type is hidden from search results, so this page is too. Choose “Show in search results” to make an exception."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:357
 msgid "Indexing"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:342
+#: includes/class-lightweight-seo-meta-boxes.php:357
 msgid "This page can be indexed."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:342
+#: includes/class-lightweight-seo-meta-boxes.php:357
 msgid "This page is intentionally set to noindex. Confirm that is expected."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:346
+#: includes/class-lightweight-seo-meta-boxes.php:370
 msgid "The custom canonical URL is invalid."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:347
+#: includes/class-lightweight-seo-meta-boxes.php:371
 msgid "Custom canonical"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:347
+#: includes/class-lightweight-seo-meta-boxes.php:371
 msgid "The custom canonical uses this site’s host."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:347
+#: includes/class-lightweight-seo-meta-boxes.php:371
 msgid "The custom canonical points to a different host. Confirm that this is intentional."
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-meta-boxes.php:360
+#: includes/class-lightweight-seo-meta-boxes.php:384
 msgid "SEO output conflicts"
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-meta-boxes.php:360
+#: includes/class-lightweight-seo-meta-boxes.php:384
 msgid "No conflicting SEO plugin was detected."
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-meta-boxes.php:360
+#: includes/class-lightweight-seo-meta-boxes.php:384
 #, php-format
 msgid "Another SEO plugin is active: %s. Lightweight SEO suppresses overlapping output."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:304
+#: includes/class-lightweight-seo-settings.php:549
 msgid "Choose a supported LocalBusiness type."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:330
+#: includes/class-lightweight-seo-settings.php:575
 msgid "Enter a valid phone number containing 7 to 15 digits."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:336
+#: includes/class-lightweight-seo-settings.php:581
 msgid "Enter a short numeric or currency-symbol price range."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:341
+#: includes/class-lightweight-seo-settings.php:586
 msgid "Use a two-letter ISO country code."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:350
+#: includes/class-lightweight-seo-settings.php:595
 msgid "Enter both coordinates using latitude -90 to 90 and longitude -180 to 180."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:361
+#: includes/class-lightweight-seo-settings.php:606
 msgid "Use opening hours like Mo-Fr 09:00-17:00."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:373
+#: includes/class-lightweight-seo-settings.php:618
 msgid "Enter a valid HTTP or HTTPS business image URL."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:383
+#: includes/class-lightweight-seo-settings.php:628
 msgid "Complete the street, locality, postal code, and country together."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:387
+#: includes/class-lightweight-seo-settings.php:632
 msgid "A business name and complete address are required before Local SEO can be enabled."
 msgstr ""
 

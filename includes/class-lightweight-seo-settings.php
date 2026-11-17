@@ -24,6 +24,11 @@ class Lightweight_SEO_Settings {
 	/** Maximum number of manually curated pages exposed in llms.txt. */
 	const MAX_LLMS_POSTS = 50;
 
+	/** Maximum number of post type or taxonomy rows stored in the bounded core option. */
+	const MAX_CONTENT_TYPE_ROWS = 100;
+
+	/** Stored per-item choice that shows an item even when its content type is hidden. */
+	const INDEX_OVERRIDE = 'index';
 
 	/**
 	 * Cached settings for the current request.
@@ -49,6 +54,9 @@ class Lightweight_SEO_Settings {
 			'meta_description'                   => '',
 			'noindex_search_results'             => '1',
 			'noindex_attachment_pages'           => '1',
+			'noindex_author_archives'            => '0',
+			'noindex_date_archives'              => '0',
+			'content_types'                      => array(),
 			'enable_media_x_robots_headers'      => '1',
 			'exclude_noindex_from_sitemaps'      => '1',
 			'exclude_redirected_from_sitemaps'   => '1',
@@ -181,6 +189,243 @@ class Lightweight_SEO_Settings {
 	 */
 	public function attachment_pages_noindex_enabled() {
 		return '1' === (string) $this->get( 'noindex_attachment_pages', '1' );
+	}
+
+	/**
+	 * Determine whether author archives should default to noindex.
+	 *
+	 * @since    1.1.0
+	 * @return   bool
+	 */
+	public function author_archives_noindex_enabled() {
+		return '1' === (string) $this->get( 'noindex_author_archives', '0' );
+	}
+
+	/**
+	 * Determine whether date archives should be noindexed.
+	 *
+	 * @since    1.1.0
+	 * @return   bool
+	 */
+	public function date_archives_noindex_enabled() {
+		return '1' === (string) $this->get( 'noindex_date_archives', '0' );
+	}
+
+	/**
+	 * Get the settings of one post type or taxonomy, with defaults for anything not stored.
+	 *
+	 * A row that was never saved shows the content type in search results, lists it in
+	 * the sitemap, and inherits the site-wide title format. Attachment visibility lives
+	 * in its own setting, which predates this table.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $group    Either post_types or taxonomies.
+	 * @param    string    $name     Post type or taxonomy name.
+	 * @return   array Row with noindex, sitemap, and title_format.
+	 */
+	public function get_content_type( $group, $name ) {
+		$stored = $this->get( 'content_types', array() );
+		$row    = is_array( $stored ) && isset( $stored[ $group ][ $name ] ) ? $this->normalize_content_type_row( $stored[ $group ][ $name ] ) : $this->normalize_content_type_row( array() );
+
+		if ( 'post_types' === $group && 'attachment' === $name ) {
+			$row['noindex'] = $this->attachment_pages_noindex_enabled() ? '1' : '0';
+		}
+
+		return $row;
+	}
+
+	/**
+	 * Determine whether a post type is hidden from search results by default.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $post_type    Post type name.
+	 * @return   bool
+	 */
+	public function is_post_type_noindex( $post_type ) {
+		return '1' === $this->get_content_type( 'post_types', (string) $post_type )['noindex'];
+	}
+
+	/**
+	 * Determine whether the archives of a taxonomy are hidden from search results by default.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $taxonomy    Taxonomy name.
+	 * @return   bool
+	 */
+	public function is_taxonomy_noindex( $taxonomy ) {
+		return '1' === $this->get_content_type( 'taxonomies', (string) $taxonomy )['noindex'];
+	}
+
+	/**
+	 * Determine whether a post type may be listed in the XML sitemap.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $post_type    Post type name.
+	 * @return   bool
+	 */
+	public function is_post_type_in_sitemap( $post_type ) {
+		return '1' === $this->get_content_type( 'post_types', (string) $post_type )['sitemap'];
+	}
+
+	/**
+	 * Determine whether a taxonomy may be listed in the XML sitemap.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $taxonomy    Taxonomy name.
+	 * @return   bool
+	 */
+	public function is_taxonomy_in_sitemap( $taxonomy ) {
+		return '1' === $this->get_content_type( 'taxonomies', (string) $taxonomy )['sitemap'];
+	}
+
+	/**
+	 * Get the title format of a post type, falling back to the default title format.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $post_type    Post type name.
+	 * @return   string
+	 */
+	public function get_title_format_for_post_type( $post_type ) {
+		$format = $this->get_content_type( 'post_types', (string) $post_type )['title_format'];
+
+		return '' !== $format ? wp_specialchars_decode( $format, ENT_QUOTES ) : $this->get_title_format();
+	}
+
+	/**
+	 * Get the title format of a taxonomy's archives, falling back to the archive title format.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $taxonomy    Taxonomy name.
+	 * @return   string
+	 */
+	public function get_title_format_for_taxonomy( $taxonomy ) {
+		$format = $this->get_content_type( 'taxonomies', (string) $taxonomy )['title_format'];
+
+		return '' !== $format ? wp_specialchars_decode( $format, ENT_QUOTES ) : $this->get_archive_title_format();
+	}
+
+	/**
+	 * Decide whether one page, term, or author is hidden from search results.
+	 *
+	 * The item's own choice wins in both directions. Without one, the item follows
+	 * its content type.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $own_value      Stored per-item value: 1 hides, INDEX_OVERRIDE shows, anything else follows the type.
+	 * @param    bool     $type_hidden    Whether the content type is hidden by default.
+	 * @return   bool
+	 */
+	public function resolve_noindex( $own_value, $type_hidden ) {
+		$own_value = (string) $own_value;
+
+		if ( '1' === $own_value ) {
+			return true;
+		}
+
+		if ( self::INDEX_OVERRIDE === $own_value ) {
+			return false;
+		}
+
+		return (bool) $type_hidden;
+	}
+
+	/**
+	 * Normalize a per-item search visibility choice for storage.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $value    Submitted value.
+	 * @return   string 1 to hide, INDEX_OVERRIDE to show, or 0 to follow the content type.
+	 */
+	public function normalize_noindex_choice( $value ) {
+		$value = is_scalar( $value ) ? (string) $value : '';
+
+		return in_array( $value, array( '1', self::INDEX_OVERRIDE ), true ) ? $value : '0';
+	}
+
+	/**
+	 * Normalize the content types table for storage.
+	 *
+	 * Only rows that differ from the defaults are kept, so an untouched table stores
+	 * nothing. A stored row whose post type or taxonomy is not registered right now is
+	 * carried over, so its settings survive a plugin being switched off and on.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $input         Submitted table.
+	 * @param    mixed    $existing      Stored table.
+	 * @param    array    $post_types    Post types that may be set.
+	 * @param    array    $taxonomies    Taxonomies that may be set.
+	 * @return   array
+	 */
+	public function normalize_content_types( $input, $existing, $post_types, $taxonomies ) {
+		$input      = is_array( $input ) ? $input : array();
+		$existing   = is_array( $existing ) ? $existing : array();
+		$defaults   = $this->normalize_content_type_row( array() );
+		$normalized = array();
+
+		foreach ( array(
+			'post_types' => $post_types,
+			'taxonomies' => $taxonomies,
+		) as $group => $registered ) {
+			$registered = array_map( 'strval', (array) $registered );
+			$submitted  = isset( $input[ $group ] ) && is_array( $input[ $group ] ) ? $input[ $group ] : array();
+			$stored     = isset( $existing[ $group ] ) && is_array( $existing[ $group ] ) ? $existing[ $group ] : array();
+			$rows       = array();
+
+			foreach ( $registered as $name ) {
+				if ( isset( $submitted[ $name ] ) ) {
+					$rows[ $name ] = $this->normalize_content_type_row( $submitted[ $name ] );
+				} elseif ( isset( $stored[ $name ] ) ) {
+					$rows[ $name ] = $this->normalize_content_type_row( $stored[ $name ] );
+				}
+			}
+
+			foreach ( $stored as $name => $row ) {
+				$name = sanitize_key( $name );
+
+				if ( '' !== $name && ! in_array( $name, $registered, true ) ) {
+					$rows[ $name ] = $this->normalize_content_type_row( $row );
+				}
+			}
+
+			if ( isset( $rows['attachment'] ) && 'post_types' === $group ) {
+				// Attachment visibility is stored in its own setting, and WordPress never lists attachments in a sitemap.
+				$rows['attachment']['noindex'] = $defaults['noindex'];
+				$rows['attachment']['sitemap'] = $defaults['sitemap'];
+			}
+
+			$rows = array_filter(
+				$rows,
+				static function ( $row ) use ( $defaults ) {
+					return $row !== $defaults;
+				}
+			);
+
+			if ( ! empty( $rows ) ) {
+				$normalized[ $group ] = array_slice( $rows, 0, self::MAX_CONTENT_TYPE_ROWS, true );
+			}
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Normalize one row of the content types table.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $row    Submitted or stored row.
+	 * @return   array
+	 */
+	private function normalize_content_type_row( $row ) {
+		$row   = is_array( $row ) ? $row : array();
+		$value = static function ( $key, $fallback ) use ( $row ) {
+			return isset( $row[ $key ] ) && is_scalar( $row[ $key ] ) ? (string) $row[ $key ] : $fallback;
+		};
+
+		return array(
+			'noindex'      => '1' === $value( 'noindex', '0' ) ? '1' : '0',
+			'sitemap'      => '0' === $value( 'sitemap', '1' ) ? '0' : '1',
+			'title_format' => sanitize_text_field( $value( 'title_format', '' ) ),
+		);
 	}
 
 	/**

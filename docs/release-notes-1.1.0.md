@@ -74,6 +74,24 @@ No setting, option key, or saved format changes.
 
 Fixed: the editor filled the social image field with the featured image or the site default, so saving a post stored that image as the post's own. A later change of featured image or site default then left `og:image` on the old image. The field now holds only an image chosen for that post. Posts saved before this fix keep the image that was stored; clear their social image field to follow the featured image again.
 
+## Content types since rc.3
+
+The "Content and indexation" tab opens with one table for every public post type and taxonomy, plus author archives, date archives, and internal search pages.
+
+- Each post type and taxonomy can be shown in or hidden from search results, listed in or left out of the sitemap, and given its own title format. An empty title format keeps the site-wide format.
+- Author archives and date archives can be hidden from search results.
+- A single page, term, or author can still decide for itself, in both directions. The "Prevent search engines from indexing this page" tick box in the editor, and the "Noindex" tick box on term and author screens, became a "Search results" choice: follow the content type, show, or hide.
+- Hiding a post type also hides its archive page. A hidden content type lists only the items set to show in the sitemap, while "Leave hidden pages out of the sitemap" is on.
+- The editor's Indexing check says when a page is hidden only because its content type is hidden, and how to make an exception.
+- A homepage that is a page follows the Pages row like any other page. The table warns when Pages are hidden on such a site.
+- The two tick boxes for internal search pages and attachment pages moved into the table as its "Internal search pages" and "Media" rows.
+
+Nothing changes until a row is changed: every default matches the previous behavior, and no stored value is rewritten. Three settings are new in the existing settings option: `content_types`, `noindex_author_archives`, and `noindex_date_archives`. The per-item noindex value keeps `1` for hide, treats `0` or nothing as the content type default, and stores `index` for show. Earlier versions read `index` as not hidden.
+
+One existing rule changes once the new choice is used: an attachment page set to "Show" is indexable even while attachment pages are hidden as a type. Before, the attachment setting always won.
+
+For extensions, `is_indexable()` and the `indexable` and `robots` values of `get_object_context()` now include the content type default.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

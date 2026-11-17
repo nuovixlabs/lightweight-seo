@@ -621,6 +621,72 @@ input[type="search"] + .lwseo-table-wrap {
 	margin-top: var(--lwseo-space-2);
 }
 
+/* Matrix: one row per item, one control per cell. ---------------------- */
+
+.lwseo-matrix th,
+.lwseo-matrix td {
+	vertical-align: middle;
+}
+
+.lwseo-matrix tbody th {
+	width: auto;
+}
+
+.lwseo-matrix tbody + tbody > tr:first-child > * {
+	border-top: 1px solid var(--lwseo-border-subtle);
+}
+
+.lwseo-matrix .lwseo-matrix__group th {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	padding-bottom: var(--lwseo-space-1);
+	padding-top: var(--lwseo-space-3);
+}
+
+.lwseo-matrix .lwseo-matrix__group + tr > * {
+	border-top: 0;
+}
+
+.lwseo-matrix__show,
+.lwseo-matrix__sitemap {
+	white-space: nowrap;
+}
+
+/* Wide enough for a tick box and its remark, so ticking a box never moves the columns. */
+.lwseo-matrix__sitemap {
+	width: 11rem;
+}
+
+.lwseo-matrix__title {
+	width: 40%;
+}
+
+.lwseo-matrix__check {
+	display: inline-flex;
+}
+
+.lwseo .lwseo-matrix__check input {
+	margin: 0;
+}
+
+.lwseo .lwseo-matrix__cell--text input {
+	width: 100%;
+}
+
+.lwseo-matrix__note {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	white-space: nowrap;
+}
+
+.lwseo-matrix__check + .lwseo-matrix__note {
+	margin-left: var(--lwseo-space-2);
+}
+
+.lwseo-table-wrap + .lwseo-tokens {
+	margin-top: var(--lwseo-space-3);
+}
+
 /* Log: plain output from a tool run. */
 
 .lwseo .lwseo-log {
@@ -1124,6 +1190,65 @@ input[type="search"] + .lwseo-table-wrap {
 
 	.lwseo-subfields {
 		grid-template-columns: minmax(0, 1fr);
+	}
+
+	/* Each matrix row becomes a short stack, and every cell names its column because the header is gone. */
+	.lwseo-matrix,
+	.lwseo-matrix tbody,
+	.lwseo-matrix tr,
+	.lwseo-matrix th,
+	.lwseo-matrix td {
+		display: block;
+	}
+
+	.lwseo-matrix thead {
+		display: none;
+	}
+
+	.lwseo-table.lwseo-matrix tbody tr > * {
+		border-top: 0;
+		padding-bottom: 0;
+	}
+
+	/* One line above each item, not above each of its cells. */
+	.lwseo-table.lwseo-matrix tbody tr + tr > th,
+	.lwseo-table.lwseo-matrix tbody + tbody > tr:first-child > th {
+		border-top: 1px solid var(--lwseo-border-subtle);
+	}
+
+	.lwseo-table.lwseo-matrix .lwseo-matrix__group + tr > th {
+		border-top: 0;
+	}
+
+	.lwseo-matrix tbody tr:not(.lwseo-matrix__group) {
+		padding-bottom: var(--lwseo-space-3);
+	}
+
+	.lwseo-matrix .lwseo-matrix__cell {
+		align-items: center;
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--lwseo-space-1) var(--lwseo-space-2);
+	}
+
+	.lwseo-matrix__cell::before {
+		color: var(--lwseo-text-muted);
+		content: attr(data-label);
+		flex: 1 1 auto;
+		font-size: var(--lwseo-text-sm);
+	}
+
+	.lwseo-matrix .lwseo-matrix__cell--text::before {
+		flex-basis: 100%;
+	}
+
+	/* Keep every tick box on the right edge, with its remark before it. */
+	.lwseo-matrix__check {
+		order: 1;
+	}
+
+	.lwseo-matrix .lwseo-matrix__cell--none {
+		display: none;
 	}
 
 	/* Each row becomes a short stack, and every cell names itself because the header is gone. */

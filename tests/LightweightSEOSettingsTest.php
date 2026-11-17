@@ -143,4 +143,205 @@ final class LightweightSEOSettingsTest extends TestCase {
 		$this->assertSame( '1', explode( ',', $normalized )[0] );
 		$this->assertSame( '50', explode( ',', $normalized )[49] );
 	}
+
+	public function test_content_types_default_to_shown_listed_and_inheriting_the_site_title_formats(): void {
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertSame( array(), $settings->get_defaults()['content_types'] );
+		$this->assertFalse( $settings->is_post_type_noindex( 'post' ) );
+		$this->assertFalse( $settings->is_taxonomy_noindex( 'post_tag' ) );
+		$this->assertTrue( $settings->is_post_type_in_sitemap( 'post' ) );
+		$this->assertTrue( $settings->is_taxonomy_in_sitemap( 'post_tag' ) );
+		$this->assertSame( $settings->get_title_format(), $settings->get_title_format_for_post_type( 'post' ) );
+		$this->assertSame( $settings->get_archive_title_format(), $settings->get_title_format_for_taxonomy( 'post_tag' ) );
+		$this->assertFalse( $settings->author_archives_noindex_enabled() );
+		$this->assertFalse( $settings->date_archives_noindex_enabled() );
+	}
+
+	public function test_content_type_rows_are_read_from_the_stored_table(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'noindex_author_archives' => '1',
+			'noindex_date_archives'   => '1',
+			'content_types'           => array(
+				'post_types' => array(
+					'portfolio' => array(
+						'noindex'      => '1',
+						'sitemap'      => '0',
+						'title_format' => '%title% %sep% Portfolio',
+					),
+				),
+				'taxonomies' => array(
+					'post_tag' => array(
+						'noindex'      => '1',
+						'title_format' => 'Tagged &quot;%title%&quot;',
+					),
+				),
+			),
+		);
+
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertTrue( $settings->is_post_type_noindex( 'portfolio' ) );
+		$this->assertFalse( $settings->is_post_type_in_sitemap( 'portfolio' ) );
+		$this->assertSame( '%title% %sep% Portfolio', $settings->get_title_format_for_post_type( 'portfolio' ) );
+		$this->assertTrue( $settings->is_taxonomy_noindex( 'post_tag' ) );
+		$this->assertTrue( $settings->is_taxonomy_in_sitemap( 'post_tag' ) );
+		$this->assertSame( 'Tagged "%title%"', $settings->get_title_format_for_taxonomy( 'post_tag' ) );
+		$this->assertFalse( $settings->is_post_type_noindex( 'post' ) );
+		$this->assertTrue( $settings->author_archives_noindex_enabled() );
+		$this->assertTrue( $settings->date_archives_noindex_enabled() );
+	}
+
+	public function test_attachment_visibility_keeps_its_original_setting(): void {
+		global $lightweight_seo_test_options;
+
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertTrue( $settings->is_post_type_noindex( 'attachment' ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'noindex_attachment_pages' => '0',
+			'content_types'            => array( 'post_types' => array( 'attachment' => array( 'noindex' => '1' ) ) ),
+		);
+
+		$this->assertFalse( ( new Lightweight_SEO_Settings() )->is_post_type_noindex( 'attachment' ) );
+	}
+
+	public function test_an_item_choice_wins_over_its_content_type_in_both_directions(): void {
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertTrue( $settings->resolve_noindex( '1', false ) );
+		$this->assertFalse( $settings->resolve_noindex( Lightweight_SEO_Settings::INDEX_OVERRIDE, true ) );
+		$this->assertTrue( $settings->resolve_noindex( '0', true ) );
+		$this->assertTrue( $settings->resolve_noindex( '', true ) );
+		$this->assertFalse( $settings->resolve_noindex( '0', false ) );
+		$this->assertFalse( $settings->resolve_noindex( null, false ) );
+
+		$this->assertSame( '1', $settings->normalize_noindex_choice( '1' ) );
+		$this->assertSame( 'index', $settings->normalize_noindex_choice( 'index' ) );
+		$this->assertSame( '0', $settings->normalize_noindex_choice( '' ) );
+		$this->assertSame( '0', $settings->normalize_noindex_choice( 'anything' ) );
+		$this->assertSame( '0', $settings->normalize_noindex_choice( array( '1' ) ) );
+	}
+
+	public function test_content_types_normalization_stores_only_rows_that_differ_from_the_defaults(): void {
+		$settings   = new Lightweight_SEO_Settings();
+		$normalized = $settings->normalize_content_types(
+			array(
+				'post_types' => array(
+					'post'       => array(
+						'noindex'      => '0',
+						'sitemap'      => '1',
+						'title_format' => '',
+					),
+					'page'       => array(
+						'noindex'      => '0',
+						'sitemap'      => '0',
+						'title_format' => ' <b>%title%</b> %sep% Pages ',
+					),
+					'attachment' => array(
+						'noindex'      => '1',
+						'sitemap'      => '0',
+						'title_format' => '',
+					),
+					'unknown'    => array( 'noindex' => '1' ),
+				),
+				'taxonomies' => array(
+					'category' => 'not a row',
+					'post_tag' => array(
+						'noindex' => '1',
+						'sitemap' => array( '0' ),
+					),
+				),
+				'archives'   => array( 'date' => array( 'noindex' => '1' ) ),
+			),
+			array(),
+			array( 'post', 'page', 'attachment' ),
+			array( 'category', 'post_tag' )
+		);
+
+		$this->assertSame(
+			array(
+				'post_types' => array(
+					'page' => array(
+						'noindex'      => '0',
+						'sitemap'      => '0',
+						'title_format' => '%title% %sep% Pages',
+					),
+				),
+				'taxonomies' => array(
+					'post_tag' => array(
+						'noindex'      => '1',
+						'sitemap'      => '1',
+						'title_format' => '',
+					),
+				),
+			),
+			$normalized
+		);
+		$this->assertSame( array(), $settings->normalize_content_types( array(), array(), array( 'post' ), array( 'category' ) ) );
+		$this->assertSame( array(), $settings->normalize_content_types( 'not a table', null, array( 'post' ), array( 'category' ) ) );
+	}
+
+	public function test_content_types_normalization_keeps_rows_the_form_did_not_submit(): void {
+		$settings = new Lightweight_SEO_Settings();
+		$existing = array(
+			'post_types' => array(
+				'portfolio' => array(
+					'noindex'      => '1',
+					'sitemap'      => '1',
+					'title_format' => '',
+				),
+				'page'      => array(
+					'noindex'      => '1',
+					'sitemap'      => '1',
+					'title_format' => '',
+				),
+			),
+		);
+
+		// The portfolio post type is not registered right now, and the page row was not part of the request.
+		$normalized = $settings->normalize_content_types(
+			array( 'post_types' => array( 'post' => array( 'noindex' => '1' ) ) ),
+			$existing,
+			array( 'post', 'page' ),
+			array()
+		);
+
+		$this->assertSame( array( 'post', 'page', 'portfolio' ), array_keys( $normalized['post_types'] ) );
+		$this->assertSame( '1', $normalized['post_types']['portfolio']['noindex'] );
+		$this->assertSame( '1', $normalized['post_types']['page']['noindex'] );
+
+		// Resetting a row to the defaults removes it.
+		$reset = $settings->normalize_content_types(
+			array(
+				'post_types' => array(
+					'page' => array(
+						'noindex' => '0',
+						'sitemap' => '1',
+					),
+				),
+			),
+			$existing,
+			array( 'post', 'page' ),
+			array()
+		);
+
+		$this->assertSame( array( 'portfolio' ), array_keys( $reset['post_types'] ) );
+	}
+
+	public function test_content_types_normalization_caps_stored_rows(): void {
+		$settings = new Lightweight_SEO_Settings();
+		$existing = array( 'taxonomies' => array() );
+
+		for ( $index = 0; $index < 130; $index++ ) {
+			$existing['taxonomies'][ 'retired_' . $index ] = array( 'noindex' => '1' );
+		}
+
+		$normalized = $settings->normalize_content_types( array(), $existing, array(), array() );
+
+		$this->assertCount( Lightweight_SEO_Settings::MAX_CONTENT_TYPE_ROWS, $normalized['taxonomies'] );
+	}
 }

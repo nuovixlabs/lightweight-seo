@@ -219,8 +219,17 @@ class Lightweight_SEO_Admin_Page {
 			'indexation' => array(
 				array(
 					'section'     => 'lightweight_seo_indexation_section',
-					'description' => __( 'Keep low-value pages out of search results and choose how previews appear.', 'lightweight-seo' ),
+					'fields'      => array( 'content_types' ),
+					'title'       => __( 'Content types', 'lightweight-seo' ),
+					'description' => __( 'What search engines may show, what the sitemap lists, and how titles are built for each kind of content. Any page, term, or author can make its own choice.', 'lightweight-seo' ),
 					'intro'       => true,
+					'plain'       => true,
+				),
+				array(
+					'section'     => 'lightweight_seo_indexation_section',
+					'fields'      => array( 'default_max_image_preview', 'enable_media_x_robots_headers' ),
+					'title'       => __( 'Previews and headers', 'lightweight-seo' ),
+					'description' => __( 'How large an image preview may be, and how attachment pages repeat their instructions.', 'lightweight-seo' ),
 				),
 				array(
 					'section'     => 'lightweight_seo_sitemap_section',

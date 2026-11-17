@@ -93,7 +93,11 @@ class Lightweight_SEO_Meta_Boxes {
 		$social_description    = $post_meta['social_description'] ?? '';
 		$own_social_image      = (string) $this->post_meta->get_social_image_url( $post->ID );
 		$own_social_image_id   = absint( $post_meta['social_image_id'] ?? 0 );
-		$global_title_format   = $this->settings->get_title_format();
+		$post_type             = (string) ( $post->post_type ?? '' );
+		$post_type_object      = get_post_type_object( $post_type );
+		$type_label            = (string) ( $post_type_object->labels->name ?? $post_type );
+		$type_hidden           = $this->settings->is_post_type_noindex( $post_type );
+		$global_title_format   = $this->settings->get_title_format_for_post_type( $post_type );
 		$tokens                = array(
 			'%title%'    => (string) $post->post_title,
 			'%sitename%' => (string) get_bloginfo( 'name' ),
@@ -130,7 +134,7 @@ class Lightweight_SEO_Meta_Boxes {
 			$social_image_id = 0;
 		}
 
-		$checks    = $this->get_editor_checks( $post_meta, $preview_title, $preview_description, $social_image, $social_image_id );
+		$checks    = $this->get_editor_checks( $post_meta, $preview_title, $preview_description, $social_image, $social_image_id, $type_hidden );
 		$to_review = count(
 			array_filter(
 				$checks,
@@ -149,7 +153,6 @@ class Lightweight_SEO_Meta_Boxes {
 		$review_label  = $to_review ? sprintf( _n( '%d check to review', '%d checks to review', $to_review, 'lightweight-seo' ), $to_review ) : $review_clear;
 		$title_tokens  = array( '%title%', '%sitename%', '%tagline%', '%sep%' );
 		$robots_fields = array(
-			'noindex'   => array( $seo_noindex, __( 'Prevent search engines from indexing this page', 'lightweight-seo' ) ),
 			'nofollow'  => array( $seo_nofollow, __( 'Prevent search engines from following links on this page', 'lightweight-seo' ) ),
 			'noarchive' => array( $seo_noarchive, __( 'Prevent search engines from showing cached copies', 'lightweight-seo' ) ),
 			'nosnippet' => array( $seo_nosnippet, __( 'Prevent text snippets from showing in search results', 'lightweight-seo' ) ),
@@ -163,6 +166,7 @@ class Lightweight_SEO_Meta_Boxes {
 			data-featured-image="<?php echo esc_url( $featured_image ); ?>"
 			data-featured-width="<?php echo esc_attr( (string) $this->get_image_width( $featured_image_id ) ); ?>"
 			data-default-image="<?php echo esc_url( $default_image ); ?>"
+			data-type-noindex="<?php echo $type_hidden ? '1' : '0'; ?>"
 		>
 			<div class="lwseo-tabs" role="tablist" aria-label="<?php echo esc_attr( __( 'SEO editor panels', 'lightweight-seo' ) ); ?>">
 				<button type="button" class="lwseo-tabs__tab is-active" role="tab" aria-selected="true" aria-controls="lightweight-seo-search-panel" id="lightweight-seo-search-tab"><?php esc_html_e( 'Search appearance', 'lightweight-seo' ); ?></button>
@@ -214,6 +218,13 @@ class Lightweight_SEO_Meta_Boxes {
 							<div class="lwseo-field__control">
 								<input type="url" id="lightweight_seo_canonical_url" name="lightweight_seo_canonical_url" value="<?php echo esc_url( $seo_canonical_url ); ?>" class="large-text">
 								<p class="lwseo-help"><?php esc_html_e( 'Leave empty to use this page’s own address. Set it only when this page is a copy of another page.', 'lightweight-seo' ); ?></p>
+							</div>
+						</div>
+						<div class="lwseo-field lwseo-field--stacked">
+							<label class="lwseo-field__label" for="lightweight_seo_noindex"><?php esc_html_e( 'Search results', 'lightweight-seo' ); ?></label>
+							<div class="lwseo-field__control">
+								<?php Lightweight_SEO_Admin_UI::visibility_select( 'lightweight_seo_noindex', $seo_noindex, $type_label, $type_hidden ); ?>
+								<p class="lwseo-help"><?php esc_html_e( 'Decides whether search engines may show this page, whatever its content type is set to.', 'lightweight-seo' ); ?></p>
 							</div>
 						</div>
 						<fieldset class="lwseo-field lwseo-field--stacked">
@@ -326,7 +337,7 @@ class Lightweight_SEO_Meta_Boxes {
 	 *
 	 * @return array
 	 */
-	private function get_editor_checks( $post_meta, $title, $description, $social_image, $social_image_id ) {
+	private function get_editor_checks( $post_meta, $title, $description, $social_image, $social_image_id, $type_hidden = false ) {
 		$checks             = array();
 		$checks[]           = $this->make_check( 'title', '' !== (string) $title, __( 'SEO title', 'lightweight-seo' ), __( 'A title is available for the search preview.', 'lightweight-seo' ), __( 'Add a clear SEO title.', 'lightweight-seo' ), '#lightweight_seo_title' );
 		$checks[]           = $this->make_check( 'description', '' !== (string) $description, __( 'Meta description', 'lightweight-seo' ), __( 'A description is available for the search preview.', 'lightweight-seo' ), __( 'Add a useful description of this page.', 'lightweight-seo' ), '#lightweight_seo_description' );
@@ -339,7 +350,20 @@ class Lightweight_SEO_Meta_Boxes {
 		// A null result means the check does not apply yet; the row is printed hidden so the script can show it later.
 		$image_width = $this->get_image_width( $social_image_id );
 		$checks[]    = $this->make_check( 'social_image_width', $image_width ? $image_width >= 1200 : null, __( 'Social image width', 'lightweight-seo' ), __( 'The selected image meets the 1200px width recommendation.', 'lightweight-seo' ), __( 'The selected image is below the 1200px width recommendation.', 'lightweight-seo' ), '#lightweight_seo_social_image' );
-		$checks[]    = $this->make_check( 'indexing', '1' !== (string) ( $post_meta['seo_noindex'] ?? '' ), __( 'Indexing', 'lightweight-seo' ), __( 'This page can be indexed.', 'lightweight-seo' ), __( 'This page is intentionally set to noindex. Confirm that is expected.', 'lightweight-seo' ), '#lightweight_seo_noindex' );
+
+		// A page is hidden by its own choice or, without one, by its content type. Each has its own message.
+		$own_choice     = (string) ( $post_meta['seo_noindex'] ?? '' );
+		$hidden_by_type = __( 'This content type is hidden from search results, so this page is too. Choose “Show in search results” to make an exception.', 'lightweight-seo' );
+		$check          = $this->make_check( 'indexing', ! $this->settings->resolve_noindex( $own_choice, $type_hidden ), __( 'Indexing', 'lightweight-seo' ), __( 'This page can be indexed.', 'lightweight-seo' ), __( 'This page is intentionally set to noindex. Confirm that is expected.', 'lightweight-seo' ), '#lightweight_seo_noindex' );
+
+		$check['variants']['type'] = $hidden_by_type;
+
+		if ( 'warning' === $check['status'] && '1' !== $own_choice ) {
+			$check['message'] = $hidden_by_type;
+		}
+
+		$checks[] = $check;
+
 		$canonical   = (string) ( $post_meta['seo_canonical_url'] ?? '' );
 		$valid_url   = '' !== $canonical && false !== filter_var( $canonical, FILTER_VALIDATE_URL );
 		$same_host   = $valid_url && strtolower( (string) wp_parse_url( $canonical, PHP_URL_HOST ) ) === strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
@@ -453,9 +477,11 @@ class Lightweight_SEO_Meta_Boxes {
 			$this->post_meta->update( $post_id, 'seo_canonical_url', esc_url_raw( wp_unslash( $_POST['lightweight_seo_canonical_url'] ) ) );
 		}
 
+		// The search visibility choice is hide, show, or follow the content type.
+		$noindex = isset( $_POST['lightweight_seo_noindex'] ) ? sanitize_text_field( wp_unslash( $_POST['lightweight_seo_noindex'] ) ) : '';
+		$this->post_meta->update( $post_id, 'seo_noindex', $this->settings->normalize_noindex_choice( $noindex ) );
+
 		// Checkbox fields need to be handled differently
-		$noindex = isset( $_POST['lightweight_seo_noindex'] ) ? '1' : '0';
-		$this->post_meta->update( $post_id, 'seo_noindex', $noindex );
 		$this->post_meta->update( $post_id, 'seo_nofollow', isset( $_POST['lightweight_seo_nofollow'] ) ? '1' : '0' );
 		$this->post_meta->update( $post_id, 'seo_noarchive', isset( $_POST['lightweight_seo_noarchive'] ) ? '1' : '0' );
 		$this->post_meta->update( $post_id, 'seo_nosnippet', isset( $_POST['lightweight_seo_nosnippet'] ) ? '1' : '0' );

@@ -184,13 +184,26 @@ if (!function_exists('apply_filters')) {
 
 if (!function_exists('selected')) {
     function selected($selected, $current = true, $display = true) {
-        return $selected == $current ? 'selected="selected"' : '';
+        // Like WordPress, print the attribute unless the caller asks for it back.
+        $result = (string) $selected === (string) $current ? " selected='selected'" : '';
+
+        if ($display) {
+            echo $result;
+        }
+
+        return $result;
     }
 }
 
 if (!function_exists('do_action')) {
     function do_action(...$args) {
         return null;
+    }
+}
+
+if (!function_exists('_x')) {
+    function _x($text, $context, $domain = null) {
+        return $text;
     }
 }
 
@@ -453,6 +466,23 @@ if (!function_exists('get_post_types')) {
 if (!function_exists('get_taxonomies')) {
     function get_taxonomies($args = array(), $output = 'names') {
         return array('category', 'post_tag');
+    }
+}
+
+if (!function_exists('get_taxonomy')) {
+    function get_taxonomy($taxonomy) {
+        $labels = array(
+            'category' => 'Categories',
+            'post_tag' => 'Tags',
+        );
+
+        return isset($labels[$taxonomy]) ? (object) array('name' => $taxonomy, 'labels' => (object) array('name' => $labels[$taxonomy])) : false;
+    }
+}
+
+if (!function_exists('current_theme_supports')) {
+    function current_theme_supports($feature) {
+        return false;
     }
 }
 
@@ -829,6 +859,22 @@ if (!function_exists('is_archive')) {
     }
 }
 
+if (!function_exists('is_date')) {
+    function is_date() {
+        global $lightweight_seo_test_query_state;
+
+        return (bool) ( $lightweight_seo_test_query_state['is_date'] ?? false );
+    }
+}
+
+if (!function_exists('is_post_type_archive')) {
+    function is_post_type_archive() {
+        global $lightweight_seo_test_query_state;
+
+        return (bool) ( $lightweight_seo_test_query_state['is_post_type_archive'] ?? false );
+    }
+}
+
 if (!function_exists('is_search')) {
     function is_search() {
         global $lightweight_seo_test_query_state;
@@ -1144,7 +1190,8 @@ if (!function_exists('get_the_archive_description')) {
 
 if (!function_exists('get_term_link')) {
     function get_term_link($term) {
-        return 'https://example.com/term/' . $term->term_id;
+        // WordPress accepts a term object or a term ID.
+        return 'https://example.com/term/' . ( is_object( $term ) ? $term->term_id : (int) $term );
     }
 }
 
@@ -1367,7 +1414,10 @@ if (!function_exists('get_post_type_object')) {
 			return null;
 		}
 
-		return (object) array( 'public' => true );
+		return (object) array(
+			'public' => true,
+			'labels' => (object) array( 'name' => 'post' === $post_type ? 'Posts' : 'Pages' ),
+		);
 	}
 }
 

@@ -54,6 +54,7 @@ Class names use `lwseo-block__element`, with `--modifier` for variants and `is-s
 | Tokens | `lwseo-tokens`, `lwseo-token` | `tokens()` | Title variables that insert themselves into the field being edited. |
 | Image | `lwseo-image` | `image_field()` | URL input, media picker, and thumbnail. Leave `id_name` out for an image stored as a URL only. |
 | Table | `lwseo-table-wrap`, `lwseo-table` | | Read-only data. |
+| Matrix | `lwseo-matrix` | `matrix()` | The same few settings for many items: one row per item, one column per setting, one control in each cell. |
 | Log | `lwseo-log` | | Plain output from a tool run. |
 | Details | `lwseo-details` | | Advanced or developer detail inside a card. |
 | Rows | `lwseo-rows` | `rows()` | A setting stored one item per line, edited one item per row. |
@@ -70,6 +71,8 @@ Buttons and admin notices are the WordPress ones (`button`, `button-primary`, `b
 - **Checkbox, not switch.** Settings apply on save. A switch suggests an immediate effect, so booleans are checkboxes.
 - **Rows, not typed formats.** A setting that holds several items is edited as rows, day rows, or a picker. Nobody should have to learn a line format to fill in a setting.
 - **Tick boxes, not typed lists.** A choice from a known set, such as roles or environments, is a list of checkboxes. An empty first entry keeps the setting in the request so the list can be saved empty.
+- **A matrix, not a card per item.** When several items share the same two or three settings, such as content types, show them as rows of one matrix so they can be compared and set in one pass. A cell with no setting is left empty, not disabled.
+- **One wording for search visibility.** A content type is "shown" or "hidden" in search results, and a single page, term, or author chooses "Default", "Show", or "Hide". The directive name stays in help text.
 - **A module that is off shows only what turns it on.** Its reports and tools appear once it is in use, so an unused module never prints an empty state per row.
 - **Sentence case** for every title, label, tab, and button: "Default title format", not "Default Title Format".
 - **One primary button per screen**, and it is Save. Tool actions are secondary buttons. Destructive actions use `button-link-delete` and require a confirmation control.
@@ -95,6 +98,20 @@ To add a row editor:
 1. Add a format to `lightweight-seo-formats.js` with `parse(line)`, `format(row)`, and `check(rows)`, and cover it in `tests/js/formats.test.js`. The file has no DOM access, so the tests run under Node with `node --test tests/js/*.test.js`.
 2. Print the stored field as usual, give anything that explains its raw format a `data-lwseo-text-for` attribute naming the field, and call `Lightweight_SEO_Admin_UI::rows()` with the format key, the field ID, and the columns.
 3. Give the rule a `--lwseo-rows-columns` value in the stylesheet if three equal columns do not suit it.
+
+## Matrix
+
+The content types table on the "Content and indexation" tab is the only matrix so far.
+
+- **Each cell submits the stored value.** A tick box follows a hidden input of the same name, so a cleared box still posts and the form sends the shape that is stored. The matrix needs no script to save.
+- **Every control names its row and its column**, such as "Posts: Title format", because the column heading is not beside it for a screen reader or on a narrow screen.
+- **Below 782 px each row becomes a short stack.** The header row is hidden, each cell shows its column name from `data-label`, and a cell with no setting is left out.
+- **A remark sits beside the box it explains.** The script only shows or hides it when the row's first box changes; the server prints it in the right state.
+- **Rows are grouped** by a heading row, and the first column names the item with a row header.
+
+To use it, build the groups, rows, and cells as arrays and call `Lightweight_SEO_Admin_UI::matrix()`. A cell is a `check`, a `text` field, or `none`.
+
+`Lightweight_SEO_Admin_UI::visibility_select()` prints the matching choice for one page, term, or author. It is a plain select without plugin classes, so the term and user screens use it too.
 
 ## Live Editor Checks
 
@@ -139,4 +156,4 @@ A card accepts:
 
 ## What Stays Native
 
-Term and user edit screens use the standard WordPress form rows so the SEO fields match the fields around them. They do not load the plugin stylesheet.
+Term and user edit screens use the standard WordPress form rows so the SEO fields match the fields around them. They do not load the plugin stylesheet, so a helper used there, such as `visibility_select()`, prints native markup only.

@@ -68,9 +68,45 @@ class Lightweight_SEO_Sitemap_Service {
 		$this->post_meta    = $post_meta;
 		$this->archive_meta = $archive_meta;
 
+		add_filter( 'wp_sitemaps_post_types', array( $this, 'filter_post_types' ) );
+		add_filter( 'wp_sitemaps_taxonomies', array( $this, 'filter_taxonomies' ) );
 		add_filter( 'wp_sitemaps_posts_query_args', array( $this, 'filter_posts_query_args' ), 10, 2 );
 		add_filter( 'wp_sitemaps_taxonomies_query_args', array( $this, 'filter_taxonomies_query_args' ), 10, 2 );
 		add_filter( 'wp_sitemaps_users_query_args', array( $this, 'filter_users_query_args' ) );
+	}
+
+	/**
+	 * Leave out the post types whose "In sitemap" setting is off.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $post_types    Post type objects keyed by name.
+	 * @return   array
+	 */
+	public function filter_post_types( $post_types ) {
+		foreach ( array_keys( (array) $post_types ) as $post_type ) {
+			if ( ! $this->settings->is_post_type_in_sitemap( $post_type ) ) {
+				unset( $post_types[ $post_type ] );
+			}
+		}
+
+		return $post_types;
+	}
+
+	/**
+	 * Leave out the taxonomies whose "In sitemap" setting is off.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $taxonomies    Taxonomy objects keyed by name.
+	 * @return   array
+	 */
+	public function filter_taxonomies( $taxonomies ) {
+		foreach ( array_keys( (array) $taxonomies ) as $taxonomy ) {
+			if ( ! $this->settings->is_taxonomy_in_sitemap( $taxonomy ) ) {
+				unset( $taxonomies[ $taxonomy ] );
+			}
+		}
+
+		return $taxonomies;
 	}
 
 	/**
@@ -85,7 +121,8 @@ class Lightweight_SEO_Sitemap_Service {
 		if ( $this->settings->exclude_noindex_from_sitemaps_enabled() ) {
 			$args = $this->append_noindex_meta_query(
 				$args,
-				$this->post_meta->get_meta_key( 'seo_noindex' )
+				$this->post_meta->get_meta_key( 'seo_noindex' ),
+				$this->settings->is_post_type_noindex( $post_type )
 			);
 
 			// Password-protected content is always served noindex, so it does not belong in a sitemap.
@@ -114,7 +151,8 @@ class Lightweight_SEO_Sitemap_Service {
 
 		return $this->append_noindex_meta_query(
 			$args,
-			$this->archive_meta->get_meta_key( 'seo_noindex' )
+			$this->archive_meta->get_meta_key( 'seo_noindex' ),
+			$this->settings->is_taxonomy_noindex( $taxonomy )
 		);
 	}
 
@@ -132,19 +170,24 @@ class Lightweight_SEO_Sitemap_Service {
 
 		return $this->append_noindex_meta_query(
 			$args,
-			$this->archive_meta->get_meta_key( 'seo_noindex' )
+			$this->archive_meta->get_meta_key( 'seo_noindex' ),
+			$this->settings->author_archives_noindex_enabled()
 		);
 	}
 
 	/**
-	 * Append a "not noindexed" constraint to a sitemap meta query.
+	 * Append a "may be shown in search results" constraint to a sitemap meta query.
+	 *
+	 * In a content type that is shown, everything is listed except the items set to
+	 * hide. In a content type that is hidden, only the items set to show are listed.
 	 *
 	 * @since    1.1.0
-	 * @param    array     $args        Current query arguments.
-	 * @param    string    $meta_key    Registered noindex meta key.
+	 * @param    array     $args           Current query arguments.
+	 * @param    string    $meta_key       Registered noindex meta key.
+	 * @param    bool      $type_hidden    Whether the content type is hidden from search results.
 	 * @return   array
 	 */
-	private function append_noindex_meta_query( $args, $meta_key ) {
+	private function append_noindex_meta_query( $args, $meta_key, $type_hidden = false ) {
 		$noindex_query = array(
 			'relation' => 'OR',
 			array(
@@ -157,6 +200,15 @@ class Lightweight_SEO_Sitemap_Service {
 				'compare' => '!=',
 			),
 		);
+
+		if ( $type_hidden ) {
+			$noindex_query = array(
+				array(
+					'key'   => $meta_key,
+					'value' => Lightweight_SEO_Settings::INDEX_OVERRIDE,
+				),
+			);
+		}
 
 		if ( empty( $args['meta_query'] ) || ! is_array( $args['meta_query'] ) ) {
 			$args['meta_query'] = array( $noindex_query );

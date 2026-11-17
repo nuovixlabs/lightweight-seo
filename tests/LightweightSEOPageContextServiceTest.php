@@ -1,5 +1,6 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-page-context-service.php';
 
 use PHPUnit\Framework\TestCase;
@@ -689,66 +690,177 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		};
 	}
 
-	private function get_settings_stub( $keywords_enabled ) {
-		return new class( $keywords_enabled ) {
-			private $keywords_enabled;
+	/**
+	 * Build the real settings service over a fixed set of stored values.
+	 *
+	 * @param mixed $unused    Kept for the tests written against the retired keywords switch.
+	 * @param array $overrides Stored settings that differ from the defaults.
+	 */
+	private function get_settings_stub( $unused = null, array $overrides = array() ) {
+		return new class( $overrides ) extends Lightweight_SEO_Settings {
+			private $overrides;
 
-			public function __construct( $keywords_enabled ) {
-				$this->keywords_enabled = $keywords_enabled;
+			public function __construct( array $overrides ) {
+				$this->overrides = $overrides;
 			}
 
 			public function get_all() {
-				return array(
-					'home_title_format'         => '%sitename% %sep% %tagline%',
-					'archive_title_format'      => '%title% %sep% %sitename%',
-					'search_title_format'       => 'Search Results for "%search%" %sep% %sitename%',
-					'meta_description'          => 'Default description',
-					'meta_keywords'             => 'alpha,beta',
-					'default_max_image_preview' => 'large',
-				);
-			}
-
-			public function meta_keywords_enabled() {
-				return $this->keywords_enabled;
-			}
-
-			public function get_social_image_url() {
-				return '';
-			}
-
-			public function get_title_format() {
-				return '%title% – %sitename%';
-			}
-
-			public function get_home_title_format() {
-				return '%sitename% %sep% %tagline%';
-			}
-
-			public function get_archive_title_format() {
-				return '%title% %sep% %sitename%';
-			}
-
-			public function get_search_title_format() {
-				return 'Search Results for "%search%" %sep% %sitename%';
-			}
-
-			public function get_default_max_image_preview() {
-				return 'large';
-			}
-
-			public function normalize_max_image_preview( $value, $fallback = '' ) {
-				$allowed = array( 'none', 'standard', 'large' );
-
-				return in_array( $value, $allowed, true ) ? $value : $fallback;
-			}
-
-			public function search_results_noindex_enabled() {
-				return true;
-			}
-
-			public function attachment_pages_noindex_enabled() {
-				return true;
+				return array_merge( $this->get_defaults(), array( 'meta_description' => 'Default description' ), $this->overrides );
 			}
 		};
+	}
+
+	/**
+	 * Resolve the context of a singular request for one post.
+	 *
+	 * @param string $post_type Post type of the queried post.
+	 * @param array  $meta      Stored SEO meta of the post.
+	 * @param array  $settings  Stored settings that differ from the defaults.
+	 */
+	private function get_singular_context( $post_type, array $meta, array $settings ) {
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 61;
+		$lightweight_seo_test_query_state['title']             = 'Harbour at dawn';
+		$lightweight_seo_test_posts[61]                        = (object) array(
+			'ID'        => 61,
+			'post_type' => $post_type,
+			'permalink' => 'https://example.com/item/',
+		);
+
+		return ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub( $meta ), $this->get_archive_meta_stub() ) )->get_context();
+	}
+
+	public function test_a_hidden_post_type_hides_its_items_unless_an_item_chooses_to_show(): void {
+		$hidden = array( 'content_types' => array( 'post_types' => array( 'portfolio' => array( 'noindex' => '1' ) ) ) );
+
+		$this->assertSame( 'noindex, max-image-preview:large', $this->get_singular_context( 'portfolio', array(), $hidden )['robots'] );
+		$this->assertSame( 'noindex, max-image-preview:large', $this->get_singular_context( 'portfolio', array( 'seo_noindex' => '0' ), $hidden )['robots'] );
+		$this->assertSame( 'max-image-preview:large', $this->get_singular_context( 'portfolio', array( 'seo_noindex' => 'index' ), $hidden )['robots'] );
+		$this->assertSame( 'max-image-preview:large', $this->get_singular_context( 'post', array(), $hidden )['robots'] );
+	}
+
+	public function test_an_item_can_still_hide_itself_in_a_shown_post_type(): void {
+		$this->assertSame( 'max-image-preview:large', $this->get_singular_context( 'post', array( 'seo_noindex' => '0' ), array() )['robots'] );
+		$this->assertStringStartsWith( 'noindex', $this->get_singular_context( 'post', array( 'seo_noindex' => '1' ), array() )['robots'] );
+	}
+
+	public function test_one_attachment_can_be_shown_while_attachment_pages_stay_hidden(): void {
+		$this->assertSame( 'noindex, max-image-preview:large', $this->get_singular_context( 'attachment', array(), array() )['robots'] );
+		$this->assertSame( 'max-image-preview:large', $this->get_singular_context( 'attachment', array( 'seo_noindex' => 'index' ), array() )['robots'] );
+		$this->assertSame( 'max-image-preview:large', $this->get_singular_context( 'attachment', array(), array( 'noindex_attachment_pages' => '0' ) )['robots'] );
+	}
+
+	public function test_a_post_type_title_format_applies_only_to_that_type_and_yields_to_an_seo_title(): void {
+		$formats = array( 'content_types' => array( 'post_types' => array( 'portfolio' => array( 'title_format' => '%title% %sep% Portfolio' ) ) ) );
+
+		$this->assertSame( 'Harbour at dawn – Portfolio', $this->get_singular_context( 'portfolio', array(), $formats )['document_title'] );
+		$this->assertSame( 'Harbour at dawn – Test Site', $this->get_singular_context( 'post', array(), $formats )['document_title'] );
+		$this->assertSame( 'Own title', $this->get_singular_context( 'portfolio', array( 'seo_title' => 'Own title' ), $formats )['document_title'] );
+	}
+
+	public function test_a_hidden_taxonomy_hides_its_archives_unless_a_term_chooses_to_show(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_tag']         = true;
+		$lightweight_seo_test_query_state['is_archive']     = true;
+		$lightweight_seo_test_query_state['queried_object'] = (object) array(
+			'term_id'     => 9,
+			'name'        => 'Monochrome',
+			'taxonomy'    => 'post_tag',
+			'description' => '',
+		);
+
+		$settings = array(
+			'content_types' => array(
+				'taxonomies' => array(
+					'post_tag' => array(
+						'noindex'      => '1',
+						'title_format' => 'Tagged %title%',
+					),
+				),
+			),
+		);
+		$hidden   = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+		$shown    = ( new Lightweight_SEO_Page_Context_Service(
+			$this->get_settings_stub( null, $settings ),
+			$this->get_post_meta_stub(),
+			new class() {
+				public function get_term_all( $term_id ) {
+					return array( 'seo_noindex' => 'index' );
+				}
+
+				public function get_user_all( $user_id ) {
+					return array();
+				}
+			}
+		) )->get_context();
+
+		$this->assertSame( 'noindex, max-image-preview:large', $hidden['robots'] );
+		$this->assertSame( 'Tagged Monochrome', $hidden['document_title'] );
+		$this->assertSame( 'max-image-preview:large', $shown['robots'] );
+
+		// Another taxonomy keeps the archive title format and stays indexable.
+		$lightweight_seo_test_query_state['queried_object']->taxonomy = 'category';
+		$category = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( 'max-image-preview:large', $category['robots'] );
+		$this->assertSame( 'Monochrome – Test Site', $category['document_title'] );
+	}
+
+	public function test_author_archives_can_be_hidden_by_default(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_author']         = true;
+		$lightweight_seo_test_query_state['is_archive']        = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 17;
+
+		$hidden = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, array( 'noindex_author_archives' => '1' ) ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+		$shown  = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub(), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( 'noindex, max-image-preview:large', $hidden['robots'] );
+		$this->assertSame( 'max-image-preview:large', $shown['robots'] );
+	}
+
+	public function test_date_archives_can_be_hidden(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_archive'] = true;
+		$lightweight_seo_test_query_state['is_date']    = true;
+
+		$hidden = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, array( 'noindex_date_archives' => '1' ) ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+		$shown  = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub(), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( 'noindex, max-image-preview:large', $hidden['robots'] );
+		$this->assertSame( 'max-image-preview:large', $shown['robots'] );
+	}
+
+	public function test_a_hidden_post_type_hides_its_archive_page(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_archive']           = true;
+		$lightweight_seo_test_query_state['is_post_type_archive'] = true;
+		$lightweight_seo_test_query_state['title']                = 'Portfolio';
+		$lightweight_seo_test_query_state['queried_object']       = (object) array( 'name' => 'portfolio' );
+
+		$settings = array(
+			'content_types' => array(
+				'post_types' => array(
+					'portfolio' => array(
+						'noindex'      => '1',
+						'title_format' => '%title% %sep% Work',
+					),
+				),
+			),
+		);
+		$hidden   = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+		$shown    = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub(), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( 'noindex, max-image-preview:large', $hidden['robots'] );
+		// The archive page keeps the archive title format; the post type format is for single items.
+		$this->assertSame( 'Portfolio – Test Site', $hidden['document_title'] );
+		$this->assertSame( 'max-image-preview:large', $shown['robots'] );
 	}
 }

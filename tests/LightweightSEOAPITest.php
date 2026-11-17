@@ -2,6 +2,7 @@
 
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-module-state.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-module-registry.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-api.php';
 require_once __DIR__ . '/fixtures/class-lightweight-seo-insights-fixture.php';
 
@@ -57,7 +58,7 @@ final class LightweightSEOAPITest extends TestCase {
 		);
 		$registry->finalize();
 
-		return new Lightweight_SEO_API( $page_context, $post_meta, $archive_meta, $registry );
+		return new Lightweight_SEO_API( $page_context, $post_meta, $archive_meta, $registry, new Lightweight_SEO_Settings() );
 	}
 
 	protected function setUp(): void {
@@ -104,7 +105,8 @@ final class LightweightSEOAPITest extends TestCase {
 			},
 			$post_meta,
 			$archive_meta,
-			new Lightweight_SEO_Module_Registry( new Lightweight_SEO_Module_State() )
+			new Lightweight_SEO_Module_Registry( new Lightweight_SEO_Module_State() ),
+			new Lightweight_SEO_Settings()
 		);
 
 		$lightweight_seo_test_posts = array(
@@ -138,5 +140,78 @@ final class LightweightSEOAPITest extends TestCase {
 		$this->assertTrue( $public['indexable'] );
 		$this->assertStringEndsWith( '…', $public['description'] );
 		$this->assertLessThanOrEqual( 161, Lightweight_SEO_Text::length( $public['description'] ) );
+	}
+
+	public function test_object_context_follows_the_content_type_unless_the_object_chooses(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_terms;
+		global $lightweight_seo_test_users;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'noindex_author_archives' => '1',
+			'content_types'           => array(
+				'post_types' => array( 'portfolio' => array( 'noindex' => '1' ) ),
+				'taxonomies' => array( 'post_tag' => array( 'noindex' => '1' ) ),
+			),
+		);
+		$lightweight_seo_test_posts                                  = array(
+			11 => (object) array(
+				'post_type' => 'portfolio',
+				'permalink' => 'https://example.com/portfolio/hidden/',
+			),
+			12 => (object) array(
+				'post_type' => 'portfolio',
+				'permalink' => 'https://example.com/portfolio/shown/',
+			),
+			13 => (object) array(
+				'post_type' => 'post',
+				'permalink' => 'https://example.com/post/',
+			),
+		);
+		$lightweight_seo_test_terms                                  = array(
+			21 => (object) array(
+				'name'     => 'Monochrome',
+				'taxonomy' => 'post_tag',
+			),
+			22 => (object) array(
+				'name'     => 'News',
+				'taxonomy' => 'category',
+			),
+		);
+		$lightweight_seo_test_users                                  = array( 31 => (object) array( 'display_name' => 'Author' ) );
+
+		$post_meta    = new class() {
+			public function get_all( $post_id ) {
+				return 12 === $post_id ? array( 'seo_noindex' => 'index' ) : array( 'seo_noindex' => '0' );
+			}
+		};
+		$archive_meta = new class() {
+			public function get_term_all( $term_id ) {
+				return array();
+			}
+			public function get_user_all( $user_id ) {
+				return array();
+			}
+		};
+		$api          = new Lightweight_SEO_API(
+			new class() {
+			},
+			$post_meta,
+			$archive_meta,
+			new Lightweight_SEO_Module_Registry( new Lightweight_SEO_Module_State() ),
+			new Lightweight_SEO_Settings()
+		);
+
+		$this->assertFalse( $api->is_indexable( 'post', 11 ) );
+		$this->assertSame( 'noindex', $api->get_object_context( 'post', 11 )['robots'] );
+		$this->assertTrue( $api->is_indexable( 'post', 12 ) );
+		$this->assertTrue( $api->is_indexable( 'post', 13 ) );
+		$this->assertFalse( $api->is_indexable( 'term', 21 ) );
+		$this->assertTrue( $api->is_indexable( 'term', 22 ) );
+		$this->assertFalse( $api->is_indexable( 'user', 31 ) );
+
+		$lightweight_seo_test_terms = array();
+		$lightweight_seo_test_users = array();
 	}
 }
