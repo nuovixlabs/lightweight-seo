@@ -1019,10 +1019,10 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_sitemap_section'      => array( 'exclude_noindex_from_sitemaps', 'exclude_redirected_from_sitemaps' ),
 				'lightweight_seo_schema_section'       => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as', 'enable_schema_output', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
 				'lightweight_seo_verification_section' => array( 'verification_google', 'verification_bing', 'verification_pinterest', 'verification_yandex' ),
-				'lightweight_seo_redirects_section'    => array( 'enable_auto_redirects', 'redirect_rules', 'generated_redirect_rules', 'redirect_export', 'redirect_health' ),
+				'lightweight_seo_redirects_section'    => array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules', 'generated_redirect_rules', 'redirect_export', 'redirect_health' ),
 				'lightweight_seo_inspect_section'      => array( 'inspect_page' ),
 				'lightweight_seo_migration_section'    => array( 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
-				'lightweight_seo_tracking_section'     => array( 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
+				'lightweight_seo_tracking_section'     => array( 'enable_tracking', 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
 				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids', 'ai_readiness' ),
 			),
 			array_map( 'array_keys', $wp_settings_fields['lightweight-seo'] )
@@ -1107,6 +1107,45 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( 'lightweight_seo_settings[title_format]', $output );
 		$this->assertStringNotContainsString( 'admin-post.php', $output );
+	}
+
+	public function test_every_module_has_its_own_switch_that_only_the_modules_tab_changes(): void {
+		global $lightweight_seo_test_options;
+
+		$modules = $this->render_tab( 'modules' );
+
+		foreach ( array( 'enable_local_business_schema', 'enable_hreflang_output', 'enable_redirects', 'enable_tracking', 'enable_ai_discovery' ) as $switch ) {
+			$this->assertStringContainsString( 'type="checkbox" name="lightweight_seo_settings[' . $switch . ']"', $modules );
+		}
+
+		$this->assertSame( 5, substr_count( $modules, '>Enable module<' ) );
+
+		$existing                     = ( new Lightweight_SEO_Settings() )->get_defaults();
+		$existing['enable_redirects'] = '1';
+		$existing['enable_tracking']  = '1';
+		$existing['redirect_rules']   = '/old /new 301';
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $existing;
+
+		$admin_settings = $this->get_admin_settings( new Lightweight_SEO_Settings() );
+
+		// Another tab does not carry the switches, so they stay as stored.
+		$other_tab = $admin_settings->validate_settings( array( 'settings_tab' => 'appearance' ) );
+
+		$this->assertSame( '1', $other_tab['enable_redirects'] );
+		$this->assertSame( '1', $other_tab['enable_tracking'] );
+
+		// The modules tab with both boxes cleared turns the modules off and keeps what was configured.
+		$switched_off = $admin_settings->validate_settings(
+			array(
+				'settings_tab'   => 'modules',
+				'redirect_rules' => '/old /new 301',
+			)
+		);
+
+		$this->assertSame( '0', $switched_off['enable_redirects'] );
+		$this->assertSame( '0', $switched_off['enable_tracking'] );
+		$this->assertSame( '/old /new 301', $switched_off['redirect_rules'] );
+		$this->assertFalse( Lightweight_SEO_Module_State::derive_from_legacy_settings( $switched_off )['redirects'] );
 	}
 
 	public function test_module_cards_collapse_until_the_module_is_enabled(): void {

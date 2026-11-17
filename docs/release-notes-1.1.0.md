@@ -141,6 +141,14 @@ The Tools tab opens with an "Inspect a page" card: enter any address on the site
 
 One file is new and is loaded only for an inspect request; see [Release Baselines](release-baselines.md).
 
+## Module switches since rc.3
+
+- Every module card on "Optional modules" now starts with the same "Enable module" checkbox. Redirects and Tracking had none: they were on whenever a rule or an ID was saved, so the only way to turn one off was to delete what was configured.
+- A module that is switched off keeps its rules, IDs, and other settings, and loads no code.
+- On upgrade each of the two new switches is set to what its module is doing at that moment, so nothing turns on or off by itself.
+
+Two settings are new in the existing settings option: `enable_redirects` and `enable_tracking`. The settings schema version is now 4; migration step 4 writes the two switches from the stored module state and changes nothing else.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

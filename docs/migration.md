@@ -12,6 +12,8 @@
 
 The idempotent schema migration preserves supported settings and post, term, and user SEO metadata. Existing valid tracking IDs enable Tracking; explicit Redirects, Hreflang, and Local SEO choices are preserved.
 
+Redirects and Tracking each gain an "Enable module" switch. The migration sets it to what the module was doing before the upgrade: on where redirect rules, automatic slug redirects, or a valid tracking ID were in use, off otherwise. From then on only the switch decides, and switching a module off keeps its rules and IDs.
+
 The migration stops meta-keywords output, removes retired specialized sitemap settings, report caches, Search Console tokens, and its scheduled synchronization event. Stored global and post-level keyword values remain available for CSV export. Search Console property/private-key values remain visible only to administrators until explicitly copied or deleted. Retained legacy 404 log entries are deleted from the same screen with a confirmation box and their own button.
 
 A one-time administrator notice summarizes these changes. Dismissing it does not delete retained migration data.

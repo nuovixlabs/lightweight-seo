@@ -159,9 +159,9 @@ class Lightweight_SEO_Admin_Settings {
 					'x_handle'                       => array( __( 'X handle', 'lightweight-seo' ), $core, true ),
 					'organization_same_as'           => array( __( 'Profiles', 'lightweight-seo' ), $core, true ),
 					'enable_schema_output'           => array( __( 'Core schema output', 'lightweight-seo' ), $core ),
-					'enable_local_business_schema'   => array( __( 'Local business schema', 'lightweight-seo' ), $modules ),
+					'enable_local_business_schema'   => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					'local_business_details'         => array( __( 'Business details', 'lightweight-seo' ), $modules ),
-					'enable_hreflang_output'         => array( __( 'Hreflang output', 'lightweight-seo' ), $modules ),
+					'enable_hreflang_output'         => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					'hreflang_mappings'              => array( __( 'Hreflang mappings', 'lightweight-seo' ), $modules ),
 					'enable_hreflang_path_mirroring' => array( __( 'Legacy path mirroring', 'lightweight-seo' ), $modules ),
 				),
@@ -180,6 +180,7 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Redirects', 'lightweight-seo' ),
 				'callback' => array( $modules, 'redirects_section_callback' ),
 				'fields'   => array(
+					'enable_redirects'         => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					'enable_auto_redirects'    => array( __( 'Automatic slug redirects', 'lightweight-seo' ), $modules ),
 					'redirect_rules'           => array( __( 'Manual redirect rules', 'lightweight-seo' ), $modules ),
 					'generated_redirect_rules' => array( __( 'Generated redirects', 'lightweight-seo' ), $modules ),
@@ -209,6 +210,7 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Tracking codes', 'lightweight-seo' ),
 				'callback' => array( $modules, 'tracking_section_callback' ),
 				'fields'   => array(
+					'enable_tracking'                => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					// Google Tag Manager is the recommended primary strategy; the direct IDs are alternatives.
 					'gtm_container_id'               => array( __( 'Google Tag Manager container ID', 'lightweight-seo' ), $modules, true ),
 					'ga4_measurement_id'             => array( __( 'Direct Google Analytics 4 measurement ID', 'lightweight-seo' ), $modules, true ),
@@ -394,7 +396,9 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['enable_local_business_schema']     = $checkbox_value( 'enable_local_business_schema', 'modules' );
 		$sanitized_input['enable_hreflang_output']           = $checkbox_value( 'enable_hreflang_output', 'modules' );
 		$sanitized_input['enable_hreflang_path_mirroring']   = $checkbox_value( 'enable_hreflang_path_mirroring', 'modules' );
+		$sanitized_input['enable_redirects']                 = $checkbox_value( 'enable_redirects', 'modules' );
 		$sanitized_input['enable_auto_redirects']            = $checkbox_value( 'enable_auto_redirects', 'modules' );
+		$sanitized_input['enable_tracking']                  = $checkbox_value( 'enable_tracking', 'modules' );
 		$sanitized_input['enable_ai_discovery']              = $checkbox_value( 'enable_ai_discovery', 'modules' );
 		$sanitized_input['ai_search_crawlers_enabled']       = $checkbox_value( 'ai_search_crawlers_enabled', 'modules' );
 		$sanitized_input['ai_training_crawlers_enabled']     = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );

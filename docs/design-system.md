@@ -74,6 +74,7 @@ Buttons and admin notices are the WordPress ones (`button`, `button-primary`, `b
 - **Tick boxes, not typed lists.** A choice from a known set, such as roles or environments, is a list of checkboxes. An empty first entry keeps the setting in the request so the list can be saved empty.
 - **A matrix, not a card per item.** When several items share the same two or three settings, such as content types, show them as rows of one matrix so they can be compared and set in one pass. A cell with no setting is left empty, not disabled.
 - **One wording for search visibility.** A content type is "shown" or "hidden" in search results, and a single page, term, or author chooses "Default", "Show", or "Hide". The directive name stays in help text.
+- **One switch per module.** Every module card starts with a checkbox in a row titled "Enable module". Its label says what switching it on does, and its help text says what is kept while it is off. A module is never switched on by filling in one of its fields.
 - **A module that is off shows only what turns it on.** Its reports and tools appear once it is in use, so an unused module never prints an empty state per row.
 - **Sentence case** for every title, label, tab, and button: "Default title format", not "Default Title Format".
 - **One primary button per screen**, and it is Save. Tool actions are secondary buttons. Destructive actions use `button-link-delete` and require a confirmation control.

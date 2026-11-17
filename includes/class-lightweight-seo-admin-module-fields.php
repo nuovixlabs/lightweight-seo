@@ -259,6 +259,15 @@ class Lightweight_SEO_Admin_Module_Fields {
 	}
 
 	/**
+	 * Render the Redirects module switch.
+	 *
+	 * @since    1.1.0
+	 */
+	public function enable_redirects_render() {
+		$this->render_choice( 'enable_redirects', '0', __( 'Apply the redirects below on this site', 'lightweight-seo' ), __( 'Rules stay saved while the module is off.', 'lightweight-seo' ) );
+	}
+
+	/**
 	 * Render the automatic slug redirect toggle field.
 	 *
 	 * @since    1.1.0
@@ -499,6 +508,15 @@ class Lightweight_SEO_Admin_Module_Fields {
 		echo '<p>' . esc_html__( 'Tracking is excluded from the selected roles and environments. Consent plugins can use the lightweight_seo_tracking_consent_granted filter, and CSP integrations can supply a nonce through lightweight_seo_tracking_script_nonce.', 'lightweight-seo' ) . '</p>';
 		echo '<p>' . esc_html__( 'GTM themes must call wp_body_open(). If they do not, Lightweight SEO adds a diagnostic comment to the page source and omits only the noscript fallback.', 'lightweight-seo' ) . '</p>';
 		echo '</div></details>';
+	}
+
+	/**
+	 * Render the Tracking module switch.
+	 *
+	 * @since    1.1.0
+	 */
+	public function enable_tracking_render() {
+		$this->render_choice( 'enable_tracking', '0', __( 'Add the tracking codes below to the site', 'lightweight-seo' ), __( 'IDs stay saved while the module is off.', 'lightweight-seo' ) );
 	}
 
 	/**

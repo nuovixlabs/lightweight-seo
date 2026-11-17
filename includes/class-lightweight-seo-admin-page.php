@@ -182,7 +182,7 @@ class Lightweight_SEO_Admin_Page {
 	 */
 	private function get_tab_cards( $tab ) {
 		$hreflang_fields  = array( 'enable_hreflang_output', 'hreflang_mappings' );
-		$redirects_fields = array( 'enable_auto_redirects', 'redirect_rules' );
+		$redirects_fields = array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules' );
 		$ai_fields        = array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids' );
 
 		if ( 'modules' === $tab ) {

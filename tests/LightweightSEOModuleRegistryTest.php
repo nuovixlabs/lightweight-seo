@@ -87,4 +87,29 @@ final class LightweightSEOModuleRegistryTest extends TestCase {
 		$ai_enabled = Lightweight_SEO_Module_State::derive_from_legacy_settings( array( 'enable_ai_discovery' => '1' ) );
 		$this->assertTrue( $ai_enabled['ai'] );
 	}
+
+	public function test_redirects_and_tracking_follow_their_own_switch_once_it_is_stored(): void {
+		$switched_off = Lightweight_SEO_Module_State::derive_from_legacy_settings(
+			array(
+				'enable_redirects'      => '0',
+				'enable_auto_redirects' => '1',
+				'redirect_rules'        => '/old /new 301',
+				'enable_tracking'       => '0',
+				'gtm_container_id'      => 'GTM-ABC123',
+			)
+		);
+
+		$this->assertFalse( $switched_off['redirects'] );
+		$this->assertFalse( $switched_off['tracking'] );
+
+		$switched_on = Lightweight_SEO_Module_State::derive_from_legacy_settings(
+			array(
+				'enable_redirects' => '1',
+				'enable_tracking'  => '1',
+			)
+		);
+
+		$this->assertTrue( $switched_on['redirects'] );
+		$this->assertTrue( $switched_on['tracking'] );
+	}
 }

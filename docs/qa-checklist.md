@@ -59,6 +59,8 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 ## Modules
 
 - Toggle every module repeatedly and confirm disabled implementation classes do not load.
+- Module switches: confirm all five cards start with "Enable module". Save redirect rules and a tracking ID with both switches clear; neither module may load, and the rules and the ID must still be there. Save another tab and confirm the switches did not change.
+- Module switches: upgrade a site that has redirect rules and one that has a valid tracking ID; each module must stay on with its switch ticked. Upgrade a site that has neither; both must stay off.
 - Redirects: test exact rules, malformed destinations, external-host rejection, loops, chains, automatic slug redirects, export, and the documented high-rule boundary.
 - Redirects: change a published slug in the block editor, in Quick Edit, and in the classic editor; each must record a generated redirect.
 - Hreflang: test reciprocal mappings, `x-default`, invalid locale/URL rejection, path mirroring, and WPML or Polylang ownership.

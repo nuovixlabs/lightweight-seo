@@ -23,7 +23,7 @@ final class LightweightSEOLifecycleTest extends TestCase {
 
 		Lightweight_SEO_Migrator::maybe_migrate();
 
-		$this->assertSame( 3, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
+		$this->assertSame( 4, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
 		$this->assertSame( '0', $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['delete_data_on_uninstall'] );
 		$this->assertSame(
 			array(
@@ -53,10 +53,48 @@ final class LightweightSEOLifecycleTest extends TestCase {
 		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $existing;
 		Lightweight_SEO_Migrator::maybe_migrate();
 
-		$this->assertSame( $existing, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] );
-		$this->assertSame( 3, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
+		// Everything saved is kept; the two module switches are added from what each module was doing.
+		$this->assertSame(
+			$existing + array(
+				'enable_redirects' => '0',
+				'enable_tracking'  => '1',
+			),
+			$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]
+		);
+		$this->assertSame( 4, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
 		$this->assertTrue( $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]['tracking'] );
 		$this->assertFalse( $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]['redirects'] );
+	}
+
+	public function test_version_4_gives_redirects_and_tracking_a_switch_matching_their_state(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] = 3;
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]           = array(
+			'redirect_rules'     => '/old /new 301',
+			'ga4_measurement_id' => 'G-EXISTING1',
+		);
+		// Tracking was switched off by hand through the module state, although an ID is saved.
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array(
+			'redirects' => true,
+			'tracking'  => false,
+		);
+
+		Lightweight_SEO_Migrator::maybe_migrate();
+
+		$settings = $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ];
+
+		$this->assertSame( 4, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ] );
+		$this->assertSame( '1', $settings['enable_redirects'] );
+		$this->assertSame( '0', $settings['enable_tracking'] );
+		$this->assertSame( '/old /new 301', $settings['redirect_rules'] );
+		$this->assertSame( 'G-EXISTING1', $settings['ga4_measurement_id'] );
+		$this->assertTrue( $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]['redirects'] );
+		$this->assertFalse( $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]['tracking'] );
+
+		// Running again changes nothing.
+		Lightweight_SEO_Migrator::maybe_migrate();
+		$this->assertSame( $settings, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] );
 	}
 
 	public function test_version_3_cleanup_preserves_metadata_and_credentials_but_retires_runtime_data(): void {
