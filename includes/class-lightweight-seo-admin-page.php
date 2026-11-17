@@ -183,6 +183,7 @@ class Lightweight_SEO_Admin_Page {
 	private function get_tab_cards( $tab ) {
 		$hreflang_fields  = array( 'enable_hreflang_output', 'hreflang_mappings' );
 		$redirects_fields = array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules' );
+		$indexnow_fields  = array( 'enable_indexnow' );
 		$ai_fields        = array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids' );
 
 		if ( 'modules' === $tab ) {
@@ -197,6 +198,10 @@ class Lightweight_SEO_Admin_Page {
 
 			if ( $this->is_module_enabled( 'ai' ) ) {
 				$ai_fields[] = 'ai_readiness';
+			}
+
+			if ( $this->is_module_enabled( 'indexnow' ) ) {
+				$indexnow_fields[] = 'indexnow_status';
 			}
 		}
 
@@ -284,6 +289,13 @@ class Lightweight_SEO_Admin_Page {
 					'module'      => 'tracking',
 				),
 				array(
+					'section'     => 'lightweight_seo_indexnow_section',
+					'fields'      => $indexnow_fields,
+					'description' => __( 'Tells search engines that support IndexNow when a page is published, changed, or removed.', 'lightweight-seo' ),
+					'intro'       => true,
+					'module'      => 'indexnow',
+				),
+				array(
 					'section'     => 'lightweight_seo_ai_discovery_section',
 					'fields'      => $ai_fields,
 					'description' => __( 'Separate AI search access from model-training access, and publish a curated llms.txt.', 'lightweight-seo' ),
@@ -343,6 +355,7 @@ class Lightweight_SEO_Admin_Page {
 			'redirects' => __( 'Redirects', 'lightweight-seo' ),
 			'tracking'  => __( 'Tracking codes', 'lightweight-seo' ),
 			'ai'        => __( 'AI Discovery', 'lightweight-seo' ),
+			'indexnow'  => __( 'IndexNow', 'lightweight-seo' ),
 		);
 	}
 
@@ -757,6 +770,10 @@ class Lightweight_SEO_Admin_Page {
 
 		if ( 'modules' === $tab && $this->is_module_enabled( 'redirects' ) ) {
 			$this->tools_fields->render_redirect_forms( $this->plugin_name );
+		}
+
+		if ( 'modules' === $tab && $this->is_module_enabled( 'indexnow' ) ) {
+			$this->tools_fields->render_indexnow_form();
 		}
 	}
 

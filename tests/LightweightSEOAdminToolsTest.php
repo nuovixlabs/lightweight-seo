@@ -523,6 +523,66 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 		$this->assertSame( 'error', $this->get_last_notice()['type'] );
 	}
 
+	public function test_indexnow_test_sends_the_homepage_once_and_reports_the_answer_or_why_nothing_was_sent(): void {
+		global $lightweight_seo_test_environment_type;
+		global $lightweight_seo_test_home_url;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_remote_post_responses;
+
+		$requests = array();
+		$answer   = 200;
+		$run      = function () {
+			$tools = $this->get_tools( $this->get_importer() );
+			$this->submit( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST );
+			$tools->handle_indexnow_test();
+
+			$this->assertStringContainsString( 'tab=modules', $tools->redirects[0] );
+
+			return $this->get_last_notice();
+		};
+
+		$lightweight_seo_test_remote_post_responses = array(
+			'https://api.indexnow.org/indexnow' => function ( $url, $args ) use ( &$requests, &$answer ) {
+				$requests[] = $args;
+
+				return array( 'response' => array( 'code' => $answer ) );
+			},
+		);
+
+		// Module off: nothing is sent.
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'indexnow_key' => '0123456789abcdef0123456789abcdef' );
+		$this->assertSame( 'error', $run()['type'] );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['enable_indexnow'] = '1';
+
+		// A site search engines cannot reach: nothing is sent, and the notice says why.
+		$lightweight_seo_test_home_url = 'http://localhost/site';
+		$notice                        = $run();
+
+		$this->assertSame( 'info', $notice['type'] );
+		$this->assertStringContainsString( 'Nothing was sent.', $notice['message'] );
+		$this->assertSame( array(), $requests );
+
+		$lightweight_seo_test_home_url         = 'https://www.example.org';
+		$lightweight_seo_test_environment_type = 'production';
+
+		$this->assertSame( 'success', $run()['type'] );
+		$this->assertCount( 1, $requests );
+		$this->assertTrue( $requests[0]['blocking'] );
+		$this->assertSame( array( 'https://www.example.org/' ), json_decode( $requests[0]['body'], true )['urlList'] );
+
+		$answer = 403;
+		$notice = $run();
+
+		$this->assertSame( 'error', $notice['type'] );
+		$this->assertStringContainsString( '0123456789abcdef0123456789abcdef.txt', $notice['message'] );
+
+		$answer = 429;
+		$this->assertStringContainsString( '429', $run()['message'] );
+
+		$lightweight_seo_test_home_url = 'https://example.com';
+	}
+
 	/** Handler method => admin-post action. */
 	private function get_handlers() {
 		return array(
@@ -534,6 +594,7 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 			'handle_settings_export'        => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT,
 			'handle_settings_import'        => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT,
 			'handle_settings_undo'          => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO,
+			'handle_indexnow_test'          => Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST,
 		);
 	}
 

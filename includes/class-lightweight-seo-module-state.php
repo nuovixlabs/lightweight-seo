@@ -107,6 +107,7 @@ class Lightweight_SEO_Module_State {
 				: self::has_tracking_identifier( $settings ),
 			'local-seo' => '1' === (string) ( $settings['enable_local_business_schema'] ?? '' ),
 			'ai'        => '1' === (string) ( $settings['enable_ai_discovery'] ?? '' ),
+			'indexnow'  => '1' === (string) ( $settings['enable_indexnow'] ?? '' ),
 		);
 	}
 
@@ -120,7 +121,7 @@ class Lightweight_SEO_Module_State {
 		$normalized = array();
 		$states     = is_array( $states ) ? $states : array();
 
-		foreach ( array( 'redirects', 'hreflang', 'tracking', 'local-seo', 'ai' ) as $module_id ) {
+		foreach ( array( 'redirects', 'hreflang', 'tracking', 'local-seo', 'ai', 'indexnow' ) as $module_id ) {
 			$normalized[ $module_id ] = ! empty( $states[ $module_id ] );
 		}
 

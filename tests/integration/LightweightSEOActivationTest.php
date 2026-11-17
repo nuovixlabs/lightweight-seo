@@ -25,6 +25,7 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 				'tracking'  => false,
 				'local-seo' => false,
 				'ai'        => false,
+				'indexnow'  => false,
 			),
 			get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME )
 		);

@@ -24,6 +24,7 @@ class Lightweight_SEO_CLI {
 		'tracking'  => 'enable_tracking',
 		'local-seo' => 'enable_local_business_schema',
 		'ai'        => 'enable_ai_discovery',
+		'indexnow'  => 'enable_indexnow',
 	);
 
 	/**
@@ -181,7 +182,7 @@ class Lightweight_SEO_CLI {
 	 * ## OPTIONS
 	 *
 	 * <module>
-	 * : One of: redirects, hreflang, tracking, local-seo, ai.
+	 * : One of: redirects, hreflang, tracking, local-seo, ai, indexnow.
 	 *
 	 * @since    1.1.0
 	 * @param    array    $args    Positional arguments.
@@ -197,7 +198,7 @@ class Lightweight_SEO_CLI {
 	 * ## OPTIONS
 	 *
 	 * <module>
-	 * : One of: redirects, hreflang, tracking, local-seo, ai.
+	 * : One of: redirects, hreflang, tracking, local-seo, ai, indexnow.
 	 *
 	 * @since    1.1.0
 	 * @param    array    $args    Positional arguments.
@@ -288,6 +289,11 @@ class Lightweight_SEO_CLI {
 
 		$settings                                     = wp_parse_args( (array) get_option( LIGHTWEIGHT_SEO_OPTION_NAME, array() ), ( new Lightweight_SEO_Settings() )->get_defaults() );
 		$settings[ self::MODULE_SWITCHES[ $module ] ] = $enabled ? '1' : '0';
+
+		// The settings screen creates the IndexNow key when the module is first switched on; do the same here.
+		if ( 'indexnow' === $module && $enabled && '' === Lightweight_SEO_Settings::normalize_indexnow_key( $settings['indexnow_key'] ?? '' ) ) {
+			$settings['indexnow_key'] = Lightweight_SEO_Settings::generate_indexnow_key();
+		}
 
 		update_option( LIGHTWEIGHT_SEO_OPTION_NAME, $settings );
 		update_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME, Lightweight_SEO_Module_State::normalize( Lightweight_SEO_Module_State::derive_from_legacy_settings( $settings ) ) );

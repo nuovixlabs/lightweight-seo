@@ -197,6 +197,18 @@ On WordPress 6.9 and later, three abilities let agents and other clients of the 
 
 See [Developer API](developer-api.md#abilities). One file is new; see [Release Baselines](release-baselines.md).
 
+## IndexNow module since rc.3
+
+A sixth optional module, off by default, tells search engines that support IndexNow (such as Bing and Yandex; not Google) when a page is published, changed, or removed.
+
+- It is the one part of the plugin, besides tracking codes you add yourself, that makes a request to another service: `api.indexnow.org`. Nothing is sent, and no code is loaded, while the module is off.
+- Addresses are sent once at the end of the request that saved them, without waiting for the answer. There is no queue and no scheduled job.
+- Only public pages that search engines may show are sent. Nothing is sent from a site that is not a production site, that discourages search engines, or whose address search engines cannot reach, such as `localhost`.
+- The key is created when the module is first switched on and is answered at `/{key}.txt` by the plugin; no file is written. The key is never exported with the settings.
+- The card shows whether the site sends, the key address, what was last sent, and a "Send a test" button.
+
+Settings `enable_indexnow` and `indexnow_key` and the non-autoloaded option `lightweight_seo_indexnow_last` are new. One file is new, loaded only while the module is on.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

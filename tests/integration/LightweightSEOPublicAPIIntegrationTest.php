@@ -10,6 +10,7 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 				'tracking'  => false,
 				'local-seo' => false,
 				'ai'        => false,
+				'indexnow'  => false,
 			),
 			$GLOBALS['lightweight_seo_disabled_module_classes_at_boot']
 		);

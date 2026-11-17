@@ -203,6 +203,7 @@ final class LightweightSEOSettingsTransferTest extends TestCase {
 			'tracking'  => true,
 			'local-seo' => false,
 			'ai'        => false,
+			'indexnow'  => false,
 		);
 
 		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]         = $before_settings;

@@ -40,6 +40,9 @@ class Lightweight_SEO_Admin_Tools {
 	/** Admin-post action and nonce action for undoing the last settings import. */
 	const ACTION_SETTINGS_UNDO = 'lightweight_seo_settings_undo';
 
+	/** Admin-post action and nonce action for sending one test address to IndexNow. */
+	const ACTION_INDEXNOW_TEST = 'lightweight_seo_indexnow_test';
+
 	/** Admin-post action and nonce action for importing redirect rules from a CSV file. */
 	const ACTION_REDIRECT_IMPORT = 'lightweight_seo_redirect_import';
 
@@ -258,6 +261,63 @@ class Lightweight_SEO_Admin_Tools {
 		echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- A JSON download, not markup.
 
 		return true;
+	}
+
+	/**
+	 * Send the homepage address to IndexNow once and report the answer.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function handle_indexnow_test() {
+		$this->require_capability();
+		check_admin_referer( self::ACTION_INDEXNOW_TEST, self::get_nonce_name( self::ACTION_INDEXNOW_TEST ) );
+
+		if ( '1' !== (string) $this->settings->get( 'enable_indexnow', '0' ) ) {
+			$this->finish( 'indexnow_test', __( 'Switch the IndexNow module on and save before sending a test. Nothing was sent.', 'lightweight-seo' ), 'error', 'modules' );
+
+			return;
+		}
+
+		$module = $this->get_indexnow_module();
+		$reason = $module->get_blocking_reason();
+
+		if ( '' !== $reason ) {
+			/* translators: %s: reason nothing is sent from this site. */
+			$this->finish( 'indexnow_test', sprintf( __( 'Nothing was sent. %s', 'lightweight-seo' ), $reason ), 'info', 'modules' );
+
+			return;
+		}
+
+		$response = $module->submit( array( home_url( '/' ) ), true );
+		$code     = is_wp_error( $response ) || null === $response ? 0 : (int) wp_remote_retrieve_response_code( $response );
+
+		if ( in_array( $code, array( 200, 202 ), true ) ) {
+			/* translators: %d: HTTP status code. */
+			$this->finish( 'indexnow_test', sprintf( __( 'IndexNow accepted the homepage address (answer %d).', 'lightweight-seo' ), $code ), 'success', 'modules' );
+		} elseif ( 403 === $code ) {
+			/* translators: %s: address of the key file. */
+			$this->finish( 'indexnow_test', sprintf( __( 'IndexNow did not accept the key (answer 403). Check that %s can be opened from outside your network.', 'lightweight-seo' ), $module->get_key_url() ), 'error', 'modules' );
+		} elseif ( $code > 0 ) {
+			/* translators: %d: HTTP status code. */
+			$this->finish( 'indexnow_test', sprintf( __( 'IndexNow answered %d and did not accept the address. Try again later.', 'lightweight-seo' ), $code ), 'error', 'modules' );
+		} else {
+			$this->finish( 'indexnow_test', __( 'IndexNow could not be reached from this server.', 'lightweight-seo' ), 'error', 'modules' );
+		}
+	}
+
+	/**
+	 * Load the IndexNow module for the test, without its hooks.
+	 *
+	 * @since    1.1.0
+	 * @return   Lightweight_SEO_IndexNow_Module
+	 */
+	protected function get_indexnow_module() {
+		if ( ! class_exists( 'Lightweight_SEO_IndexNow_Module', false ) ) {
+			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-indexnow-module.php';
+		}
+
+		return new Lightweight_SEO_IndexNow_Module( $this->settings, null, false );
 	}
 
 	/**

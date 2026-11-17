@@ -223,6 +223,14 @@ class Lightweight_SEO_Admin_Settings {
 					'tracking_excluded_environments' => array( __( 'Excluded environments', 'lightweight-seo' ), $modules ),
 				),
 			),
+			'lightweight_seo_indexnow_section'     => array(
+				'title'    => __( 'IndexNow', 'lightweight-seo' ),
+				'callback' => array( $modules, 'indexnow_section_callback' ),
+				'fields'   => array(
+					'enable_indexnow' => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
+					'indexnow_status' => array( __( 'Status', 'lightweight-seo' ), $modules ),
+				),
+			),
 			'lightweight_seo_ai_discovery_section' => array(
 				'title'    => __( 'AI Discovery', 'lightweight-seo' ),
 				'callback' => array( $modules, 'ai_discovery_section_callback' ),
@@ -409,6 +417,7 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['enable_auto_redirects']            = $checkbox_value( 'enable_auto_redirects', 'modules' );
 		$sanitized_input['enable_tracking']                  = $checkbox_value( 'enable_tracking', 'modules' );
 		$sanitized_input['enable_ai_discovery']              = $checkbox_value( 'enable_ai_discovery', 'modules' );
+		$sanitized_input['enable_indexnow']                  = $checkbox_value( 'enable_indexnow', 'modules' );
 		$sanitized_input['ai_search_crawlers_enabled']       = $checkbox_value( 'ai_search_crawlers_enabled', 'modules' );
 		$sanitized_input['ai_training_crawlers_enabled']     = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );
 		$sanitized_input['enable_llms_txt']                  = $checkbox_value( 'enable_llms_txt', 'modules' );
@@ -417,6 +426,20 @@ class Lightweight_SEO_Admin_Settings {
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),
 			'large'
 		);
+
+		// The key is created once, when the module is first switched on, and never comes from a form field.
+		$indexnow_key = Lightweight_SEO_Settings::normalize_indexnow_key( $existing_settings['indexnow_key'] ?? '' );
+
+		if ( '' === $indexnow_key ) {
+			// WordPress validates twice when it creates the option row; the second pass receives the key the first one made.
+			$indexnow_key = Lightweight_SEO_Settings::normalize_indexnow_key( $input['indexnow_key'] ?? '' );
+		}
+
+		if ( '' === $indexnow_key && '1' === $sanitized_input['enable_indexnow'] ) {
+			$indexnow_key = Lightweight_SEO_Settings::generate_indexnow_key();
+		}
+
+		$sanitized_input['indexnow_key'] = $indexnow_key;
 
 		$content_types = isset( $input['content_types'] ) && is_array( $input['content_types'] ) ? $input['content_types'] : array();
 

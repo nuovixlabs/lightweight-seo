@@ -116,6 +116,8 @@ class Lightweight_SEO_Settings {
 			'facebook_pixel_id'                  => '',
 			'tracking_excluded_roles'            => 'administrator',
 			'tracking_excluded_environments'     => "local\ndevelopment\nstaging",
+			'enable_indexnow'                    => '0',
+			'indexnow_key'                       => '',
 			'enable_ai_discovery'                => '0',
 			'ai_search_crawlers_enabled'         => '1',
 			'ai_training_crawlers_enabled'       => '0',
@@ -452,6 +454,29 @@ class Lightweight_SEO_Settings {
 	 */
 	public function is_taxonomy_in_sitemap( $taxonomy ) {
 		return '1' === $this->get_content_type( 'taxonomies', (string) $taxonomy )['sitemap'];
+	}
+
+	/**
+	 * Keep an IndexNow key only when it has the shape this plugin creates.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $value    Stored or submitted key.
+	 * @return   string Key, or an empty string.
+	 */
+	public static function normalize_indexnow_key( $value ) {
+		$value = is_scalar( $value ) ? (string) $value : '';
+
+		return 1 === preg_match( '/^[a-f0-9]{32}$/', $value ) ? $value : '';
+	}
+
+	/**
+	 * Create an IndexNow key for this site.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	public static function generate_indexnow_key() {
+		return bin2hex( random_bytes( 16 ) );
 	}
 
 	/**

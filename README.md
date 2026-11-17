@@ -19,12 +19,13 @@ Core provides:
 - bounded migration tools and a versioned, read-only extension API
 - abilities for the WordPress Abilities API, so agents can read and fill the SEO fields of a post with the editing rights of the signed-in user
 
-Five optional modules are lazy-loaded only in their declared request contexts:
+Six optional modules are lazy-loaded only in their declared request contexts:
 
 - Redirects: manual redirects for single addresses or whole sections, "410 Gone" answers, CSV import, a test box, and optional published-slug redirects
 - Hreflang: validated manual mappings and adapter hooks
 - Tracking: GTM-first output with direct GA4 or Meta Pixel alternatives
 - Local SEO: validated LocalBusiness schema fields
+- IndexNow: tells participating search engines when a page is published, changed, or removed. This is the one module that sends a request to another service (`api.indexnow.org`), and only from a public production site
 - AI Discovery (experimental): crawler policies, a curated `/llms.txt`, and local readiness checks
 
 AI Discovery does not guarantee crawling, training, citation, inclusion, visibility, or ranking.

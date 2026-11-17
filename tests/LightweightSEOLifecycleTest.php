@@ -32,6 +32,7 @@ final class LightweightSEOLifecycleTest extends TestCase {
 				'tracking'  => false,
 				'local-seo' => false,
 				'ai'        => false,
+				'indexnow'  => false,
 			),
 			$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ]
 		);

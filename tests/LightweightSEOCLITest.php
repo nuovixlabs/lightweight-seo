@@ -132,7 +132,7 @@ final class LightweightSEOCLITest extends TestCase {
 		WP_CLI::$output = array();
 		$cli->module_list( array(), array() );
 
-		$this->assertSame( array( 'redirects', 'hreflang', 'tracking', 'local-seo', 'ai' ), array_column( WP_CLI::$output[0][1], 'module' ) );
+		$this->assertSame( array( 'redirects', 'hreflang', 'tracking', 'local-seo', 'ai', 'indexnow' ), array_column( WP_CLI::$output[0][1], 'module' ) );
 		$this->assertSame( array( 'off' ), array_unique( array_column( WP_CLI::$output[0][1], 'status' ) ) );
 
 		$this->expectException( Lightweight_SEO_Test_CLI_Error::class );

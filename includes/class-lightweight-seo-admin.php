@@ -107,6 +107,7 @@ class Lightweight_SEO_Admin {
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_IMPORT_ROLLBACK, array( $tools, 'handle_import_rollback' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS, array( $tools, 'handle_delete_legacy_404_logs' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT, array( $tools, 'handle_redirect_import' ) );
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST, array( $tools, 'handle_indexnow_test' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT, array( $tools, 'handle_settings_export' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, array( $tools, 'handle_settings_import' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO, array( $tools, 'handle_settings_undo' ) );

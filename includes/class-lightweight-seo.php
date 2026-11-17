@@ -305,6 +305,12 @@ class Lightweight_SEO {
 				'contexts'     => array( 'frontend', 'admin' ),
 				'experimental' => true,
 			),
+			'indexnow'  => array(
+				'name'        => __( 'IndexNow', 'lightweight-seo' ),
+				'description' => __( 'Tell search engines when a page is published, changed, or removed.', 'lightweight-seo' ),
+				// A page can be saved in every writing context, and a scheduled post is published by cron. Visitors only read the key file.
+				'contexts'    => array( 'frontend', 'admin', 'editor', 'rest', 'cron' ),
+			),
 		);
 
 		foreach ( $definitions as $module_id => $definition ) {
@@ -348,6 +354,10 @@ class Lightweight_SEO {
 			case 'ai':
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-ai-discovery-module.php';
 				new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), $context );
+				break;
+			case 'indexnow':
+				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-indexnow-module.php';
+				new Lightweight_SEO_IndexNow_Module( $this->settings, lightweight_seo_get_api(), $context );
 				break;
 		}
 	}

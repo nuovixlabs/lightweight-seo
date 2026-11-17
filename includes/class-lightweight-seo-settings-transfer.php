@@ -68,8 +68,8 @@ class Lightweight_SEO_Settings_Transfer {
 	/**
 	 * Name the settings that stay on the site they were made on.
 	 *
-	 * Credentials and data kept from retired features are never exported, and an
-	 * import never changes them.
+	 * Credentials, data kept from retired features, and the IndexNow key of the site
+	 * are never exported, and an import never changes them.
 	 *
 	 * @since    1.1.0
 	 * @return   string[]
@@ -77,7 +77,7 @@ class Lightweight_SEO_Settings_Transfer {
 	public static function get_local_keys() {
 		return array_merge(
 			Lightweight_SEO_Data_Registry::get_ephemeral_setting_keys(),
-			array( 'meta_keywords', 'import_source' )
+			array( 'meta_keywords', 'import_source', 'indexnow_key' )
 		);
 	}
 

@@ -700,6 +700,79 @@ class Lightweight_SEO_Admin_Module_Fields {
 		$this->render_choice_list( 'tracking_excluded_environments', $environments, $this->settings->normalize_key_list( $options['tracking_excluded_environments'] ?? "local\ndevelopment\nstaging" ), __( 'Tracking stays off in a ticked environment. WordPress treats a site as production unless it is told otherwise.', 'lightweight-seo' ) );
 	}
 
+	/** Say plainly that this module contacts another service. */
+	public function indexnow_section_callback() {
+		Lightweight_SEO_Admin_UI::callout(
+			array(
+				__( 'When this module is on, the address of a page you publish, change, or remove is sent to api.indexnow.org, which passes it to the search engines that take part, such as Bing and Yandex. Google does not use IndexNow.', 'lightweight-seo' ),
+				__( 'Besides tracking codes you add yourself, this is the only part of Lightweight SEO that contacts another service. Nothing is sent while the module is off.', 'lightweight-seo' ),
+			)
+		);
+	}
+
+	/** Render the IndexNow module switch. */
+	public function enable_indexnow_render() {
+		$this->render_choice( 'enable_indexnow', '0', __( 'Send changed addresses to IndexNow', 'lightweight-seo' ), __( 'Only public pages that search engines may show are sent, once per save, and saving never waits for the answer.', 'lightweight-seo' ) );
+	}
+
+	/** Render what the IndexNow module is doing: its key file, whether it sends, and what it last sent. */
+	public function indexnow_status_render() {
+		if ( ! class_exists( 'Lightweight_SEO_IndexNow_Module', false ) ) {
+			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-indexnow-module.php';
+		}
+
+		$module  = new Lightweight_SEO_IndexNow_Module( $this->settings, null, false );
+		$key_url = $module->get_key_url();
+		$reason  = $module->get_blocking_reason();
+		$last    = get_option( Lightweight_SEO_IndexNow_Module::LAST_OPTION, array() );
+		$form    = Lightweight_SEO_Admin_Tools_Fields::INDEXNOW_TEST_FORM_ID;
+
+		echo '<ul class="lwseo-status-list">';
+
+		if ( '' === $reason ) {
+			Lightweight_SEO_Admin_UI::status( 'success', __( 'Changed pages are sent when they are saved', 'lightweight-seo' ) );
+		} else {
+			Lightweight_SEO_Admin_UI::status( 'info', __( 'Nothing is sent from this site', 'lightweight-seo' ), $reason );
+		}
+
+		if ( '' !== $key_url ) {
+			Lightweight_SEO_Admin_UI::status(
+				'info',
+				__( 'Key file', 'lightweight-seo' ),
+				array( $key_url, __( 'Search engines read this address to confirm that the site sends its own pages. It is answered by the plugin; no file is written.', 'lightweight-seo' ) ),
+				array(
+					'label' => __( 'Open', 'lightweight-seo' ),
+					'url'   => $key_url,
+				)
+			);
+		}
+
+		if ( is_array( $last ) && ! empty( $last['time'] ) ) {
+			$sent = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $last['time'] );
+			$more = max( 0, (int) ( $last['count'] ?? 1 ) - 1 );
+
+			Lightweight_SEO_Admin_UI::status(
+				'info',
+				/* translators: %s: date and time. */
+				sprintf( __( 'Last sent on %s', 'lightweight-seo' ), $sent ),
+				$more > 0
+					/* translators: 1: address. 2: number of further addresses. */
+					? sprintf( _n( '%1$s and %2$d more address', '%1$s and %2$d more addresses', $more, 'lightweight-seo' ), (string) ( $last['url'] ?? '' ), $more )
+					: (string) ( $last['url'] ?? '' )
+			);
+		} else {
+			Lightweight_SEO_Admin_UI::status( 'info', __( 'Nothing has been sent yet', 'lightweight-seo' ) );
+		}
+
+		echo '</ul>';
+		?>
+		<div class="lwseo-buttons">
+			<button type="submit" class="button" form="<?php echo esc_attr( $form ); ?>"><?php esc_html_e( 'Send a test', 'lightweight-seo' ); ?></button>
+		</div>
+		<p class="lwseo-help"><?php esc_html_e( 'Sends the address of the homepage once, waits for the answer, and shows it.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
 	/** Explain the bounded, experimental AI Discovery scope. */
 	public function ai_discovery_section_callback() {
 		Lightweight_SEO_Admin_UI::callout( __( 'Google Search ignores llms.txt for visibility and rankings. No setting can guarantee crawling, citation, training, inclusion, or ranking in any AI product.', 'lightweight-seo' ) );

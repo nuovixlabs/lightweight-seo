@@ -1063,6 +1063,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_inspect_section'      => array( 'inspect_page' ),
 				'lightweight_seo_migration_section'    => array( 'settings_export', 'settings_import', 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'enable_tracking', 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
+				'lightweight_seo_indexnow_section'     => array( 'enable_indexnow', 'indexnow_status' ),
 				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids', 'ai_readiness' ),
 			),
 			array_map( 'array_keys', $wp_settings_fields['lightweight-seo'] )
@@ -1174,11 +1175,11 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$modules = $this->render_tab( 'modules' );
 
-		foreach ( array( 'enable_local_business_schema', 'enable_hreflang_output', 'enable_redirects', 'enable_tracking', 'enable_ai_discovery' ) as $switch ) {
+		foreach ( array( 'enable_local_business_schema', 'enable_hreflang_output', 'enable_redirects', 'enable_tracking', 'enable_ai_discovery', 'enable_indexnow' ) as $switch ) {
 			$this->assertStringContainsString( 'type="checkbox" name="lightweight_seo_settings[' . $switch . ']"', $modules );
 		}
 
-		$this->assertSame( 5, substr_count( $modules, '>Enable module<' ) );
+		$this->assertSame( 6, substr_count( $modules, '>Enable module<' ) );
 
 		$existing                     = ( new Lightweight_SEO_Settings() )->get_defaults();
 		$existing['enable_redirects'] = '1';
@@ -1264,6 +1265,81 @@ final class LightweightSEOAdminTest extends TestCase {
 		$_GET = array();
 	}
 
+	public function test_indexnow_key_is_created_once_when_the_module_is_first_switched_on(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = ( new Lightweight_SEO_Settings() )->get_defaults();
+
+		$admin_settings = $this->get_admin_settings( new Lightweight_SEO_Settings() );
+
+		// Off: no key is made.
+		$off = $admin_settings->validate_settings( array( 'settings_tab' => 'modules' ) );
+
+		$this->assertSame( '0', $off['enable_indexnow'] );
+		$this->assertSame( '', $off['indexnow_key'] );
+
+		$first = $admin_settings->validate_settings(
+			array(
+				'settings_tab'    => 'modules',
+				'enable_indexnow' => '1',
+			)
+		);
+
+		$this->assertSame( '1', $first['enable_indexnow'] );
+		$this->assertMatchesRegularExpression( '/^[a-f0-9]{32}$/', $first['indexnow_key'] );
+		// WordPress validates a second time when it creates the option row; the key must not change.
+		$this->assertSame( $first, $admin_settings->validate_settings( $first ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $first;
+
+		$admin_settings = $this->get_admin_settings( new Lightweight_SEO_Settings() );
+
+		// Once stored, the key survives every later save, a forged field, and switching the module off.
+		$later = $admin_settings->validate_settings(
+			array(
+				'settings_tab' => 'modules',
+				'indexnow_key' => str_repeat( 'a', 32 ),
+			)
+		);
+
+		$this->assertSame( '0', $later['enable_indexnow'] );
+		$this->assertSame( $first['indexnow_key'], $later['indexnow_key'] );
+		$this->assertSame( $first['indexnow_key'], $admin_settings->validate_settings( array( 'settings_tab' => 'appearance' ) )['indexnow_key'] );
+		$this->assertTrue( Lightweight_SEO_Module_State::derive_from_legacy_settings( $first )['indexnow'] );
+	}
+
+	public function test_indexnow_card_names_the_outside_service_and_shows_its_state_only_when_on(): void {
+		global $lightweight_seo_test_environment_type;
+		global $lightweight_seo_test_options;
+
+		$off = $this->render_tab( 'modules' );
+
+		$this->assertStringContainsString( 'api.indexnow.org', $off );
+		$this->assertStringContainsString( 'lightweight_seo_settings[enable_indexnow]', $off );
+		$this->assertStringNotContainsString( 'lightweight-seo-indexnow-test-form', $off );
+		$this->assertStringNotContainsString( 'lightweight_seo_settings[indexnow_key]', $off );
+
+		$lightweight_seo_test_environment_type                               = 'staging';
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'indexnow' => true );
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]         = array(
+			'enable_indexnow' => '1',
+			'indexnow_key'    => '0123456789abcdef0123456789abcdef',
+		);
+
+		$on = $this->render_tab( 'modules' );
+
+		$lightweight_seo_test_environment_type = 'production';
+
+		$this->assertStringContainsString( 'Nothing is sent from this site', $on );
+		$this->assertStringContainsString( 'This is a staging site, not a production site.', $on );
+		$this->assertStringContainsString( '/0123456789abcdef0123456789abcdef.txt', $on );
+		$this->assertStringContainsString( 'Nothing has been sent yet', $on );
+		$this->assertStringContainsString( 'form="lightweight-seo-indexnow-test-form">Send a test</button>', $on );
+		$this->assertStringContainsString( '<form id="lightweight-seo-indexnow-test-form" method="post"', $on );
+		// The key is shown as an address, never as a field that could be posted back.
+		$this->assertStringNotContainsString( 'lightweight_seo_settings[indexnow_key]', $on );
+	}
+
 	public function test_module_cards_collapse_until_the_module_is_enabled(): void {
 		global $lightweight_seo_test_options;
 
@@ -1279,7 +1355,7 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( '<details class="lwseo-card" id="lwseo-module-redirects" open>', $output );
 
-		foreach ( array( 'local-seo', 'hreflang', 'tracking', 'ai' ) as $module ) {
+		foreach ( array( 'local-seo', 'hreflang', 'tracking', 'ai', 'indexnow' ) as $module ) {
 			$this->assertStringContainsString( '<details class="lwseo-card" id="lwseo-module-' . $module . '">', $output );
 		}
 

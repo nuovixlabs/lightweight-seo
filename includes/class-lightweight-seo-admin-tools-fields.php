@@ -39,6 +39,9 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	/** ID of the form that asks which redirect rule applies to an address. */
 	const REDIRECT_TEST_FORM_ID = 'lightweight-seo-redirect-test-form';
 
+	/** ID of the form that sends one test address to IndexNow. */
+	const INDEXNOW_TEST_FORM_ID = 'lightweight-seo-indexnow-test-form';
+
 	/** Query argument that carries the address to test against the redirect rules. */
 	const REDIRECT_TEST_ARG = 'lightweight_seo_test_path';
 
@@ -470,6 +473,21 @@ class Lightweight_SEO_Admin_Tools_Fields {
 		<form id="<?php echo esc_attr( self::REDIRECT_IMPORT_FORM_ID ); ?>" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT ); ?>">
 			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT ) ); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Render the standalone form that the IndexNow test button submits.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function render_indexnow_form() {
+		?>
+		<form id="<?php echo esc_attr( self::INDEXNOW_TEST_FORM_ID ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST ) ); ?>
 		</form>
 		<?php
 	}
