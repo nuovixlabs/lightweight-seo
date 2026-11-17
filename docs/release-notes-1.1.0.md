@@ -169,6 +169,15 @@ Stored rules keep their format, so nothing is migrated. One file is new, `includ
 
 One option is new, `lightweight_seo_settings_backup`. It is not autoloaded, exists only between an import and its undo or the next import, and is removed on uninstall. Two files are new and neither is loaded on a visitor request; see [Release Baselines](release-baselines.md).
 
+## Structured data since rc.3
+
+- **A page node on every page.** The graph now describes the page itself: a `WebPage`, a `CollectionPage` for lists of posts, a `SearchResultsPage`, or a `ProfilePage` for an author archive. It carries the name, description, language, dates, and featured image, and ties the site, the breadcrumb trail, and the article together. The separate `ProfilePage` node of author archives is now that page node.
+- **A schema type per post type.** The content types table has a "Schema type" column: "Web page", "Article", "Blog post", or "News article". Posts stay "Article" and every other post type stays "Web page" until you choose otherwise. The `lightweight_seo_article_post_types` filter still sets the default.
+- **Breadcrumbs that match the WordPress Breadcrumbs block.** The trail in the structured data follows the block's default rules: Home, the archive of the post type when it has one, parent pages or the first category with its parents, then the page. A post therefore lists its category, a day archive lists its year and month, and the posts page sits below Home. The block's own filters are applied, so a customized trail is the same in both places. The first item is named "Home", as in the block, not after the site.
+- The article node now belongs to the page node (`isPartOf` and `mainEntityOfPage` point at `…#webpage`), and the page node belongs to the site.
+
+These are changes to what is printed on every page. No setting is migrated: a schema type is stored in a content type's row only when it differs from the default.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

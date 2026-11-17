@@ -81,12 +81,18 @@ The consent filter supports a basic blocking integration; Lightweight SEO does n
 | `lightweight_seo_after_meta_tags` | `array $tags, array $context` | Fires after meta tags are printed. |
 | `lightweight_seo_link_tags` | `array $links, array $context` | Filters normalized link-tag definitions such as canonical output. |
 | `lightweight_seo_schema_graph` | `array $graph, array $context` | Filters schema graph nodes before JSON encoding. Return arrays only. The node for the site's publisher is an `Organization` with the identifier `{home}/#organization`, or a `Person` with `{home}/#person` when the site is set to represent a person. |
-| `lightweight_seo_article_post_types` | `string[] $post_types` | Selects post types eligible for Article schema; Product is excluded by default. |
+| `lightweight_seo_article_post_types` | `string[] $post_types` | Selects the post types whose default schema type is Article. The site owner can choose another type for each post type in the content types table, and that choice wins. Product is excluded by default. |
 | `lightweight_seo_supported_post_types` | `string[] $post_types` | Filters public post types that receive SEO metadata controls. |
 | `lightweight_seo_supported_taxonomies` | `string[] $taxonomies` | Filters public taxonomies that receive archive SEO controls. |
 | `lightweight_seo_compatibility_plugins` | `array $plugins` | Filters plugin-basename to label mappings used for safe-mode detection. |
 | `lightweight_seo_suppressed_features` | `string[] $features, string[] $plugins` | Filters the safe-mode feature matrix. Known full SEO plugins suppress title, meta, robots, canonical, and schema output by default. |
 | `lightweight_seo_multilingual_provider_active` | `bool $active` | Lets an additional multilingual provider claim hreflang ownership. |
+
+### Schema graph
+
+Every page with a canonical address has a page node with the identifier `{canonical}#webpage`: a `WebPage`, a `CollectionPage` for lists of posts, a `SearchResultsPage` for a search, or a `ProfilePage` for an author archive. It belongs to the `WebSite` node, points at the breadcrumb trail (`{canonical}#breadcrumb`) when there is one, and on the front page is `about` the publisher. An `Article`, `BlogPosting`, or `NewsArticle` node (`{canonical}#article`) is `isPartOf` and the `mainEntityOfPage` of that page node.
+
+The breadcrumb trail follows the default rules of the WordPress Breadcrumbs block, so the two agree: Home, the archive of the post type when it has one, parent pages or the first term with its parents, then the page. Two filters of that block are applied to the structured data as well: `block_core_breadcrumbs_post_type_settings` (preferred taxonomy and term) and `block_core_breadcrumbs_items` (the finished trail). An item without a link is left out, except the last one, which takes the canonical address.
 
 ## Module hooks
 

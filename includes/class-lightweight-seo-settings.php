@@ -18,6 +18,9 @@ class Lightweight_SEO_Settings {
 	/** Maximum number of manual redirect rules stored in the bounded core option. */
 	const MAX_MANUAL_REDIRECTS = 500;
 
+	/** Schema types a post type can be given. "WebPage" adds no node beyond the page itself. */
+	const SCHEMA_TYPES = array( 'WebPage', 'Article', 'BlogPosting', 'NewsArticle' );
+
 	/** Maximum number of explicit hreflang mappings stored in the bounded core option. */
 	const MAX_HREFLANG_MAPPINGS = 500;
 
@@ -452,6 +455,32 @@ class Lightweight_SEO_Settings {
 	}
 
 	/**
+	 * Get the schema type single items of a post type have when none is chosen.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $post_type    Post type name.
+	 * @return   string "Article" for the post types of the lightweight_seo_article_post_types filter, otherwise "WebPage".
+	 */
+	public function get_default_schema_type( $post_type ) {
+		$article_types = (array) apply_filters( 'lightweight_seo_article_post_types', array( 'post' ) );
+
+		return in_array( (string) $post_type, $article_types, true ) ? 'Article' : 'WebPage';
+	}
+
+	/**
+	 * Get the schema type of single items of a post type.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $post_type    Post type name.
+	 * @return   string One of SCHEMA_TYPES.
+	 */
+	public function get_schema_type_for_post_type( $post_type ) {
+		$chosen = 'attachment' === (string) $post_type ? '' : $this->get_content_type( 'post_types', (string) $post_type )['schema'];
+
+		return '' !== $chosen ? $chosen : $this->get_default_schema_type( $post_type );
+	}
+
+	/**
 	 * Get the title format of a post type, falling back to the default title format.
 	 *
 	 * @since    1.1.0
@@ -535,6 +564,9 @@ class Lightweight_SEO_Settings {
 		$defaults   = $this->normalize_content_type_row( array() );
 		$normalized = array();
 
+		// A row is stored without a schema type unless one was chosen.
+		unset( $defaults['schema'] );
+
 		foreach ( array(
 			'post_types' => $post_types,
 			'taxonomies' => $taxonomies,
@@ -557,6 +589,13 @@ class Lightweight_SEO_Settings {
 
 				if ( '' !== $name && ! in_array( $name, $registered, true ) ) {
 					$rows[ $name ] = $this->normalize_content_type_row( $row );
+				}
+			}
+
+			foreach ( $rows as $name => $row ) {
+				// A choice that equals the default is not stored, so the default can still change. Only post types have one.
+				if ( 'post_types' !== $group || 'attachment' === $name || '' === $row['schema'] || $row['schema'] === $this->get_default_schema_type( $name ) ) {
+					unset( $rows[ $name ]['schema'] );
 				}
 			}
 
@@ -598,6 +637,8 @@ class Lightweight_SEO_Settings {
 			'noindex'      => '1' === $value( 'noindex', '0' ) ? '1' : '0',
 			'sitemap'      => '0' === $value( 'sitemap', '1' ) ? '0' : '1',
 			'title_format' => Lightweight_SEO_Text::sanitize_template( $value( 'title_format', '' ) ),
+			// Empty means the default for the post type; see get_default_schema_type().
+			'schema'       => in_array( $value( 'schema', '' ), self::SCHEMA_TYPES, true ) ? $value( 'schema', '' ) : '',
 		);
 	}
 

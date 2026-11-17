@@ -658,7 +658,15 @@ input[type="search"] + .lwseo-table-wrap {
 }
 
 .lwseo-matrix__title {
-	width: 40%;
+	width: 34%;
+}
+
+.lwseo-matrix__schema {
+	width: 9.5rem;
+}
+
+.lwseo .lwseo-matrix__cell--select select {
+	max-width: 100%;
 }
 
 .lwseo-matrix__check {

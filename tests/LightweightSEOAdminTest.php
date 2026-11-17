@@ -635,6 +635,46 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'Previews and headers', $output );
 	}
 
+	public function test_content_types_table_offers_a_schema_type_for_each_post_type(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'content_types' => array( 'post_types' => array( 'page' => array( 'schema' => 'BlogPosting' ) ) ),
+		);
+
+		$table = $this->render_tab( 'indexation' );
+
+		// Posts show their default, pages the stored choice, and taxonomies have no schema type.
+		$this->assertMatchesRegularExpression( '#<select name="lightweight_seo_settings\[content_types\]\[post_types\]\[post\]\[schema\]" aria-label="Posts: Schema type">.*?<option value="Article" selected=\'selected\'>Article</option>#s', $table );
+		$this->assertMatchesRegularExpression( '#<select name="lightweight_seo_settings\[content_types\]\[post_types\]\[page\]\[schema\]" aria-label="Pages: Schema type">.*?<option value="BlogPosting" selected=\'selected\'>Blog post</option>#s', $table );
+		$this->assertStringNotContainsString( '[taxonomies][category][schema]', $table );
+		$this->assertStringNotContainsString( '[post_types][attachment][schema]', $table );
+
+		// Saving the table as it is shown stores nothing new for posts and keeps the choice for pages.
+		$validated = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'  => 'indexation',
+				'content_types' => array(
+					'post_types' => array(
+						'post' => array(
+							'noindex' => '0',
+							'sitemap' => '1',
+							'schema'  => 'Article',
+						),
+						'page' => array(
+							'noindex' => '0',
+							'sitemap' => '1',
+							'schema'  => 'BlogPosting',
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertArrayNotHasKey( 'post', $validated['content_types']['post_types'] );
+		$this->assertSame( 'BlogPosting', $validated['content_types']['post_types']['page']['schema'] );
+	}
+
 	public function test_identity_and_separator_fields_are_validated_and_kept_across_tabs(): void {
 		global $lightweight_seo_test_attachment_urls;
 		global $lightweight_seo_test_options;

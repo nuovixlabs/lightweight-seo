@@ -11,7 +11,7 @@ Core provides:
 - Open Graph and X/Twitter metadata
 - post, term, and author SEO controls
 - search visibility, sitemap listing, and a title format for each post type and taxonomy
-- Organization or Person, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
+- Organization or Person, WebSite, a page node for every page, BreadcrumbList, and Article, Blog post, or News article schema chosen per post type
 - a site identity with its own name, logo or photo, X handle, and profile links, plus a choice of title separator
 - verification meta tags for Google Search Console, Bing Webmaster Tools, Pinterest, and Yandex Webmaster
 - filtering of WordPress core XML sitemaps

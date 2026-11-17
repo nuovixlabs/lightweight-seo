@@ -231,7 +231,7 @@ final class LightweightSEOInspectorTest extends TestCase {
 		$this->assertSame( 'info: https://example.com/a-post/ | The page’s own address.', $lines['Canonical / Canonical address'] );
 		$this->assertSame( 'info: No image is sent, so a share shows text only.', $lines['Sharing and other tags / Share image'] );
 		$this->assertStringStartsWith( 'success: Lightweight SEO does not leave it out.', $lines['Sitemap / XML sitemap'] );
-		$this->assertSame( 'success: Organization, WebSite, BreadcrumbList, Article', $lines['Structured data / Schema'] );
+		$this->assertSame( 'success: Organization, WebSite, WebPage, BreadcrumbList, Article', $lines['Structured data / Schema'] );
 	}
 
 	public function test_the_report_lists_the_tags_and_graph_exactly_as_they_are_printed(): void {
@@ -252,7 +252,7 @@ final class LightweightSEOInspectorTest extends TestCase {
 		$graph = json_decode( $schema['code'], true );
 
 		$this->assertSame( 'https://schema.org', $graph['@context'] );
-		$this->assertSame( array( 'Organization', 'WebSite', 'BreadcrumbList', 'Article' ), array_column( $graph['@graph'], '@type' ) );
+		$this->assertSame( array( 'Organization', 'WebSite', 'WebPage', 'BreadcrumbList', 'Article' ), array_column( $graph['@graph'], '@type' ) );
 	}
 
 	public function test_own_fields_are_named_as_the_source(): void {

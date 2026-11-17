@@ -254,6 +254,14 @@ class Lightweight_SEO_Admin_UI {
 			if ( '' !== (string) ( $cell['note'] ?? '' ) ) {
 				echo '<span class="lwseo-matrix__note"' . ( empty( $cell['note_hidden'] ) ? '' : ' hidden' ) . '>' . esc_html( $cell['note'] ) . '</span>';
 			}
+		} elseif ( 'select' === $type ) {
+			echo '<select name="' . esc_attr( $cell['name'] ) . '" aria-label="' . esc_attr( $label ) . '">';
+
+			foreach ( (array) $cell['options'] as $value => $text ) {
+				echo '<option value="' . esc_attr( (string) $value ) . '"' . selected( (string) $value, (string) ( $cell['value'] ?? '' ), false ) . '>' . esc_html( $text ) . '</option>';
+			}
+
+			echo '</select>';
 		} elseif ( 'text' === $type ) {
 			echo '<input type="text" name="' . esc_attr( $cell['name'] ) . '" value="' . esc_attr( $cell['value'] ?? '' ) . '" placeholder="' . esc_attr( $cell['placeholder'] ?? '' ) . '" aria-label="' . esc_attr( $label ) . '" autocomplete="off"' . ( empty( $cell['tokens'] ) ? '' : ' data-lwseo-tokens' ) . '>';
 		} elseif ( '' !== (string) ( $cell['text'] ?? '' ) ) {

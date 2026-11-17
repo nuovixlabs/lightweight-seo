@@ -1729,3 +1729,90 @@ if (!function_exists('remove_action')) {
         return true;
     }
 }
+
+if (!function_exists('get_post_type_archive_link')) {
+    function get_post_type_archive_link($post_type) {
+        global $lightweight_seo_test_post_type_archives;
+
+        return $lightweight_seo_test_post_type_archives[$post_type] ?? false;
+    }
+}
+
+if (!function_exists('is_post_type_hierarchical')) {
+    function is_post_type_hierarchical($post_type) {
+        return 'page' === $post_type;
+    }
+}
+
+if (!function_exists('get_object_taxonomies')) {
+    function get_object_taxonomies($object_type, $output = 'names') {
+        global $lightweight_seo_test_object_taxonomies;
+
+        return $lightweight_seo_test_object_taxonomies[$object_type] ?? array();
+    }
+}
+
+if (!function_exists('wp_filter_object_list')) {
+    function wp_filter_object_list($input_list, $args = array()) {
+        return array_filter(
+            (array) $input_list,
+            static function ($item) use ($args) {
+                foreach ($args as $key => $value) {
+                    if (($item->$key ?? null) !== $value) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        );
+    }
+}
+
+if (!function_exists('get_the_terms')) {
+    function get_the_terms($post, $taxonomy) {
+        global $lightweight_seo_test_post_terms;
+
+        return $lightweight_seo_test_post_terms[(int) $post][$taxonomy] ?? false;
+    }
+}
+
+if (!function_exists('is_taxonomy_hierarchical')) {
+    function is_taxonomy_hierarchical($taxonomy) {
+        return 'category' === $taxonomy;
+    }
+}
+
+if (!function_exists('get_post_ancestors')) {
+    function get_post_ancestors($post) {
+        global $lightweight_seo_test_post_ancestors;
+
+        return $lightweight_seo_test_post_ancestors[(int) $post] ?? array();
+    }
+}
+
+if (!function_exists('get_ancestors')) {
+    function get_ancestors($object_id = 0, $object_type = '', $resource_type = '') {
+        global $lightweight_seo_test_term_ancestors;
+
+        return $lightweight_seo_test_term_ancestors[(int) $object_id] ?? array();
+    }
+}
+
+if (!function_exists('get_year_link')) {
+    function get_year_link($year) {
+        return 'https://example.com/' . (int) $year . '/';
+    }
+}
+
+if (!function_exists('get_month_link')) {
+    function get_month_link($year, $month) {
+        return 'https://example.com/' . (int) $year . '/' . sprintf('%02d', (int) $month) . '/';
+    }
+}
+
+if (!function_exists('date_i18n')) {
+    function date_i18n($format, $timestamp_with_offset = false, $gmt = false) {
+        return gmdate($format, (int) $timestamp_with_offset);
+    }
+}

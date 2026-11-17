@@ -114,7 +114,7 @@ The content types table on the "Content and indexation" tab is the only matrix s
 - **A remark sits beside the box it explains.** The script only shows or hides it when the row's first box changes; the server prints it in the right state.
 - **Rows are grouped** by a heading row, and the first column names the item with a row header.
 
-To use it, build the groups, rows, and cells as arrays and call `Lightweight_SEO_Admin_UI::matrix()`. A cell is a `check`, a `text` field, or `none`.
+To use it, build the groups, rows, and cells as arrays and call `Lightweight_SEO_Admin_UI::matrix()`. A cell is a `check`, a `text` field, a `select`, or `none`. A select shows the value in effect, and a choice equal to the default is not stored.
 
 `Lightweight_SEO_Admin_UI::visibility_select()` prints the matching choice for one page, term, or author. It is a plain select without plugin classes, so the term and user screens use it too.
 

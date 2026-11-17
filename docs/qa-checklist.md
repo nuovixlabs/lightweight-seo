@@ -29,7 +29,10 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - On a subdirectory install, confirm canonical, `og:url`, and redirect targets contain the install path exactly once.
 - Confirm a long post without an excerpt emits a short description summary, not the full content.
 - Confirm Open Graph and X/Twitter fallbacks and social image validation.
-- Confirm schema JSON parses and uses Organization or Person, WebSite, BreadcrumbList, ProfilePage, and scoped Article nodes only.
+- Confirm schema JSON parses and uses Organization or Person, WebSite, one page node (WebPage, CollectionPage, SearchResultsPage, or ProfilePage), BreadcrumbList, and one Article, BlogPosting, or NewsArticle node only.
+- Schema: on a post, a page with a parent, a custom post type item, a category with a parent, an author archive, a day archive, a search, the posts page, and the front page, confirm the page node type, that the article node and the breadcrumb point at `…#webpage` and `…#breadcrumb`, and that the front page has no breadcrumb.
+- Schema: place the WordPress Breadcrumbs block (WordPress 7.0 or later) on a post, a child page, and a category archive, and confirm the trail in the structured data names the same items in the same order.
+- Schema: in the content types table set a post type to "Blog post", "News article", and "Web page", and confirm the article node changes type or goes away. Set it back to its default and confirm nothing is stored for that row.
 - Confirm a WooCommerce Product page receives no Product graph from Lightweight SEO.
 - Confirm an ordinary frontend request makes no remote request, recurring schedule, custom table, or plugin write.
 - Confirm a post list with the SEO column runs no more database queries than the same list with the column switched off.

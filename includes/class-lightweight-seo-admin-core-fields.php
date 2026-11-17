@@ -251,6 +251,17 @@ class Lightweight_SEO_Admin_Core_Fields {
 				'show'    => $this->get_show_cell( $name . '[noindex]', '1' !== $row['noindex'] ),
 				'sitemap' => $this->get_sitemap_cell( $name . '[sitemap]', $row, $sitemap_note ),
 				'title'   => $this->get_title_cell( $name . '[title_format]', $row, $this->settings->get_title_format() ),
+				'schema'  => array(
+					'type'    => 'select',
+					'name'    => $name . '[schema]',
+					'value'   => $this->settings->get_schema_type_for_post_type( $post_type ),
+					'options' => array(
+						'WebPage'     => __( 'Web page', 'lightweight-seo' ),
+						'Article'     => __( 'Article', 'lightweight-seo' ),
+						'BlogPosting' => __( 'Blog post', 'lightweight-seo' ),
+						'NewsArticle' => __( 'News article', 'lightweight-seo' ),
+					),
+				),
 			);
 
 			if ( 'attachment' === $post_type ) {
@@ -260,6 +271,8 @@ class Lightweight_SEO_Admin_Core_Fields {
 					'type' => 'none',
 					'text' => __( 'Not listed by WordPress', 'lightweight-seo' ),
 				);
+				// An attachment page is always described as a web page.
+				unset( $cells['schema'] );
 			}
 
 			$post_types[] = array(
@@ -310,6 +323,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 					'show'    => __( 'Show in search results', 'lightweight-seo' ),
 					'sitemap' => __( 'In sitemap', 'lightweight-seo' ),
 					'title'   => __( 'Title format', 'lightweight-seo' ),
+					'schema'  => __( 'Schema type', 'lightweight-seo' ),
 				),
 				'groups'  => array(
 					array(
@@ -330,6 +344,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 		Lightweight_SEO_Admin_UI::tokens( array_keys( $this->get_title_variables() ) );
 		?>
 		<p class="lwseo-help"><?php esc_html_e( 'An empty title format uses the site-wide format shown in the field, and hiding a post type also hides its archive page.', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'The schema type says what a single item is in structured data. Every page is described as a web page; "Article", "Blog post", and "News article" add a node with the headline, dates, author, and image.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 

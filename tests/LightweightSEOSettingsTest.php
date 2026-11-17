@@ -63,6 +63,59 @@ final class LightweightSEOSettingsTest extends TestCase {
 		$this->assertSame( '/with-query /clean-target 301', $rules[1] );
 	}
 
+	public function test_a_schema_type_is_stored_only_where_it_differs_from_the_default_of_the_post_type(): void {
+		$settings   = new Lightweight_SEO_Settings();
+		$normalized = $settings->normalize_content_types(
+			array(
+				'post_types' => array(
+					// The default for posts, the default for pages, and something that is not a schema type.
+					'post'       => array( 'schema' => 'Article' ),
+					'page'       => array( 'schema' => 'WebPage' ),
+					'portfolio'  => array( 'schema' => 'Thing' ),
+					'news'       => array( 'schema' => 'NewsArticle' ),
+					'attachment' => array( 'schema' => 'Article' ),
+				),
+				'taxonomies' => array(
+					'category' => array( 'schema' => 'Article' ),
+				),
+			),
+			array(),
+			array( 'post', 'page', 'portfolio', 'news', 'attachment' ),
+			array( 'category' )
+		);
+
+		$this->assertSame(
+			array(
+				'post_types' => array(
+					'news' => array(
+						'noindex'      => '0',
+						'sitemap'      => '1',
+						'title_format' => '',
+						'schema'       => 'NewsArticle',
+					),
+				),
+			),
+			$normalized
+		);
+
+		// A choice other than the default is kept for posts and pages too, and saving it again changes nothing.
+		$chosen = $settings->normalize_content_types(
+			array(
+				'post_types' => array(
+					'post' => array( 'schema' => 'WebPage' ),
+					'page' => array( 'schema' => 'BlogPosting' ),
+				),
+			),
+			array(),
+			array( 'post', 'page' ),
+			array()
+		);
+
+		$this->assertSame( 'WebPage', $chosen['post_types']['post']['schema'] );
+		$this->assertSame( 'BlogPosting', $chosen['post_types']['page']['schema'] );
+		$this->assertSame( $chosen, $settings->normalize_content_types( $chosen, $chosen, array( 'post', 'page' ), array() ) );
+	}
+
 	public function test_redirect_rules_accept_gone_and_whole_sections(): void {
 		$settings   = new Lightweight_SEO_Settings();
 		$normalized = $settings->normalize_redirect_rules_input(
