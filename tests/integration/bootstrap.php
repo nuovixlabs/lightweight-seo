@@ -44,6 +44,7 @@ $GLOBALS['lightweight_seo_disabled_module_classes_at_boot'] = array(
 	'tracking'  => class_exists( 'Lightweight_SEO_Tracking_Service', false ),
 	'local-seo' => class_exists( 'Lightweight_SEO_Local_SEO_Module', false ),
 	'ai'        => class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ),
+	'indexnow'  => class_exists( 'Lightweight_SEO_IndexNow_Module', false ),
 );
 
 $GLOBALS['lightweight_seo_admin_classes_at_boot'] = array(
