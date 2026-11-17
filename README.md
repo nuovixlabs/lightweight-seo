@@ -13,6 +13,7 @@ Core provides:
 - search visibility, sitemap listing, and a title format for each post type and taxonomy
 - Organization or Person, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
 - a site identity with its own name, logo or photo, X handle, and profile links, plus a choice of title separator
+- verification meta tags for Google Search Console, Bing Webmaster Tools, Pinterest, and Yandex Webmaster
 - filtering of WordPress core XML sitemaps
 - safe mode when Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, or Slim SEO is active
 - bounded migration tools and a versioned, read-only extension API
@@ -46,7 +47,7 @@ For a 1.0.3 upgrade or release-candidate test, follow [Migration and RC Testing]
 
 The SEO panel on supported posts and pages provides:
 
-- an optional SEO title and meta description, with `%title%`, `%sitename%`, `%tagline%`, and `%sep%` resolved on the page
+- an optional SEO title and meta description, with `%title%`, `%sitename%`, `%tagline%`, `%sep%`, `%category%`, `%author%`, `%year%`, and `%page%` resolved on the page
 - canonical and robots controls, including a choice to show or hide the page whatever its content type is set to
 - social title, description, and image overrides
 - deterministic checks explaining missing or conflicting inputs

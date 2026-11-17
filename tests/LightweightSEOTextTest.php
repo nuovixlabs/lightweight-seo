@@ -27,4 +27,94 @@ final class LightweightSEOTextTest extends TestCase {
 		$this->assertTrue( mb_check_encoding( $summary, 'UTF-8' ) );
 		$this->assertStringEndsWith( '…', $summary );
 	}
+
+	public function test_existing_variables_resolve_exactly_as_before(): void {
+		$tokens = array(
+			'%title%'    => 'A page',
+			'%sitename%' => 'Site',
+			'%tagline%'  => '',
+			'%sep%'      => '–',
+		);
+
+		$this->assertSame( 'A page – Site', Lightweight_SEO_Text::resolve_tokens( '%title% %sep% %sitename%', $tokens ) );
+		// An empty tagline keeps its separator, as it always has.
+		$this->assertSame( 'Site – ', Lightweight_SEO_Text::resolve_tokens( '%sitename% %sep% %tagline%', $tokens ) );
+		$this->assertSame( 'No variables – at all', Lightweight_SEO_Text::resolve_tokens( 'No variables – at all', $tokens ) );
+		$this->assertSame( '%unknown% A page', Lightweight_SEO_Text::resolve_tokens( '%unknown% %title%', $tokens ) );
+	}
+
+	public function test_an_empty_optional_variable_leaves_with_one_separator_beside_it(): void {
+		$tokens = array(
+			'%title%'    => 'Archive',
+			'%sitename%' => 'Site',
+			'%sep%'      => '|',
+			'%page%'     => '',
+			'%category%' => '',
+		);
+
+		// The separator before the variable goes with it.
+		$this->assertSame( 'Archive | Site', Lightweight_SEO_Text::resolve_tokens( '%title% %sep% %page% %sep% %sitename%', $tokens ) );
+		$this->assertSame( 'Archive', Lightweight_SEO_Text::resolve_tokens( '%title% %sep% %page%', $tokens ) );
+		// When the variable comes first, the separator after it goes instead.
+		$this->assertSame( 'Archive | Site', Lightweight_SEO_Text::resolve_tokens( '%page% %sep% %title% %sep% %sitename%', $tokens ) );
+		// Two empty variables in a row leave one clean title.
+		$this->assertSame( 'Archive | Site', Lightweight_SEO_Text::resolve_tokens( '%title% %sep% %category% %sep% %page% %sep% %sitename%', $tokens ) );
+		// A separator typed as a character counts too, but a hyphen inside a word does not.
+		$this->assertSame( 'Archive – Site', Lightweight_SEO_Text::resolve_tokens( '%title% – %page% – %sitename%', $tokens ) );
+		$this->assertSame( 'Archive well-known', Lightweight_SEO_Text::resolve_tokens( '%title% well-known%page%', $tokens ) );
+		// A variable the caller did not supply is treated as empty instead of being printed.
+		$this->assertSame( 'Archive', Lightweight_SEO_Text::resolve_tokens( '%title% %sep% %author%', $tokens ) );
+		$this->assertSame( '', Lightweight_SEO_Text::resolve_tokens( '%page%', $tokens ) );
+	}
+
+	public function test_an_optional_variable_with_a_value_is_replaced_like_any_other(): void {
+		$tokens = array(
+			'%title%'    => 'Archive',
+			'%sitename%' => 'Site',
+			'%sep%'      => '·',
+			'%page%'     => 'Page 2',
+			'%year%'     => '2026',
+		);
+
+		$this->assertSame( 'Archive · Page 2 · Site', Lightweight_SEO_Text::resolve_tokens( '%title% %sep% %page% %sep% %sitename%', $tokens ) );
+		$this->assertSame( 'Best of 2026', Lightweight_SEO_Text::resolve_tokens( 'Best of %year%', $tokens ) );
+	}
+
+	public function test_every_supported_separator_counts_as_one_beside_an_empty_variable(): void {
+		require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
+
+		foreach ( Lightweight_SEO_Settings::TITLE_SEPARATORS as $separator ) {
+			$this->assertSame( 'A ' . $separator . ' B', Lightweight_SEO_Text::resolve_tokens( 'A ' . $separator . ' %page% ' . $separator . ' B', array() ), 'Separator "' . $separator . '".' );
+		}
+	}
+
+	public function test_the_editor_script_tidies_the_same_variables_and_separators(): void {
+		$script = (string) file_get_contents( dirname( __DIR__ ) . '/admin/js/lightweight-seo-admin.js' );
+
+		$this->assertStringContainsString( "var optionalTokens = ['" . implode( "', '", Lightweight_SEO_Text::OPTIONAL_TOKENS ) . "'];", $script );
+		// The script writes the pattern as a string, so each backslash of the server pattern is doubled.
+		$this->assertStringContainsString( "var separatorPattern = '" . str_replace( '\\', '\\\\', Lightweight_SEO_Text::SEPARATOR_PATTERN ) . "';", $script );
+	}
+
+	public function test_variables_survive_sanitizing_that_strips_percent_encoded_bytes(): void {
+		// WordPress removes "%ca" from "%category%" on its own; this is what the helper prevents.
+		$this->assertSame( 'tegory%', sanitize_text_field( '%category%' ) );
+
+		$format = '%title% %sep% %category% %sep% %author% %sep% %year% %sep% %page% %sep% %sitename% %tagline% %search%';
+
+		$this->assertSame( $format, Lightweight_SEO_Text::sanitize_template( $format ) );
+		$this->assertSame( "By %author%\nin %category%.", Lightweight_SEO_Text::sanitize_textarea_template( "By %author%\nin %category%." ) );
+		// Variables side by side, and one WordPress would otherwise read as two encoded bytes.
+		$this->assertSame( '%category%%sep%%title%', Lightweight_SEO_Text::sanitize_template( '%category%%sep%%title%' ) );
+		$this->assertSame( '%face% value', Lightweight_SEO_Text::sanitize_template( '%face% value' ) );
+	}
+
+	public function test_template_sanitizing_still_removes_markup_and_real_encoded_bytes(): void {
+		$this->assertSame( 'Bold %title%', Lightweight_SEO_Text::sanitize_template( ' <b>Bold</b> %title% ' ) );
+		$this->assertSame( 'ab %title%', Lightweight_SEO_Text::sanitize_template( 'a%3Cb %title%' ) );
+		$this->assertSame( '50% off', Lightweight_SEO_Text::sanitize_template( '50% off' ) );
+		$this->assertSame( '', Lightweight_SEO_Text::sanitize_template( array( '%title%' ) ) );
+		// It is registered as a meta sanitizer, which WordPress calls with the key and object type too.
+		$this->assertSame( 'In %category%', call_user_func( array( 'Lightweight_SEO_Text', 'sanitize_template' ), 'In %category%', '_lightweight_seo_title', 'post' ) );
+	}
 }

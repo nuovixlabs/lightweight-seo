@@ -104,10 +104,18 @@ class Lightweight_SEO_Meta_Boxes {
 			'%tagline%'  => (string) get_bloginfo( 'description' ),
 			'%sep%'      => $this->settings->get_title_separator(),
 		);
-		$resolve_tokens        = static function ( $text ) use ( $tokens ) {
+		$categories            = get_the_category( $post->ID );
+
+		// The editor always shows the first page, and the category and author as they were last saved.
+		$tokens['%page%']     = '';
+		$tokens['%category%'] = ! empty( $categories[0]->name ) ? (string) $categories[0]->name : '';
+		$tokens['%author%']   = (string) get_the_author_meta( 'display_name', (int) ( $post->post_author ?? 0 ) );
+		$tokens['%year%']     = (string) wp_date( 'Y' );
+
+		$resolve_tokens = static function ( $text ) use ( $tokens ) {
 			return Lightweight_SEO_Text::resolve_tokens( $text, $tokens );
 		};
-		$current_title         = $resolve_tokens( $global_title_format );
+		$current_title  = $resolve_tokens( $global_title_format );
 		// Mirror the frontend fallback: a short summary of the excerpt or content, never the whole document.
 		$fallback_description = Lightweight_SEO_Text::summarize( $this->normalize_preview_text( ! empty( $post->post_excerpt ) ? $post->post_excerpt : ( $post->post_content ?? '' ) ) );
 		$preview_title        = $this->normalize_preview_text( $seo_title ? $resolve_tokens( $seo_title ) : $current_title );
@@ -151,7 +159,7 @@ class Lightweight_SEO_Meta_Boxes {
 		$review_clear = __( 'All checks passed', 'lightweight-seo' );
 		/* translators: %d: number of on-page checks that need a review. */
 		$review_label  = $to_review ? sprintf( _n( '%d check to review', '%d checks to review', $to_review, 'lightweight-seo' ), $to_review ) : $review_clear;
-		$title_tokens  = array( '%title%', '%sitename%', '%tagline%', '%sep%' );
+		$title_tokens  = array( '%title%', '%sitename%', '%tagline%', '%sep%', '%category%', '%author%', '%year%', '%page%' );
 		$robots_fields = array(
 			'nofollow'  => array( $seo_nofollow, __( 'Prevent search engines from following links on this page', 'lightweight-seo' ) ),
 			'noarchive' => array( $seo_noarchive, __( 'Prevent search engines from showing cached copies', 'lightweight-seo' ) ),
@@ -466,11 +474,11 @@ class Lightweight_SEO_Meta_Boxes {
 
 		// Sanitize and save the data
 		if ( isset( $_POST['lightweight_seo_title'] ) ) {
-			$this->post_meta->update( $post_id, 'seo_title', sanitize_text_field( wp_unslash( $_POST['lightweight_seo_title'] ) ) );
+			$this->post_meta->update( $post_id, 'seo_title', Lightweight_SEO_Text::sanitize_template( wp_unslash( $_POST['lightweight_seo_title'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by Lightweight_SEO_Text, which wraps the WordPress text sanitizer so title variables survive it.
 		}
 
 		if ( isset( $_POST['lightweight_seo_description'] ) ) {
-			$this->post_meta->update( $post_id, 'seo_description', sanitize_textarea_field( wp_unslash( $_POST['lightweight_seo_description'] ) ) );
+			$this->post_meta->update( $post_id, 'seo_description', Lightweight_SEO_Text::sanitize_textarea_template( wp_unslash( $_POST['lightweight_seo_description'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by Lightweight_SEO_Text, which wraps the WordPress text sanitizer so title variables survive it.
 		}
 
 		if ( isset( $_POST['lightweight_seo_canonical_url'] ) ) {
@@ -498,11 +506,11 @@ class Lightweight_SEO_Meta_Boxes {
 		}
 
 		if ( isset( $_POST['lightweight_seo_social_title'] ) ) {
-			$this->post_meta->update( $post_id, 'social_title', sanitize_text_field( wp_unslash( $_POST['lightweight_seo_social_title'] ) ) );
+			$this->post_meta->update( $post_id, 'social_title', Lightweight_SEO_Text::sanitize_template( wp_unslash( $_POST['lightweight_seo_social_title'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by Lightweight_SEO_Text, which wraps the WordPress text sanitizer so title variables survive it.
 		}
 
 		if ( isset( $_POST['lightweight_seo_social_description'] ) ) {
-			$this->post_meta->update( $post_id, 'social_description', sanitize_textarea_field( wp_unslash( $_POST['lightweight_seo_social_description'] ) ) );
+			$this->post_meta->update( $post_id, 'social_description', Lightweight_SEO_Text::sanitize_textarea_template( wp_unslash( $_POST['lightweight_seo_social_description'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by Lightweight_SEO_Text, which wraps the WordPress text sanitizer so title variables survive it.
 		}
 
 		$existing_social_image    = $this->post_meta->get( $post_id, 'social_image' );

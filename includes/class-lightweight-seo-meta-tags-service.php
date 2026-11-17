@@ -58,6 +58,7 @@ class Lightweight_SEO_Meta_Tags_Service {
 				'modified_time'   => '',
 				'twitter_card'    => 'summary',
 				'twitter_site'    => '',
+				'verification'    => array(),
 				'is_404'          => false,
 			),
 			$this->page_context->get_context()
@@ -159,6 +160,14 @@ class Lightweight_SEO_Meta_Tags_Service {
 				'value'     => $context['og_image_alt'] ?? '',
 			),
 		);
+
+		foreach ( (array) $context['verification'] as $name => $code ) {
+			$tags[] = array(
+				'attribute' => 'name',
+				'key'       => $name,
+				'value'     => $code,
+			);
+		}
 
 		if ( ! empty( $context['is_404'] ) ) {
 			$tags = array();

@@ -70,12 +70,50 @@ class Lightweight_SEO_Admin_Core_Fields {
 	}
 
 	/**
-	 * Render the title variables above the title format fields.
+	 * Describe the title variables, in the order they are offered.
+	 *
+	 * @since    1.1.0
+	 * @return   array<string,string> What each variable becomes, keyed by the variable.
+	 */
+	private function get_title_variables() {
+		return array(
+			'%title%'    => __( 'The title of the page, or the name of the term or author.', 'lightweight-seo' ),
+			'%sitename%' => __( 'The site title.', 'lightweight-seo' ),
+			'%tagline%'  => __( 'The site tagline.', 'lightweight-seo' ),
+			'%sep%'      => __( 'The title separator chosen below.', 'lightweight-seo' ),
+			'%category%' => __( 'The first category of a post, or the category of a category archive.', 'lightweight-seo' ),
+			'%author%'   => __( 'The author of a post, or the author of an author archive.', 'lightweight-seo' ),
+			'%year%'     => __( 'The current year.', 'lightweight-seo' ),
+			'%page%'     => __( '“Page 2” and so on, from the second page of an archive or of a post split into pages.', 'lightweight-seo' ),
+		);
+	}
+
+	/**
+	 * Render the title variables above the title format fields, with what each one becomes.
 	 *
 	 * @since    1.0.0
 	 */
 	public function general_section_callback() {
-		Lightweight_SEO_Admin_UI::tokens( array( '%title%', '%sitename%', '%tagline%', '%sep%' ) );
+		$variables = $this->get_title_variables();
+
+		Lightweight_SEO_Admin_UI::tokens( array_keys( $variables ) );
+		?>
+		<details class="lwseo-details">
+			<summary><?php esc_html_e( 'What the variables mean', 'lightweight-seo' ); ?></summary>
+			<div class="lwseo-details__body">
+				<div class="lwseo-table-wrap">
+					<table class="lwseo-table">
+						<tbody>
+							<?php foreach ( $variables as $variable => $meaning ) : ?>
+								<tr><th scope="row"><code><?php echo esc_html( $variable ); ?></code></th><td><?php echo esc_html( $meaning ); ?></td></tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+				<p class="lwseo-help"><?php esc_html_e( 'A category, author, year, or page variable that has no value on a page is left out together with the separator beside it.', 'lightweight-seo' ); ?></p>
+			</div>
+		</details>
+		<?php
 	}
 
 	/**
@@ -289,7 +327,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 				),
 			)
 		);
-		Lightweight_SEO_Admin_UI::tokens( array( '%title%', '%sitename%', '%tagline%', '%sep%' ) );
+		Lightweight_SEO_Admin_UI::tokens( array_keys( $this->get_title_variables() ) );
 		?>
 		<p class="lwseo-help"><?php esc_html_e( 'An empty title format uses the site-wide format shown in the field, and hiding a post type also hides its archive page.', 'lightweight-seo' ); ?></p>
 		<?php
@@ -476,6 +514,59 @@ class Lightweight_SEO_Admin_Core_Fields {
 		<input type="text" id="lightweight_seo_x_handle" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[x_handle]" value="<?php echo esc_attr( '' !== $handle ? '@' . $handle : '' ); ?>" placeholder="@example" class="regular-text" autocomplete="off">
 		<p class="lwseo-help"><?php esc_html_e( 'Credits this account when a page is shared on X, through the twitter:site tag.', 'lightweight-seo' ); ?></p>
 		<?php
+	}
+
+	/**
+	 * Print a verification code field.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $service    Service key from Lightweight_SEO_Settings::VERIFICATION_TAGS.
+	 * @param    string    $help       Help text.
+	 * @return   void
+	 */
+	private function render_verification_code( $service, $help ) {
+		$key  = 'verification_' . $service;
+		$code = (string) $this->settings->normalize_verification_code( $this->settings->get( $key, '' ) );
+		?>
+		<input type="text" id="<?php echo esc_attr( 'lightweight_seo_' . $key ); ?>" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME . '[' . $key . ']' ); ?>" value="<?php echo esc_attr( $code ); ?>" class="regular-text code" autocomplete="off">
+		<p class="lwseo-help"><?php echo esc_html( $help ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the Google Search Console verification field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function verification_google_render() {
+		$this->render_verification_code( 'google', __( 'Paste the code, or the whole HTML tag, from the “HTML tag” method in Google Search Console.', 'lightweight-seo' ) );
+	}
+
+	/**
+	 * Render the Bing Webmaster Tools verification field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function verification_bing_render() {
+		$this->render_verification_code( 'bing', __( 'Paste the code, or the whole meta tag, from Bing Webmaster Tools.', 'lightweight-seo' ) );
+	}
+
+	/**
+	 * Render the Pinterest verification field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function verification_pinterest_render() {
+		$this->render_verification_code( 'pinterest', __( 'Paste the code, or the whole meta tag, from the “Claim your website” step on Pinterest.', 'lightweight-seo' ) );
+	}
+
+	/**
+	 * Render the Yandex Webmaster verification field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function verification_yandex_render() {
+		$this->render_verification_code( 'yandex', __( 'Paste the code, or the whole meta tag, from Yandex Webmaster.', 'lightweight-seo' ) );
 	}
 
 	/**

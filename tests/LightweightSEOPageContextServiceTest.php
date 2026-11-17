@@ -899,4 +899,106 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( '@example', $this->get_singular_context( 'post', array(), array( 'x_handle' => 'example' ) )['twitter_site'] );
 		$this->assertSame( '', $this->get_singular_context( 'post', array(), array( 'x_handle' => 'not a handle' ) )['twitter_site'] );
 	}
+
+	public function test_a_post_resolves_its_category_author_and_the_current_year(): void {
+		global $lightweight_seo_test_categories;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['post_author'] = 17;
+		$lightweight_seo_test_categories                 = array(
+			61 => array(
+				(object) array( 'name' => 'Landscapes' ),
+				(object) array( 'name' => 'Travel' ),
+			),
+		);
+
+		$context = $this->get_singular_context(
+			'post',
+			array( 'seo_description' => 'By %author% in %category%.' ),
+			array( 'title_format' => '%title% %sep% %category% %sep% %author% %sep% %year% %sep% %page%' )
+		);
+
+		$this->assertSame( 'Harbour at dawn – Landscapes – Author Name – ' . gmdate( 'Y' ), $context['document_title'] );
+		$this->assertSame( 'By Author Name in Landscapes.', $context['description'] );
+
+		// A post without a category leaves no gap.
+		$lightweight_seo_test_categories = array();
+		$uncategorized                   = $this->get_singular_context( 'post', array(), array( 'title_format' => '%title% %sep% %category% %sep% %sitename%' ) );
+
+		$this->assertSame( 'Harbour at dawn – Test Site', $uncategorized['document_title'] );
+	}
+
+	public function test_the_page_variable_names_the_second_and_later_pages_only(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_category']    = true;
+		$lightweight_seo_test_query_state['is_archive']     = true;
+		$lightweight_seo_test_query_state['queried_object'] = (object) array(
+			'term_id'     => 5,
+			'name'        => 'News',
+			'taxonomy'    => 'category',
+			'description' => '',
+		);
+
+		$settings = array( 'archive_title_format' => '%category% %sep% %page% %sep% %sitename% %sep% %author%' );
+		$first    = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$lightweight_seo_test_query_state['query_vars'] = array( 'paged' => 3 );
+		$third = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		// A category archive names itself, has no author, and no page on its first page.
+		$this->assertSame( 'News – Test Site', $first['document_title'] );
+		$this->assertSame( 'News – Page 3 – Test Site', $third['document_title'] );
+
+		// A post split into pages counts them in "page".
+		$lightweight_seo_test_query_state['is_category'] = false;
+		$lightweight_seo_test_query_state['is_archive']  = false;
+		$lightweight_seo_test_query_state['query_vars']  = array( 'page' => 2 );
+
+		$this->assertSame( 'Harbour at dawn – Page 2', $this->get_singular_context( 'post', array(), array( 'title_format' => '%title% %sep% %page%' ) )['document_title'] );
+	}
+
+	public function test_an_author_archive_resolves_the_author_variable(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_author']         = true;
+		$lightweight_seo_test_query_state['is_archive']        = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 17;
+
+		$context = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, array( 'archive_title_format' => 'Posts by %author% %sep% %category% %sep% %sitename%' ) ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( 'Posts by Author Name – Test Site', $context['document_title'] );
+	}
+
+	public function test_the_homepage_title_can_use_the_year_and_ignores_what_it_does_not_have(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_home'] = true;
+
+		$context = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, array( 'home_title_format' => '%sitename% %sep% %author% %sep% %year%' ) ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( 'Test Site – ' . gmdate( 'Y' ), $context['document_title'] );
+	}
+
+	public function test_verification_codes_travel_with_the_first_page_of_the_homepage_only(): void {
+		global $lightweight_seo_test_query_state;
+
+		$settings = array( 'verification_google' => 'google-code_1' );
+
+		// A post never carries them.
+		$this->assertSame( array(), $this->get_singular_context( 'post', array(), $settings )['verification'] );
+
+		$lightweight_seo_test_query_state['is_singular']   = false;
+		$lightweight_seo_test_query_state['is_home']       = true;
+		$lightweight_seo_test_query_state['is_front_page'] = true;
+
+		$home = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$lightweight_seo_test_query_state['query_vars'] = array( 'paged' => 2 );
+		$second = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $settings ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( array( 'google-site-verification' => 'google-code_1' ), $home['verification'] );
+		$this->assertSame( array(), $second['verification'] );
+		$this->assertSame( array(), ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub(), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context()['verification'] );
+	}
 }

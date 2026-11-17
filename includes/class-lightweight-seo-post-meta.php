@@ -95,11 +95,11 @@ class Lightweight_SEO_Post_Meta {
 		$meta_config = array(
 			'seo_title'             => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_template' ),
 			),
 			'seo_description'       => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_textarea_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_textarea_template' ),
 			),
 			'seo_keywords'          => array(
 				'type'              => 'string',
@@ -131,11 +131,11 @@ class Lightweight_SEO_Post_Meta {
 			),
 			'social_title'          => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_template' ),
 			),
 			'social_description'    => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_textarea_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_textarea_template' ),
 			),
 			'social_image'          => array(
 				'type'              => 'string',

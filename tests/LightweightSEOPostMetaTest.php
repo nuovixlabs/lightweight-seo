@@ -76,5 +76,10 @@ final class LightweightSEOPostMetaTest extends TestCase {
 
 		$this->assertFalse( $lightweight_seo_test_registered_post_meta['_lightweight_seo_keywords']['show_in_rest'] );
 		$this->assertTrue( $lightweight_seo_test_registered_post_meta['_lightweight_seo_title']['show_in_rest'] );
+
+		// Text that may hold title variables is sanitized without cutting "%ca" out of "%category%".
+		foreach ( array( '_lightweight_seo_title', '_lightweight_seo_description', '_lightweight_seo_social_title', '_lightweight_seo_social_description' ) as $meta_key ) {
+			$this->assertSame( 'In %category%', call_user_func( $lightweight_seo_test_registered_post_meta[ $meta_key ]['sanitize_callback'], 'In %category%', $meta_key, 'post' ), $meta_key );
+		}
 	}
 }

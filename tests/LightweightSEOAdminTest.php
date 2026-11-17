@@ -761,6 +761,92 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertMatchesRegularExpression( '/<option value="–" >–  En dash<\/option>/', $appearance );
 	}
 
+	public function test_verification_codes_are_extracted_validated_and_kept_across_tabs(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_settings_errors;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = ( new Lightweight_SEO_Settings() )->get_defaults();
+
+		$saved = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'           => 'identity',
+				'verification_google'    => '<meta name="google-site-verification" content="google-code_1" />',
+				'verification_bing'      => ' 0123456789ABCDEF ',
+				'verification_pinterest' => '',
+				'verification_yandex'    => 'f00ba4',
+			)
+		);
+
+		$this->assertSame( 'google-code_1', $saved['verification_google'] );
+		$this->assertSame( '0123456789ABCDEF', $saved['verification_bing'] );
+		$this->assertSame( '', $saved['verification_pinterest'] );
+		$this->assertSame( 'f00ba4', $saved['verification_yandex'] );
+		$this->assertSame( array(), $lightweight_seo_test_settings_errors );
+		$this->assertSame( $saved, $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( $saved ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $saved;
+
+		// Another tab does not submit the codes, so they stay; a value that is not a code is refused.
+		$other = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'        => 'all',
+				'title_format'        => '%title% %sep% %year%',
+				'verification_yandex' => '"><script>alert(1)</script>',
+			)
+		);
+
+		$this->assertSame( 'google-code_1', $other['verification_google'] );
+		$this->assertSame( 'f00ba4', $other['verification_yandex'] );
+		$this->assertSame( '%title% %sep% %year%', $other['title_format'] );
+		$this->assertSame( 'invalid_verification_yandex', $lightweight_seo_test_settings_errors[0]['code'] ?? '' );
+		$this->assertStringStartsWith( 'The Yandex Webmaster verification code was not saved.', $lightweight_seo_test_settings_errors[0]['message'] ?? '' );
+	}
+
+	public function test_verification_fields_and_the_variable_guide_render(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'verification_google' => 'google-code_1' );
+
+		$settings = new Lightweight_SEO_Settings();
+		$this->get_admin_settings( $settings )->register_settings();
+
+		$_GET['tab'] = 'identity';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+		$identity = ob_get_clean();
+
+		$_GET['tab'] = 'appearance';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+		$appearance = ob_get_clean();
+
+		$_GET['tab'] = 'indexation';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+		$indexation = ob_get_clean();
+
+		// The verification card sits between the identity and the structured data cards.
+		$this->assertLessThan( strpos( $identity, 'Site verification' ), strpos( $identity, 'Site identity' ) );
+		$this->assertLessThan( strpos( $identity, 'Structured data' ), strpos( $identity, 'Site verification' ) );
+		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_verification_google">Google Search Console</label>', $identity );
+		$this->assertStringContainsString( 'id="lightweight_seo_verification_google" name="lightweight_seo_settings[verification_google]" value="google-code_1"', $identity );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[verification_bing]" value=""', $identity );
+		$this->assertStringContainsString( 'for="lightweight_seo_verification_pinterest">Pinterest</label>', $identity );
+		$this->assertStringContainsString( 'for="lightweight_seo_verification_yandex">Yandex Webmaster</label>', $identity );
+
+		// Every variable has a button and a line that says what it becomes.
+		foreach ( array( '%title%', '%sitename%', '%tagline%', '%sep%', '%category%', '%author%', '%year%', '%page%' ) as $variable ) {
+			$this->assertStringContainsString( 'data-token="' . $variable . '"', $appearance );
+			$this->assertStringContainsString( '<th scope="row"><code>' . $variable . '</code></th>', $appearance );
+			$this->assertStringContainsString( 'data-token="' . $variable . '"', $indexation );
+		}
+
+		$this->assertStringContainsString( '<summary>What the variables mean</summary>', $appearance );
+	}
+
 	public function test_tools_save_explicitly_deletes_retained_search_console_data(): void {
 		global $lightweight_seo_test_options;
 
@@ -880,6 +966,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_indexation_section'   => array( 'content_types', 'default_max_image_preview', 'enable_media_x_robots_headers' ),
 				'lightweight_seo_sitemap_section'      => array( 'exclude_noindex_from_sitemaps', 'exclude_redirected_from_sitemaps' ),
 				'lightweight_seo_schema_section'       => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as', 'enable_schema_output', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
+				'lightweight_seo_verification_section' => array( 'verification_google', 'verification_bing', 'verification_pinterest', 'verification_yandex' ),
 				'lightweight_seo_redirects_section'    => array( 'enable_auto_redirects', 'redirect_rules', 'generated_redirect_rules', 'redirect_export', 'redirect_health' ),
 				'lightweight_seo_migration_section'    => array( 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
@@ -1585,5 +1672,33 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '', $without_capability );
 		$this->assertSame( '', $unrelated_screen );
 		$this->assertStringContainsString( 'safe mode is active', $plugins_screen );
+	}
+
+	public function test_every_title_variable_survives_saving_a_format(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = ( new Lightweight_SEO_Settings() )->get_defaults();
+
+		$format = '%title% %sep% %category% %sep% %author% %sep% %year% %sep% %page%';
+		$saved  = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'         => 'all',
+				'title_format'         => $format,
+				'home_title_format'    => '%sitename% %sep% %category%',
+				'archive_title_format' => '%category% %sep% %page%',
+				'search_title_format'  => '%search% %sep% %category%',
+				'content_types'        => array(
+					'post_types' => array( 'post' => array( 'title_format' => '%category%: %title%' ) ),
+					'taxonomies' => array( 'category' => array( 'title_format' => '%category% %sep% %page%' ) ),
+				),
+			)
+		);
+
+		$this->assertSame( $format, $saved['title_format'] );
+		$this->assertSame( '%sitename% %sep% %category%', $saved['home_title_format'] );
+		$this->assertSame( '%category% %sep% %page%', $saved['archive_title_format'] );
+		$this->assertSame( '%search% %sep% %category%', $saved['search_title_format'] );
+		$this->assertSame( '%category%: %title%', $saved['content_types']['post_types']['post']['title_format'] );
+		$this->assertSame( '%category% %sep% %page%', $saved['content_types']['taxonomies']['category']['title_format'] );
 	}
 }

@@ -158,7 +158,8 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 
 		$report = $service->import_batch( 'yoast' );
 
-		$this->assertSame( 'Guide %sep% %sitename%', $values[91]['seo_title'] );
+		// The page variable has an equivalent now, so it is kept instead of dropped.
+		$this->assertSame( 'Guide %page% %sep% %sitename%', $values[91]['seo_title'] );
 		$this->assertArrayNotHasKey( 'seo_description', $values[91], 'An unconvertible variable must not be imported as literal text.' );
 		$this->assertSame( 1, $report['updated_fields'] );
 		$this->assertSame( 1, $report['unsupported_fields'] );
@@ -188,7 +189,48 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 		$aioseo_values = array();
 		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $aioseo_values ) ) )->import_batch( 'aioseo' );
 
-		$this->assertSame( '%title% %sep% %tagline%', $rank_math_values[92]['seo_title'] );
+		$this->assertSame( '%title% %page% %sep% %tagline%', $rank_math_values[92]['seo_title'] );
 		$this->assertSame( '%title% %sep% %sitename%', $aioseo_values[92]['seo_title'] );
+	}
+
+	public function test_year_author_and_category_variables_convert_only_where_they_mean_the_same(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_post_meta = array(
+			93 => array(
+				'_yoast_wpseo_title'    => 'Best lenses %%currentyear%% %%sep%% by %%name%%',
+				// Yoast lists every category, which is not what %category% means here.
+				'_yoast_wpseo_metadesc' => 'Filed under %%category%%.',
+				'rank_math_title'       => '%title% %sep% %category% %sep% %currentyear% %sep% %name%',
+				'rank_math_description' => 'Tagged %tags%.',
+				'_aioseo_title'         => '#post_title #separator_sa #author_name #separator_sa #current_year',
+				// A bare page number and a list of categories have no equivalent.
+				'_aioseo_description'   => 'In #categories, page #page_number.',
+			),
+		);
+		$lightweight_seo_test_posts     = array(
+			93 => (object) array(
+				'ID'          => 93,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			),
+		);
+
+		$yoast = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $yoast ) ) )->import_batch( 'yoast' );
+
+		$rank_math = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $rank_math ) ) )->import_batch( 'rank_math' );
+
+		$aioseo = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $aioseo ) ) )->import_batch( 'aioseo' );
+
+		$this->assertSame( 'Best lenses %year% %sep% by %author%', $yoast[93]['seo_title'] );
+		$this->assertArrayNotHasKey( 'seo_description', $yoast[93] );
+		$this->assertSame( '%title% %sep% %category% %sep% %year% %sep% %author%', $rank_math[93]['seo_title'] );
+		$this->assertArrayNotHasKey( 'seo_description', $rank_math[93] );
+		$this->assertSame( '%title% %sep% %author% %sep% %year%', $aioseo[93]['seo_title'] );
+		$this->assertArrayNotHasKey( 'seo_description', $aioseo[93] );
 	}
 }

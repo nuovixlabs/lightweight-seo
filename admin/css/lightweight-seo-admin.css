@@ -1192,6 +1192,16 @@ input[type="search"] + .lwseo-table-wrap {
 		grid-template-columns: minmax(0, 1fr);
 	}
 
+	/* A read-only table keeps its columns, and its first one takes only the room its text needs. */
+	.lwseo-table tbody th {
+		width: auto;
+	}
+
+	.lwseo-table tbody th code {
+		overflow-wrap: normal;
+		white-space: nowrap;
+	}
+
 	/* Each matrix row becomes a short stack, and every cell names its column because the header is gone. */
 	.lwseo-matrix,
 	.lwseo-matrix tbody,

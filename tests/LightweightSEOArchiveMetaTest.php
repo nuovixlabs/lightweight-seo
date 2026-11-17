@@ -162,4 +162,22 @@ final class LightweightSEOArchiveMetaTest extends TestCase {
 	private function get_settings_stub() {
 		return new Lightweight_SEO_Settings();
 	}
+
+	public function test_every_title_variable_survives_saving_a_term_or_an_author(): void {
+		$service = new Lightweight_SEO_Archive_Meta( $this->get_settings_stub() );
+
+		$_POST = array(
+			'lightweight_seo_term_meta_nonce'         => 'nonce',
+			'lightweight_seo_user_meta_nonce'         => 'nonce',
+			'lightweight_seo_archive_seo_title'       => '%category% %sep% %page%',
+			'lightweight_seo_archive_seo_description' => 'Posts in %category% by %author%.',
+		);
+
+		$service->save_term_fields( 23 );
+		$service->save_user_fields( 17 );
+
+		$this->assertSame( '%category% %sep% %page%', $service->get_term_all( 23 )['seo_title'] );
+		$this->assertSame( 'Posts in %category% by %author%.', $service->get_term_all( 23 )['seo_description'] );
+		$this->assertSame( '%category% %sep% %page%', $service->get_user_all( 17 )['seo_title'] );
+	}
 }

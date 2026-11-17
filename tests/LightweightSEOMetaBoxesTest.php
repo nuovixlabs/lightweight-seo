@@ -413,6 +413,12 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		// The editor script resolves %sep% from these tokens, so it follows the default separator here.
 		$this->assertStringContainsString( '&quot;%sep%&quot;:&quot;\u2013&quot;', $default_shown );
 
+		// The request-dependent variables are printed for the script: the first page, and the year.
+		$this->assertStringContainsString( '&quot;%page%&quot;:&quot;&quot;', $default_shown );
+		$this->assertStringContainsString( '&quot;%year%&quot;:&quot;' . gmdate( 'Y' ) . '&quot;', $default_shown );
+		$this->assertStringContainsString( 'data-token="%category%"', $default_shown );
+		$this->assertStringContainsString( 'data-token="%page%"', $default_shown );
+
 		// The preview and the title field fall back to the title format of the post type.
 		$this->assertStringContainsString( 'data-title-format="%title% %sep% Journal"', $default_shown );
 		$this->assertStringContainsString( 'data-fallback="A post about visibility – Journal"', $default_shown );
@@ -459,5 +465,40 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		$meta_boxes->save_meta_box_data( 55 );
 
 		$this->assertSame( '0', $post_meta->updates['seo_noindex'] );
+	}
+
+	public function test_every_title_variable_survives_saving_a_page(): void {
+		$post_meta = new class() {
+			public $updates = array();
+
+			public function update( $post_id, $field, $value ) {
+				$this->updates[ $field ] = $value;
+
+				return true;
+			}
+
+			public function get( $post_id, $field ) {
+				return '';
+			}
+
+			public function normalize_social_image( $image_url, $image_id, $previous_url, $previous_id ) {
+				return array( $image_url, $image_id );
+			}
+		};
+
+		$_POST = array(
+			'lightweight_seo_meta_box_nonce'     => 'nonce',
+			'lightweight_seo_title'              => '%title% %sep% %category% %sep% %year%',
+			'lightweight_seo_description'        => 'By %author% in %category%.',
+			'lightweight_seo_social_title'       => '%category%: %title%',
+			'lightweight_seo_social_description' => 'Filed under %category%, page %page%.',
+		);
+
+		( new Lightweight_SEO_Meta_Boxes( new Lightweight_SEO_Settings(), $post_meta ) )->save_meta_box_data( 55 );
+
+		$this->assertSame( '%title% %sep% %category% %sep% %year%', $post_meta->updates['seo_title'] );
+		$this->assertSame( 'By %author% in %category%.', $post_meta->updates['seo_description'] );
+		$this->assertSame( '%category%: %title%', $post_meta->updates['social_title'] );
+		$this->assertSame( 'Filed under %category%, page %page%.', $post_meta->updates['social_description'] );
 	}
 }

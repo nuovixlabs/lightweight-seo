@@ -53,6 +53,15 @@ class Lightweight_SEO_Page_Context_Service {
 	private $context;
 
 	/**
+	 * Values of the request-dependent title variables resolved so far.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      array<string,string>    $token_values
+	 */
+	private $token_values = array();
+
+	/**
 	 * Initialize the service.
 	 *
 	 * @since    1.0.2
@@ -108,6 +117,8 @@ class Lightweight_SEO_Page_Context_Service {
 			'modified_time'    => '',
 			'twitter_card'     => 'summary',
 			'twitter_site'     => '' !== $this->settings->get_x_handle() ? '@' . $this->settings->get_x_handle() : '',
+			// A service checks the homepage for its code, so the codes travel with that page only.
+			'verification'     => is_front_page() && absint( get_query_var( 'paged' ) ) < 2 ? $this->settings->get_verification_codes() : array(),
 			'is_404'           => is_404(),
 		);
 
@@ -591,7 +602,59 @@ class Lightweight_SEO_Page_Context_Service {
 			'%sep%'      => $this->settings->get_title_separator(),
 		);
 
-		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );
+		// These need a lookup, so each is resolved only when the text uses it.
+		foreach ( Lightweight_SEO_Text::OPTIONAL_TOKENS as $token ) {
+			if ( false !== strpos( $template, $token ) ) {
+				$replacements[ $token ] = $this->get_optional_token_value( $token );
+			}
+		}
+
+		return Lightweight_SEO_Text::resolve_tokens( $template, $replacements );
+	}
+
+	/**
+	 * Resolve a title variable that depends on the current request, once per request.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $token    Variable including its percent signs.
+	 * @return   string Value, or an empty string when the request has none.
+	 */
+	private function get_optional_token_value( $token ) {
+		if ( isset( $this->token_values[ $token ] ) ) {
+			return $this->token_values[ $token ];
+		}
+
+		$value = '';
+
+		if ( '%page%' === $token ) {
+			// Archives count pages in "paged", and a post split into pages counts them in "page".
+			$page = max( absint( get_query_var( 'paged' ) ), absint( get_query_var( 'page' ) ) );
+
+			if ( $page > 1 ) {
+				/* translators: %d: page number of a paginated archive or post, from 2 upwards. */
+				$value = sprintf( __( 'Page %d', 'lightweight-seo' ), $page );
+			}
+		} elseif ( '%category%' === $token ) {
+			if ( is_singular() ) {
+				$categories = get_the_category( get_queried_object_id() );
+				$value      = ! empty( $categories[0]->name ) ? (string) $categories[0]->name : '';
+			} elseif ( is_category() ) {
+				$value = (string) ( get_queried_object()->name ?? '' );
+			}
+		} elseif ( '%author%' === $token ) {
+			if ( is_singular() ) {
+				$value = (string) get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', get_queried_object_id() ) );
+			} elseif ( is_author() ) {
+				$author = get_queried_object();
+				$value  = (string) $this->get_author_display_name( $author, isset( $author->ID ) ? (int) $author->ID : get_queried_object_id() );
+			}
+		} elseif ( '%year%' === $token ) {
+			$value = (string) wp_date( 'Y' );
+		}
+
+		$this->token_values[ $token ] = $value;
+
+		return $value;
 	}
 
 	/**

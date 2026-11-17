@@ -166,6 +166,16 @@ class Lightweight_SEO_Admin_Settings {
 					'enable_hreflang_path_mirroring' => array( __( 'Legacy path mirroring', 'lightweight-seo' ), $modules ),
 				),
 			),
+			'lightweight_seo_verification_section' => array(
+				'title'    => __( 'Site verification', 'lightweight-seo' ),
+				'callback' => '__return_null',
+				'fields'   => array_map(
+					static function ( $label ) use ( $core ) {
+						return array( $label, $core, true );
+					},
+					$this->get_verification_labels()
+				),
+			),
 			'lightweight_seo_redirects_section'    => array(
 				'title'    => __( 'Redirects', 'lightweight-seo' ),
 				'callback' => array( $modules, 'redirects_section_callback' ),
@@ -212,6 +222,21 @@ class Lightweight_SEO_Admin_Settings {
 					'ai_readiness'                 => array( __( 'Readiness checks', 'lightweight-seo' ), $modules ),
 				),
 			),
+		);
+	}
+
+	/**
+	 * Name the services a verification code can be entered for, keyed by their setting.
+	 *
+	 * @since    1.1.0
+	 * @return   array<string,string>
+	 */
+	private function get_verification_labels() {
+		return array(
+			'verification_google'    => __( 'Google Search Console', 'lightweight-seo' ),
+			'verification_bing'      => __( 'Bing Webmaster Tools', 'lightweight-seo' ),
+			'verification_pinterest' => __( 'Pinterest', 'lightweight-seo' ),
+			'verification_yandex'    => __( 'Yandex Webmaster', 'lightweight-seo' ),
 		);
 	}
 
@@ -315,7 +340,7 @@ class Lightweight_SEO_Admin_Settings {
 		};
 
 		if ( isset( $input['title_format'] ) ) {
-			$sanitized_input['title_format'] = sanitize_text_field( $input['title_format'] );
+			$sanitized_input['title_format'] = Lightweight_SEO_Text::sanitize_template( $input['title_format'] );
 		} else {
 			$sanitized_input['title_format'] = $existing_settings['title_format'] ?? LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT;
 		}
@@ -324,19 +349,19 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['title_separator'] = $this->settings->normalize_title_separator( $input['title_separator'] ?? null, $this->settings->get_title_separator() );
 
 		if ( isset( $input['home_title_format'] ) ) {
-			$sanitized_input['home_title_format'] = sanitize_text_field( $input['home_title_format'] );
+			$sanitized_input['home_title_format'] = Lightweight_SEO_Text::sanitize_template( $input['home_title_format'] );
 		} else {
 			$sanitized_input['home_title_format'] = $existing_settings['home_title_format'] ?? '%sitename% %sep% %tagline%';
 		}
 
 		if ( isset( $input['archive_title_format'] ) ) {
-			$sanitized_input['archive_title_format'] = sanitize_text_field( $input['archive_title_format'] );
+			$sanitized_input['archive_title_format'] = Lightweight_SEO_Text::sanitize_template( $input['archive_title_format'] );
 		} else {
 			$sanitized_input['archive_title_format'] = $existing_settings['archive_title_format'] ?? '%title% %sep% %sitename%';
 		}
 
 		if ( isset( $input['search_title_format'] ) ) {
-			$sanitized_input['search_title_format'] = sanitize_text_field( $input['search_title_format'] );
+			$sanitized_input['search_title_format'] = Lightweight_SEO_Text::sanitize_template( $input['search_title_format'] );
 		} else {
 			$sanitized_input['search_title_format'] = $existing_settings['search_title_format'] ?? 'Search Results for "%search%" %sep% %sitename%';
 		}
@@ -414,6 +439,24 @@ class Lightweight_SEO_Admin_Settings {
 				add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'invalid_x_handle', __( 'Invalid X handle. Use a handle like @example, or the address of the profile.', 'lightweight-seo' ), 'error' );
 			} else {
 				$sanitized_input['x_handle'] = $x_handle;
+			}
+		}
+
+		foreach ( $this->get_verification_labels() as $key => $label ) {
+			$sanitized_input[ $key ] = $existing_settings[ $key ] ?? '';
+
+			if ( ! isset( $input[ $key ] ) ) {
+				continue;
+			}
+
+			// The whole pasted meta tag is accepted, so the code is extracted before anything strips the tag.
+			$code = $this->settings->normalize_verification_code( $input[ $key ] );
+
+			if ( null === $code ) {
+				/* translators: %s: name of the service, such as Google Search Console. */
+				add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'invalid_' . $key, sprintf( __( 'The %s verification code was not saved. Paste the code, or the whole meta tag the service shows.', 'lightweight-seo' ), $label ), 'error' );
+			} else {
+				$sanitized_input[ $key ] = $code;
 			}
 		}
 

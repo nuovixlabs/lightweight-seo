@@ -51,7 +51,7 @@ Class names use `lwseo-block__element`, with `--modifier` for variants and `is-s
 | Badge | `lwseo-badge` | `badge()` | A one or two word status: `is-success`, `is-warning`, `is-info`, or neutral. |
 | Status list | `lwseo-status-list`, `lwseo-status` | `status()` | Checklists, health checks, and at-a-glance facts. Pass attributes to `status()` when a script updates the row. |
 | Callout | `lwseo-callout` | `callout()` | One message that must stand apart from help text. |
-| Tokens | `lwseo-tokens`, `lwseo-token` | `tokens()` | Title variables that insert themselves into the field being edited. |
+| Tokens | `lwseo-tokens`, `lwseo-token` | `tokens()` | Title variables that insert themselves into the field being edited. A field that accepts them is sanitized with `Lightweight_SEO_Text::sanitize_template()`, because the WordPress text sanitizer cuts `%ca` out of `%category%`. |
 | Image | `lwseo-image` | `image_field()` | URL input, media picker, and thumbnail. Leave `id_name` out for an image stored as a URL only. |
 | Table | `lwseo-table-wrap`, `lwseo-table` | | Read-only data. |
 | Matrix | `lwseo-matrix` | `matrix()` | The same few settings for many items: one row per item, one column per setting, one control in each cell. |

@@ -107,6 +107,18 @@ Nothing changes until a field is changed. Six settings are new in the existing s
 
 For extensions, the page context gains `twitter_site`, and the first node of the schema graph may be a `Person` with the identifier `#person` instead of an `Organization` with `#organization`.
 
+## Verification codes and title variables since rc.3
+
+- "Schema and identity" gains a "Site verification" card for Google Search Console, Bing Webmaster Tools, Pinterest, and Yandex Webmaster. Each code is printed as a meta tag on the homepage only. A field accepts the code or the whole meta tag the service shows. Nothing is requested from any service.
+- Titles and descriptions understand four more variables: `%category%` (a post's first category, or the category of a category archive), `%author%` (a post's author, or the author of an author archive), `%year%` (the current year), and `%page%` ("Page 2" and so on, from the second page of an archive or of a post split into pages).
+- One of these variables that has no value on a page is left out together with the separator beside it, so `%title% %sep% %page% %sep% %sitename%` has no gap on the first page. The four earlier variables behave exactly as before, including an empty tagline.
+- "Search appearance" explains every variable under "What the variables mean", and the variable buttons in the settings and in the editor offer the new ones.
+- Import converts more source variables instead of leaving them for review: the current year and the author name from Yoast SEO, Rank Math, and All in One SEO; `%category%` from Rank Math; and the page variable of Yoast SEO and Rank Math, which was dropped before. Theirs reads "Page 2 of 5"; `%page%` reads "Page 2".
+
+Four settings are new in the existing settings option: `verification_google`, `verification_bing`, `verification_pinterest`, and `verification_yandex`. There is no migration.
+
+Titles, descriptions, and title formats are now sanitized in a way that keeps variables whole. The WordPress text sanitizer removes anything shaped like a percent-encoded byte, which would have cut `%ca` out of `%category%`.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

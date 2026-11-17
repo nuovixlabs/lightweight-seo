@@ -36,6 +36,9 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Site identity: set a name and a logo and confirm the Organization node uses both; clear the logo and confirm it falls back to the default social image.
 - Site identity: choose "A person" and confirm a `Person` node with the `#person` identifier and an `image`, no `logo`, and that the `publisher` of the WebSite node and of an Article points at it. With no photo chosen, confirm the Person has no `image` even when a default social image exists. With Local business on, confirm the LocalBusiness node is printed beside the Person.
 - Site identity: set an X handle and confirm one `twitter:site` tag with a leading `@` on the homepage, a post, and an archive, and none on a 404.
+- Verification: enter a code for each service and confirm its meta tag is printed once on the first page of the homepage, and on no post, archive, search, later homepage page, or 404.
+- Title variables: use `%category%`, `%author%`, `%year%`, and `%page%` in the default, archive, and search title formats and in one content type's format. Confirm a post with and without a category, a category archive, an author archive, a date archive, and page two of an archive, with no stray separator where a variable has no value.
+- Title variables: confirm a format that uses none of the new variables prints exactly what it printed before, including an empty tagline.
 - Title separator: choose each separator in turn and confirm a title built with `%sep%` uses it on a post, the homepage, an archive, and a search page, and that a format with a typed character is left as written.
 - Content types: on an upgraded site that has never saved the table, confirm the robots result and title of a post, page, attachment, custom post type item, term, author, date, and search page are unchanged.
 - Content types: hide a post type and confirm its items and its archive page carry `noindex`; set one item to "Show" and confirm only that item loses it. Hide one item of a shown post type and confirm only that item carries `noindex`.
@@ -74,6 +77,9 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - On the overview, confirm the homepage preview matches the homepage's real title, description, and image, and that each setup step is green only when it is done. Dismiss the checklist, confirm it stays dismissed in another browser for the same user, and bring it back with "Show setup checklist".
 - Tick and clear every excluded role and environment, saving each time; an empty list must save as empty.
 - Open the Modules tab and change nothing; "Unsaved changes" must not appear.
+- Verification: paste a bare code, then the whole meta tag a service shows; both must save as the code. A value that is not a code must show an error that names the service and keep the saved code.
+- Title variables: save each of the four new variables in a title format, in a content type's format, and in a page's own SEO title, meta description, social title, and social description, and in a term's and an author's SEO title. Reopen each and confirm it still reads exactly as typed; `%category%` in particular must not come back as `tegory%`.
+- Title variables: open "What the variables mean" on "Search appearance" and confirm every variable button has a line there. In the editor, type a title that uses `%page%` and `%category%` on a post without a category and confirm the preview has no stray separator.
 - Site identity: enter an X handle as `handle`, as `@handle`, and as an `x.com` profile address; each must save as the same handle and show with its `@`. An invalid value must show an error and keep the saved handle.
 - Site identity: choose a logo with the media picker, save, and confirm the thumbnail and the stored address; clear the address, save, and confirm both are gone.
 - Title separator: change it and confirm the editor preview of a page without its own SEO title and the homepage preview on the Overview both follow, and that saving "Schema and identity" afterwards leaves it unchanged.
@@ -103,6 +109,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Save the Tools tab and confirm it runs no import, rollback, or deletion; delete retained 404 log entries with their own confirmation box and button.
 - Confirm occupied Lightweight SEO fields are never overwritten and roll back the latest batch.
 - Import a source title containing template variables and confirm the page title shows resolved text, with unsupported variables reported rather than imported.
+- Import titles that use the source plugin's current year, author name, and page variables, and Rank Math's `%category%`; each must arrive as `%year%`, `%author%`, `%page%`, or `%category%`. A Yoast or All in One SEO variable that lists every category must still be reported, not imported.
 
 ## Security and privacy
 

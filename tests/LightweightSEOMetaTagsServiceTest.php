@@ -207,4 +207,39 @@ final class LightweightSEOMetaTagsServiceTest extends TestCase {
 
 		$this->assertStringNotContainsString( 'twitter:site', $output );
 	}
+
+	public function test_verification_codes_are_printed_as_meta_tags(): void {
+		$page_context = new class() {
+			public function get_context() {
+				return array(
+					'og_title'     => 'Home',
+					'verification' => array(
+						'google-site-verification' => 'google-code_1',
+						'msvalidate.01'            => '0123456789ABCDEF',
+						'p:domain_verify'          => 'f00ba4',
+					),
+				);
+			}
+		};
+		$without      = new class() {
+			public function get_context() {
+				return array( 'og_title' => 'A post' );
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Meta_Tags_Service( $page_context ) )->add_meta_tags();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '<meta name="google-site-verification" content="google-code_1" />', $output );
+		$this->assertStringContainsString( '<meta name="msvalidate.01" content="0123456789ABCDEF" />', $output );
+		$this->assertStringContainsString( '<meta name="p:domain_verify" content="f00ba4" />', $output );
+
+		ob_start();
+		( new Lightweight_SEO_Meta_Tags_Service( $without ) )->add_meta_tags();
+		$output = ob_get_clean();
+
+		$this->assertStringNotContainsString( 'verification', $output );
+		$this->assertStringNotContainsString( 'msvalidate', $output );
+	}
 }

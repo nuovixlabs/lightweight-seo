@@ -316,22 +316,25 @@ class Lightweight_SEO_Importer_Service {
 		switch ( $source ) {
 			case 'yoast':
 				$map     = array(
-					'%%title%%'      => '%title%',
-					'%%sitename%%'   => '%sitename%',
-					'%%sitedesc%%'   => '%tagline%',
-					'%%sep%%'        => '%sep%',
-					'%%page%%'       => '',
-					'%%pagenumber%%' => '',
-					'%%pagetotal%%'  => '',
+					'%%title%%'       => '%title%',
+					'%%sitename%%'    => '%sitename%',
+					'%%sitedesc%%'    => '%tagline%',
+					'%%sep%%'         => '%sep%',
+					'%%page%%'        => '%page%',
+					'%%currentyear%%' => '%year%',
+					'%%name%%'        => '%author%',
+					'%%pagenumber%%'  => '',
+					'%%pagetotal%%'   => '',
 				);
 				$unknown = '/%%[a-z0-9_\-]+%%/i';
 				break;
 			case 'rank_math':
 				$map     = array(
-					'%sitedesc%' => '%tagline%',
-					'%page%'     => '',
+					'%sitedesc%'    => '%tagline%',
+					'%currentyear%' => '%year%',
+					'%name%'        => '%author%',
 				);
-				$unknown = '/%(?!(?:title|sitename|tagline|sep)%)[a-z0-9_]+(?:\([^)]*\))?%/i';
+				$unknown = '/%(?!(?:title|sitename|tagline|sep|page|category|author|year)%)[a-z0-9_]+(?:\([^)]*\))?%/i';
 				break;
 			case 'aioseo':
 				$map     = array(
@@ -339,6 +342,8 @@ class Lightweight_SEO_Importer_Service {
 					'#site_title'   => '%sitename%',
 					'#tagline'      => '%tagline%',
 					'#separator_sa' => '%sep%',
+					'#current_year' => '%year%',
+					'#author_name'  => '%author%',
 					'#page_number'  => '',
 				);
 				$unknown = '/#(?:archive_|attachment_|author_|breadcrumb_|categories|category_title|current_|custom_field-|parent_title|permalink|post_|search_term|tax_name-|taxonomy_)[a-z0-9_\-]*/i';

@@ -432,4 +432,52 @@ final class LightweightSEOSettingsTest extends TestCase {
 
 		$this->assertSame( '', $settings->normalize_x_handle( array( 'example' ) ) );
 	}
+
+	public function test_a_verification_code_is_read_from_a_code_or_from_the_whole_meta_tag(): void {
+		$settings = new Lightweight_SEO_Settings();
+
+		foreach ( array(
+			'abcDEF123_-xyz'       => 'abcDEF123_-xyz',
+			'  0123456789ABCDEF  ' => '0123456789ABCDEF',
+			'<meta name="google-site-verification" content="abcDEF123_-xyz" />' => 'abcDEF123_-xyz',
+			"<meta name='msvalidate.01' content='0123456789ABCDEF'>" => '0123456789ABCDEF',
+			'<meta content = " f00ba4 " name="p:domain_verify"/>' => 'f00ba4',
+			''                     => '',
+		) as $pasted => $code ) {
+			$this->assertSame( $code, $settings->normalize_verification_code( $pasted ), 'Pasted "' . $pasted . '".' );
+		}
+
+		foreach ( array(
+			'two words',
+			'"><script>alert(1)</script>',
+			'<meta name="google-site-verification" content="bad code!" />',
+			'<meta name="google-site-verification" content="" />',
+			str_repeat( 'a', 101 ),
+		) as $pasted ) {
+			$this->assertNull( $settings->normalize_verification_code( $pasted ), 'Pasted "' . $pasted . '".' );
+		}
+
+		$this->assertSame( '', $settings->normalize_verification_code( array( 'abc' ) ) );
+	}
+
+	public function test_verification_codes_are_listed_under_their_meta_tag_names(): void {
+		global $lightweight_seo_test_options;
+
+		$this->assertSame( array(), ( new Lightweight_SEO_Settings() )->get_verification_codes() );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'verification_google'    => 'google-code_1',
+			'verification_bing'      => '',
+			'verification_pinterest' => 'not a code',
+			'verification_yandex'    => 'f00ba4',
+		);
+
+		$this->assertSame(
+			array(
+				'google-site-verification' => 'google-code_1',
+				'yandex-verification'      => 'f00ba4',
+			),
+			( new Lightweight_SEO_Settings() )->get_verification_codes()
+		);
+	}
 }

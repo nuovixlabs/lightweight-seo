@@ -19,6 +19,12 @@ final class Lightweight_SEO_Text {
 	/** Characters kept when a description is derived from content instead of written by an editor. */
 	const SUMMARY_LENGTH = 160;
 
+	/** Variables that often have no value, and then leave no trace: not themselves, and not a separator beside them. */
+	const OPTIONAL_TOKENS = array( '%page%', '%category%', '%author%', '%year%' );
+
+	/** What counts as a separator beside an empty variable: %sep%, or one of the characters it can become. */
+	const SEPARATOR_PATTERN = '(?:%sep%|[–—\\-|·•»\/])';
+
 	/**
 	 * Count characters rather than bytes so non-Latin text is measured correctly.
 	 *
@@ -67,7 +73,83 @@ final class Lightweight_SEO_Text {
 	 * @return string
 	 */
 	public static function resolve_tokens( $template, $tokens ) {
-		return str_replace( array_keys( $tokens ), array_values( $tokens ), (string) $template );
+		$template = (string) $template;
+
+		foreach ( self::OPTIONAL_TOKENS as $token ) {
+			if ( false !== strpos( $template, $token ) && '' === (string) ( $tokens[ $token ] ?? '' ) ) {
+				$template = self::remove_token( $template, $token );
+			}
+		}
+
+		return str_replace( array_keys( $tokens ), array_values( $tokens ), $template );
+	}
+
+	/**
+	 * Take an empty variable out of a format together with one separator beside it.
+	 *
+	 * The separator before the variable goes with it, or the one after it when the
+	 * variable comes first, so "%title% %sep% %page% %sep% %sitename%" reads as
+	 * "%title% %sep% %sitename%" on the first page.
+	 *
+	 * @param string $template Format or custom value.
+	 * @param string $token    Variable to remove, including its percent signs.
+	 * @return string
+	 */
+	private static function remove_token( $template, $token ) {
+		$quoted  = preg_quote( $token, '/' );
+		$removed = preg_replace(
+			array(
+				'/\s+' . self::SEPARATOR_PATTERN . '\s+' . $quoted . '/u',
+				'/' . $quoted . '\s+' . self::SEPARATOR_PATTERN . '\s+/u',
+				'/' . $quoted . '/u',
+			),
+			'',
+			$template
+		);
+
+		// A value that is not valid UTF-8 cannot be matched; leave only the bare variable out of it.
+		return null === $removed ? str_replace( $token, '', $template ) : $removed;
+	}
+
+	/**
+	 * Sanitize one line of text that may hold title variables, such as a title format.
+	 *
+	 * WordPress removes anything shaped like a percent-encoded byte, which would cut
+	 * "%ca" out of "%category%". Variables are set aside while the text is sanitized.
+	 *
+	 * @param mixed $value Submitted text.
+	 * @return string
+	 */
+	public static function sanitize_template( $value ) {
+		return self::sanitize_keeping_variables( $value, 'sanitize_text_field' );
+	}
+
+	/**
+	 * Sanitize text of several lines that may hold title variables, such as a description.
+	 *
+	 * @param mixed $value Submitted text.
+	 * @return string
+	 */
+	public static function sanitize_textarea_template( $value ) {
+		return self::sanitize_keeping_variables( $value, 'sanitize_textarea_field' );
+	}
+
+	/**
+	 * Run a WordPress text sanitizer without letting it damage title variables.
+	 *
+	 * Only text shaped like a variable, letters between two percent signs, is set
+	 * aside. Real percent-encoded bytes such as %3C are still removed.
+	 *
+	 * @param mixed    $value     Submitted text.
+	 * @param callable $sanitizer WordPress sanitizer to apply.
+	 * @return string
+	 */
+	private static function sanitize_keeping_variables( $value, $sanitizer ) {
+		$value = is_scalar( $value ) ? (string) $value : '';
+		$held  = preg_replace( '/%([a-z_]+)%/', '{{lwseo-variable:$1}}', $value );
+		$clean = (string) call_user_func( $sanitizer, null === $held ? $value : $held );
+
+		return (string) preg_replace( '/\{\{lwseo-variable:([a-z_]+)\}\}/', '%$1%', $clean );
 	}
 
 	/**

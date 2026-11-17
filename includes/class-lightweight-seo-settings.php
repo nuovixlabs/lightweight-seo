@@ -30,6 +30,14 @@ class Lightweight_SEO_Settings {
 	/** Stored per-item choice that shows an item even when its content type is hidden. */
 	const INDEX_OVERRIDE = 'index';
 
+	/** Meta tag name each supported service reads its verification code from, keyed by service. */
+	const VERIFICATION_TAGS = array(
+		'google'    => 'google-site-verification',
+		'bing'      => 'msvalidate.01',
+		'pinterest' => 'p:domain_verify',
+		'yandex'    => 'yandex-verification',
+	);
+
 	/** Characters the %sep% title variable may become. The first is the default. */
 	const TITLE_SEPARATORS = array( '–', '—', '-', '|', '·', '•', '»', '/' );
 
@@ -85,6 +93,10 @@ class Lightweight_SEO_Settings {
 			'identity_logo_id'                   => 0,
 			'x_handle'                           => '',
 			'organization_same_as'               => '',
+			'verification_google'                => '',
+			'verification_bing'                  => '',
+			'verification_pinterest'             => '',
+			'verification_yandex'                => '',
 			'enable_hreflang_output'             => '0',
 			'enable_hreflang_path_mirroring'     => '0',
 			'hreflang_mappings'                  => '',
@@ -286,6 +298,48 @@ class Lightweight_SEO_Settings {
 		$value = ltrim( $value, '@' );
 
 		return 1 === preg_match( '/^[A-Za-z0-9_]{1,15}$/', $value ) ? $value : null;
+	}
+
+	/**
+	 * Get the verification codes that are set, keyed by the meta tag name each is printed under.
+	 *
+	 * @since    1.1.0
+	 * @return   array<string,string>
+	 */
+	public function get_verification_codes() {
+		$codes = array();
+
+		foreach ( self::VERIFICATION_TAGS as $service => $tag ) {
+			$code = (string) $this->normalize_verification_code( $this->get( 'verification_' . $service, '' ) );
+
+			if ( '' !== $code ) {
+				$codes[ $tag ] = $code;
+			}
+		}
+
+		return $codes;
+	}
+
+	/**
+	 * Reduce a pasted verification code, or the whole meta tag a service shows, to the code.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $value    A code, or a meta tag with the code in its content attribute.
+	 * @return   string|null Code, an empty string for no code, or null when the value is not a code.
+	 */
+	public function normalize_verification_code( $value ) {
+		$value = is_scalar( $value ) ? trim( (string) $value ) : '';
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		if ( 1 === preg_match( '/\bcontent\s*=\s*["\']([^"\']*)["\']/i', $value, $matches ) ) {
+			$value = trim( $matches[1] );
+		}
+
+		// Nothing outside these characters is stored, so the code is safe to print as an attribute.
+		return 1 === preg_match( '/^[A-Za-z0-9_\-]{1,100}$/', $value ) ? $value : null;
 	}
 
 	/**
@@ -541,7 +595,7 @@ class Lightweight_SEO_Settings {
 		return array(
 			'noindex'      => '1' === $value( 'noindex', '0' ) ? '1' : '0',
 			'sitemap'      => '0' === $value( 'sitemap', '1' ) ? '0' : '1',
-			'title_format' => sanitize_text_field( $value( 'title_format', '' ) ),
+			'title_format' => Lightweight_SEO_Text::sanitize_template( $value( 'title_format', '' ) ),
 		);
 	}
 

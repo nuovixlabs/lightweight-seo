@@ -495,11 +495,11 @@ class Lightweight_SEO_Archive_Meta {
 		return array(
 			'seo_title'             => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_template' ),
 			),
 			'seo_description'       => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_textarea_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_textarea_template' ),
 			),
 			'seo_canonical_url'     => array(
 				'type'              => 'string',
@@ -626,9 +626,9 @@ class Lightweight_SEO_Archive_Meta {
 	private function sanitize_meta_value( $field, $value ) {
 		switch ( $field ) {
 			case 'seo_title':
-				return sanitize_text_field( $value );
+				return Lightweight_SEO_Text::sanitize_template( $value );
 			case 'seo_description':
-				return sanitize_textarea_field( $value );
+				return Lightweight_SEO_Text::sanitize_textarea_template( $value );
 			case 'seo_canonical_url':
 				return esc_url_raw( $value );
 			case 'seo_noindex':

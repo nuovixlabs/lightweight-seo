@@ -864,8 +864,21 @@
 				featuredWidth: Number(metabox.attr('data-featured-width')) || 0
 			};
 
-			// Mirror the server: %title%, %sitename%, %tagline%, and %sep% are replaced in custom values.
+			// Mirror the server (Lightweight_SEO_Text): variables are replaced in formats and custom values, and a
+			// variable from this list that has no value leaves together with one separator beside it.
+			var optionalTokens = ['%page%', '%category%', '%author%', '%year%'];
+			var separatorPattern = '(?:%sep%|[–—\\-|·•»\\/])';
+
 			function resolveTokens(text) {
+				$.each(optionalTokens, function(index, token) {
+					if (text.indexOf(token) !== -1 && !tokens[token]) {
+						text = text
+							.replace(new RegExp('\\s+' + separatorPattern + '\\s+' + token, 'g'), '')
+							.replace(new RegExp(token + '\\s+' + separatorPattern + '\\s+', 'g'), '')
+							.split(token).join('');
+					}
+				});
+
 				$.each(tokens, function(token, value) {
 					text = text.split(token).join(value);
 				});

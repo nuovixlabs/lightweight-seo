@@ -246,6 +246,10 @@ class Lightweight_SEO_Admin_Page {
 					'description' => __( 'Who this site belongs to. Used in structured data and when pages are shared.', 'lightweight-seo' ),
 				),
 				array(
+					'section'     => 'lightweight_seo_verification_section',
+					'description' => __( 'Proves to each service that you own this site, with a meta tag on the homepage.', 'lightweight-seo' ),
+				),
+				array(
 					'section'     => 'lightweight_seo_schema_section',
 					'fields'      => array( 'enable_schema_output' ),
 					'description' => __( 'JSON-LD schema built from your site identity and SEO context.', 'lightweight-seo' ),
@@ -437,6 +441,11 @@ class Lightweight_SEO_Admin_Page {
 			'%sitename%' => (string) get_bloginfo( 'name' ),
 			'%tagline%'  => (string) get_bloginfo( 'description' ),
 			'%sep%'      => $this->settings->get_title_separator(),
+			// The homepage preview is its first page; it has no category, and an author only when it is a page.
+			'%page%'     => '',
+			'%category%' => '',
+			'%author%'   => '',
+			'%year%'     => (string) wp_date( 'Y' ),
 		);
 		$title       = $this->settings->get_home_title_format();
 		$description = (string) ( $options['meta_description'] ?? '' );
@@ -454,9 +463,10 @@ class Lightweight_SEO_Admin_Page {
 		$front_page_id = $this->get_front_page_id();
 
 		if ( $front_page_id ) {
-			$front_page        = get_post( $front_page_id );
-			$post_meta         = $this->post_meta->get_all( $front_page_id );
-			$tokens['%title%'] = (string) get_the_title( $front_page_id );
+			$front_page         = get_post( $front_page_id );
+			$post_meta          = $this->post_meta->get_all( $front_page_id );
+			$tokens['%title%']  = (string) get_the_title( $front_page_id );
+			$tokens['%author%'] = (string) get_the_author_meta( 'display_name', (int) ( $front_page->post_author ?? 0 ) );
 
 			if ( ! empty( $post_meta['seo_title'] ) ) {
 				$title = $post_meta['seo_title'];

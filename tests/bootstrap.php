@@ -261,7 +261,14 @@ if (!function_exists('wp_unslash')) {
 
 if (!function_exists('sanitize_text_field')) {
     function sanitize_text_field($value) {
-        return trim(strip_tags((string) $value));
+        $value = trim(strip_tags((string) $value));
+
+        // Like WordPress, remove anything shaped like a percent-encoded byte.
+        while (preg_match('/%[a-f0-9]{2}/i', $value, $match)) {
+            $value = str_replace($match[0], '', $value);
+        }
+
+        return trim($value);
     }
 }
 
@@ -273,7 +280,14 @@ if (!function_exists('sanitize_key')) {
 
 if (!function_exists('sanitize_textarea_field')) {
     function sanitize_textarea_field($value) {
-        return trim(strip_tags((string) $value));
+        $value = trim(strip_tags((string) $value));
+
+        // Like WordPress, remove anything shaped like a percent-encoded byte.
+        while (preg_match('/%[a-f0-9]{2}/i', $value, $match)) {
+            $value = str_replace($match[0], '', $value);
+        }
+
+        return trim($value);
     }
 }
 
@@ -1236,6 +1250,20 @@ if (!function_exists('get_the_modified_date')) {
         global $lightweight_seo_test_query_state;
 
         return $lightweight_seo_test_query_state['modified_date'] ?? '';
+    }
+}
+
+if (!function_exists('get_the_category')) {
+    function get_the_category($post_id = false) {
+        global $lightweight_seo_test_categories;
+
+        return $lightweight_seo_test_categories[(int) $post_id] ?? array();
+    }
+}
+
+if (!function_exists('wp_date')) {
+    function wp_date($format, $timestamp = null, $timezone = null) {
+        return gmdate($format, null === $timestamp ? time() : $timestamp);
     }
 }
 

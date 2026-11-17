@@ -74,7 +74,7 @@ The consent filter supports a basic blocking integration; Lightweight SEO does n
 
 | Hook | Arguments | Contract |
 |---|---|---|
-| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. Besides the title, description, canonical, robots, and Open Graph keys, the context carries `object_title` (the visible name without the title template), `og_locale`, `twitter_site` (the site's X handle with its `@`, or an empty string), and `published_time`/`modified_time` for article content. |
+| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. Besides the title, description, canonical, robots, and Open Graph keys, the context carries `object_title` (the visible name without the title template), `og_locale`, `twitter_site` (the site's X handle with its `@`, or an empty string), `verification` (verification codes keyed by meta tag name, on the first page of the homepage only), and `published_time`/`modified_time` for article content. |
 | `lightweight_seo_document_title` | `string $title, array $context` | Filters the final plugin document title. |
 | `lightweight_seo_meta_tags` | `array $tags, array $context` | Filters normalized name/property meta-tag definitions before escaping. |
 | `lightweight_seo_before_meta_tags` | `array $tags, array $context` | Fires before meta tags are printed. |
