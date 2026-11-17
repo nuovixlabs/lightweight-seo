@@ -44,7 +44,7 @@ class Lightweight_SEO_Admin_Tools {
 	const ACTION_REDIRECT_IMPORT = 'lightweight_seo_redirect_import';
 
 	/** Sources the importer can read. */
-	const IMPORT_SOURCES = array( 'yoast', 'rank_math', 'aioseo' );
+	const IMPORT_SOURCES = Lightweight_SEO_Importer_Service::SOURCES;
 
 	/**
 	 * The ID of this plugin.

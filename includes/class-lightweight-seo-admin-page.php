@@ -307,7 +307,7 @@ class Lightweight_SEO_Admin_Page {
 					'section'     => 'lightweight_seo_migration_section',
 					'fields'      => array( 'import_source', 'import_actions', 'import_report' ),
 					'title'       => __( 'Import from another SEO plugin', 'lightweight-seo' ),
-					'description' => __( 'Preview and import saved metadata from Yoast SEO, Rank Math, or All in One SEO, 50 posts at a time.', 'lightweight-seo' ),
+					'description' => __( 'Preview and import titles, descriptions, and other fields saved on posts by another SEO plugin, 50 posts at a time.', 'lightweight-seo' ),
 					'intro'       => true,
 				),
 				'legacy' => array(

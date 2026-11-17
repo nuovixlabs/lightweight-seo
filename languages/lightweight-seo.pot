@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T11:43:39+00:00\n"
+"POT-Creation-Date: 2026-11-17T11:50:35+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -261,7 +261,7 @@ msgid "Sitemap index:"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:447
-#: includes/class-lightweight-seo-admin-tools-fields.php:329
+#: includes/class-lightweight-seo-admin-tools-fields.php:332
 #: includes/class-lightweight-seo-admin-ui.php:146
 msgid "(opens in a new tab)"
 msgstr ""
@@ -1060,7 +1060,7 @@ msgid "Import from another SEO plugin"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:310
-msgid "Preview and import saved metadata from Yoast SEO, Rank Math, or All in One SEO, 50 posts at a time."
+msgid "Preview and import titles, descriptions, and other fields saved on posts by another SEO plugin, 50 posts at a time."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:316
@@ -1571,159 +1571,171 @@ msgstr ""
 msgid "All in One SEO"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:130
-msgid "Preview next batch"
+#: includes/class-lightweight-seo-admin-tools-fields.php:117
+msgid "SEOPress"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:131
-msgid "Import next batch"
+#: includes/class-lightweight-seo-admin-tools-fields.php:118
+msgid "The SEO Framework"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-tools-fields.php:119
+msgid "Slim SEO"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-tools-fields.php:133
+msgid "Preview next batch"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-tools-fields.php:134
+msgid "Import next batch"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-tools-fields.php:136
 msgid "Roll back last batch"
 msgstr ""
 
 #. translators: %d: zero-based importer cursor.
-#: includes/class-lightweight-seo-admin-tools-fields.php:140
+#: includes/class-lightweight-seo-admin-tools-fields.php:143
 #, php-format
 msgid "The next batch starts after %d scanned posts. Changing the source resets this cursor."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:157
+#: includes/class-lightweight-seo-admin-tools-fields.php:160
 msgid "No batch has been previewed or imported yet."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:211
+#: includes/class-lightweight-seo-admin-tools-fields.php:214
 msgid "Retired data is never moved into another integration automatically."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:215
+#: includes/class-lightweight-seo-admin-tools-fields.php:218
 msgid "Search Console credentials"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:215
+#: includes/class-lightweight-seo-admin-tools-fields.php:218
 msgid "No legacy Search Console credentials are retained."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:219
+#: includes/class-lightweight-seo-admin-tools-fields.php:222
 msgid "404 log entries"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:219
+#: includes/class-lightweight-seo-admin-tools-fields.php:222
 msgid "No legacy 404 log entries are retained."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:225
-#: includes/class-lightweight-seo-admin-tools-fields.php:233
+#: includes/class-lightweight-seo-admin-tools-fields.php:228
+#: includes/class-lightweight-seo-admin-tools-fields.php:236
 msgid "Keyword values"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:226
+#: includes/class-lightweight-seo-admin-tools-fields.php:229
 msgid "Stored keyword values remain available for export but are not edited or output by Lightweight SEO."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:228
+#: includes/class-lightweight-seo-admin-tools-fields.php:231
 msgid "Export legacy keywords CSV"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:233
+#: includes/class-lightweight-seo-admin-tools-fields.php:236
 msgid "No legacy keyword values were detected."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:239
+#: includes/class-lightweight-seo-admin-tools-fields.php:242
 msgid "Review retained Search Console configuration"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:241
+#: includes/class-lightweight-seo-admin-tools-fields.php:244
 msgid "Property:"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:242
+#: includes/class-lightweight-seo-admin-tools-fields.php:245
 msgid "Retained Search Console service account JSON"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:243
+#: includes/class-lightweight-seo-admin-tools-fields.php:246
 msgid "Copy this only if you need an explicit private backup. Future Insights setup will require a new connection."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:244
+#: includes/class-lightweight-seo-admin-tools-fields.php:247
 msgid "Permanently delete the retained property and private key when settings are saved"
 msgstr ""
 
 #. translators: %d: Number of retained legacy 404 log entries.
-#: includes/class-lightweight-seo-admin-tools-fields.php:251
+#: includes/class-lightweight-seo-admin-tools-fields.php:254
 #, php-format
 msgid "Permanently delete %d retained legacy 404 log entries"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:252
+#: includes/class-lightweight-seo-admin-tools-fields.php:255
 msgid "Delete log entries"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:285
+#: includes/class-lightweight-seo-admin-tools-fields.php:288
 msgid "Delete SEO settings and object metadata when the plugin is uninstalled"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:286
+#: includes/class-lightweight-seo-admin-tools-fields.php:289
 msgid "Leave this off to preserve titles, descriptions, canonicals, robots directives, and social metadata for a later reinstall."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:316
+#: includes/class-lightweight-seo-admin-tools-fields.php:319
 msgid "Asking the page…"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:317
+#: includes/class-lightweight-seo-admin-tools-fields.php:320
 msgid "Enter an address on this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:318
+#: includes/class-lightweight-seo-admin-tools-fields.php:321
 msgid "The report could not be loaded here. Open it in a new tab instead, or reload this screen and try again."
 msgstr ""
 
 #. translators: %s: address a redirect leads to.
-#: includes/class-lightweight-seo-admin-tools-fields.php:320
+#: includes/class-lightweight-seo-admin-tools-fields.php:323
 #, php-format
 msgid "This address sends visitors to %s, so there is nothing to report for it. That address is now in the field."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:324
+#: includes/class-lightweight-seo-admin-tools-fields.php:327
 msgid "Inspect"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:326
+#: includes/class-lightweight-seo-admin-tools-fields.php:329
 msgid "Asks the page itself, so the report shows what a visitor’s browser and a search engine receive right now."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:329
+#: includes/class-lightweight-seo-admin-tools-fields.php:332
 msgid "Open the report in a new tab"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:373
+#: includes/class-lightweight-seo-admin-tools-fields.php:376
 msgid "Download settings file"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:375
+#: includes/class-lightweight-seo-admin-tools-fields.php:378
 msgid "A JSON file with the settings of every tab and which modules are on, as they are saved now. It holds no credentials and nothing kept from retired features."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:391
+#: includes/class-lightweight-seo-admin-tools-fields.php:394
 msgid "Replace every Lightweight SEO setting on this site with the file"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:392
+#: includes/class-lightweight-seo-admin-tools-fields.php:395
 msgid "Import settings"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:394
+#: includes/class-lightweight-seo-admin-tools-fields.php:397
 msgid "Every value goes through the same checks as on the settings tabs. A value the file does not hold, or one that fails a check, is set to its default. The settings in place now are kept, so the import can be undone."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-tools-fields.php:397
+#: includes/class-lightweight-seo-admin-tools-fields.php:400
 msgid "Undo last import"
 msgstr ""
 
 #. translators: %s: date and time of the last settings import.
-#: includes/class-lightweight-seo-admin-tools-fields.php:403
+#: includes/class-lightweight-seo-admin-tools-fields.php:406
 #, php-format
 msgid "Puts back the settings as they were before the import of %s. Changes saved since then are lost."
 msgstr ""

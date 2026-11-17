@@ -20,7 +20,15 @@ A one-time administrator notice summarizes these changes. Dismissing it does not
 
 ## Importing another SEO plugin
 
-The Tools screen supports Yoast SEO, Rank Math, and All in One SEO metadata.
+The Tools screen supports Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, and Slim SEO metadata.
+
+| Source | Read from | Notes |
+|---|---|---|
+| SEOPress | `_seopress_titles_title`, `_seopress_titles_desc`, `_seopress_robots_canonical`, `_seopress_robots_index`, `_seopress_robots_follow`, `_seopress_robots_snippet`, `_seopress_social_fb_title`, `_seopress_social_fb_desc`, `_seopress_social_fb_img`, `_seopress_analysis_target_kw` | Variables for the title, site title, tagline, separator, current year, author, first category, and "Page 2 of 5" are converted. Any other variable leaves that field for review. |
+| The SEO Framework | `_genesis_title`, `_genesis_description`, `_genesis_canonical_uri`, `_genesis_noindex`, `_genesis_nofollow`, `_genesis_noarchive`, `_open_graph_title`, `_open_graph_description`, `_social_image_url`, `_social_image_id` | A robots choice of 1 is applied, and −1 becomes the opposite choice: "Show in search results" for `noindex`. Text is plain, with no variables. |
+| Slim SEO | The `slim_seo` array: `title`, `description`, `canonical`, `noindex`, `facebook_image` | `{{ post.title }}`, `{{ site.title }}`, `{{ site.description }}`, `{{ sep }}`, `{{ page }}`, `{{ current.year }}`, and `{{ author.display_name }}` are converted. An image stored as an attachment ID is imported as its address. |
+
+A page that an import hides from search results is stored with "follow links", so it prints `noindex` only. A page that was already hidden before the import keeps the behaviour it had.
 
 - Choose the source, then use **Preview next batch** or **Import next batch**. The source is remembered together with the import position; **Save Changes** does not store it.
 - Preview is read-only.

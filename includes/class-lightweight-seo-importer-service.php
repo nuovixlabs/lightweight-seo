@@ -15,6 +15,14 @@ if ( ! defined( 'WPINC' ) ) {
  * SEO metadata importer service.
  */
 class Lightweight_SEO_Importer_Service {
+	/**
+	 * Plugins whose saved post metadata can be read.
+	 *
+	 * @since    1.1.0
+	 * @var      string[]
+	 */
+	const SOURCES = array( 'yoast', 'rank_math', 'aioseo', 'seopress', 'the_seo_framework', 'slim_seo' );
+
 	/** Maximum number of posts read or changed in one administrator request. */
 	const BATCH_SIZE = 50;
 
@@ -131,7 +139,7 @@ class Lightweight_SEO_Importer_Service {
 			'has_more'           => false,
 		);
 
-		if ( ! in_array( $source, array( 'yoast', 'rank_math', 'aioseo' ), true ) ) {
+		if ( ! in_array( $source, self::SOURCES, true ) ) {
 			return $report;
 		}
 
@@ -164,6 +172,12 @@ class Lightweight_SEO_Importer_Service {
 			}
 
 			$updated_field_count = 0;
+
+			// A page this import hides is "noindex" only. Without a stored follow choice it would also print "nofollow",
+			// the rule kept for pages hidden before 1.1.
+			if ( '1' === (string) ( $mapped_values['seo_noindex'] ?? '' ) && ! isset( $mapped_values['seo_nofollow'] ) && '' === (string) $this->post_meta->get( (int) $post->ID, 'seo_noindex' ) ) {
+				$mapped_values['seo_nofollow'] = '0';
+			}
 
 			foreach ( $mapped_values as $field => $value ) {
 				if ( '' === (string) $value && 0 !== $value ) {
@@ -279,6 +293,54 @@ class Lightweight_SEO_Importer_Service {
 					'social_image'       => $this->get_source_meta( $post_id, '_aioseo_og_image' ),
 				);
 				break;
+			case 'seopress':
+				$mapped = array(
+					'seo_title'          => $this->get_source_meta( $post_id, '_seopress_titles_title' ),
+					'seo_description'    => $this->get_source_meta( $post_id, '_seopress_titles_desc' ),
+					'seo_keywords'       => $this->get_source_meta( $post_id, '_seopress_analysis_target_kw' ),
+					'seo_canonical_url'  => $this->get_source_meta( $post_id, '_seopress_robots_canonical' ),
+					// SEOPress stores "yes" for a ticked "noindex", "nofollow", or "nosnippet" box.
+					'seo_noindex'        => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_seopress_robots_index' ) ),
+					'seo_nofollow'       => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_seopress_robots_follow' ) ),
+					'seo_nosnippet'      => $this->normalize_boolean_flag( $this->get_source_meta( $post_id, '_seopress_robots_snippet' ) ),
+					'social_title'       => $this->get_source_meta( $post_id, '_seopress_social_fb_title' ),
+					'social_description' => $this->get_source_meta( $post_id, '_seopress_social_fb_desc' ),
+					'social_image'       => $this->get_source_meta( $post_id, '_seopress_social_fb_img' ),
+				);
+				break;
+			case 'the_seo_framework':
+				$image_id = absint( $this->get_source_meta( $post_id, '_social_image_id' ) );
+				$mapped   = array(
+					'seo_title'          => $this->get_source_meta( $post_id, '_genesis_title' ),
+					'seo_description'    => $this->get_source_meta( $post_id, '_genesis_description' ),
+					'seo_canonical_url'  => $this->get_source_meta( $post_id, '_genesis_canonical_uri' ),
+					// Each robots choice is 1 (apply), -1 (never apply), or 0 (follow the site default).
+					'seo_noindex'        => $this->normalize_three_way_flag( $this->get_source_meta( $post_id, '_genesis_noindex' ), Lightweight_SEO_Settings::INDEX_OVERRIDE ),
+					'seo_nofollow'       => $this->normalize_three_way_flag( $this->get_source_meta( $post_id, '_genesis_nofollow' ), '0' ),
+					'seo_noarchive'      => $this->normalize_three_way_flag( $this->get_source_meta( $post_id, '_genesis_noarchive' ), '0' ),
+					'social_title'       => $this->get_source_meta( $post_id, '_open_graph_title' ),
+					'social_description' => $this->get_source_meta( $post_id, '_open_graph_description' ),
+					'social_image'       => $this->get_source_meta( $post_id, '_social_image_url' ),
+					'social_image_id'    => $image_id ? (string) $image_id : '',
+				);
+				break;
+			case 'slim_seo':
+				// Slim SEO keeps every field of a post in one array.
+				$data   = $this->get_source_meta( $post_id, 'slim_seo' );
+				$data   = is_array( $data ) ? $data : array();
+				$text   = static function ( $key ) use ( $data ) {
+					return isset( $data[ $key ] ) && is_scalar( $data[ $key ] ) ? (string) $data[ $key ] : '';
+				};
+				$image  = $text( 'facebook_image' );
+				$mapped = array(
+					'seo_title'         => $text( 'title' ),
+					'seo_description'   => $text( 'description' ),
+					'seo_canonical_url' => $text( 'canonical' ),
+					'seo_noindex'       => ! empty( $data['noindex'] ) ? '1' : '',
+					// The image is stored as an address or as an attachment ID.
+					'social_image'      => ctype_digit( $image ) ? (string) wp_get_attachment_url( (int) $image ) : $image,
+				);
+				break;
 			default:
 				return array();
 		}
@@ -348,7 +410,39 @@ class Lightweight_SEO_Importer_Service {
 				);
 				$unknown = '/#(?:archive_|attachment_|author_|breadcrumb_|categories|category_title|current_|custom_field-|parent_title|permalink|post_|search_term|tax_name-|taxonomy_)[a-z0-9_\-]*/i';
 				break;
+			case 'seopress':
+				$map     = array(
+					'%%post_title%%'    => '%title%',
+					'%%title%%'         => '%title%',
+					'%%sitetitle%%'     => '%sitename%',
+					'%%sitename%%'      => '%sitename%',
+					'%%tagline%%'       => '%tagline%',
+					'%%sitedesc%%'      => '%tagline%',
+					'%%sep%%'           => '%sep%',
+					'%%currentyear%%'   => '%year%',
+					'%%post_author%%'   => '%author%',
+					'%%post_category%%' => '%category%',
+					// SEOPress prints its own separator before "Page 2 of 5".
+					'%%page%%'          => '%sep% %page%',
+				);
+				$unknown = '/%%[a-z0-9_\-]+%%/i';
+				break;
+			case 'slim_seo':
+				// Variables are written with any amount of space inside the braces.
+				$value   = preg_replace( '/\{\{\s*([a-z0-9_.]+)\s*\}\}/i', '{{$1}}', $value );
+				$map     = array(
+					'{{post.title}}'          => '%title%',
+					'{{site.title}}'          => '%sitename%',
+					'{{site.description}}'    => '%tagline%',
+					'{{sep}}'                 => '%sep%',
+					'{{page}}'                => '%page%',
+					'{{current.year}}'        => '%year%',
+					'{{author.display_name}}' => '%author%',
+				);
+				$unknown = '/\{\{.*?\}\}/s';
+				break;
 			default:
+				// The SEO Framework stores plain text.
 				return $value;
 		}
 
@@ -395,6 +489,24 @@ class Lightweight_SEO_Importer_Service {
 		$normalized = strtolower( sanitize_text_field( is_array( $value ) ? implode( ',', $value ) : (string) $value ) );
 
 		return in_array( $normalized, array( '1', 'true', 'yes', 'noindex', 'nofollow', 'on' ), true ) ? '1' : '';
+	}
+
+	/**
+	 * Normalize a choice stored as 1 (apply), -1 (never apply), or 0 (follow the default).
+	 *
+	 * @since    1.1.0
+	 * @param    mixed     $value       Raw source value.
+	 * @param    string    $opposite    Value to store for "never apply".
+	 * @return   string "1", the value for "never apply", or an empty string for the default.
+	 */
+	private function normalize_three_way_flag( $value, $opposite ) {
+		$number = is_scalar( $value ) ? (float) $value : 0.0;
+
+		if ( $number > 0.3334 ) {
+			return '1';
+		}
+
+		return $number < -0.3333 ? $opposite : '';
 	}
 
 	/**

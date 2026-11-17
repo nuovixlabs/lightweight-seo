@@ -178,6 +178,15 @@ One option is new, `lightweight_seo_settings_backup`. It is not autoloaded, exis
 
 These are changes to what is printed on every page. No setting is migrated: a schema type is stored in a content type's row only when it differs from the default.
 
+## Importers since rc.3
+
+- The import on the Tools tab reads three more plugins: SEOPress, The SEO Framework, and Slim SEO. Titles, descriptions, canonical addresses, robots choices, and sharing fields are imported in the same bounded way: a preview first, 50 posts at a time, empty fields only, and a rollback of the latest batch.
+- Variables of SEOPress and Slim SEO that mean the same as a Lightweight SEO variable are converted. A field with any other variable is left for review and counted, as before.
+- The SEO Framework's "always index" choice becomes "Show in search results" for that page.
+- A page hidden by an import, from any of the six sources, now prints `noindex` only. Before, a page imported as hidden also printed `nofollow`, through the rule that keeps the behaviour of pages hidden before 1.1.
+
+The field names of each plugin were taken from its published source code. See [Migration and RC Testing](migration.md) for the list.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

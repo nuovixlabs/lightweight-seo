@@ -114,6 +114,9 @@ class Lightweight_SEO_Admin_Tools_Fields {
 			<option value="yoast" <?php selected( $state['source'], 'yoast' ); ?>><?php esc_html_e( 'Yoast SEO', 'lightweight-seo' ); ?></option>
 			<option value="rank_math" <?php selected( $state['source'], 'rank_math' ); ?>><?php esc_html_e( 'Rank Math', 'lightweight-seo' ); ?></option>
 			<option value="aioseo" <?php selected( $state['source'], 'aioseo' ); ?>><?php esc_html_e( 'All in One SEO', 'lightweight-seo' ); ?></option>
+			<option value="seopress" <?php selected( $state['source'], 'seopress' ); ?>><?php esc_html_e( 'SEOPress', 'lightweight-seo' ); ?></option>
+			<option value="the_seo_framework" <?php selected( $state['source'], 'the_seo_framework' ); ?>><?php esc_html_e( 'The SEO Framework', 'lightweight-seo' ); ?></option>
+			<option value="slim_seo" <?php selected( $state['source'], 'slim_seo' ); ?>><?php esc_html_e( 'Slim SEO', 'lightweight-seo' ); ?></option>
 		</select>
 		<?php
 	}
