@@ -183,9 +183,10 @@ These are changes to what is printed on every page. No setting is migrated: a sc
 - The import on the Tools tab reads three more plugins: SEOPress, The SEO Framework, and Slim SEO. Titles, descriptions, canonical addresses, robots choices, and sharing fields are imported in the same bounded way: a preview first, 50 posts at a time, empty fields only, and a rollback of the latest batch.
 - Variables of SEOPress and Slim SEO that mean the same as a Lightweight SEO variable are converted. A field with any other variable is left for review and counted, as before.
 - The SEO Framework's "always index" choice becomes "Show in search results" for that page.
+- A title from The SEO Framework is imported with the site name that plugin added when it printed the title, so the page title stays the same after the switch.
 - A page hidden by an import, from any of the six sources, now prints `noindex` only. Before, a page imported as hidden also printed `nofollow`, through the rule that keeps the behaviour of pages hidden before 1.1.
 
-The field names of each plugin were taken from its published source code. See [Migration and RC Testing](migration.md) for the list.
+The field names of each plugin were taken from its published source code, and each import was compared with what the real plugin printed for the same page. See [Migration and RC Testing](migration.md) for the list.
 
 ## Abilities API since rc.3
 

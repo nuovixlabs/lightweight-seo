@@ -422,8 +422,9 @@ class Lightweight_SEO_Abilities {
 		return array(
 			'annotations'  => array(
 				'readonly'    => $reads_only,
-				// An update replaces what a field held before.
-				'destructive' => ! $reads_only,
+				// Nothing is deleted: a field is edited, and another edit puts it back. WordPress asks for the
+				// DELETE method over REST when an ability is marked destructive, which an edit is not.
+				'destructive' => false,
 				'idempotent'  => true,
 			),
 			'public'       => true,

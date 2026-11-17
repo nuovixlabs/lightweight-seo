@@ -311,7 +311,7 @@ class Lightweight_SEO_Importer_Service {
 			case 'the_seo_framework':
 				$image_id = absint( $this->get_source_meta( $post_id, '_social_image_id' ) );
 				$mapped   = array(
-					'seo_title'          => $this->get_source_meta( $post_id, '_genesis_title' ),
+					'seo_title'          => $this->get_the_seo_framework_title( $post_id ),
 					'seo_description'    => $this->get_source_meta( $post_id, '_genesis_description' ),
 					'seo_canonical_url'  => $this->get_source_meta( $post_id, '_genesis_canonical_uri' ),
 					// Each robots choice is 1 (apply), -1 (never apply), or 0 (follow the site default).
@@ -489,6 +489,35 @@ class Lightweight_SEO_Importer_Service {
 		$normalized = strtolower( sanitize_text_field( is_array( $value ) ? implode( ',', $value ) : (string) $value ) );
 
 		return in_array( $normalized, array( '1', 'true', 'yes', 'noindex', 'nofollow', 'on' ), true ) ? '1' : '';
+	}
+
+	/**
+	 * Get a title saved with The SEO Framework as the title that plugin printed.
+	 *
+	 * The SEO Framework stores the title alone and adds the site name when it
+	 * prints it, unless that is switched off for the page or the whole site. A
+	 * custom title here is printed as it is stored, so the site name is written
+	 * into it as variables.
+	 *
+	 * @since    1.1.0
+	 * @param    int    $post_id    Post ID.
+	 * @return   string
+	 */
+	private function get_the_seo_framework_title( $post_id ) {
+		$title = $this->get_source_meta( $post_id, '_genesis_title' );
+
+		if ( ! is_string( $title ) || '' === trim( $title ) ) {
+			return '';
+		}
+
+		$options = get_option( 'autodescription-site-settings', array() );
+		$options = is_array( $options ) ? $options : array();
+
+		if ( ! empty( $options['title_rem_additions'] ) || ! empty( $this->get_source_meta( $post_id, '_tsf_title_no_blogname' ) ) ) {
+			return $title;
+		}
+
+		return 'left' === ( $options['title_location'] ?? 'right' ) ? '%sitename% %sep% ' . $title : $title . ' %sep% %sitename%';
 	}
 
 	/**

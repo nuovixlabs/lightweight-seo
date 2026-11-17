@@ -135,6 +135,7 @@ Every ability takes `object_id` and an optional `object_type`: `post` (the defau
 - **Permission.** An ability requires the right to edit that item: `edit_post`, `edit_term`, or `edit_user`. A signed-out request, or an item that does not exist, is refused.
 - **Validation.** WordPress checks the input against the schema first, so an unknown field or an unknown `search_visibility` value is refused. Text is sanitized like the editing screens and keeps variables such as `%title%`. `canonical_url` and `social_image` must be `http` or `https` addresses. A sharing field sent for a term or an author is refused. When anything is refused, nothing is saved.
 - **Search visibility.** A post hidden for the first time is stored with "follow links", so it prints `noindex` only.
+- **REST.** The two reading abilities are annotated read-only and run with `GET`; the update runs with `POST`. It is annotated idempotent and not destructive, because it edits fields and deletes nothing.
 - **Scope.** Items with SEO fields: supported post types, public taxonomies, and users. Site settings are never changed through an ability.
 
 ## WP-CLI

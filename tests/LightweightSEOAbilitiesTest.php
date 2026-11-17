@@ -101,7 +101,8 @@ final class LightweightSEOAbilitiesTest extends TestCase {
 
 		$this->assertTrue( $lightweight_seo_test_abilities['lightweight-seo/get-seo-fields']['meta']['annotations']['readonly'] );
 		$this->assertFalse( $lightweight_seo_test_abilities['lightweight-seo/update-seo-fields']['meta']['annotations']['readonly'] );
-		$this->assertTrue( $lightweight_seo_test_abilities['lightweight-seo/update-seo-fields']['meta']['annotations']['destructive'] );
+		// An edit is not a deletion; marked destructive, WordPress would only accept it over REST as a DELETE request.
+		$this->assertFalse( $lightweight_seo_test_abilities['lightweight-seo/update-seo-fields']['meta']['annotations']['destructive'] );
 		$this->assertSame( array( 'default', 'show', 'hide' ), $lightweight_seo_test_abilities['lightweight-seo/update-seo-fields']['input_schema']['properties']['search_visibility']['enum'] );
 	}
 
