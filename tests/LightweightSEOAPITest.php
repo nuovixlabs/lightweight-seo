@@ -142,6 +142,96 @@ final class LightweightSEOAPITest extends TestCase {
 		$this->assertLessThanOrEqual( 161, Lightweight_SEO_Text::length( $public['description'] ) );
 	}
 
+	public function test_object_context_fills_the_variables_of_a_title_and_description(): void {
+		global $lightweight_seo_test_authors;
+		global $lightweight_seo_test_categories;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+		global $lightweight_seo_test_terms;
+		global $lightweight_seo_test_users;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'title_separator' => '|' );
+		$lightweight_seo_test_query_state['title']                   = 'Harbour at dawn';
+		$lightweight_seo_test_query_state['post_author']             = 17;
+		$lightweight_seo_test_authors                                = array( 17 => array( 'display_name' => 'Ada Lovelace' ) );
+		$lightweight_seo_test_categories                             = array( 42 => array( (object) array( 'name' => 'Travel' ) ) );
+		$lightweight_seo_test_posts[42]                              = (object) array(
+			'ID'          => 42,
+			'post_type'   => 'post',
+			'post_status' => 'publish',
+			'permalink'   => 'https://example.com/post/42',
+		);
+		$lightweight_seo_test_terms                                  = array(
+			7 => (object) array(
+				'term_id'  => 7,
+				'name'     => 'Travel',
+				'taxonomy' => 'category',
+			),
+		);
+		$lightweight_seo_test_users                                  = array( 17 => (object) array( 'display_name' => 'Ada Lovelace' ) );
+
+		$meta = array(
+			'post' => array(
+				'seo_title'       => '%title% %sep% %page% %sep% %category% %sep% %sitename%',
+				'seo_description' => 'By %author% in %year%.',
+			),
+			'term' => array( 'seo_title' => '%category% stories %sep% %sitename%' ),
+			'user' => array( 'seo_title' => 'Posts by %author% %sep% %page%' ),
+		);
+
+		$post_meta    = new class( $meta['post'] ) {
+			private $meta;
+
+			public function __construct( $meta ) {
+				$this->meta = $meta;
+			}
+
+			public function get_all( $post_id ) {
+				return $this->meta;
+			}
+
+			public function get_supported_post_types() {
+				return array( 'post' );
+			}
+		};
+		$archive_meta = new class( $meta ) {
+			private $meta;
+
+			public function __construct( $meta ) {
+				$this->meta = $meta;
+			}
+
+			public function get_term_all( $term_id ) {
+				return $this->meta['term'];
+			}
+
+			public function get_user_all( $user_id ) {
+				return $this->meta['user'];
+			}
+
+			public function get_supported_taxonomies() {
+				return array( 'category' );
+			}
+		};
+		$registry     = new Lightweight_SEO_Module_Registry( new Lightweight_SEO_Module_State() );
+		$registry->finalize();
+
+		$api  = new Lightweight_SEO_API( null, $post_meta, $archive_meta, $registry, new Lightweight_SEO_Settings() );
+		$post = $api->get_object_context( 'post', 42 );
+
+		// The page variable has no value for an object, and leaves with one separator.
+		$this->assertSame( 'Harbour at dawn | Travel | Test Site', $post['title'] );
+		$this->assertSame( 'By Ada Lovelace in ' . gmdate( 'Y' ) . '.', $post['description'] );
+		$this->assertSame( 'Travel stories | Test Site', $api->get_object_context( 'term', 7 )['title'] );
+		$this->assertSame( 'Posts by Ada Lovelace', $api->get_object_context( 'user', 17 )['title'] );
+
+		$lightweight_seo_test_authors    = array();
+		$lightweight_seo_test_categories = array();
+		$lightweight_seo_test_terms      = array();
+		$lightweight_seo_test_users      = array();
+	}
+
 	public function test_object_context_follows_the_content_type_unless_the_object_chooses(): void {
 		global $lightweight_seo_test_options;
 		global $lightweight_seo_test_posts;

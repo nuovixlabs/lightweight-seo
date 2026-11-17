@@ -39,6 +39,8 @@ Returned values are copies of normalized public data. They never contain setting
 
 `is_indexable()` and the `robots` and `indexable` values of `get_object_context()` follow the same rule as the page output: the object's own choice to show or hide wins, and without one the object follows the search visibility of its post type, taxonomy, or, for a user, author archives.
 
+`get_object_context()` returns the `title` and `description` with their variables filled in: `%title%` is the object's own title or name, `%category%` and `%author%` follow the object, and `%page%` is empty because an object is described by its first page. A title without a custom SEO title is still the object's own title, not the title format of its content type.
+
 For posts, `get_object_context()` reports unpublished and password-protected content as not indexable and returns no derived description for it. A description derived from an excerpt or content is a summary of at most 160 characters, never the full body.
 
 ## Stable lifecycle hooks
@@ -78,7 +80,7 @@ The optional IndexNow module is the only place where the plugin's PHP sends a re
 |---|---|---|
 | `lightweight_seo_indexnow_urls` | `string[] $urls` | Filters the addresses about to be submitted. Return fewer addresses, or an empty array to send nothing. Addresses on another host are dropped afterwards, and at most 100 are sent by one request. |
 
-Posts saved through WP-CLI are not announced, because the module collects changes only in the administration, editor, REST, and cron contexts.
+The module collects changes wherever a post can be saved: the administration, the editors, REST, cron for scheduled posts, and WP-CLI commands.
 
 ## Core output filters and actions
 
@@ -120,18 +122,20 @@ Redirect, Hreflang, Tracking, Local SEO, and AI Discovery implementation classes
 
 ## Abilities
 
-On WordPress 6.9 and later the plugin registers three abilities in the `lightweight-seo` category, so agents and other clients of the Abilities API can read and fill the SEO fields of a post. They are public and available over REST. The class behind them loads only when WordPress collects abilities.
+On WordPress 6.9 and later the plugin registers three abilities in the `lightweight-seo` category, so agents and other clients of the Abilities API can read and fill the SEO fields of a post, a term, or an author. They are public and available over REST. The class behind them loads only when WordPress collects abilities.
 
-| Ability | Input | Returns |
+Every ability takes `object_id` and an optional `object_type`: `post` (the default) for a post, page, or other content item, `term` for a category, tag, or other term, and `user` for an author.
+
+| Ability | Further input | Returns |
 |---|---|---|
-| `lightweight-seo/get-seo-fields` | `post_id` | The fields as stored: `title`, `description`, `canonical_url`, `search_visibility` (`default`, `show`, or `hide`), `social_title`, `social_description`, `social_image`. An empty field means the default is used. |
-| `lightweight-seo/update-seo-fields` | `post_id` and any of the fields above | The fields as stored afterwards. Only the fields that are sent change; an empty string clears a field. |
-| `lightweight-seo/get-seo-context` | `post_id` | `title`, `description`, `canonical_url`, `robots`, and `indexable`, from `get_object_context()`. Variables in the title and description are returned as written. |
+| `lightweight-seo/get-seo-fields` | none | The fields as stored: `title`, `description`, `canonical_url`, `search_visibility` (`default`, `show`, or `hide`), and for posts `social_title`, `social_description`, `social_image`. An empty field means the default is used. |
+| `lightweight-seo/update-seo-fields` | any of the fields above | The fields as stored afterwards. Only the fields that are sent change; an empty string clears a field. |
+| `lightweight-seo/get-seo-context` | none | `title`, `description`, `canonical_url`, `robots`, and `indexable`, from `get_object_context()`, with the variables of the title and description filled in. |
 
-- **Permission.** Every ability requires the `edit_post` capability for that post. A signed-out request, or a post that does not exist, is refused.
-- **Validation.** WordPress checks the input against the schema first, so an unknown field or an unknown `search_visibility` value is refused. Text is sanitized like the editor panel and keeps variables such as `%title%`. `canonical_url` and `social_image` must be `http` or `https` addresses; otherwise nothing is saved.
-- **Search visibility.** A page hidden for the first time is stored with "follow links", so it prints `noindex` only.
-- **Scope.** Posts and other content items with SEO fields. Terms and authors are not covered yet, and site settings are never changed through an ability.
+- **Permission.** An ability requires the right to edit that item: `edit_post`, `edit_term`, or `edit_user`. A signed-out request, or an item that does not exist, is refused.
+- **Validation.** WordPress checks the input against the schema first, so an unknown field or an unknown `search_visibility` value is refused. Text is sanitized like the editing screens and keeps variables such as `%title%`. `canonical_url` and `social_image` must be `http` or `https` addresses. A sharing field sent for a term or an author is refused. When anything is refused, nothing is saved.
+- **Search visibility.** A post hidden for the first time is stored with "follow links", so it prints `noindex` only.
+- **Scope.** Items with SEO fields: supported post types, public taxonomies, and users. Site settings are never changed through an ability.
 
 ## WP-CLI
 

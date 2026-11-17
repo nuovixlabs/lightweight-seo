@@ -735,6 +735,51 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '%title% – %sitename%', html_entity_decode( $matches[0][2], ENT_QUOTES ) );
 	}
 
+	public function test_content_types_table_previews_the_title_format_of_each_row(): void {
+		global $lightweight_seo_test_get_posts_calls;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['title']                   = 'Harbour at dawn';
+		$lightweight_seo_test_posts                                  = array(
+			42 => (object) array(
+				'ID'          => 42,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			),
+		);
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'content_types' => array(
+				'post_types' => array( 'page' => array( 'title_format' => '%title% %sep% Pages %sep% %page%' ) ),
+			),
+		);
+
+		$queries = (int) $lightweight_seo_test_get_posts_calls;
+		$table   = $this->render_tab( 'indexation' );
+
+		// One lookup of the newest post serves every row.
+		$this->assertSame( $queries + 1, (int) $lightweight_seo_test_get_posts_calls );
+
+		preg_match_all( '#<input type="text" id="([a-z0-9-]+)" name="lightweight_seo_settings\[content_types\]\[(post_types|taxonomies)\]\[([a-z_]+)\]\[title_format\]".*?<p class="lwseo-format-preview" data-for="([a-z0-9-]+)" data-fallback="([^"]*)".*?<span class="lwseo-format-preview__text">(.*?)</span>#s', $table, $matches, PREG_SET_ORDER );
+
+		$previews = array();
+
+		foreach ( $matches as $match ) {
+			// Each preview names the field right above it.
+			$this->assertSame( $match[1], $match[4] );
+
+			$previews[ $match[3] ] = html_entity_decode( $match[6], ENT_QUOTES );
+		}
+
+		// An empty format is previewed as the site-wide format it falls back to.
+		$this->assertSame( 'Harbour at dawn – Test Site', $previews['post'] );
+		$this->assertSame( 'Harbour at dawn – Pages', $previews['page'] );
+		// A taxonomy row is previewed as an archive, with a category in place of the title.
+		$this->assertSame( 'A category – Test Site', $previews['category'] );
+		$this->assertCount( count( $previews ), array_unique( array_column( $matches, 1 ) ) );
+	}
+
 	public function test_identity_and_separator_fields_are_validated_and_kept_across_tabs(): void {
 		global $lightweight_seo_test_attachment_urls;
 		global $lightweight_seo_test_options;

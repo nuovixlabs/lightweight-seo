@@ -385,7 +385,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 				'cells' => array(
 					'show'    => $this->get_show_cell( $name . '[noindex]', '1' !== $row['noindex'] ),
 					'sitemap' => $this->get_sitemap_cell( $name . '[sitemap]', $row, $sitemap_note ),
-					'title'   => $this->get_title_cell( $name . '[title_format]', $row, $this->settings->get_archive_title_format() ),
+					'title'   => $this->get_title_cell( $name . '[title_format]', $row, $this->settings->get_archive_title_format(), 'archive_title_format' ),
 				),
 			);
 		}
@@ -486,13 +486,24 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @param    string    $inherited    Site-wide format used while the field is empty.
 	 * @return   array
 	 */
-	private function get_title_cell( $name, $row, $inherited ) {
+	private function get_title_cell( $name, $row, $inherited, $sample = 'title_format' ) {
+		$format = wp_specialchars_decode( $row['title_format'], ENT_QUOTES );
+		$tokens = $this->get_preview_tokens( $sample );
+
 		return array(
 			'type'        => 'text',
 			'name'        => $name,
-			'value'       => wp_specialchars_decode( $row['title_format'], ENT_QUOTES ),
+			// The preview names its field by ID, so each title format of the table needs one.
+			'id'          => 'lwseo-' . trim( (string) preg_replace( '/[^a-z0-9]+/', '-', strtolower( $name ) ), '-' ),
+			'value'       => $format,
 			'placeholder' => $inherited,
 			'tokens'      => true,
+			'preview'     => array(
+				'label'    => __( 'Preview:', 'lightweight-seo' ),
+				'text'     => $this->resolve_preview( '' !== trim( $format ) ? $format : $inherited, $tokens ),
+				'fallback' => $inherited,
+				'tokens'   => $tokens,
+			),
 		);
 	}
 

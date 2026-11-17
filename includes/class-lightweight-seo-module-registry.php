@@ -48,7 +48,7 @@ class Lightweight_SEO_Module_Registry {
 			return false;
 		}
 
-		$contexts = array_values( array_intersect( array( 'frontend', 'admin', 'editor', 'rest', 'cron' ), array_map( 'sanitize_key', (array) ( $args['contexts'] ?? array() ) ) ) );
+		$contexts = array_values( array_intersect( array( 'frontend', 'admin', 'editor', 'rest', 'cron', 'cli' ), array_map( 'sanitize_key', (array) ( $args['contexts'] ?? array() ) ) ) );
 		$factory  = $args['factory'] ?? null;
 
 		if ( null !== $factory && ! is_callable( $factory ) ) {

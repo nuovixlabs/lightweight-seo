@@ -189,13 +189,18 @@ The field names of each plugin were taken from its published source code. See [M
 
 ## Abilities API since rc.3
 
-On WordPress 6.9 and later, three abilities let agents and other clients of the Abilities API work with the SEO fields of a post: `lightweight-seo/get-seo-fields`, `lightweight-seo/update-seo-fields`, and `lightweight-seo/get-seo-context`.
+On WordPress 6.9 and later, three abilities let agents and other clients of the Abilities API work with the SEO fields of a post, a term, or an author: `lightweight-seo/get-seo-fields`, `lightweight-seo/update-seo-fields`, and `lightweight-seo/get-seo-context`.
 
-- Each one requires the right to edit that post, and an update goes through the same sanitizers as the editor panel.
-- They cover posts, pages, and other content items with SEO fields. Site settings, terms, and authors are not exposed.
+- Each one takes an `object_id` and an optional `object_type` (`post`, `term`, or `user`), requires the right to edit that item, and an update goes through the same sanitizers as the editing screens.
+- Terms and authors have a title, a description, a canonical address, and a search visibility. The sharing fields exist for posts only.
+- Site settings are not exposed.
 - Nothing is loaded for them until WordPress collects abilities, and older WordPress versions never do.
 
 See [Developer API](developer-api.md#abilities). One file is new; see [Release Baselines](release-baselines.md).
+
+## Public API since rc.3
+
+`get_object_context()` now returns the `title` and `description` of a post, term, or user with their variables filled in. Before, a custom SEO title such as `%title% %sep% %sitename%` was returned as it was typed.
 
 ## IndexNow module since rc.3
 
@@ -206,12 +211,13 @@ A sixth optional module, off by default, tells search engines that support Index
 - Only public pages that search engines may show are sent. Nothing is sent from a site that is not a production site, that discourages search engines, or whose address search engines cannot reach, such as `localhost`.
 - The key is created when the module is first switched on and is answered at `/{key}.txt` by the plugin; no file is written. The key is never exported with the settings.
 - The card shows whether the site sends, the key address, what was last sent, and a "Send a test" button.
+- A post saved by a WP-CLI command is announced like one saved in the administration.
 
 Settings `enable_indexnow` and `indexnow_key` and the non-autoloaded option `lightweight_seo_indexnow_last` are new. One file is new, loaded only while the module is on.
 
 ## Previews, toolbar, and command palette since rc.3
 
-- **Title format previews.** Each title format on "Search appearance" shows what it becomes for the newest post of the site, and follows the format and the separator while you edit them.
+- **Title format previews.** Each title format on "Search appearance", and each title format in the content types table, shows what it becomes for the newest post of the site, and follows the format and the separator while you edit them.
 - **Desktop and mobile search preview.** The search result preview in the editor panel and on the Overview has a Desktop/Mobile switch and cuts a long title or description off about where a search result would. The length count still uses the full text, and nothing here is a score.
 - **Toolbar status.** On the front end, administrators see "SEO: shown in search", "SEO: hidden from search", or "SEO: page not found" in the toolbar, linked to the Inspect report of that page. It adds no style or script to the page.
 - **Command palette.** On WordPress 6.9 and later the command palette lists every Lightweight SEO settings tab and "Inspect a page".
