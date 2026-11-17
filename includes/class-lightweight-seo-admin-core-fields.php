@@ -38,7 +38,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	/**
 	 * Print a single-line text setting.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    string    $key        Settings key.
 	 * @param    string    $fallback   Value used when nothing is saved.
 	 * @param    string    $help       Help text.
@@ -55,7 +55,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	/**
 	 * Print a checkbox setting.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    string    $key        Settings key.
 	 * @param    string    $fallback   Stored value used when nothing is saved.
 	 * @param    string    $label      Checkbox label.

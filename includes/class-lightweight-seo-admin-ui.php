@@ -2,7 +2,7 @@
 /**
  * Shared admin interface components.
  *
- * @since      1.2.0
+ * @since      1.1.0
  * @package    Lightweight_SEO
  */
 
@@ -23,7 +23,7 @@ class Lightweight_SEO_Admin_UI {
 	/**
 	 * Dashicon and screen reader prefix for each status.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @return   array
 	 */
 	private static function get_status_definitions() {
@@ -38,7 +38,7 @@ class Lightweight_SEO_Admin_UI {
 	/**
 	 * Print a badge: a one or two word status.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    string    $label    Badge text.
 	 * @param    string    $state    Optional. One of success, warning, or info. Default neutral.
 	 * @param    string    $url      Optional. Makes the badge a link.
@@ -59,7 +59,7 @@ class Lightweight_SEO_Admin_UI {
 	/**
 	 * Print a callout: one message that must stand apart from help text.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    string|array    $paragraphs    One paragraph, or several.
 	 * @param    string          $state         Optional. info or warning. Default info.
 	 * @return   void
@@ -80,7 +80,7 @@ class Lightweight_SEO_Admin_UI {
 	/**
 	 * Print one row of a status list.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    string    $state     One of success, warning, pending, or info.
 	 * @param    string    $title     What is being reported.
 	 * @param    string    $text      Optional. Supporting detail.
@@ -130,7 +130,7 @@ class Lightweight_SEO_Admin_UI {
 	 * Settings are applied on save, so a checkbox is used instead of a switch,
 	 * which would suggest an immediate effect.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    string    $name       Input name.
 	 * @param    bool      $checked    Whether the box is ticked.
 	 * @param    string    $label      Label text.
@@ -150,7 +150,7 @@ class Lightweight_SEO_Admin_UI {
 	/**
 	 * Print title variables as buttons that insert themselves into the focused field.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    array    $tokens    Variables such as %title%.
 	 * @return   void
 	 */
@@ -167,7 +167,7 @@ class Lightweight_SEO_Admin_UI {
 	/**
 	 * Print an image field: URL input, media picker, and thumbnail.
 	 *
-	 * @since    1.2.0
+	 * @since    1.1.0
 	 * @param    array    $args    Field settings: url, id, url_name, id_name, url_id, id_id, alt.
 	 * @return   void
 	 */

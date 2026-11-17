@@ -17,7 +17,9 @@ Reference measurements for `1.1.0-rc.1` were recorded on 2026-08-24.
 
 Changes made after these measurements add two shared helper files, split the settings screen into eight more administration-only files (43 runtime package files), and stop loading the settings screen, editor panel, and importer on visitor requests. Import progress moved from the autoloaded settings option to the non-autoloaded `lightweight_seo_import_state` option.
 
-`1.1.0-rc.2` was tagged without repeating these measurements. Only the package file count (43) was rechecked. Re-measure every row before tagging the stable `1.1.0` release.
+`1.1.0-rc.2` was tagged without repeating these measurements. Only the package file count (43) was rechecked.
+
+`1.1.0-rc.3` rebuilds the administration interface and adds one administration-only file (44 runtime package files). It was also tagged without repeating these measurements; only the package file count was rechecked. Re-measure every row before tagging the stable `1.1.0` release.
 
 Reference environment: local WordPress 6.0, Twenty Twenty-Two, PHP 8.5, MySQL 8, loopback HTTP, no persistent object cache. Each response-time result is the median of 100 sequential warm homepage requests after 10 warm-ups. Query and exact peak-memory values are averages of 20 instrumented warm requests.
 
