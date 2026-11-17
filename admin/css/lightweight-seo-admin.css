@@ -1090,6 +1090,20 @@ input[type="search"] + .lwseo-table-wrap {
 	width: 100%;
 }
 
+/* Format preview: what a title format becomes for a real page. ---------- */
+
+.lwseo .lwseo-format-preview {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	margin: var(--lwseo-space-2) 0 0;
+	overflow-wrap: anywhere;
+}
+
+.lwseo-format-preview__text {
+	color: var(--lwseo-text);
+	font-weight: 500;
+}
+
 /* Preview: how the page appears in search results and when shared. ------ */
 
 .lwseo-preview {
@@ -1098,6 +1112,23 @@ input[type="search"] + .lwseo-table-wrap {
 	border-radius: var(--lwseo-radius);
 	max-width: 620px;
 	overflow: hidden;
+}
+
+/* A phone shows a narrower result. */
+.lwseo-preview[data-device="mobile"] {
+	max-width: 380px;
+}
+
+.lwseo-preview__devices {
+	display: flex;
+	gap: var(--lwseo-space-1);
+	padding: var(--lwseo-space-3) var(--lwseo-space-4) 0;
+}
+
+.lwseo .lwseo-preview__device[aria-pressed="true"] {
+	background: var(--lwseo-accent-soft);
+	border-color: var(--lwseo-accent);
+	color: var(--lwseo-accent-strong);
 }
 
 .lwseo .lwseo-preview__caption {
@@ -1389,6 +1420,16 @@ input[type="search"] + .lwseo-table-wrap {
 	.lwseo-card__body {
 		padding-left: var(--lwseo-space-4);
 		padding-right: var(--lwseo-space-4);
+	}
+
+	/* A card header with a badge and a link beside its title stacks, so the title keeps the full width. */
+	.lwseo-setup > .lwseo-card__header {
+		flex-direction: column;
+		gap: var(--lwseo-space-2);
+	}
+
+	.lwseo-setup > .lwseo-card__header > .lwseo-card__meta {
+		flex-wrap: wrap;
 	}
 
 	.lwseo-preview--social {

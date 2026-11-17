@@ -21,6 +21,27 @@ if ( ! defined( 'WPINC' ) ) {
 class Lightweight_SEO_Admin_UI {
 
 	/**
+	 * About how many characters of a title and a description a search result shows before it cuts them off.
+	 *
+	 * These are approximations that match the length guidance of the editor panel;
+	 * a search engine measures width, not characters. A phone gives a title a
+	 * second line and a description less room.
+	 *
+	 * @since    1.1.0
+	 * @var      array
+	 */
+	const SEARCH_PREVIEW_LIMITS = array(
+		'desktop' => array(
+			'title'       => 60,
+			'description' => 160,
+		),
+		'mobile'  => array(
+			'title'       => 78,
+			'description' => 120,
+		),
+	);
+
+	/**
 	 * Dashicon and screen reader prefix for each status.
 	 *
 	 * @since    1.1.0
@@ -347,7 +368,12 @@ class Lightweight_SEO_Admin_UI {
 		$icon        = (string) get_site_icon_url( 64 );
 		$description = (string) ( $args['description'] ?? '' );
 		?>
-		<div class="lwseo-preview lwseo-preview--search"<?php echo empty( $args['live'] ) ? '' : ' aria-live="polite"'; ?>>
+		<div class="lwseo-preview lwseo-preview--search" data-device="desktop" data-limits="<?php echo esc_attr( wp_json_encode( self::SEARCH_PREVIEW_LIMITS ) ); ?>"<?php echo empty( $args['live'] ) ? '' : ' aria-live="polite"'; ?>>
+			<?php // The switch only works with the script, which also shortens the text; without it the full text is shown. ?>
+			<div class="lwseo-preview__devices" role="group" aria-label="<?php esc_attr_e( 'Preview size', 'lightweight-seo' ); ?>" hidden>
+				<button type="button" class="button button-small lwseo-preview__device" data-device="desktop" aria-pressed="true"><?php esc_html_e( 'Desktop', 'lightweight-seo' ); ?></button>
+				<button type="button" class="button button-small lwseo-preview__device" data-device="mobile" aria-pressed="false"><?php esc_html_e( 'Mobile', 'lightweight-seo' ); ?></button>
+			</div>
 			<div class="lwseo-preview__body">
 				<div class="lwseo-preview__source">
 					<?php if ( '' !== $icon ) : ?>

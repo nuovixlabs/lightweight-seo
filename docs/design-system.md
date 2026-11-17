@@ -63,7 +63,8 @@ Class names use `lwseo-block__element`, with `--modifier` for variants and `is-s
 | Inline | `lwseo-inline` | | One field with the button that acts on it, on one line: the redirect test box and the CSV import. The controls join a standalone form through the `form` attribute. |
 | Inspect | `lwseo-inspect` | | An address, a button, and the report of that address. The report itself is built from status lists, a table, and a details block. |
 | Actions | `lwseo-actions`, `lwseo-buttons` | | The sticky save bar, and a row of buttons. `lwseo-actions__status` says when the form has unsaved changes. |
-| Preview | `lwseo-preview` | `search_preview()`, `share_preview()` | Search result and share previews, in the editor and on the overview. `lwseo-previews` places two side by side. |
+| Preview | `lwseo-preview` | `search_preview()`, `share_preview()` | Search result and share previews, in the editor and on the overview. `lwseo-previews` places two side by side. The search preview has a Desktop/Mobile switch (`lwseo-preview__devices`). |
+| Format preview | `lwseo-format-preview` | | One line under a title format: what it becomes for a real page of the site. |
 | Meter | `lwseo-meter` | | Where a length sits against its guidance range. |
 
 Buttons and admin notices are the WordPress ones (`button`, `button-primary`, `button-link-delete`, `notice`). Do not restyle them.
@@ -137,6 +138,18 @@ The editor panel is printed in its saved state and then follows the page as it i
 - The script holds one rule per ID in `checkRules`. A rule returns `true`, `false`, the name of an alternative failure message (`data-fail-{name}`), or `null` when the check does not apply.
 - Add a check in both places: `get_editor_checks()` in `class-lightweight-seo-meta-boxes.php` and `checkRules` in the script. A test fails when a printed check has no rule. A check only the server can decide, such as `conflicts`, has no rule and keeps its printed state.
 - The count on the Checks tab becomes a tick when nothing is left to review. The tick animates once, only when an edit clears the last check, and never on page load.
+
+## Previews
+
+- **The server prints the preview of what is saved; the script keeps it in step.** A title format preview is filled with the newest published post, and the search preview with the page itself. Both are complete without JavaScript.
+- **One copy of the text rules.** Filling variables (`resolveTokens`) and shortening a result (`truncate`) live in `lightweight-seo-formats.js`, are tested under Node, and are used by the settings screen and the editor panel alike. A PHP test fails when the variable list or the separator pattern there differs from `Lightweight_SEO_Text`.
+- **Shortening is a preview, never a judgment.** The search preview cuts a title at about 60 characters on desktop and 78 on a phone, and a description at about 160 and 120, at the end of a word. The limits are `Lightweight_SEO_Admin_UI::SEARCH_PREVIEW_LIMITS`; the desktop ones equal the upper end of the editor's length guidance. The length count and the meter always use the full text.
+- **The size switch is two buttons with `aria-pressed`**, printed `hidden` and revealed by the script, because without the script nothing is shortened and there is nothing to switch.
+
+## Outside the Settings Screen
+
+- **Toolbar.** On the front end an administrator sees one text item, "SEO: shown in search", "SEO: hidden from search", or "SEO: page not found", that links to the Inspect report of that page. It adds no style and no script, and repeats what the robots tag of the page says.
+- **Command palette.** Where WordPress loads its command palette (6.9 and later), each settings tab and "Inspect a page" is a command, added as one inline call on the palette's own script. No file is added.
 
 ## Adding to a Settings Tab
 

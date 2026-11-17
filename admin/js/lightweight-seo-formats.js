@@ -2,8 +2,10 @@
  * Lightweight SEO setting formats.
  *
  * Reads and writes the line formats that Lightweight_SEO_Settings stores, so the
- * settings screen can show them as rows. Pure functions with no DOM access: the
- * same file runs in the browser and under Node for tests/js/formats.test.js.
+ * settings screen can show them as rows, and holds the text rules the previews
+ * share with the server: filling variables and shortening a search result.
+ * Pure functions with no DOM access: the same file runs in the browser and
+ * under Node for tests/js/formats.test.js.
  *
  * Each row format has three functions:
  *   parse(line)  A row object, or null when the line is not in this format.
@@ -338,12 +340,74 @@
 		}
 	};
 
+	// Variables that may have no value on a page, and what counts as a separator beside one.
+	// These mirror Lightweight_SEO_Text::OPTIONAL_TOKENS and SEPARATOR_PATTERN on the server.
+	var OPTIONAL_TOKENS = ['%page%', '%category%', '%author%', '%year%'];
+	var SEPARATOR_PATTERN = '(?:%sep%|[–—\\-|·•»\\/])';
+
+	/**
+	 * Fill the variables of a title or description, as the server does when the page renders.
+	 *
+	 * A variable from OPTIONAL_TOKENS that has no value is left out together with one
+	 * separator beside it, so "%title% %sep% %page% %sep% %sitename%" has no gap on page one.
+	 *
+	 * @param {string} text   Text with variables such as %title%.
+	 * @param {Object} tokens Values keyed by variable.
+	 * @return {string} The text with every known variable replaced.
+	 */
+	function resolveTokens(text, tokens) {
+		text = String(text === undefined || text === null ? '' : text);
+		tokens = tokens || {};
+
+		OPTIONAL_TOKENS.forEach(function(token) {
+			if (text.indexOf(token) !== -1 && !tokens[token]) {
+				text = text
+					.replace(new RegExp('\\s+' + SEPARATOR_PATTERN + '\\s+' + token, 'g'), '')
+					.replace(new RegExp(token + '\\s+' + SEPARATOR_PATTERN + '\\s+', 'g'), '')
+					.split(token).join('');
+			}
+		});
+
+		Object.keys(tokens).forEach(function(token) {
+			text = text.split(token).join(tokens[token]);
+		});
+
+		return text;
+	}
+
+	/**
+	 * Shorten text the way a search result does: at the end of a word, with an ellipsis.
+	 *
+	 * @param {string} text  Text to shorten.
+	 * @param {number} limit Most characters to keep, counted as a reader would.
+	 * @return {string} The text itself when it fits, otherwise its start followed by "…".
+	 */
+	function truncate(text, limit) {
+		var characters = Array.from(String(text === undefined || text === null ? '' : text).trim());
+
+		if (!(limit > 0) || characters.length <= limit) {
+			return characters.join('');
+		}
+
+		var cut = characters.slice(0, limit).join('');
+		var lastSpace = cut.search(/\s+\S*$/);
+
+		// A word that is cut in the middle is dropped, unless it is the only word there is.
+		if (lastSpace > 0 && !/\s/.test(characters[limit])) {
+			cut = cut.slice(0, lastSpace);
+		}
+
+		return cut.replace(/[\s.,;:!?–—\-|·•»\/]+$/, '') + '…';
+	}
+
 	return {
 		read: read,
 		write: write,
 		redirects: redirects,
 		hreflang: hreflang,
 		hours: hours,
-		ids: ids
+		ids: ids,
+		resolveTokens: resolveTokens,
+		truncate: truncate
 	};
 });

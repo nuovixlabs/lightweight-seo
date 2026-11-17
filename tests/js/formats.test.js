@@ -8,7 +8,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const formats = require('../../admin/js/lightweight-seo-formats.js');
 
-const {read, write, redirects, hreflang, hours, ids} = formats;
+const {read, write, redirects, hreflang, hours, ids, resolveTokens, truncate} = formats;
 
 test('redirect rules round-trip in the shape the server stores', () => {
 	const stored = '/old-page /new-page 301\n/moved https://example.org/landing 302\n/gone /here 308';
@@ -192,4 +192,38 @@ test('page IDs are read from any separator and written comma-separated', () => {
 	assert.deepEqual(ids.parse(''), []);
 	assert.equal(ids.format([12, 40, 7]), '12,40,7');
 	assert.equal(ids.format(['5', 5, 0, 9]), '5,9');
+});
+
+test('variables are filled, and an empty optional one leaves with one separator', () => {
+	const tokens = {'%title%': 'Hello world', '%sitename%': 'My Site', '%tagline%': '', '%sep%': '–', '%page%': '', '%category%': 'News', '%year%': '2026'};
+
+	assert.equal(resolveTokens('%title% %sep% %sitename%', tokens), 'Hello world – My Site');
+	assert.equal(resolveTokens('%title% %sep% %page% %sep% %sitename%', tokens), 'Hello world – My Site');
+	assert.equal(resolveTokens('%page% | %title%', tokens), 'Hello world');
+	assert.equal(resolveTokens('%title% - %category% (%year%)', tokens), 'Hello world - News (2026)');
+	// A variable with no entry at all is optional only when it is one of the four.
+	assert.equal(resolveTokens('%title% %sep% %author%', tokens), 'Hello world');
+	assert.equal(resolveTokens('%title% %sep% %unknown%', tokens), 'Hello world – %unknown%');
+	// The four earlier variables keep their place when empty, as on the server.
+	assert.equal(resolveTokens('%sitename% %sep% %tagline%', tokens), 'My Site – ');
+	assert.equal(resolveTokens(undefined, tokens), '');
+	assert.equal(resolveTokens('%title%', undefined), '%title%');
+	assert.equal(resolveTokens('%page% %sep% %title%', Object.assign({}, tokens, {'%page%': 'Page 2'})), 'Page 2 – Hello world');
+});
+
+test('preview text is shortened at the end of a word', () => {
+	assert.equal(truncate('Short title', 60), 'Short title');
+	assert.equal(truncate('  Exactly ten  ', 11), 'Exactly ten');
+	assert.equal(truncate('The quick brown fox jumps over the lazy dog', 18), 'The quick brown…');
+	// A cut that falls exactly between two words keeps the whole last word.
+	assert.equal(truncate('The quick brown fox', 15), 'The quick brown…');
+	// Punctuation and separators are not left hanging before the ellipsis.
+	assert.equal(truncate('Hello world – My Site and more', 14), 'Hello world…');
+	assert.equal(truncate('One, two, three', 9), 'One, two…');
+	// A single long word cannot be cut at a space.
+	assert.equal(truncate('Supercalifragilistic', 5), 'Super…');
+	// Characters outside the basic plane count once.
+	assert.equal(truncate('😀😀😀😀😀', 3), '😀😀😀…');
+	assert.equal(truncate('Anything', 0), 'Anything');
+	assert.equal(truncate(null, 10), '');
 });

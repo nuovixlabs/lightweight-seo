@@ -88,12 +88,15 @@ final class LightweightSEOTextTest extends TestCase {
 		}
 	}
 
-	public function test_the_editor_script_tidies_the_same_variables_and_separators(): void {
-		$script = (string) file_get_contents( dirname( __DIR__ ) . '/admin/js/lightweight-seo-admin.js' );
+	public function test_the_preview_script_tidies_the_same_variables_and_separators(): void {
+		$script = (string) file_get_contents( dirname( __DIR__ ) . '/admin/js/lightweight-seo-formats.js' );
 
-		$this->assertStringContainsString( "var optionalTokens = ['" . implode( "', '", Lightweight_SEO_Text::OPTIONAL_TOKENS ) . "'];", $script );
+		$this->assertStringContainsString( "var OPTIONAL_TOKENS = ['" . implode( "', '", Lightweight_SEO_Text::OPTIONAL_TOKENS ) . "'];", $script );
 		// The script writes the pattern as a string, so each backslash of the server pattern is doubled.
-		$this->assertStringContainsString( "var separatorPattern = '" . str_replace( '\\', '\\\\', Lightweight_SEO_Text::SEPARATOR_PATTERN ) . "';", $script );
+		$this->assertStringContainsString( "var SEPARATOR_PATTERN = '" . str_replace( '\\', '\\\\', Lightweight_SEO_Text::SEPARATOR_PATTERN ) . "';", $script );
+
+		// The editor panel and the settings previews both use that one copy.
+		$this->assertStringNotContainsString( 'separatorPattern', (string) file_get_contents( dirname( __DIR__ ) . '/admin/js/lightweight-seo-admin.js' ) );
 	}
 
 	public function test_variables_survive_sanitizing_that_strips_percent_encoded_bytes(): void {

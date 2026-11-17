@@ -145,6 +145,48 @@ class Lightweight_SEO_Frontend {
 
 		// After every redirect has had its chance, so an address that sends visitors elsewhere is never reported as a page.
 		add_action( 'template_redirect', array( $this, 'maybe_inspect' ), 99999 );
+
+		// Late in the toolbar, after the items of WordPress itself.
+		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_status' ), 90 );
+	}
+
+	/**
+	 * Tell an administrator, in the toolbar of the page they are viewing, whether search engines may show it.
+	 *
+	 * The item is plain text that links to the report of the page. It adds no
+	 * style or script, and it is built from what the page has already resolved
+	 * for its head.
+	 *
+	 * @since    1.1.0
+	 * @param    WP_Admin_Bar    $admin_bar    Toolbar being built.
+	 * @return   void
+	 */
+	public function add_admin_bar_status( $admin_bar ) {
+		if ( is_admin() || ! is_object( $admin_bar ) || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( (string) $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Becomes one encoded query argument of a link inside the administration area.
+		$robots      = (array) apply_filters( 'wp_robots', array() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- The WordPress filter that builds the robots tag of this page.
+
+		if ( is_404() ) {
+			$title = __( 'SEO: page not found', 'lightweight-seo' );
+		} elseif ( ! empty( $robots['noindex'] ) ) {
+			$title = __( 'SEO: hidden from search', 'lightweight-seo' );
+		} else {
+			$title = __( 'SEO: shown in search', 'lightweight-seo' );
+		}
+
+		$admin_bar->add_node(
+			array(
+				'id'    => 'lightweight-seo',
+				'title' => esc_html( $title ),
+				'href'  => admin_url( 'admin.php?page=lightweight-seo&tab=tools&inspect=' . rawurlencode( Lightweight_SEO_Url::from_path( $request_uri ) ) ) . '#lwseo-inspect',
+				'meta'  => array(
+					'title' => __( 'See what Lightweight SEO sends for this page, and why', 'lightweight-seo' ),
+				),
+			)
+		);
 	}
 
 	/**

@@ -675,6 +675,66 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 'BlogPosting', $validated['content_types']['post_types']['page']['schema'] );
 	}
 
+	public function test_each_title_format_shows_what_it_becomes_for_a_page_of_this_site(): void {
+		global $lightweight_seo_test_authors;
+		global $lightweight_seo_test_get_posts_calls;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['title']                   = 'Harbour <em>at dawn</em>';
+		$lightweight_seo_test_authors                                = array( 17 => array( 'display_name' => 'Ada Lovelace' ) );
+		$lightweight_seo_test_posts                                  = array(
+			42 => (object) array(
+				'ID'          => 42,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+				'post_author' => 17,
+			),
+		);
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'title_separator'      => '|',
+			'title_format'         => '%title% %sep% %page% %sep% %sitename%',
+			'archive_title_format' => '',
+			'search_title_format'  => 'Results for "%search%" %sep% %year%',
+		);
+
+		$queries = (int) $lightweight_seo_test_get_posts_calls;
+		$output  = $this->render_tab( 'appearance' );
+
+		// One lookup of the newest post serves all four previews.
+		$this->assertSame( $queries + 1, (int) $lightweight_seo_test_get_posts_calls );
+
+		preg_match_all( '#<p class="lwseo-format-preview" data-for="([a-z_]+)" data-fallback="([^"]*)" data-tokens="([^"]*)">.*?<span class="lwseo-format-preview__text">(.*?)</span>#s', $output, $matches, PREG_SET_ORDER );
+
+		$previews = array();
+
+		foreach ( $matches as $match ) {
+			$previews[ $match[1] ] = html_entity_decode( $match[4], ENT_QUOTES );
+		}
+
+		$this->assertSame(
+			array(
+				// The page variable has no value on a first page, and leaves with one separator.
+				'lightweight_seo_title_format'         => 'Harbour at dawn | Test Site',
+				'lightweight_seo_home_title_format'    => 'Test Site | Test Tagline',
+				// An empty format is previewed as the default it falls back to.
+				'lightweight_seo_archive_title_format' => 'A category | Test Site',
+				'lightweight_seo_search_title_format'  => 'Results for "coffee" | ' . gmdate( 'Y' ),
+			),
+			$previews
+		);
+
+		// The script gets the same values, and the format the field falls back to.
+		$tokens = json_decode( html_entity_decode( $matches[0][3], ENT_QUOTES ), true );
+
+		$this->assertSame( 'Harbour at dawn', $tokens['%title%'] );
+		$this->assertSame( '|', $tokens['%sep%'] );
+		$this->assertSame( 'Ada Lovelace', $tokens['%author%'] );
+		$this->assertSame( '', $tokens['%page%'] );
+		$this->assertSame( '%title% – %sitename%', html_entity_decode( $matches[0][2], ENT_QUOTES ) );
+	}
+
 	public function test_identity_and_separator_fields_are_validated_and_kept_across_tabs(): void {
 		global $lightweight_seo_test_attachment_urls;
 		global $lightweight_seo_test_options;
@@ -1717,7 +1777,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( 'https://example.com/wp-json/', $lightweight_seo_test_localized_scripts['lightweight-seo-admin-script']['restUrl'] );
 		$this->assertSame( 'nonce-wp_rest', $lightweight_seo_test_localized_scripts['lightweight-seo-admin-script']['restNonce'] );
 
-		// The editor panel needs none of the setting formats.
+		// The editor panel fills variables and shortens its preview with the same file.
 		$lightweight_seo_test_enqueued_scripts = array();
 		$lightweight_seo_test_screen           = (object) array(
 			'base'      => 'post',
@@ -1728,8 +1788,82 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$lightweight_seo_test_screen = null;
 
-		$this->assertArrayNotHasKey( 'lightweight-seo-formats', $lightweight_seo_test_enqueued_scripts );
-		$this->assertSame( array( 'jquery' ), $lightweight_seo_test_enqueued_scripts['lightweight-seo-admin-script'] );
+		$this->assertSame( array(), $lightweight_seo_test_enqueued_scripts['lightweight-seo-formats'] );
+		$this->assertSame( array( 'jquery', 'lightweight-seo-formats' ), $lightweight_seo_test_enqueued_scripts['lightweight-seo-admin-script'] );
+	}
+
+	public function test_the_command_palette_gets_one_entry_per_tab_and_one_for_inspect_where_wordpress_loads_it(): void {
+		global $lightweight_seo_test_enqueued_scripts;
+		global $lightweight_seo_test_inline_scripts;
+		global $lightweight_seo_test_user_can;
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', new Lightweight_SEO_Settings(), $this->get_post_meta() );
+
+		// WordPress before 6.9, or a screen without the palette: nothing is printed.
+		$lightweight_seo_test_enqueued_scripts = array();
+		$lightweight_seo_test_inline_scripts   = array();
+		$admin->add_palette_commands();
+
+		$this->assertSame( array(), $lightweight_seo_test_inline_scripts );
+
+		$lightweight_seo_test_enqueued_scripts = array( 'wp-core-commands' => array() );
+
+		// Someone who cannot open the settings screen gets no entries for it.
+		$lightweight_seo_test_user_can = false;
+		$admin->add_palette_commands();
+		$lightweight_seo_test_user_can = true;
+
+		$this->assertSame( array(), $lightweight_seo_test_inline_scripts );
+
+		$admin->add_palette_commands();
+
+		$script = $lightweight_seo_test_inline_scripts['wp-core-commands'][0];
+
+		$lightweight_seo_test_enqueued_scripts = array();
+		$lightweight_seo_test_inline_scripts   = array();
+
+		$this->assertStringContainsString( 'wp.data.dispatch( "core/commands" )', $script );
+		$this->assertSame( 1, preg_match( '/\)\( (\[.*\]) \);$/s', $script, $matches ) );
+
+		$commands = json_decode( $matches[1], true );
+
+		$this->assertSame(
+			array( 'lightweight-seo/overview', 'lightweight-seo/appearance', 'lightweight-seo/indexation', 'lightweight-seo/identity', 'lightweight-seo/modules', 'lightweight-seo/tools', 'lightweight-seo/inspect' ),
+			array_column( $commands, 'name' )
+		);
+		$this->assertSame( 'Lightweight SEO: Search appearance', $commands[1]['label'] );
+		$this->assertSame( 'https://example.com/wp-admin/admin.php?page=lightweight-seo&tab=appearance', $commands[1]['url'] );
+		$this->assertSame( 'https://example.com/wp-admin/admin.php?page=lightweight-seo&tab=tools#lwseo-inspect', $commands[6]['url'] );
+		$this->assertStringNotContainsString( '</script', $script );
+	}
+
+	public function test_search_previews_carry_a_size_switch_that_only_the_script_reveals(): void {
+		ob_start();
+		Lightweight_SEO_Admin_UI::search_preview(
+			array(
+				'url'         => 'https://example.com/a-page/',
+				'title'       => 'A title',
+				'description' => 'A description',
+			)
+		);
+		$preview = ob_get_clean();
+
+		$this->assertStringContainsString( 'class="lwseo-preview lwseo-preview--search" data-device="desktop"', $preview );
+		$this->assertStringContainsString( '<div class="lwseo-preview__devices" role="group" aria-label="Preview size" hidden>', $preview );
+		$this->assertStringContainsString( 'data-device="desktop" aria-pressed="true">Desktop</button>', $preview );
+		$this->assertStringContainsString( 'data-device="mobile" aria-pressed="false">Mobile</button>', $preview );
+		// Without the script the whole text is shown, never a shortened one.
+		$this->assertStringContainsString( 'data-preview="title">A title</p>', $preview );
+
+		$this->assertSame( 1, preg_match( '/data-limits="([^"]+)"/', $preview, $matches ) );
+
+		$limits = json_decode( html_entity_decode( $matches[1], ENT_QUOTES ), true );
+
+		// The desktop limits are the upper ends of the length guidance in the editor panel.
+		$this->assertSame( 60, $limits['desktop']['title'] );
+		$this->assertSame( 160, $limits['desktop']['description'] );
+		$this->assertGreaterThan( $limits['desktop']['title'], $limits['mobile']['title'] );
+		$this->assertLessThan( $limits['desktop']['description'], $limits['mobile']['description'] );
 	}
 
 	public function test_post_lists_load_only_the_script_that_fills_quick_edit(): void {

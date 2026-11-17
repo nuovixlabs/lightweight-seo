@@ -156,6 +156,33 @@ class Lightweight_SEO_Admin_Page {
 	}
 
 	/**
+	 * List the places of the settings screen that the command palette can jump to.
+	 *
+	 * @since    1.1.0
+	 * @return   array[] Commands with a name, a label, and a url.
+	 */
+	public function get_palette_commands() {
+		$commands = array();
+
+		foreach ( $this->get_admin_tabs() as $tab_id => $label ) {
+			$commands[] = array(
+				'name'  => 'lightweight-seo/' . $tab_id,
+				/* translators: %s: name of a settings tab, such as Search appearance. */
+				'label' => sprintf( __( 'Lightweight SEO: %s', 'lightweight-seo' ), $label ),
+				'url'   => $this->get_tab_url( $tab_id ),
+			);
+		}
+
+		$commands[] = array(
+			'name'  => 'lightweight-seo/inspect',
+			'label' => __( 'Lightweight SEO: Inspect a page', 'lightweight-seo' ),
+			'url'   => $this->get_tab_url( 'tools', 'lwseo-inspect' ),
+		);
+
+		return $commands;
+	}
+
+	/**
 	 * Build the URL of a settings tab.
 	 *
 	 * @param string $tab_id   Tab ID.

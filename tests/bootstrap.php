@@ -1836,3 +1836,29 @@ if (!function_exists('wp_register_ability')) {
         return null;
     }
 }
+
+if (!function_exists('wp_script_is')) {
+    function wp_script_is($handle, $status = 'enqueued') {
+        global $lightweight_seo_test_enqueued_scripts;
+
+        return isset($lightweight_seo_test_enqueued_scripts[$handle]);
+    }
+}
+
+if (!function_exists('wp_add_inline_script')) {
+    function wp_add_inline_script($handle, $data, $position = 'after') {
+        global $lightweight_seo_test_inline_scripts;
+
+        $lightweight_seo_test_inline_scripts[$handle][] = $data;
+
+        return true;
+    }
+}
+
+if (!function_exists('is_admin')) {
+    function is_admin() {
+        global $lightweight_seo_test_is_admin;
+
+        return !empty($lightweight_seo_test_is_admin);
+    }
+}

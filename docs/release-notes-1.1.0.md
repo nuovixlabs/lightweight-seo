@@ -209,6 +209,16 @@ A sixth optional module, off by default, tells search engines that support Index
 
 Settings `enable_indexnow` and `indexnow_key` and the non-autoloaded option `lightweight_seo_indexnow_last` are new. One file is new, loaded only while the module is on.
 
+## Previews, toolbar, and command palette since rc.3
+
+- **Title format previews.** Each title format on "Search appearance" shows what it becomes for the newest post of the site, and follows the format and the separator while you edit them.
+- **Desktop and mobile search preview.** The search result preview in the editor panel and on the Overview has a Desktop/Mobile switch and cuts a long title or description off about where a search result would. The length count still uses the full text, and nothing here is a score.
+- **Toolbar status.** On the front end, administrators see "SEO: shown in search", "SEO: hidden from search", or "SEO: page not found" in the toolbar, linked to the Inspect report of that page. It adds no style or script to the page.
+- **Command palette.** On WordPress 6.9 and later the command palette lists every Lightweight SEO settings tab and "Inspect a page".
+- The "Essential setup" card on the Overview gives its title and description the full width on a phone, with the badge and the dismiss link below.
+
+The editor screens now load `lightweight-seo-formats.js` as well, because the editor preview and the settings previews share its variable and shortening rules. No setting and no file is new.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

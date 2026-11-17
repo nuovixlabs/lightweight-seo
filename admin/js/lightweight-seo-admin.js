@@ -731,6 +731,75 @@
 			initPagePicker($(this));
 		});
 
+		/* Search preview size ------------------------------------------------ */
+
+		// A search result cuts long titles and descriptions off, differently on a phone. The preview keeps
+		// the full text and shows it shortened for the size that is chosen.
+		function fitSearchPreview(preview) {
+			var limits = (preview.data('limits') || {})[preview.attr('data-device')] || {};
+
+			preview.find('[data-preview="title"], [data-preview="description"]').each(function() {
+				var element = $(this);
+				var full = element.data('lwseoFull');
+
+				if (full === undefined) {
+					full = element.text();
+					element.data('lwseoFull', full);
+				}
+
+				element.text(settingFormats.truncate ? settingFormats.truncate(full, limits[element.attr('data-preview')]) : full);
+			});
+		}
+
+		// Give a preview new text, then show it as the chosen size would.
+		function setSearchPreviewText(preview, part, text) {
+			preview.find('[data-preview="' + part + '"]').data('lwseoFull', text);
+			fitSearchPreview(preview);
+		}
+
+		$('.lwseo-preview--search').each(function() {
+			var preview = $(this);
+			var buttons = preview.find('.lwseo-preview__device');
+
+			buttons.on('click', function() {
+				preview.attr('data-device', $(this).attr('data-device'));
+				buttons.each(function() {
+					$(this).attr('aria-pressed', $(this).attr('data-device') === preview.attr('data-device') ? 'true' : 'false');
+				});
+				fitSearchPreview(preview);
+			});
+
+			preview.find('.lwseo-preview__devices').prop('hidden', false);
+			fitSearchPreview(preview);
+		});
+
+		/* Title format previews ---------------------------------------------- */
+
+		// Each title format shows what it becomes for a real page of this site. The server prints the
+		// preview of what is saved; this keeps it in step while the format or the separator is edited.
+		$('.lwseo-format-preview').each(function() {
+			var preview = $(this);
+			var field = $('#' + preview.attr('data-for'));
+			var separator = $('#lightweight_seo_title_separator');
+			var tokens = preview.data('tokens') || {};
+			var output = preview.find('.lwseo-format-preview__text');
+
+			if (!field.length || !settingFormats.resolveTokens) {
+				return;
+			}
+
+			function render() {
+				if (separator.length && separator.val()) {
+					tokens['%sep%'] = separator.val();
+				}
+
+				output.text($.trim(settingFormats.resolveTokens($.trim(field.val()) || preview.attr('data-fallback') || '', tokens).replace(/\s+/g, ' ')));
+			}
+
+			field.on('input change', render);
+			separator.on('change', render);
+		});
+
 		/* Redirect table search ---------------------------------------------- */
 
 		$('#lightweight-seo-redirect-search').on('input', function() {
@@ -991,26 +1060,9 @@
 				featuredWidth: Number(metabox.attr('data-featured-width')) || 0
 			};
 
-			// Mirror the server (Lightweight_SEO_Text): variables are replaced in formats and custom values, and a
-			// variable from this list that has no value leaves together with one separator beside it.
-			var optionalTokens = ['%page%', '%category%', '%author%', '%year%'];
-			var separatorPattern = '(?:%sep%|[–—\\-|·•»\\/])';
-
+			// Variables are filled by the same tested function the settings previews use.
 			function resolveTokens(text) {
-				$.each(optionalTokens, function(index, token) {
-					if (text.indexOf(token) !== -1 && !tokens[token]) {
-						text = text
-							.replace(new RegExp('\\s+' + separatorPattern + '\\s+' + token, 'g'), '')
-							.replace(new RegExp(token + '\\s+' + separatorPattern + '\\s+', 'g'), '')
-							.split(token).join('');
-					}
-				});
-
-				$.each(tokens, function(token, value) {
-					text = text.split(token).join(value);
-				});
-
-				return text;
+				return settingFormats.resolveTokens(text, tokens);
 			}
 
 			function readState() {
@@ -1113,8 +1165,10 @@
 			function render() {
 				var state = readState();
 
-				metabox.find('[data-preview="title"]').text(state.title);
-				metabox.find('[data-preview="description"]').text(state.description);
+				var searchPreview = metabox.find('.lwseo-preview--search');
+
+				setSearchPreviewText(searchPreview, 'title', state.title);
+				setSearchPreviewText(searchPreview, 'description', state.description);
 				metabox.find('[data-preview="social-title"]').text(state.socialTitle);
 				metabox.find('[data-preview="social-description"]').text(state.socialDescription);
 				renderLength('lightweight_seo_title', state.title);

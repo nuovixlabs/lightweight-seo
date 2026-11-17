@@ -26,6 +26,15 @@ class Lightweight_SEO_Admin_Core_Fields {
 	private $settings;
 
 	/**
+	 * What the title format previews are filled with, read once per request.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      array|null    $preview_sample
+	 */
+	private $preview_sample = null;
+
+	/**
 	 * Initialize the renderer.
 	 *
 	 * @since    1.1.0
@@ -48,8 +57,88 @@ class Lightweight_SEO_Admin_Core_Fields {
 		$options = $this->settings->get_all();
 		?>
 		<input type="text" id="<?php echo esc_attr( 'lightweight_seo_' . $key ); ?>" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME . '[' . $key . ']' ); ?>" value="<?php echo esc_attr( wp_specialchars_decode( $options[ $key ] ?? $fallback, ENT_QUOTES ) ); ?>" class="regular-text" data-lwseo-tokens>
+		<?php
+		$format = wp_specialchars_decode( (string) ( $options[ $key ] ?? '' ), ENT_QUOTES );
+		$tokens = $this->get_preview_tokens( $key );
+		?>
+		<p class="lwseo-format-preview" data-for="<?php echo esc_attr( 'lightweight_seo_' . $key ); ?>" data-fallback="<?php echo esc_attr( $fallback ); ?>" data-tokens="<?php echo esc_attr( wp_json_encode( $tokens ) ); ?>">
+			<span class="lwseo-format-preview__label"><?php esc_html_e( 'Preview:', 'lightweight-seo' ); ?></span>
+			<span class="lwseo-format-preview__text"><?php echo esc_html( $this->resolve_preview( '' !== trim( $format ) ? $format : $fallback, $tokens ) ); ?></span>
+		</p>
 		<p class="lwseo-help"><?php echo esc_html( $help ); ?></p>
 		<?php
+	}
+
+	/**
+	 * Fill the variables of a format for its preview, as a page would.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $format    Title format.
+	 * @param    array     $tokens    Sample values keyed by variable.
+	 * @return   string
+	 */
+	private function resolve_preview( $format, $tokens ) {
+		return trim( (string) preg_replace( '/\s+/u', ' ', wp_strip_all_tags( Lightweight_SEO_Text::resolve_tokens( $format, $tokens ) ) ) );
+	}
+
+	/**
+	 * Get sample values for the preview of one title format.
+	 *
+	 * The values come from the newest published post, so the preview reads like
+	 * a real title of this site. A site without posts gets plain examples.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $key    Settings key of the title format.
+	 * @return   array<string,string> Values keyed by variable.
+	 */
+	private function get_preview_tokens( $key ) {
+		if ( null === $this->preview_sample ) {
+			$posts    = get_posts(
+				array(
+					'post_type'      => 'post',
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'no_found_rows'  => true,
+				)
+			);
+			$post     = $posts[0] ?? null;
+			$category = $post ? get_the_category( $post->ID ) : array();
+
+			$this->preview_sample = array(
+				'title'    => $post ? wp_strip_all_tags( get_the_title( $post->ID ) ) : __( 'A page title', 'lightweight-seo' ),
+				'category' => ! empty( $category[0]->name ) ? (string) $category[0]->name : __( 'A category', 'lightweight-seo' ),
+				'author'   => $post ? (string) get_the_author_meta( 'display_name', (int) ( $post->post_author ?? 0 ) ) : '',
+			);
+		}
+
+		$sample = $this->preview_sample;
+		$tokens = array(
+			'%title%'    => $sample['title'],
+			'%sitename%' => (string) get_bloginfo( 'name' ),
+			'%tagline%'  => (string) get_bloginfo( 'description' ),
+			'%sep%'      => $this->settings->get_title_separator(),
+			'%category%' => $sample['category'],
+			'%author%'   => $sample['author'],
+			'%year%'     => wp_date( 'Y' ),
+			// The first page of anything has no page number.
+			'%page%'     => '',
+		);
+
+		if ( 'home_title_format' === $key ) {
+			$tokens['%title%']    = $tokens['%sitename%'];
+			$tokens['%category%'] = '';
+			$tokens['%author%']   = '';
+		} elseif ( 'archive_title_format' === $key ) {
+			$tokens['%title%']  = $sample['category'];
+			$tokens['%author%'] = '';
+		} elseif ( 'search_title_format' === $key ) {
+			$tokens['%search%']   = _x( 'coffee', 'example of a search a visitor makes', 'lightweight-seo' );
+			$tokens['%title%']    = $tokens['%search%'];
+			$tokens['%category%'] = '';
+			$tokens['%author%']   = '';
+		}
+
+		return $tokens;
 	}
 
 	/**
