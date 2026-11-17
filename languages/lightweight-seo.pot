@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T08:50:45+00:00\n"
+"POT-Creation-Date: 2026-11-17T09:44:35+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -173,7 +173,8 @@ msgid "Content type"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:310
-#: includes/class-lightweight-seo-admin-ui.php:291
+#: includes/class-lightweight-seo-admin-ui.php:294
+#: includes/class-lightweight-seo-post-list.php:236
 msgid "Show in search results"
 msgstr ""
 
@@ -895,7 +896,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:269
 #: includes/class-lightweight-seo-admin-page.php:332
-#: includes/class-lightweight-seo.php:241
+#: includes/class-lightweight-seo.php:245
 msgid "Hreflang"
 msgstr ""
 
@@ -946,7 +947,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:333
 #: includes/class-lightweight-seo-admin-settings.php:180
-#: includes/class-lightweight-seo.php:235
+#: includes/class-lightweight-seo.php:239
 msgid "Redirects"
 msgstr ""
 
@@ -957,7 +958,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:335
 #: includes/class-lightweight-seo-admin-settings.php:214
-#: includes/class-lightweight-seo.php:256
+#: includes/class-lightweight-seo.php:260
 msgid "AI Discovery"
 msgstr ""
 
@@ -1585,99 +1586,104 @@ msgid "No setting"
 msgstr ""
 
 #. translators: %s: plural name of a content type, such as Posts or Categories.
-#: includes/class-lightweight-seo-admin-ui.php:283
+#: includes/class-lightweight-seo-admin-ui.php:286
+#: includes/class-lightweight-seo-post-list.php:221
 #, php-format
 msgid "Default for %s (currently hidden)"
 msgstr ""
 
 #. translators: %s: plural name of a content type, such as Posts or Categories.
-#: includes/class-lightweight-seo-admin-ui.php:286
+#: includes/class-lightweight-seo-admin-ui.php:289
+#: includes/class-lightweight-seo-post-list.php:224
 #, php-format
 msgid "Default for %s (currently shown)"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:292
+#: includes/class-lightweight-seo-admin-ui.php:295
+#: includes/class-lightweight-seo-post-list.php:237
 msgid "Hide from search results"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:305
+#: includes/class-lightweight-seo-admin-ui.php:308
 msgid "Insert a variable:"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:450
-#: includes/class-lightweight-seo-admin-ui.php:505
-#: includes/class-lightweight-seo-admin-ui.php:591
+#: includes/class-lightweight-seo-admin-ui.php:453
+#: includes/class-lightweight-seo-admin-ui.php:508
+#: includes/class-lightweight-seo-admin-ui.php:594
 msgid "Remove"
 msgstr ""
 
 #. translators: 1: number of items, 2: most items the setting keeps.
-#: includes/class-lightweight-seo-admin-ui.php:468
+#: includes/class-lightweight-seo-admin-ui.php:471
 #, php-format
 msgid "%1$d of %2$d"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:478
+#: includes/class-lightweight-seo-admin-ui.php:481
 msgid "Searching…"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:479
+#: includes/class-lightweight-seo-admin-ui.php:482
 msgid "Nothing matches that search."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:480
+#: includes/class-lightweight-seo-admin-ui.php:483
 msgid "Search is not available right now. Use “Edit as text” instead."
 msgstr ""
 
 #. translators: %d: number of lines that are kept as text.
-#: includes/class-lightweight-seo-admin-ui.php:531
-#: includes/class-lightweight-seo-admin-ui.php:533
+#: includes/class-lightweight-seo-admin-ui.php:534
+#: includes/class-lightweight-seo-admin-ui.php:536
 #, php-format
 msgid "%d line could not be shown as a row and is kept as text."
 msgid_plural "%d lines could not be shown as rows and are kept as text."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-admin-ui.php:536
+#: includes/class-lightweight-seo-admin-ui.php:539
 msgid "Edit as text"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:536
+#: includes/class-lightweight-seo-admin-ui.php:539
 msgid "Edit as rows"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:567
+#: includes/class-lightweight-seo-admin-ui.php:570
 msgid "Hours removed."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:567
+#: includes/class-lightweight-seo-admin-ui.php:570
 msgid "Monday’s hours copied to Tuesday to Friday."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:574
+#: includes/class-lightweight-seo-admin-ui.php:577
 msgid "Closed"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:576
+#: includes/class-lightweight-seo-admin-ui.php:579
 msgid "Add hours"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:580
+#: includes/class-lightweight-seo-admin-ui.php:583
 msgid "Copy Monday to Tuesday–Friday"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:586
+#: includes/class-lightweight-seo-admin-ui.php:589
 msgid "Opens"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:588
+#: includes/class-lightweight-seo-admin-ui.php:591
 msgid "Closes"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:617
+#: includes/class-lightweight-seo-admin-ui.php:620
 msgid "Choose image"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin.php:126
+#: includes/class-lightweight-seo-post-list.php:103
+#: includes/class-lightweight-seo-post-list.php:180
 msgid "SEO"
 msgstr ""
 
@@ -1685,11 +1691,11 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin.php:195
+#: includes/class-lightweight-seo-admin.php:208
 msgid "Select or Upload Image"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin.php:196
+#: includes/class-lightweight-seo-admin.php:209
 msgid "Use this image"
 msgstr ""
 
@@ -1783,6 +1789,7 @@ msgstr ""
 #: includes/class-lightweight-seo-archive-meta.php:446
 #: includes/class-lightweight-seo-meta-boxes.php:205
 #: includes/class-lightweight-seo-meta-boxes.php:350
+#: includes/class-lightweight-seo-post-list.php:185
 msgid "SEO title"
 msgstr ""
 
@@ -2069,6 +2076,43 @@ msgstr ""
 msgid "Page %d"
 msgstr ""
 
+#: includes/class-lightweight-seo-post-list.php:145
+msgid "Title: own"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:145
+msgid "Title: default"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:148
+msgid "Description: own"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:150
+msgid "Description: from content"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:152
+msgid "Description: none"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:156
+msgid "Hidden from search"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:189
+msgid "Description"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:193
+#: includes/class-lightweight-seo-post-list.php:232
+msgid "Search"
+msgstr ""
+
+#: includes/class-lightweight-seo-post-list.php:234
+msgid "— No change —"
+msgstr ""
+
 #: includes/class-lightweight-seo-settings.php:720
 msgid "Choose a supported LocalBusiness type."
 msgstr ""
@@ -2105,30 +2149,30 @@ msgstr ""
 msgid "A business name and complete address are required before Local SEO can be enabled."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:236
+#: includes/class-lightweight-seo.php:240
 msgid "Manage redirects and optional slug-change handling."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:242
+#: includes/class-lightweight-seo.php:246
 msgid "Output alternate-language links."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:246
+#: includes/class-lightweight-seo.php:250
 msgid "Tracking"
 msgstr ""
 
-#: includes/class-lightweight-seo.php:247
+#: includes/class-lightweight-seo.php:251
 msgid "Output configured analytics containers."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:251
+#: includes/class-lightweight-seo.php:255
 msgid "Local SEO"
 msgstr ""
 
-#: includes/class-lightweight-seo.php:252
+#: includes/class-lightweight-seo.php:256
 msgid "Add single-location LocalBusiness data."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:257
+#: includes/class-lightweight-seo.php:261
 msgid "Experimental crawler policy controls."
 msgstr ""

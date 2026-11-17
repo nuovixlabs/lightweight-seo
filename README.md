@@ -56,6 +56,8 @@ When no description is written, a 160-character summary of the excerpt or conten
 
 Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`.
 
+The Posts, Pages, and custom post type lists show a compact SEO column, and their Quick Edit and Bulk Edit can change the SEO title, the description, and whether the item is shown in search results.
+
 ## Development
 
 Install the development dependencies and run the local gates:

@@ -157,6 +157,7 @@ class Lightweight_SEO {
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-admin-tools.php';
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-admin.php';
 		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-meta-boxes.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-post-list.php';
 	}
 
 	/**
@@ -175,6 +176,9 @@ class Lightweight_SEO {
 
 			// Initialize meta boxes
 			$plugin_meta_boxes = new Lightweight_SEO_Meta_Boxes( $this->settings, $this->post_meta );
+
+			// Initialize the SEO column and inline editing of the post lists
+			$plugin_post_list = new Lightweight_SEO_Post_List( $this->settings, $this->post_meta );
 		}
 
 		// Initialize frontend functionality

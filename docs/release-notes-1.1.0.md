@@ -119,6 +119,16 @@ Four settings are new in the existing settings option: `verification_google`, `v
 
 Titles, descriptions, and title formats are now sanitized in a way that keeps variables whole. The WordPress text sanitizer removes anything shaped like a percent-encoded byte, which would have cut `%ca` out of `%category%`.
 
+## Post list since rc.3
+
+- The Posts, Pages, and custom post type lists gain a compact "SEO" column: whether the title and the description are the item's own, and "Hidden from search" when that applies. It reads only what WordPress has already loaded for the rows, adds no database query, and can be switched off in Screen Options.
+- Quick Edit gains an SEO title, a description, and the search visibility choice, filled with the saved values.
+- Bulk Edit gains the search visibility choice, with "— No change —" first. Titles and descriptions are not offered in bulk, because giving many pages the same one creates duplicates.
+- The list saves only the fields it shows, only when they were filled from the row, and only with its own nonce and the right to edit that item. Hiding the SEO column also hides its Quick Edit fields.
+- A page hidden from the list for the first time prints `noindex` only. A page hidden before 1.1 and not saved since keeps the `nofollow` it inherited.
+
+The Media Library and taxonomy term lists are unchanged. One administration-only file is new; see [Release Baselines](release-baselines.md).
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

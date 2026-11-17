@@ -156,4 +156,6 @@ A card accepts:
 
 ## What Stays Native
 
+The post lists are WordPress screens too. Their SEO column is plain text in a native list cell, and their Quick Edit and Bulk Edit fields use the WordPress inline-edit markup (`inline-edit-col`, `inline-edit-group`), so they look and behave like the fields beside them. A post list loads the admin script, to fill Quick Edit from the row, and nothing else.
+
 Term and user edit screens use the standard WordPress form rows so the SEO fields match the fields around them. They do not load the plugin stylesheet, so a helper used there, such as `visibility_select()`, prints native markup only.

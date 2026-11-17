@@ -156,6 +156,19 @@ class Lightweight_SEO_Admin {
 		$is_plugin_page             = 'toplevel_page_' . $this->plugin_name === $hook;
 		$is_public_post_type_screen = $screen && 'post' === $screen->base && in_array( $screen->post_type, $this->post_meta->get_supported_post_types(), true );
 
+		// A post list needs only the script, to fill its Quick Edit fields: no stylesheet, media library, or formats.
+		if ( $screen && 'edit' === $screen->base && in_array( $screen->post_type, array_diff( $this->post_meta->get_supported_post_types(), array( 'attachment' ) ), true ) ) {
+			wp_enqueue_script(
+				$this->plugin_name . '-admin-script',
+				LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-admin.js',
+				array( 'jquery', 'inline-edit-post' ),
+				$this->version,
+				true
+			);
+
+			return;
+		}
+
 		// Only load scripts on our plugin page or supported post edit screens
 		if ( ! $is_plugin_page && ! $is_public_post_type_screen ) {
 			return;

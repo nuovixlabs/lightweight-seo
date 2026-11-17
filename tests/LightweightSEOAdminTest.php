@@ -1448,6 +1448,45 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( array( 'jquery' ), $lightweight_seo_test_enqueued_scripts['lightweight-seo-admin-script'] );
 	}
 
+	public function test_post_lists_load_only_the_script_that_fills_quick_edit(): void {
+		global $lightweight_seo_test_enqueued_scripts;
+		global $lightweight_seo_test_enqueued_styles;
+		global $lightweight_seo_test_localized_scripts;
+		global $lightweight_seo_test_screen;
+
+		$admin = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', new Lightweight_SEO_Settings(), $this->get_post_meta() );
+
+		$lightweight_seo_test_enqueued_scripts  = array();
+		$lightweight_seo_test_enqueued_styles   = array();
+		$lightweight_seo_test_localized_scripts = array();
+		$lightweight_seo_test_screen            = (object) array(
+			'base'      => 'edit',
+			'post_type' => 'page',
+		);
+
+		$admin->enqueue_admin_scripts( 'edit.php' );
+
+		// The script waits for the WordPress Quick Edit script it extends.
+		$this->assertSame( array( 'lightweight-seo-admin-script' => array( 'jquery', 'inline-edit-post' ) ), $lightweight_seo_test_enqueued_scripts );
+		$this->assertSame( array(), $lightweight_seo_test_enqueued_styles, 'A post list is a WordPress screen and gets no plugin stylesheet.' );
+		$this->assertSame( array(), $lightweight_seo_test_localized_scripts );
+
+		// A list the column is not on loads nothing.
+		foreach ( array( 'attachment', 'product' ) as $post_type ) {
+			$lightweight_seo_test_enqueued_scripts = array();
+			$lightweight_seo_test_screen           = (object) array(
+				'base'      => 'edit',
+				'post_type' => $post_type,
+			);
+
+			$admin->enqueue_admin_scripts( 'edit.php' );
+
+			$this->assertSame( array(), $lightweight_seo_test_enqueued_scripts, $post_type );
+		}
+
+		$lightweight_seo_test_screen = null;
+	}
+
 	public function test_settings_forms_carry_an_unsaved_changes_status(): void {
 		$this->assertStringContainsString( '<span class="lwseo-actions__status" role="status" data-unsaved="Unsaved changes"></span>', $this->render_tab( 'appearance' ) );
 		$this->assertStringNotContainsString( 'lwseo-actions__status', $this->render_overview( new Lightweight_SEO_Settings() ) );

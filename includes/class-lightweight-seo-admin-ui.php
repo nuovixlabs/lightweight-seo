@@ -269,13 +269,16 @@ class Lightweight_SEO_Admin_UI {
 	 * The markup is a plain select with no plugin classes, so it also fits the native term and user screens.
 	 *
 	 * @since    1.1.0
-	 * @param    string    $name           Input name, also used as the ID.
-	 * @param    mixed     $value          Stored choice.
-	 * @param    string    $type_label     Plural name of the content type, such as Posts.
-	 * @param    bool      $type_hidden    Whether the content type is hidden from search results.
+	 * @param    string         $name           Input name.
+	 * @param    mixed          $value          Stored choice.
+	 * @param    string         $type_label     Plural name of the content type, such as Posts.
+	 * @param    bool           $type_hidden    Whether the content type is hidden from search results.
+	 * @param    string|null    $id             Optional. Input ID. Defaults to the name; pass an empty string for a
+	 *                                          select that WordPress copies, such as one in Quick Edit.
 	 * @return   void
 	 */
-	public static function visibility_select( $name, $value, $type_label, $type_hidden ) {
+	public static function visibility_select( $name, $value, $type_label, $type_hidden, $id = null ) {
+		$id    = null === $id ? $name : $id;
 		$value = in_array( (string) $value, array( '1', Lightweight_SEO_Settings::INDEX_OVERRIDE ), true ) ? (string) $value : '';
 
 		if ( $type_hidden ) {
@@ -286,7 +289,7 @@ class Lightweight_SEO_Admin_UI {
 			$default = sprintf( __( 'Default for %s (currently shown)', 'lightweight-seo' ), $type_label );
 		}
 		?>
-		<select id="<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>">
+		<select<?php echo '' === $id ? '' : ' id="' . esc_attr( $id ) . '"'; ?> name="<?php echo esc_attr( $name ); ?>">
 			<option value="" <?php selected( $value, '' ); ?>><?php echo esc_html( $default ); ?></option>
 			<option value="<?php echo esc_attr( Lightweight_SEO_Settings::INDEX_OVERRIDE ); ?>" <?php selected( $value, Lightweight_SEO_Settings::INDEX_OVERRIDE ); ?>><?php esc_html_e( 'Show in search results', 'lightweight-seo' ); ?></option>
 			<option value="1" <?php selected( $value, '1' ); ?>><?php esc_html_e( 'Hide from search results', 'lightweight-seo' ); ?></option>

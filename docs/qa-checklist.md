@@ -32,6 +32,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Confirm schema JSON parses and uses Organization or Person, WebSite, BreadcrumbList, ProfilePage, and scoped Article nodes only.
 - Confirm a WooCommerce Product page receives no Product graph from Lightweight SEO.
 - Confirm an ordinary frontend request makes no remote request, recurring schedule, custom table, or plugin write.
+- Confirm a post list with the SEO column runs no more database queries than the same list with the column switched off.
 - Site identity: on an upgraded site that has never saved the card, confirm the homepage schema still prints the same Organization node, with the default social image as its logo, and that no `twitter:site` tag is printed.
 - Site identity: set a name and a logo and confirm the Organization node uses both; clear the logo and confirm it falls back to the default social image.
 - Site identity: choose "A person" and confirm a `Person` node with the `#person` identifier and an `image`, no `logo`, and that the `publisher` of the WebSite node and of an Article points at it. With no photo chosen, confirm the Person has no `image` even when a default social image exists. With Local business on, confirm the LocalBusiness node is printed beside the Person.
@@ -80,6 +81,13 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Verification: paste a bare code, then the whole meta tag a service shows; both must save as the code. A value that is not a code must show an error that names the service and keep the saved code.
 - Title variables: save each of the four new variables in a title format, in a content type's format, and in a page's own SEO title, meta description, social title, and social description, and in a term's and an author's SEO title. Reopen each and confirm it still reads exactly as typed; `%category%` in particular must not come back as `tegory%`.
 - Title variables: open "What the variables mean" on "Search appearance" and confirm every variable button has a line there. In the editor, type a title that uses `%page%` and `%category%` on a post without a category and confirm the preview has no stray separator.
+- Post list: confirm the "SEO" column on the Posts, Pages, and each custom post type list, and not in the Media Library. For an item with nothing set it must read "Title: default" and "Description: from content" or "Description: none"; with its own values, "own"; and "Hidden from search" only when the item is hidden, by its own choice or through its content type.
+- Post list: open Quick Edit; the SEO title, description, and search choice must be filled with the saved values, variables included. Change all three and save; the row must update in place, the page source must follow, and the editor panel must show the same values. Confirm the canonical, social fields, and other robots directives of that item are unchanged.
+- Post list: hide a page for the first time from Quick Edit or Bulk Edit and confirm the page prints `noindex` without `nofollow`.
+- Post list: hide the SEO column in Screen Options; Quick Edit must no longer show the SEO group, and saving Quick Edit must change no SEO field. Show the column again and confirm the group returns.
+- Post list: select several items and use Bulk Edit; "— No change —" must change no SEO field, and "Hide", "Show", and "Default" must each apply to every selected item and to no other.
+- Post list: as a user who can edit only their own posts, confirm Quick Edit and Bulk Edit change only items that user may edit.
+- Post list: use the list at phone width and Quick Edit with the keyboard only.
 - Site identity: enter an X handle as `handle`, as `@handle`, and as an `x.com` profile address; each must save as the same handle and show with its `@`. An invalid value must show an error and keep the saved handle.
 - Site identity: choose a logo with the media picker, save, and confirm the thumbnail and the stored address; clear the address, save, and confirm both are gone.
 - Title separator: change it and confirm the editor preview of a page without its own SEO title and the homepage preview on the Overview both follow, and that saving "Schema and identity" afterwards leaves it unchanged.

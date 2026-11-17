@@ -12,6 +12,35 @@
 		var mediaTitle = strings.mediaTitle || 'Select or Upload Image';
 		var mediaButton = strings.mediaButton || 'Use this image';
 
+		/* Post list ---------------------------------------------------------- */
+
+		// Quick Edit starts from the values printed in the row's SEO column. The fields are saved only
+		// once they have been filled from there, so a row without them can never save blanks. WordPress
+		// keeps printing a column that Screen Options hides, so a hidden column counts as not there.
+		if (window.inlineEditPost && typeof window.inlineEditPost.edit === 'function') {
+			var coreQuickEdit = window.inlineEditPost.edit;
+
+			window.inlineEditPost.edit = function(id) {
+				var result = coreQuickEdit.apply(this, arguments);
+				var postId = typeof id === 'object' ? this.getId(id) : id;
+				var saved = $('#post-' + postId).find('.lightweight-seo-list-data');
+				var group = $('#edit-' + postId).find('.lightweight-seo-quick-edit');
+
+				var shown = saved.length > 0 && !saved.closest('td').hasClass('hidden');
+
+				group.prop('hidden', !shown);
+
+				if (shown) {
+					group.find('[name="lightweight_seo_list_title"]').val(saved.attr('data-title') || '');
+					group.find('[name="lightweight_seo_list_description"]').val(saved.attr('data-description') || '');
+					group.find('[name="lightweight_seo_list_noindex"]').val(saved.attr('data-noindex') || '');
+					group.find('[name="lightweight_seo_list_loaded"]').val('1');
+				}
+
+				return result;
+			};
+		}
+
 		/* Module cards ------------------------------------------------------- */
 
 		// A link to a collapsed module opens it, so the reader lands on its settings.
