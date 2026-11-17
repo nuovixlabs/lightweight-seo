@@ -80,7 +80,7 @@ class Lightweight_SEO_Admin {
 			$tools_fields
 		);
 		$notices        = new Lightweight_SEO_Admin_Notices( $plugin_name );
-		$tools          = new Lightweight_SEO_Admin_Tools( $plugin_name, $importer, $import_state );
+		$tools          = new Lightweight_SEO_Admin_Tools( $plugin_name, $importer, $import_state, $settings );
 		$this->page     = new Lightweight_SEO_Admin_Page( $plugin_name, $settings, $tools_fields, $post_meta );
 
 		// Add menu item
@@ -106,6 +106,7 @@ class Lightweight_SEO_Admin {
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_IMPORT_BATCH, array( $tools, 'handle_import_batch' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_IMPORT_ROLLBACK, array( $tools, 'handle_import_rollback' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS, array( $tools, 'handle_delete_legacy_404_logs' ) );
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT, array( $tools, 'handle_redirect_import' ) );
 
 		// Enqueue admin scripts and styles
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );

@@ -63,6 +63,114 @@ final class LightweightSEOSettingsTest extends TestCase {
 		$this->assertSame( '/with-query /clean-target 301', $rules[1] );
 	}
 
+	public function test_redirect_rules_accept_gone_and_whole_sections(): void {
+		$settings   = new Lightweight_SEO_Settings();
+		$normalized = $settings->normalize_redirect_rules_input(
+			implode(
+				"\n",
+				array(
+					'/retired 410',
+					'/retired-too /ignored-target 410',
+					'/old-shop/* 410',
+					'/old-blog/* /blog/* 302',
+					'/old-docs/* /docs',
+					'/moved/* https://example.com/elsewhere/*',
+					'/everything/* /* 301',
+					// The whole site, and a section carried into itself, are refused.
+					'/* /new-home',
+					'/grow/* /grow/deeper/*',
+					'/same/* /same/*',
+				)
+			)
+		);
+
+		$this->assertSame(
+			array(
+				'/retired 410',
+				'/retired-too 410',
+				'/old-shop/* 410',
+				'/old-blog/* /blog/* 302',
+				'/old-docs/* /docs 301',
+				'/moved/* https://example.com/elsewhere/* 301',
+				'/everything/* /* 301',
+			),
+			explode( "\n", $normalized )
+		);
+
+		// Saving what was stored changes nothing.
+		$this->assertSame( $normalized, $settings->normalize_redirect_rules_input( $normalized ) );
+
+		$rules = $settings->parse_redirect_rules( $normalized );
+
+		$this->assertSame(
+			array(
+				'source' => '/retired',
+				'target' => '',
+				'status' => 410,
+			),
+			$rules[0]
+		);
+		$this->assertSame( '/old-blog/*', $rules[3]['source'] );
+		$this->assertSame( '/blog/*', $rules[3]['target'] );
+	}
+
+	public function test_redirect_hops_prefer_exact_rules_then_the_longest_section(): void {
+		$settings = new Lightweight_SEO_Settings();
+		$index    = Lightweight_SEO_Settings::index_redirect_rules(
+			$settings->parse_redirect_rules(
+				implode(
+					"\n",
+					array(
+						'/old/* /new/*',
+						'/old/special /landing 302',
+						'/old/archive/* /archive',
+						'/old/archive/2019/* 410',
+						'/hub/* /hub/start',
+					)
+				)
+			)
+		);
+
+		$hop = Lightweight_SEO_Settings::resolve_redirect_hop( '/old/special', $index );
+		$this->assertSame( '/landing', $hop['target'] );
+		$this->assertSame( 302, $hop['status'] );
+		$this->assertSame( '/old/special', $hop['rule'] );
+
+		// The rest of the path is carried over, and the section itself is covered too.
+		$this->assertSame( '/new/a/b', Lightweight_SEO_Settings::resolve_redirect_hop( '/old/a/b', $index )['target'] );
+		$this->assertSame( '/new', Lightweight_SEO_Settings::resolve_redirect_hop( '/old', $index )['target'] );
+		$this->assertSame( '/old/*', Lightweight_SEO_Settings::resolve_redirect_hop( '/old/a/b', $index )['rule'] );
+
+		// A longer section wins over a shorter one, and a target without "*" drops the rest.
+		$this->assertSame( '/archive', Lightweight_SEO_Settings::resolve_redirect_hop( '/old/archive/2020/post', $index )['target'] );
+		$this->assertSame( 410, Lightweight_SEO_Settings::resolve_redirect_hop( '/old/archive/2019/post', $index )['status'] );
+
+		// A path that only starts with the same letters is not inside the section.
+		$this->assertSame( array(), Lightweight_SEO_Settings::resolve_redirect_hop( '/older', $index ) );
+
+		// A section that points at one of its own addresses leaves that address alone.
+		$inside = Lightweight_SEO_Settings::trace_redirect_hops( '/hub/anything', $index );
+		$this->assertCount( 1, $inside['hops'] );
+		$this->assertFalse( $inside['loop'] );
+		$this->assertSame( array(), Lightweight_SEO_Settings::trace_redirect_hops( '/hub/start', $index )['hops'] );
+	}
+
+	public function test_redirect_normalization_rejects_loops_between_sections(): void {
+		$settings   = new Lightweight_SEO_Settings();
+		$normalized = $settings->normalize_redirect_rules_input(
+			implode(
+				"\n",
+				array(
+					'/ping/* /pong/*',
+					'/pong/* /ping/*',
+					'/fine/* /settled/*',
+				)
+			)
+		);
+
+		$this->assertSame( '/fine/* /settled/* 301', $normalized );
+	}
+
 	public function test_hreflang_normalization_validates_tags_and_duplicate_targets(): void {
 		$settings   = new Lightweight_SEO_Settings();
 		$normalized = $settings->normalize_hreflang_mappings_input(

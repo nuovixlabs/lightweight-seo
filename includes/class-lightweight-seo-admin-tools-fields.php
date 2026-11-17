@@ -27,6 +27,15 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	/** ID of the form that deletes retained legacy 404 log entries. */
 	const DELETE_404_LOGS_FORM_ID = 'lightweight-seo-delete-404-logs-form';
 
+	/** ID of the form that uploads a CSV file of redirect rules. */
+	const REDIRECT_IMPORT_FORM_ID = 'lightweight-seo-redirect-import-form';
+
+	/** ID of the form that asks which redirect rule applies to an address. */
+	const REDIRECT_TEST_FORM_ID = 'lightweight-seo-redirect-test-form';
+
+	/** Query argument that carries the address to test against the redirect rules. */
+	const REDIRECT_TEST_ARG = 'lightweight_seo_test_path';
+
 	/**
 	 * Shared settings service.
 	 *
@@ -373,6 +382,29 @@ class Lightweight_SEO_Admin_Tools_Fields {
 		<form id="<?php echo esc_attr( self::DELETE_404_LOGS_FORM_ID ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS ); ?>">
 			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS ) ); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Render the standalone forms that the Redirects card submits.
+	 *
+	 * The test is a plain GET of this screen, so it works without JavaScript and
+	 * changes nothing. The import posts a file to its own handler and nonce.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $plugin_name    Menu slug of the settings screen.
+	 * @return   void
+	 */
+	public function render_redirect_forms( $plugin_name ) {
+		?>
+		<form id="<?php echo esc_attr( self::REDIRECT_TEST_FORM_ID ); ?>" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) . '#lwseo-module-redirects' ); ?>">
+			<input type="hidden" name="page" value="<?php echo esc_attr( $plugin_name ); ?>">
+			<input type="hidden" name="tab" value="modules">
+		</form>
+		<form id="<?php echo esc_attr( self::REDIRECT_IMPORT_FORM_ID ); ?>" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT ) ); ?>
 		</form>
 		<?php
 	}

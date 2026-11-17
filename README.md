@@ -20,7 +20,7 @@ Core provides:
 
 Five optional modules are lazy-loaded only in their declared request contexts:
 
-- Redirects: exact manual redirects and optional published-slug redirects
+- Redirects: manual redirects for single addresses or whole sections, "410 Gone" answers, CSV import, a test box, and optional published-slug redirects
 - Hreflang: validated manual mappings and adapter hooks
 - Tracking: GTM-first output with direct GA4 or Meta Pixel alternatives
 - Local SEO: validated LocalBusiness schema fields
@@ -54,7 +54,7 @@ The SEO panel on supported posts and pages provides:
 
 When no description is written, a 160-character summary of the excerpt or content is used. Legacy focus-keyword values are preserved for export but are not edited or emitted.
 
-Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`.
+Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`. A source ending in `/*` covers everything under it, a target ending in `/*` keeps the rest of the address, and `/old-path 410` answers that the page is gone.
 
 The Tools tab can inspect any address on the site: it shows what is sent for that page and where each value comes from.
 

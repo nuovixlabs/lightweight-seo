@@ -1019,7 +1019,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_sitemap_section'      => array( 'exclude_noindex_from_sitemaps', 'exclude_redirected_from_sitemaps' ),
 				'lightweight_seo_schema_section'       => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as', 'enable_schema_output', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
 				'lightweight_seo_verification_section' => array( 'verification_google', 'verification_bing', 'verification_pinterest', 'verification_yandex' ),
-				'lightweight_seo_redirects_section'    => array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules', 'generated_redirect_rules', 'redirect_export', 'redirect_health' ),
+				'lightweight_seo_redirects_section'    => array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules', 'redirect_test', 'generated_redirect_rules', 'redirect_export', 'redirect_import', 'redirect_health' ),
 				'lightweight_seo_inspect_section'      => array( 'inspect_page' ),
 				'lightweight_seo_migration_section'    => array( 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'enable_tracking', 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
@@ -1146,6 +1146,62 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '0', $switched_off['enable_tracking'] );
 		$this->assertSame( '/old /new 301', $switched_off['redirect_rules'] );
 		$this->assertFalse( Lightweight_SEO_Module_State::derive_from_legacy_settings( $switched_off )['redirects'] );
+	}
+
+	public function test_redirects_card_tests_an_address_against_the_saved_rules_without_javascript(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'enable_redirects' => '1',
+			'redirect_rules'   => "/old-blog/* /blog/* 301\n/blog/2019/* /archive 302\n/retired 410\n/loop-a /loop-b 301",
+		);
+
+		// With the module off there is no test box, no import control, and neither of their forms.
+		$off = $this->render_tab( 'modules' );
+
+		foreach ( array( 'lightweight_seo_test_path', 'lightweight_seo_redirect_csv', 'lightweight-seo-redirect-test-form', 'lightweight-seo-redirect-import-form' ) as $absent ) {
+			$this->assertStringNotContainsString( $absent, $off );
+		}
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'redirects' => true );
+
+		$on = $this->render_tab( 'modules' );
+
+		// Both controls sit in the card and submit through forms printed outside the settings form.
+		$this->assertStringContainsString( 'name="lightweight_seo_test_path" value="" placeholder="/old-path" class="regular-text" autocomplete="off" form="lightweight-seo-redirect-test-form"', $on );
+		$this->assertStringContainsString( 'name="lightweight_seo_redirect_csv" accept=".csv,text/csv" form="lightweight-seo-redirect-import-form"', $on );
+		$this->assertStringContainsString( '<form id="lightweight-seo-redirect-test-form" method="get"', $on );
+		$this->assertStringContainsString( '<form id="lightweight-seo-redirect-import-form" method="post" enctype="multipart/form-data"', $on );
+		$this->assertGreaterThan( strpos( $on, '</form>' ), strpos( $on, '<form id="lightweight-seo-redirect-test-form"' ) );
+		$this->assertStringContainsString( '<option value="410">410 Gone</option>', $on );
+		$this->assertStringNotContainsString( 'lwseo-status-list" role="status"', $on );
+
+		$cases = array(
+			'https://example.com/old-blog/2019/first-post/?utm=x' => array( '/old-blog/2019/first-post/ redirects to /archive', 'Rule /old-blog/*: to /blog/2019/first-post (301)', 'Rule /blog/2019/*: to /archive (302)', 'Visitors are sent straight to the last address.' ),
+			'/retired'                  => array( '/retired answers &quot;410 Gone&quot;', 'Rule /retired: gone (410)' ),
+			'/nothing-here'             => array( 'No rule applies to /nothing-here' ),
+			'<script>alert(1)</script>' => array( 'No rule applies to /alert(1)' ),
+		);
+
+		foreach ( $cases as $address => $expected ) {
+			$this->get_admin_settings( new Lightweight_SEO_Settings() )->register_settings();
+			$_GET = array(
+				'tab'                       => 'modules',
+				'lightweight_seo_test_path' => $address,
+			);
+
+			ob_start();
+			( new Lightweight_SEO_Admin_Page( 'lightweight-seo', new Lightweight_SEO_Settings(), $this->get_tools_fields( new Lightweight_SEO_Settings() ), $this->get_post_meta() ) )->display_plugin_admin_page();
+			$output = ob_get_clean();
+
+			foreach ( $expected as $text ) {
+				$this->assertStringContainsString( $text, $output, $address );
+			}
+
+			$this->assertStringNotContainsString( '<script>alert', $output );
+		}
+
+		$_GET = array();
 	}
 
 	public function test_module_cards_collapse_until_the_module_is_enabled(): void {

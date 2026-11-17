@@ -1703,3 +1703,29 @@ if (!function_exists('add_menu_page')) {
         return 'toplevel_page_' . $menu_slug;
     }
 }
+
+if (!function_exists('status_header')) {
+    function status_header($code, $description = '') {
+        global $lightweight_seo_test_status_headers;
+
+        $lightweight_seo_test_status_headers[] = (int) $code;
+    }
+}
+
+if (!function_exists('nocache_headers')) {
+    function nocache_headers() {
+        global $lightweight_seo_test_nocache_headers_calls;
+
+        $lightweight_seo_test_nocache_headers_calls = (int) $lightweight_seo_test_nocache_headers_calls + 1;
+    }
+}
+
+if (!function_exists('remove_action')) {
+    function remove_action($hook_name, $callback, $priority = 10) {
+        global $lightweight_seo_test_removed_actions;
+
+        $lightweight_seo_test_removed_actions[] = array($hook_name, $callback);
+
+        return true;
+    }
+}

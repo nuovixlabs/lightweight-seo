@@ -1025,7 +1025,18 @@ class Lightweight_SEO_Settings {
 	 * @return   array
 	 */
 	public function get_manual_redirect_rules() {
-		$lines = preg_split( "/\r\n|\n|\r/", (string) $this->get( 'redirect_rules', '' ) );
+		return $this->parse_redirect_rules( $this->get( 'redirect_rules', '' ) );
+	}
+
+	/**
+	 * Parse redirect rule text, one rule per line, leaving out lines that are not rules.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $text    Rule lines.
+	 * @return   array
+	 */
+	public function parse_redirect_rules( $text ) {
+		$lines = preg_split( "/\r\n|\n|\r/", (string) $text );
 		$rules = array();
 
 		foreach ( $lines as $line ) {
@@ -1064,16 +1075,33 @@ class Lightweight_SEO_Settings {
 		return implode(
 			"\n",
 			array_map(
-				function ( $rule ) {
-					return $rule['source'] . ' ' . $rule['target'] . ' ' . $rule['status'];
-				},
+				array( __CLASS__, 'format_redirect_rule' ),
 				$normalized_rules
 			)
 		);
 	}
 
 	/**
+	 * Write one parsed rule as the line it is stored as.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $rule    Parsed rule.
+	 * @return   string
+	 */
+	public static function format_redirect_rule( $rule ) {
+		if ( 410 === (int) $rule['status'] ) {
+			return $rule['source'] . ' 410';
+		}
+
+		return $rule['source'] . ' ' . $rule['target'] . ' ' . $rule['status'];
+	}
+
+	/**
 	 * Parse a redirect rule line into a normalized rule array.
+	 *
+	 * A line is "source target status". A source ending in "/*" covers that path and
+	 * everything under it, and a target ending in "*" then receives the rest of the
+	 * requested path. "source 410" answers that the address is gone, with no target.
 	 *
 	 * @since    1.1.0
 	 * @param    string    $line    Raw redirect rule line.
@@ -1086,12 +1114,32 @@ class Lightweight_SEO_Settings {
 			return array();
 		}
 
-		$source = $this->normalize_redirect_path( array_shift( $parts ) );
-		$target = array_shift( $parts );
-		$status = absint( $parts[0] ?? 301 );
+		$raw_source = (string) array_shift( $parts );
+		$is_prefix  = '/*' === substr( $raw_source, -2 );
+		$source     = $this->normalize_redirect_path( $is_prefix ? substr( $raw_source, 0, -2 ) : $raw_source );
 
-		if ( empty( $source ) ) {
+		// A rule covering the whole site would also cover the address it sends visitors to.
+		if ( empty( $source ) || ( $is_prefix && '/' === $source ) ) {
 			return array();
+		}
+
+		$stored_source = $source . ( $is_prefix ? '/*' : '' );
+
+		if ( '410' === (string) $parts[0] || '410' === (string) ( $parts[1] ?? '' ) ) {
+			return array(
+				'source' => $stored_source,
+				'target' => '',
+				'status' => 410,
+			);
+		}
+
+		$target = (string) array_shift( $parts );
+		$status = absint( $parts[0] ?? 301 );
+		$carry  = $is_prefix && '*' === substr( $target, -1 );
+
+		if ( $carry ) {
+			$target = rtrim( substr( $target, 0, -1 ), '/' );
+			$target = '' === $target ? '/' : $target;
 		}
 
 		if ( ! in_array( $status, array( 301, 302, 307, 308 ), true ) ) {
@@ -1118,10 +1166,127 @@ class Lightweight_SEO_Settings {
 			return array();
 		}
 
+		// Carrying the rest of the path into the covered area would grow the address on every hop.
+		if ( $carry && 0 === strpos( $target . '/', $source . '/' ) ) {
+			return array();
+		}
+
+		if ( $carry ) {
+			$target = rtrim( $target, '/' ) . '/*';
+		}
+
 		return array(
-			'source' => $source,
+			'source' => $stored_source,
 			'target' => $target,
 			'status' => $status,
+		);
+	}
+
+	/**
+	 * Sort rules into exact rules keyed by path and prefix rules, longest first.
+	 *
+	 * The first rule for a source wins, so callers list the rules that take precedence first.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $rules    Parsed rules.
+	 * @return   array{exact:array,prefix:array}
+	 */
+	public static function index_redirect_rules( $rules ) {
+		$index = array(
+			'exact'  => array(),
+			'prefix' => array(),
+		);
+
+		foreach ( $rules as $rule ) {
+			$kind = '/*' === substr( $rule['source'], -2 ) ? 'prefix' : 'exact';
+
+			if ( ! isset( $index[ $kind ][ $rule['source'] ] ) ) {
+				$index[ $kind ][ $rule['source'] ] = $rule;
+			}
+		}
+
+		uksort(
+			$index['prefix'],
+			static function ( $left, $right ) {
+				return strlen( $right ) - strlen( $left );
+			}
+		);
+
+		return $index;
+	}
+
+	/**
+	 * Find the rule that applies to one path: an exact rule first, then the longest prefix.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $path     Normalized request path.
+	 * @param    array     $index    Rules from index_redirect_rules().
+	 * @return   array Rule with its target resolved for this path, plus "rule" (the source as stored), or an empty array.
+	 */
+	public static function resolve_redirect_hop( $path, $index ) {
+		if ( isset( $index['exact'][ $path ] ) ) {
+			return $index['exact'][ $path ] + array( 'rule' => $path );
+		}
+
+		foreach ( $index['prefix'] as $source => $rule ) {
+			$prefix = substr( $source, 0, -2 );
+
+			if ( $path !== $prefix && 0 !== strpos( $path, $prefix . '/' ) ) {
+				continue;
+			}
+
+			if ( '*' === substr( $rule['target'], -1 ) ) {
+				$target         = rtrim( substr( $rule['target'], 0, -1 ), '/' ) . substr( $path, strlen( $prefix ) );
+				$rule['target'] = '' === $target ? '/' : $target;
+			}
+
+			return $rule + array( 'rule' => $source );
+		}
+
+		return array();
+	}
+
+	/**
+	 * Follow a path through the rules, one hop at a time.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $path     Normalized request path.
+	 * @param    array     $index    Rules from index_redirect_rules().
+	 * @return   array{hops:array,loop:bool} Each hop is a resolved rule; "loop" is true when the path never settles.
+	 */
+	public static function trace_redirect_hops( $path, $index ) {
+		$hops    = array();
+		$visited = array( $path => true );
+
+		while ( true ) {
+			$hop = self::resolve_redirect_hop( $path, $index );
+
+			// A prefix rule that points at an address it covers leaves that address where it is.
+			if ( empty( $hop ) || ( 410 !== (int) $hop['status'] && $hop['target'] === $path ) ) {
+				break;
+			}
+
+			$hops[] = $hop;
+			$path   = $hop['target'];
+
+			// A gone address and another site both end the trail.
+			if ( 410 === (int) $hop['status'] || 0 !== strpos( $path, '/' ) ) {
+				break;
+			}
+
+			if ( isset( $visited[ $path ] ) || count( $hops ) >= 10 ) {
+				return array(
+					'hops' => $hops,
+					'loop' => true,
+				);
+			}
+
+			$visited[ $path ] = true;
+		}
+
+		return array(
+			'hops' => $hops,
+			'loop' => false,
 		);
 	}
 
@@ -1151,29 +1316,17 @@ class Lightweight_SEO_Settings {
 
 	/** Reject any local rule that participates in a redirect loop. */
 	private function remove_redirect_loops( $rules ) {
-		$rule_map     = array_column( $rules, 'target', 'source' );
-		$loop_sources = array();
-
-		foreach ( array_keys( $rule_map ) as $source ) {
-			$visited = array();
-			$current = $source;
-
-			while ( isset( $rule_map[ $current ] ) && 0 === strpos( $rule_map[ $current ], '/' ) ) {
-				if ( isset( $visited[ $current ] ) ) {
-					$loop_sources = array_merge( $loop_sources, array_keys( $visited ) );
-					break;
-				}
-
-				$visited[ $current ] = true;
-				$current             = $rule_map[ $current ];
-			}
-		}
+		$index = self::index_redirect_rules( $rules );
 
 		return array_values(
 			array_filter(
 				$rules,
-				function ( $rule ) use ( $loop_sources ) {
-					return ! in_array( $rule['source'], $loop_sources, true );
+				function ( $rule ) use ( $index ) {
+					// A prefix rule is followed from an address under it.
+					$start = '/*' === substr( $rule['source'], -2 ) ? substr( $rule['source'], 0, -2 ) . '/lightweight-seo-probe' : $rule['source'];
+					$trace = self::trace_redirect_hops( $start, $index );
+
+					return ! $trace['loop'];
 				}
 			)
 		);

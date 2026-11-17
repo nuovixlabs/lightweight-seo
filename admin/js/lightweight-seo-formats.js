@@ -23,6 +23,7 @@
 
 	var DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 	var REDIRECT_STATUSES = [301, 302, 307, 308];
+	var GONE = 410;
 
 	function splitLines(text) {
 		return String(text === undefined || text === null ? '' : text).split(/\r\n|\n|\r/);
@@ -77,12 +78,17 @@
 	}
 
 	// Redirect rules: "/old-path /new-path 301". The status is optional and defaults to 301.
+	// "/old-path 410" has no destination: the address answers that it is gone.
 	var redirects = {
 		parse: function(line) {
 			var parts = words(line);
 
 			if (parts.length < 1 || parts.length > 3) {
 				return null;
+			}
+
+			if (parts[1] === '410' || parts[2] === '410') {
+				return {source: parts[0], target: '', status: GONE};
 			}
 
 			var status = parseInt(parts[2], 10);
@@ -99,11 +105,20 @@
 			var target = oneWord(row.target);
 			var status = parseInt(row.status, 10);
 
+			if (source !== '' && status === GONE) {
+				return source + ' ' + GONE;
+			}
+
 			if (source === '' || target === '') {
 				return '';
 			}
 
 			return source + ' ' + target + ' ' + (REDIRECT_STATUSES.indexOf(status) === -1 ? 301 : status);
+		},
+
+		// Cells that take no part in the stored line for this row.
+		inactive: function(row) {
+			return parseInt(row.status, 10) === GONE ? ['target'] : [];
 		},
 
 		check: function(rows) {
@@ -115,13 +130,14 @@
 
 			return rows.map(function(row, index) {
 				var source = oneWord(row.source);
-				var target = oneWord(row.target);
+				var gone = parseInt(row.status, 10) === GONE;
+				var target = gone ? '' : oneWord(row.target);
 
 				if (source === '' && target === '') {
 					return '';
 				}
 
-				if (source === '' || target === '') {
+				if (source === '' || (target === '' && !gone)) {
 					return 'incomplete';
 				}
 

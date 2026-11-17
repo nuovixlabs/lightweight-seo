@@ -689,15 +689,25 @@ input[type="search"] + .lwseo-table-wrap {
 
 /* Inspect: an address, a button, and the report of that address. ------- */
 
-.lwseo-inspect__row {
+.lwseo-inspect__row,
+.lwseo-inline {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--lwseo-space-2);
 }
 
-.lwseo .lwseo-inspect__row input {
+.lwseo .lwseo-inspect__row input,
+.lwseo .lwseo-inline input {
 	flex: 1 1 16rem;
 	max-width: none;
+}
+
+.lwseo .lwseo-inline input[type="file"] {
+	flex: 0 1 auto;
+}
+
+.lwseo-inline + .lwseo-status-list {
+	margin-top: var(--lwseo-space-3);
 }
 
 .lwseo-inspect__address {

@@ -2,6 +2,7 @@
 
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-importer-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-import-state.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-tools.php';
 
 use PHPUnit\Framework\TestCase;
@@ -386,6 +387,76 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 		$this->assertSame( 150, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['import_cursor'] );
 	}
 
+	public function test_redirect_import_merges_a_csv_file_into_the_saved_rules(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'title_format'     => 'Kept %title%',
+			'enable_redirects' => '1',
+			'redirect_rules'   => "/kept /kept-target 301\n/changed /old-target 301\n/same /same-target 302",
+		);
+
+		$csv = tempnam( sys_get_temp_dir(), 'lwseo' );
+		file_put_contents(
+			$csv,
+			"\xEF\xBB\xBFSource,Target,Status\n"
+			. "/changed,/new-target,302\n"
+			. "/same,/same-target,302\n"
+			. "/added,\"/with space\",\n"
+			. "/gone,,410\n"
+			. "/section/*,/moved/*,308\n"
+			. "\n"
+			. "no-leading-slash,/anywhere,301\n"
+			. "/unsafe,https://unapproved.example/x,301\n"
+			. "/added,/second-wins,301\n"
+		);
+
+		$tools = $this->get_tools( $this->get_importer(), $csv );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT );
+		$tools->handle_redirect_import();
+		unlink( $csv );
+
+		$stored = $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ];
+
+		$this->assertSame(
+			array(
+				'/kept /kept-target 301',
+				'/changed /new-target 302',
+				'/same /same-target 302',
+				'/added /second-wins 301',
+				'/gone 410',
+				'/section/* /moved/* 308',
+				// A path typed without its leading slash gets one, as on the settings screen.
+				'/no-leading-slash /anywhere 301',
+			),
+			explode( "\n", $stored['redirect_rules'] )
+		);
+		// Nothing else in the settings is touched.
+		$this->assertSame( 'Kept %title%', $stored['title_format'] );
+		$this->assertSame( '1', $stored['enable_redirects'] );
+
+		$notice = $this->get_last_notice();
+
+		$this->assertSame( 'success', $notice['type'] );
+		$this->assertStringContainsString( '4 added, 1 replaced, 1 already saved, 2 left out', $notice['message'] );
+		$this->assertSame( array( 'https://example.com/wp-admin/admin.php?page=lightweight-seo&tab=modules&settings-updated=true' ), $tools->redirects );
+	}
+
+	public function test_redirect_import_without_a_usable_file_changes_nothing(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'redirect_rules' => '/kept /kept-target 301' );
+		$before = $lightweight_seo_test_options;
+
+		$tools = $this->get_tools( $this->get_importer(), '' );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT );
+		$tools->handle_redirect_import();
+
+		$this->assertSame( $before, $lightweight_seo_test_options );
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+		$this->assertStringContainsString( 'tab=modules', $tools->redirects[0] );
+	}
+
 	/** Handler method => admin-post action. */
 	private function get_handlers() {
 		return array(
@@ -393,6 +464,7 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 			'handle_import_batch'           => Lightweight_SEO_Admin_Tools::ACTION_IMPORT_BATCH,
 			'handle_import_rollback'        => Lightweight_SEO_Admin_Tools::ACTION_IMPORT_ROLLBACK,
 			'handle_delete_legacy_404_logs' => Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS,
+			'handle_redirect_import'        => Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT,
 		);
 	}
 
@@ -462,9 +534,15 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 	}
 
 	/** The handlers with the redirect observed instead of ending the process. */
-	private function get_tools( $importer ) {
-		return new class( 'lightweight-seo', $importer, new Lightweight_SEO_Import_State() ) extends Lightweight_SEO_Admin_Tools {
+	private function get_tools( $importer, $upload = '' ) {
+		$tools = new class( 'lightweight-seo', $importer, new Lightweight_SEO_Import_State(), new Lightweight_SEO_Settings() ) extends Lightweight_SEO_Admin_Tools {
 			public $redirects = array();
+
+			public $upload = '';
+
+			protected function get_uploaded_file( $field, $max_bytes ) {
+				return $this->upload;
+			}
 
 			protected function redirect( $url ) {
 				$this->redirects[] = $url;
@@ -472,6 +550,10 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 				return false;
 			}
 		};
+
+		$tools->upload = $upload;
+
+		return $tools;
 	}
 
 	/** An importer that records its calls and returns the given reports. */

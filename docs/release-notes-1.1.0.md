@@ -149,6 +149,17 @@ One file is new and is loaded only for an inspect request; see [Release Baseline
 
 Two settings are new in the existing settings option: `enable_redirects` and `enable_tracking`. The settings schema version is now 4; migration step 4 writes the two switches from the stored module state and changes nothing else.
 
+## Redirects since rc.3
+
+- **Whole sections.** A rule whose old path ends in `/*` covers that path and everything under it. End the new path with `/*` as well and the rest of each address is kept: `/old-blog/* /blog/*` sends `/old-blog/2024/post` to `/blog/2024/post`. A rule for one exact path always wins, then the longest matching section.
+- **410 Gone.** A rule can answer that a page was removed on purpose: `/old-path 410`, or the "410 Gone" type in the row editor. The visitor sees the theme's "not found" page with the status 410, WordPress does not guess a similar address, and the page leaves the sitemap like any redirected page.
+- **Test an address.** The Redirects card shows which saved rule applies to a path, every hop it takes, and where it ends. It reads the saved rules only, requests nothing, and works without JavaScript.
+- **CSV import.** Upload a file with one rule per row (old path, new path or address, status code). Rows go through the same checks as typed rules; a rule for a path that already has one replaces it. The notice counts what was added, replaced, already there, and left out. The file is read and not kept.
+- Rules that would loop between sections, cover the whole site, or grow an address on every hop are refused when they are saved.
+- The redirect health report follows sections too, and a redirect that leads to a gone address is listed with `410` as its end.
+
+Stored rules keep their format, so nothing is migrated. One file is new, `includes/class-lightweight-seo-redirect-import.php`, loaded only for an import; see [Release Baselines](release-baselines.md).
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

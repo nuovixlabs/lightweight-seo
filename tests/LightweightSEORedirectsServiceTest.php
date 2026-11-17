@@ -1,5 +1,6 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-redirects-service.php';
 
 use PHPUnit\Framework\TestCase;
@@ -159,6 +160,111 @@ final class LightweightSEORedirectsServiceTest extends TestCase {
 		$this->assertContains( '/loop-b', $sources );
 		$this->assertSame( '/final-page', $service->find_matching_redirect( '/old-page' )['target'] );
 		$this->assertSame( array(), $service->find_matching_redirect( '/loop-a' ) );
+	}
+
+	public function test_a_gone_rule_answers_410_with_the_not_found_template_and_no_redirect(): void {
+		global $lightweight_seo_test_nocache_headers_calls;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_removed_actions;
+		global $lightweight_seo_test_status_headers;
+		global $lightweight_seo_test_wp_safe_redirect_calls;
+		global $wp_query;
+
+		$lightweight_seo_test_status_headers                         = array();
+		$lightweight_seo_test_removed_actions                        = array();
+		$lightweight_seo_test_nocache_headers_calls                  = 0;
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'redirect_rules' => "/retired 410\n/moved /retired 301\n/old-shop/* 410\n/old-shop/keep /shop 301",
+		);
+
+		$wp_query = new class() {
+			public $is_404 = false;
+
+			public function set_404() {
+				$this->is_404 = true;
+			}
+		};
+
+		$service = new Lightweight_SEO_Redirects_Service( new Lightweight_SEO_Settings() );
+
+		$_SERVER['REQUEST_URI'] = '/retired/?utm_source=newsletter';
+		$service->maybe_redirect_request();
+
+		$this->assertSame( array( 410 ), $lightweight_seo_test_status_headers );
+		$this->assertTrue( $wp_query->is_404 );
+		$this->assertSame( 1, $lightweight_seo_test_nocache_headers_calls );
+		$this->assertSame( array( array( 'template_redirect', 'redirect_canonical' ) ), $lightweight_seo_test_removed_actions );
+		$this->assertSame( array(), $lightweight_seo_test_wp_safe_redirect_calls );
+
+		// The health report names the end of such a trail.
+		$this->assertSame( array( '/moved', '/retired', '410' ), $service->get_redirect_health_report()['chains'][0]['sequence'] );
+
+		// A redirect that ends at a gone address answers gone straight away.
+		$this->assertSame( 410, $service->find_matching_redirect( '/moved' )['status'] );
+		// A whole section can be gone, and one address in it can still be redirected.
+		$this->assertSame( 410, $service->find_matching_redirect( '/old-shop/product/blue-hat' )['status'] );
+		$this->assertSame( '/shop', $service->find_matching_redirect( '/old-shop/keep' )['target'] );
+		$this->assertSame( array(), $service->find_matching_redirect( '/shop' ) );
+
+		$wp_query = null;
+	}
+
+	public function test_a_section_rule_redirects_everything_under_it_and_carries_the_rest_over(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_wp_safe_redirect_calls;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'redirect_rules' => "/old-blog/* /blog/* 301\n/blog/2019/* /archive 302\n/hub/* /hub/start 301",
+		);
+
+		$service = new class( new Lightweight_SEO_Settings() ) extends Lightweight_SEO_Redirects_Service {
+			protected function perform_redirect( $target_url, $status ) {
+				parent::perform_redirect( $target_url, $status );
+
+				// Report "not sent" so the request is not ended.
+				return false;
+			}
+		};
+
+		$_SERVER['REQUEST_URI'] = '/old-blog/2024/hello-world/';
+		$service->maybe_redirect_request();
+
+		$this->assertSame( 'https://example.com/blog/2024/hello-world', $lightweight_seo_test_wp_safe_redirect_calls[0]['location'] );
+		$this->assertSame( 301, $lightweight_seo_test_wp_safe_redirect_calls[0]['status'] );
+
+		// Two rules in a row are followed, and the visitor is sent straight to the end.
+		$trace = $service->trace_request( '/old-blog/2019/first' );
+
+		$this->assertSame( array( '/old-blog/*', '/blog/2019/*' ), array_column( $trace['hops'], 'rule' ) );
+		$this->assertSame( '/archive', $service->find_matching_redirect( '/old-blog/2019/first' )['target'] );
+		$this->assertSame( 301, $service->find_matching_redirect( '/old-blog/2019/first' )['status'] );
+
+		// The address a section points at is inside that section, and is served as it is.
+		$lightweight_seo_test_wp_safe_redirect_calls = array();
+		$_SERVER['REQUEST_URI']                      = '/hub/start/';
+		$service->maybe_redirect_request();
+
+		$this->assertSame( array(), $lightweight_seo_test_wp_safe_redirect_calls );
+
+		$_SERVER['REQUEST_URI'] = '/hub/other/';
+		$service->maybe_redirect_request();
+
+		$this->assertSame( 'https://example.com/hub/start', $lightweight_seo_test_wp_safe_redirect_calls[0]['location'] );
+
+		$report = $service->get_redirect_health_report();
+
+		$this->assertSame( array(), $report['loops'] );
+		$this->assertSame( array(), $report['chains'] );
+
+		// The health report follows a section from an address under it.
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'redirect_rules' => "/first/* /second/* 301\n/second/* /third/* 301",
+		);
+
+		$report = ( new Lightweight_SEO_Redirects_Service( new Lightweight_SEO_Settings(), false ) )->get_redirect_health_report();
+
+		$this->assertSame( array( '/first/*' ), array_column( $report['chains'], 'source' ) );
+		$this->assertSame( array( '/first/*', '/second/…', '/third/…' ), $report['chains'][0]['sequence'] );
 	}
 
 	public function test_perform_redirect_uses_safe_redirect_for_allowed_external_targets(): void {

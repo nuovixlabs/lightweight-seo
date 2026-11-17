@@ -445,6 +445,12 @@
 
 				rows.each(function(index) {
 					var hint = hints[checks[index]] || '';
+					var inactive = format.inactive ? format.inactive(rowValues(this)) : [];
+
+					// A cell the row's type has no use for is switched off, and keeps what was typed.
+					$(this).find('[data-field]').each(function() {
+						$(this).prop('disabled', inactive.indexOf($(this).attr('data-field')) !== -1);
+					});
 
 					$(this).attr('aria-label', fillTemplate(wrapper.attr('data-item'), [index + 1]))
 						.toggleClass('has-hint', hint !== '')

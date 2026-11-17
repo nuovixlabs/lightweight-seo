@@ -31,6 +31,9 @@ class Lightweight_SEO_Admin_Tools {
 	/** Admin-post action and nonce action for deleting retained legacy 404 log entries. */
 	const ACTION_DELETE_404_LOGS = 'lightweight_seo_delete_legacy_404_logs';
 
+	/** Admin-post action and nonce action for importing redirect rules from a CSV file. */
+	const ACTION_REDIRECT_IMPORT = 'lightweight_seo_redirect_import';
+
 	/** Sources the importer can read. */
 	const IMPORT_SOURCES = array( 'yoast', 'rank_math', 'aioseo' );
 
@@ -62,17 +65,28 @@ class Lightweight_SEO_Admin_Tools {
 	private $import_state;
 
 	/**
+	 * Shared settings service.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Settings|null    $settings
+	 */
+	private $settings;
+
+	/**
 	 * Initialize the handlers.
 	 *
 	 * @since    1.1.0
 	 * @param    string                              $plugin_name     The name of this plugin.
 	 * @param    Lightweight_SEO_Importer_Service    $importer        Metadata importer.
 	 * @param    Lightweight_SEO_Import_State        $import_state    Import source, cursor, and last report.
+	 * @param    Lightweight_SEO_Settings|null       $settings        Shared settings service, for the tools that change settings.
 	 */
-	public function __construct( $plugin_name, $importer, $import_state ) {
+	public function __construct( $plugin_name, $importer, $import_state, $settings = null ) {
 		$this->plugin_name  = $plugin_name;
 		$this->importer     = $importer;
 		$this->import_state = $import_state;
+		$this->settings     = $settings;
 	}
 
 	/**
@@ -140,6 +154,66 @@ class Lightweight_SEO_Admin_Tools {
 
 		$this->import_state->save( $state );
 		$this->finish( 'import_rollback', $state['report'], 'success' );
+	}
+
+	/**
+	 * Merge the redirect rules of an uploaded CSV file into the saved rules.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function handle_redirect_import() {
+		$this->require_capability();
+		check_admin_referer( self::ACTION_REDIRECT_IMPORT, self::get_nonce_name( self::ACTION_REDIRECT_IMPORT ) );
+
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-redirect-import.php';
+
+		$file  = $this->get_uploaded_file( 'lightweight_seo_redirect_csv', Lightweight_SEO_Redirect_Import::MAX_FILE_BYTES );
+		$lines = '' === $file ? null : Lightweight_SEO_Redirect_Import::read_csv( $file );
+
+		if ( null === $lines ) {
+			$this->finish( 'redirect_import', __( 'Choose a CSV file of up to 1 MB to import redirect rules from.', 'lightweight-seo' ), 'error', 'modules' );
+
+			return;
+		}
+
+		$report = Lightweight_SEO_Redirect_Import::import( $this->settings, $lines );
+		$type   = $report['added'] + $report['replaced'] > 0 ? 'success' : 'info';
+
+		$this->finish(
+			'redirect_import',
+			sprintf(
+				/* translators: 1: rules added. 2: rules replaced. 3: rules already saved. 4: rows left out. */
+				__( 'Redirect import: %1$d added, %2$d replaced, %3$d already saved, %4$d left out because they were incomplete, repeated, looped, over the limit, or pointed to a site that is not approved.', 'lightweight-seo' ),
+				$report['added'],
+				$report['replaced'],
+				$report['unchanged'],
+				$report['skipped']
+			),
+			$type,
+			'modules'
+		);
+	}
+
+	/**
+	 * Get the temporary path of one uploaded file, when it arrived whole and within the size limit.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $field        Upload field name.
+	 * @param    int       $max_bytes    Largest accepted size.
+	 * @return   string Path, or an empty string.
+	 */
+	protected function get_uploaded_file( $field, $max_bytes ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Every caller verifies its nonce first; only the size, the error code, and the temporary path that PHP assigned are used.
+		$file = isset( $_FILES[ $field ] ) && is_array( $_FILES[ $field ] ) ? $_FILES[ $field ] : array();
+		$path = (string) ( $file['tmp_name'] ?? '' );
+		$size = (int) ( $file['size'] ?? 0 );
+
+		if ( '' === $path || UPLOAD_ERR_OK !== (int) ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) || $size < 1 || $size > $max_bytes || ! is_uploaded_file( $path ) ) {
+			return '';
+		}
+
+		return $path;
 	}
 
 	/**
@@ -318,7 +392,7 @@ class Lightweight_SEO_Admin_Tools {
 	}
 
 	/**
-	 * Carry the outcome across the redirect and return to the Tools tab.
+	 * Carry the outcome across the redirect and return to the tab the tool is on.
 	 *
 	 * The message uses the settings-error transient that options.php uses, so the
 	 * settings page displays it once without a second notice mechanism.
@@ -327,14 +401,15 @@ class Lightweight_SEO_Admin_Tools {
 	 * @param    string    $code       Notice code.
 	 * @param    string    $message    Outcome shown to the administrator.
 	 * @param    string    $type       Notice type: success, info, or error.
+	 * @param    string    $tab        Optional. Settings tab to return to.
 	 * @return   void
 	 */
-	private function finish( $code, $message, $type ) {
+	private function finish( $code, $message, $type, $tab = 'tools' ) {
 		// WordPress prints settings errors as HTML, so the plain-text outcome is escaped here.
 		add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, $code, esc_html( $message ), $type );
 		set_transient( 'settings_errors', get_settings_errors(), 30 );
 
-		if ( $this->redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '&tab=tools&settings-updated=true' ) ) ) {
+		if ( $this->redirect( admin_url( 'admin.php?page=' . $this->plugin_name . '&tab=' . $tab . '&settings-updated=true' ) ) ) {
 			exit;
 		}
 	}

@@ -60,6 +60,7 @@ Class names use `lwseo-block__element`, with `--modifier` for variants and `is-s
 | Rows | `lwseo-rows` | `rows()` | A setting stored one item per line, edited one item per row. |
 | Hours | `lwseo-hours` | `hours()` | Opening times: one row per day, each with any number of time ranges. |
 | Picker | `lwseo-picker`, `lwseo-pagecell` | `picker()` | Pages chosen by searching instead of typing IDs: a list, or one page inside a row. |
+| Inline | `lwseo-inline` | | One field with the button that acts on it, on one line: the redirect test box and the CSV import. The controls join a standalone form through the `form` attribute. |
 | Inspect | `lwseo-inspect` | | An address, a button, and the report of that address. The report itself is built from status lists, a table, and a details block. |
 | Actions | `lwseo-actions`, `lwseo-buttons` | | The sticky save bar, and a row of buttons. `lwseo-actions__status` says when the form has unsaved changes. |
 | Preview | `lwseo-preview` | `search_preview()`, `share_preview()` | Search result and share previews, in the editor and on the overview. `lwseo-previews` places two side by side. |
@@ -75,6 +76,7 @@ Buttons and admin notices are the WordPress ones (`button`, `button-primary`, `b
 - **A matrix, not a card per item.** When several items share the same two or three settings, such as content types, show them as rows of one matrix so they can be compared and set in one pass. A cell with no setting is left empty, not disabled.
 - **One wording for search visibility.** A content type is "shown" or "hidden" in search results, and a single page, term, or author chooses "Default", "Show", or "Hide". The directive name stays in help text.
 - **One switch per module.** Every module card starts with a checkbox in a row titled "Enable module". Its label says what switching it on does, and its help text says what is kept while it is off. A module is never switched on by filling in one of its fields.
+- **A tool inside a settings card posts to its own form.** A control that acts at once, such as an import or a test, sits in the card where it belongs and submits a standalone form printed after the settings form. A read-only test is a plain GET of the screen, so it needs no JavaScript.
 - **A module that is off shows only what turns it on.** Its reports and tools appear once it is in use, so an unused module never prints an empty state per row.
 - **Sentence case** for every title, label, tab, and button: "Default title format", not "Default Title Format".
 - **One primary button per screen**, and it is Save. Tool actions are secondary buttons. Destructive actions use `button-link-delete` and require a confirmation control.
@@ -91,13 +93,14 @@ Redirect rules, hreflang mappings, opening hours, and the `llms.txt` page list a
 - **The stored field stays.** The caller prints the textarea or input exactly as before. It is the only control that is submitted, so the screen works without JavaScript and the validators in `Lightweight_SEO_Settings` are the single source of truth. The editor is printed `hidden` beside it; the script reveals the editor and hides the field.
 - **Nothing is rewritten on load.** The field changes only after the user edits a row, so opening a tab never marks the form as unsaved.
 - **Rows that are not finished are not written.** A hint under the row says what is missing. It never blocks saving.
+- **A cell a row has no use for is switched off, not removed.** A format may name such cells with `inactive(row)`: a redirect of type "410 Gone" has no destination. The cell keeps what was typed, and the stored line leaves it out.
 - **"Edit as text" shows the field again**, for pasting many lines at once. A line the editor cannot show is kept untouched and counted in a note.
 - **Row controls have no `name`**, and their markup comes from a `<template>` printed by PHP, so labels are translatable and escaped.
 - **Searching for a page** calls the site's own REST API from the browser (`wp/v2/search`). PHP requests nothing, and names for pages that are already stored are printed by the server from a bounded lookup by ID.
 
 To add a row editor:
 
-1. Add a format to `lightweight-seo-formats.js` with `parse(line)`, `format(row)`, and `check(rows)`, and cover it in `tests/js/formats.test.js`. The file has no DOM access, so the tests run under Node with `node --test tests/js/*.test.js`.
+1. Add a format to `lightweight-seo-formats.js` with `parse(line)`, `format(row)`, `check(rows)`, and optionally `inactive(row)`, and cover it in `tests/js/formats.test.js`. The file has no DOM access, so the tests run under Node with `node --test tests/js/*.test.js`.
 2. Print the stored field as usual, give anything that explains its raw format a `data-lwseo-text-for` attribute naming the field, and call `Lightweight_SEO_Admin_UI::rows()` with the format key, the field ID, and the columns.
 3. Give the rule a `--lwseo-rows-columns` value in the stylesheet if three equal columns do not suit it.
 

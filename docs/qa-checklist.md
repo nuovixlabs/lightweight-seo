@@ -63,6 +63,11 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Module switches: upgrade a site that has redirect rules and one that has a valid tracking ID; each module must stay on with its switch ticked. Upgrade a site that has neither; both must stay off.
 - Redirects: test exact rules, malformed destinations, external-host rejection, loops, chains, automatic slug redirects, export, and the documented high-rule boundary.
 - Redirects: change a published slug in the block editor, in Quick Edit, and in the classic editor; each must record a generated redirect.
+- Redirects: save `/old/* /new/*`, `/old/special /landing`, and `/old/archive/* /archive`. Confirm the exact rule wins, the longest section wins next, the rest of the path is carried over only where the target ends in `/*`, and `/older` is not affected.
+- Redirects: save a "410 Gone" rule for a missing address, for a published post, and for a section. Each must answer 410 with the theme's "not found" page and no redirect, and the post must leave the sitemap. In the row editor the destination of a 410 row must be switched off.
+- Redirects: confirm `/* /anywhere`, `/a/* /a/b/*`, and a pair of sections that point at each other are left out with the usual notice.
+- Redirects: use "Test an address" with a path, a full address, an address no rule covers, and one that passes through two rules; then repeat with JavaScript disabled. Testing must not mark the form as unsaved.
+- Redirects: import a CSV file with a header row, a new rule, a rule for a path that already has one, a 410 row, and a row pointing to an unapproved site. The notice must count each kind, and a request without a file must change nothing.
 - Hreflang: test reciprocal mappings, `x-default`, invalid locale/URL rejection, path mirroring, and WPML or Polylang ownership.
 - Tracking: test GTM precedence, direct GA4/Meta alternatives, consent filters, role/environment exclusions, CSP nonce, and a missing `wp_body_open` diagnostic.
 - Local SEO: test required fields, supported subtype, address, coordinates, hours, image, and disabled behavior.

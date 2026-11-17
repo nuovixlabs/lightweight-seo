@@ -63,6 +63,31 @@ test('redirect hints flag incomplete, self-pointing, and overridden rows', () =>
 	);
 });
 
+test('a gone rule needs no destination and round-trips as "source 410"', () => {
+	assert.deepEqual(redirects.parse('/retired 410'), {source: '/retired', target: '', status: 410});
+	assert.deepEqual(redirects.parse('/retired /ignored 410'), {source: '/retired', target: '', status: 410});
+	assert.equal(redirects.format({source: '/retired', target: '', status: '410'}), '/retired 410');
+	// What was typed as a destination before the type changed is left out of the stored line.
+	assert.equal(redirects.format({source: '/retired', target: '/typed-earlier', status: 410}), '/retired 410');
+	assert.equal(redirects.format({source: '', target: '', status: 410}), '');
+	assert.deepEqual(redirects.inactive({source: '/retired', target: '', status: '410'}), ['target']);
+	assert.deepEqual(redirects.inactive({source: '/a', target: '/b', status: 301}), []);
+
+	const stored = '/old/* /new/* 301\n/retired 410\n/shop/* 410';
+	const parsed = read(stored, redirects);
+
+	assert.deepEqual(parsed.leftover, []);
+	assert.equal(write(parsed.rows, parsed.leftover, redirects), stored);
+	assert.deepEqual(
+		redirects.check([
+			{source: '/retired', target: '', status: 410},
+			{source: '', target: '', status: 410},
+			{source: '/retired', target: '/typed-earlier', status: 410},
+		]),
+		['duplicate', '', '']
+	);
+});
+
 test('hreflang mappings round-trip, including a retained legacy line', () => {
 	const stored = 'post:123 en-GB https://example.co.uk/page/\nterm:7 de-DE https://example.de/thema/\nuser:2 x-default https://example.com/author/\nfr-FR https://example.fr';
 	const parsed = read(stored, hreflang);

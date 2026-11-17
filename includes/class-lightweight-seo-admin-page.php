@@ -192,7 +192,7 @@ class Lightweight_SEO_Admin_Page {
 			}
 
 			if ( $this->is_module_enabled( 'redirects' ) ) {
-				array_push( $redirects_fields, 'generated_redirect_rules', 'redirect_export', 'redirect_health' );
+				array_push( $redirects_fields, 'redirect_test', 'generated_redirect_rules', 'redirect_export', 'redirect_import', 'redirect_health' );
 			}
 
 			if ( $this->is_module_enabled( 'ai' ) ) {
@@ -273,7 +273,7 @@ class Lightweight_SEO_Admin_Page {
 				array(
 					'section'     => 'lightweight_seo_redirects_section',
 					'fields'      => $redirects_fields,
-					'description' => __( 'Exact redirect rules, plus automatic redirects when a published slug changes.', 'lightweight-seo' ),
+					'description' => __( 'Redirects for single addresses or whole sections, plus automatic redirects when a published slug changes.', 'lightweight-seo' ),
 					'intro'       => true,
 					'module'      => 'redirects',
 				),
@@ -747,6 +747,10 @@ class Lightweight_SEO_Admin_Page {
 		if ( 'tools' === $tab ) {
 			// Tool actions post to their own handlers, and a form cannot nest inside the settings form.
 			$this->tools_fields->render_action_forms();
+		}
+
+		if ( 'modules' === $tab && $this->is_module_enabled( 'redirects' ) ) {
+			$this->tools_fields->render_redirect_forms( $this->plugin_name );
 		}
 	}
 
