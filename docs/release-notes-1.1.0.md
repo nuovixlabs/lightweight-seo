@@ -230,6 +230,12 @@ The editor screens now load `lightweight-seo-formats.js` as well, because the ed
 
 - An empty tagline no longer leaves a separator behind. WordPress installs with an empty tagline, and the default homepage title format is `%sitename% %sep% %tagline%`, so such a site printed "Site name –". `%tagline%` now behaves like the other optional variables: when the site has no tagline it is left out together with one separator beside it, and the homepage title is "Site name". A site with a tagline prints exactly what it printed before. The settings previews and the editor preview follow the same rule.
 
+## Since rc.5
+
+Not yet part of a release package.
+
+- The setup checklist on the Overview no longer asks for a tagline. Its first step is "Set a site name" and counts as done once the site has a name, because a title now leaves an empty tagline out by itself.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.
