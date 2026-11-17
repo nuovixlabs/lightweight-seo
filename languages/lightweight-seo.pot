@@ -9,13 +9,14 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T11:50:35+00:00\n"
+"POT-Creation-Date: 2026-11-17T11:55:35+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
 
 #. Plugin Name of the plugin
 #: lightweight-seo.php
+#: includes/class-lightweight-seo-abilities.php:78
 msgid "Lightweight SEO"
 msgstr ""
 
@@ -33,6 +34,82 @@ msgstr ""
 #. Author of the plugin
 #: lightweight-seo.php
 msgid "Rakesh Mandal"
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:79
+msgid "Read and fill the search and sharing fields of posts and pages."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:94
+msgid "ID of the post, page, or other content item."
+msgstr ""
+
+#. translators: %s: examples of title variables, such as %title%.
+#: includes/class-lightweight-seo-abilities.php:100
+#, php-format
+msgid "SEO title. Empty means the title format of the content type is used. May hold variables such as %s."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:104
+msgid "Meta description. Empty means a summary of the excerpt or content is used."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:108
+msgid "Canonical address. Empty means the page's own address."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:113
+msgid "Whether search engines may show the page: \"default\" follows its content type, \"show\" and \"hide\" are the page's own choice."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:117
+msgid "Title used when the page is shared. Empty means the SEO title."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:121
+msgid "Description used when the page is shared. Empty means the meta description."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:125
+msgid "Address of the image used when the page is shared. Empty means the featured image or the site default."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:142
+msgid "Get SEO fields"
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:143
+msgid "Returns the SEO fields saved on one post or page, exactly as they are stored. An empty field means the page uses the default."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:156
+msgid "Update SEO fields"
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:157
+msgid "Saves SEO fields on one post or page. Only the fields that are sent change; an empty string clears a field. Returns the fields as they are stored afterwards."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:175
+msgid "Get SEO result"
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:176
+msgid "Returns what search engines are told about one post or page after its own fields and the site settings are combined: the title and description in use, the canonical address, the robots directives, and whether the page may be indexed. Variables in the title and description are returned as written, not filled in."
+msgstr ""
+
+#. translators: %s: name of an SEO field, such as canonical_url.
+#: includes/class-lightweight-seo-abilities.php:263
+#, php-format
+msgid "The value for %s is not a web address. Nothing was saved."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:310
+msgid "The SEO result of this item is not available."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:366
+msgid "This item does not exist, or its content type has no SEO fields."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:80
@@ -1019,7 +1096,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:269
 #: includes/class-lightweight-seo-admin-page.php:342
-#: includes/class-lightweight-seo.php:245
+#: includes/class-lightweight-seo.php:288
 msgid "Hreflang"
 msgstr ""
 
@@ -1082,7 +1159,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:343
 #: includes/class-lightweight-seo-admin-settings.php:180
-#: includes/class-lightweight-seo.php:239
+#: includes/class-lightweight-seo.php:282
 msgid "Redirects"
 msgstr ""
 
@@ -1093,7 +1170,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:345
 #: includes/class-lightweight-seo-admin-settings.php:227
-#: includes/class-lightweight-seo.php:260
+#: includes/class-lightweight-seo.php:303
 msgid "AI Discovery"
 msgstr ""
 
@@ -2803,30 +2880,30 @@ msgstr ""
 msgid "A business name and complete address are required before Local SEO can be enabled."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:240
+#: includes/class-lightweight-seo.php:283
 msgid "Manage redirects and optional slug-change handling."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:246
+#: includes/class-lightweight-seo.php:289
 msgid "Output alternate-language links."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:250
+#: includes/class-lightweight-seo.php:293
 msgid "Tracking"
 msgstr ""
 
-#: includes/class-lightweight-seo.php:251
+#: includes/class-lightweight-seo.php:294
 msgid "Output configured analytics containers."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:255
+#: includes/class-lightweight-seo.php:298
 msgid "Local SEO"
 msgstr ""
 
-#: includes/class-lightweight-seo.php:256
+#: includes/class-lightweight-seo.php:299
 msgid "Add single-location LocalBusiness data."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:261
+#: includes/class-lightweight-seo.php:304
 msgid "Experimental crawler policy controls."
 msgstr ""

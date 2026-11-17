@@ -1816,3 +1816,23 @@ if (!function_exists('date_i18n')) {
         return gmdate($format, (int) $timestamp_with_offset);
     }
 }
+
+if (!function_exists('wp_register_ability_category')) {
+    function wp_register_ability_category($slug, $args) {
+        global $lightweight_seo_test_ability_categories;
+
+        $lightweight_seo_test_ability_categories[$slug] = $args;
+
+        return null;
+    }
+}
+
+if (!function_exists('wp_register_ability')) {
+    function wp_register_ability($name, $args) {
+        global $lightweight_seo_test_abilities;
+
+        $lightweight_seo_test_abilities[$name] = $args;
+
+        return null;
+    }
+}

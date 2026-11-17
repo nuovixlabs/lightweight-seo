@@ -108,6 +108,21 @@ The built-in Redirects module loads in the `frontend`, `admin`, `editor`, and `r
 
 Redirect, Hreflang, Tracking, Local SEO, and AI Discovery implementation classes are private runtime details. Integrations should use the registry and documented hooks, not instantiate those classes.
 
+## Abilities
+
+On WordPress 6.9 and later the plugin registers three abilities in the `lightweight-seo` category, so agents and other clients of the Abilities API can read and fill the SEO fields of a post. They are public and available over REST. The class behind them loads only when WordPress collects abilities.
+
+| Ability | Input | Returns |
+|---|---|---|
+| `lightweight-seo/get-seo-fields` | `post_id` | The fields as stored: `title`, `description`, `canonical_url`, `search_visibility` (`default`, `show`, or `hide`), `social_title`, `social_description`, `social_image`. An empty field means the default is used. |
+| `lightweight-seo/update-seo-fields` | `post_id` and any of the fields above | The fields as stored afterwards. Only the fields that are sent change; an empty string clears a field. |
+| `lightweight-seo/get-seo-context` | `post_id` | `title`, `description`, `canonical_url`, `robots`, and `indexable`, from `get_object_context()`. Variables in the title and description are returned as written. |
+
+- **Permission.** Every ability requires the `edit_post` capability for that post. A signed-out request, or a post that does not exist, is refused.
+- **Validation.** WordPress checks the input against the schema first, so an unknown field or an unknown `search_visibility` value is refused. Text is sanitized like the editor panel and keeps variables such as `%title%`. `canonical_url` and `social_image` must be `http` or `https` addresses; otherwise nothing is saved.
+- **Search visibility.** A page hidden for the first time is stored with "follow links", so it prints `noindex` only.
+- **Scope.** Posts and other content items with SEO fields. Terms and authors are not covered yet, and site settings are never changed through an ability.
+
 ## WP-CLI
 
 The commands are registered only when WordPress runs under WP-CLI.

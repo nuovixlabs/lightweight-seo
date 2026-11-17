@@ -153,6 +153,8 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Confirm credentials/tokens never appear in public APIs, frontend markup, diagnostics, JavaScript data, or logs.
 - Confirm `/llms.txt` includes only selected public, indexable, local, canonical, non-redirected posts/pages and never full content.
 - Confirm core makes no external request and stores no new 404 or analytics history.
+- Abilities (WordPress 6.9 or later): run each `lightweight-seo/…` ability as an administrator, as a user who cannot edit the post, and signed out. Only the first may read or write. Confirm an unknown field, an unknown visibility value, and an address that is not `http` or `https` save nothing, and that the REST routes answer 401 without a sign-in.
+- Abilities: on WordPress older than 6.9, confirm the plugin loads without errors and `includes/class-lightweight-seo-abilities.php` is never loaded.
 
 ## Performance and packaging
 

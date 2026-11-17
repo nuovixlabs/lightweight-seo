@@ -187,6 +187,16 @@ These are changes to what is printed on every page. No setting is migrated: a sc
 
 The field names of each plugin were taken from its published source code. See [Migration and RC Testing](migration.md) for the list.
 
+## Abilities API since rc.3
+
+On WordPress 6.9 and later, three abilities let agents and other clients of the Abilities API work with the SEO fields of a post: `lightweight-seo/get-seo-fields`, `lightweight-seo/update-seo-fields`, and `lightweight-seo/get-seo-context`.
+
+- Each one requires the right to edit that post, and an update goes through the same sanitizers as the editor panel.
+- They cover posts, pages, and other content items with SEO fields. Site settings, terms, and authors are not exposed.
+- Nothing is loaded for them until WordPress collects abilities, and older WordPress versions never do.
+
+See [Developer API](developer-api.md#abilities). One file is new; see [Release Baselines](release-baselines.md).
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

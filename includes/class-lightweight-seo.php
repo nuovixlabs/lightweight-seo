@@ -70,6 +70,9 @@ class Lightweight_SEO {
 	/** @var Lightweight_SEO_Module_Registry */
 	protected $module_registry;
 
+	/** @var Lightweight_SEO_Abilities|null */
+	private $abilities = null;
+
 	/**
 	 * Define the core functionality of the plugin.
 	 *
@@ -192,7 +195,47 @@ class Lightweight_SEO {
 
 		$this->initialize_module_registry();
 
+		// WordPress 6.9 and later collect abilities when a client first asks for them; older sites never fire these.
+		add_action( 'wp_abilities_api_categories_init', array( $this, 'register_ability_category' ) );
+		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
+
 		do_action( 'lightweight_seo_loaded', $GLOBALS['lightweight_seo_api'] );
+	}
+
+	/**
+	 * Register the ability category of the plugin.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function register_ability_category() {
+		$this->get_abilities()->register_category();
+	}
+
+	/**
+	 * Register the abilities that read and fill the SEO fields of posts.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function register_abilities() {
+		$this->get_abilities()->register();
+	}
+
+	/**
+	 * Load the abilities only once WordPress collects them.
+	 *
+	 * @since    1.1.0
+	 * @return   Lightweight_SEO_Abilities
+	 */
+	private function get_abilities() {
+		if ( null === $this->abilities ) {
+			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-abilities.php';
+
+			$this->abilities = new Lightweight_SEO_Abilities( $this->post_meta, lightweight_seo_get_api() );
+		}
+
+		return $this->abilities;
 	}
 
 	/**
