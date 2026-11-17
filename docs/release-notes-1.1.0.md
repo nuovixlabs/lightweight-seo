@@ -1,8 +1,8 @@
 # Lightweight SEO 1.1 Release Notes
 
-Release candidate: `1.1.0-rc.2`
+Release candidate: `1.1.0-rc.3`
 
-`1.1.0-rc.1` was never published. This is the first 1.1 candidate available as a release package.
+`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package. This candidate adds the redesigned administration interface.
 
 ## Highlights
 
@@ -40,6 +40,22 @@ Security and robustness:
 - `Update URI` prevents an unrelated WordPress.org plugin with the same slug from being offered as an update.
 - The coding-standard gate now enforces output escaping, nonce verification, input sanitization, and the text domain.
 - SEOPress, The SEO Framework, and Slim SEO also trigger safe mode.
+
+## Administration interface since rc.2
+
+The settings screen and the editor panel are rebuilt on one small design system. No setting, option key, or saved value changes. See [Design System](design-system.md).
+
+- Settings are grouped into cards under a simpler header and tab bar, and the Save button stays in reach on long screens.
+- Each module is a collapsible card with an Active or Off badge. A card starts open only when its module is in use.
+- The overview gains an "At a glance" card with search visibility, SEO output, the sitemap link, and module status. Optional setup steps no longer count against setup progress.
+- Saving settings is confirmed with "Settings saved." The settings screen showed no confirmation before.
+- Local business details are labelled inputs instead of placeholder-only inputs.
+- AI readiness, redirect health, legacy data, and editor checks use one status-list style.
+- The editor panel adds length meters, click-to-insert title variables, and a count of checks that need attention.
+- Every control has a label or belongs to a named group, and titles and labels use sentence case.
+- The accent color follows the administration color scheme chosen in the user's profile.
+
+Administration CSS class names changed from `lightweight-seo-*` to `lwseo-*`. Custom administration styles that target the old names need updating.
 
 ## Experimental AI Discovery
 
