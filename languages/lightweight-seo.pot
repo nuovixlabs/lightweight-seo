@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T17:10:04+00:00\n"
+"POT-Creation-Date: 2026-11-17T18:07:39+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -149,7 +149,7 @@ msgid "The site title."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:171
-msgid "The site tagline."
+msgid "The site tagline. Left out when the site has none."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:172
@@ -177,7 +177,7 @@ msgid "What the variables mean"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:202
-msgid "A category, author, year, or page variable that has no value on a page is left out together with the separator beside it."
+msgid "A tagline, category, author, year, or page variable that has no value on a page is left out together with the separator beside it."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:216

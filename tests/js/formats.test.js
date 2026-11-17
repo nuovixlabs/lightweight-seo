@@ -204,8 +204,11 @@ test('variables are filled, and an empty optional one leaves with one separator'
 	// A variable with no entry at all is optional only when it is one of the four.
 	assert.equal(resolveTokens('%title% %sep% %author%', tokens), 'Hello world');
 	assert.equal(resolveTokens('%title% %sep% %unknown%', tokens), 'Hello world – %unknown%');
-	// The four earlier variables keep their place when empty, as on the server.
-	assert.equal(resolveTokens('%sitename% %sep% %tagline%', tokens), 'My Site – ');
+	// An empty tagline leaves with its separator, as on the server.
+	assert.equal(resolveTokens('%sitename% %sep% %tagline%', tokens), 'My Site');
+	assert.equal(resolveTokens('%sitename% %sep% %tagline%', Object.assign({}, tokens, {'%tagline%': 'Photographs'})), 'My Site – Photographs');
+	// A value of spaces only counts as empty.
+	assert.equal(resolveTokens('%sitename% %sep% %tagline%', Object.assign({}, tokens, {'%tagline%': '   '})), 'My Site');
 	assert.equal(resolveTokens(undefined, tokens), '');
 	assert.equal(resolveTokens('%title%', undefined), '%title%');
 	assert.equal(resolveTokens('%page% %sep% %title%', Object.assign({}, tokens, {'%page%': 'Page 2'})), 'Page 2 – Hello world');

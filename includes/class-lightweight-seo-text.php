@@ -19,8 +19,11 @@ final class Lightweight_SEO_Text {
 	/** Characters kept when a description is derived from content instead of written by an editor. */
 	const SUMMARY_LENGTH = 160;
 
-	/** Variables that often have no value, and then leave no trace: not themselves, and not a separator beside them. */
-	const OPTIONAL_TOKENS = array( '%page%', '%category%', '%author%', '%year%' );
+	/**
+	 * Variables that often have no value, and then leave no trace: not themselves, and not a separator beside them.
+	 * The tagline is one of them because WordPress installs with an empty one, and the default homepage format ends in it.
+	 */
+	const OPTIONAL_TOKENS = array( '%page%', '%category%', '%author%', '%year%', '%tagline%' );
 
 	/** What counts as a separator beside an empty variable: %sep%, or one of the characters it can become. */
 	const SEPARATOR_PATTERN = '(?:%sep%|[–—\\-|·•»\/])';
@@ -76,7 +79,7 @@ final class Lightweight_SEO_Text {
 		$template = (string) $template;
 
 		foreach ( self::OPTIONAL_TOKENS as $token ) {
-			if ( false !== strpos( $template, $token ) && '' === (string) ( $tokens[ $token ] ?? '' ) ) {
+			if ( false !== strpos( $template, $token ) && '' === trim( (string) ( $tokens[ $token ] ?? '' ) ) ) {
 				$template = self::remove_token( $template, $token );
 			}
 		}

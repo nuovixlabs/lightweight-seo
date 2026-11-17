@@ -342,7 +342,7 @@
 
 	// Variables that may have no value on a page, and what counts as a separator beside one.
 	// These mirror Lightweight_SEO_Text::OPTIONAL_TOKENS and SEPARATOR_PATTERN on the server.
-	var OPTIONAL_TOKENS = ['%page%', '%category%', '%author%', '%year%'];
+	var OPTIONAL_TOKENS = ['%page%', '%category%', '%author%', '%year%', '%tagline%'];
 	var SEPARATOR_PATTERN = '(?:%sep%|[–—\\-|·•»\\/])';
 
 	/**
@@ -360,7 +360,7 @@
 		tokens = tokens || {};
 
 		OPTIONAL_TOKENS.forEach(function(token) {
-			if (text.indexOf(token) !== -1 && !tokens[token]) {
+			if (text.indexOf(token) !== -1 && String(tokens[token] === undefined || tokens[token] === null ? '' : tokens[token]).trim() === '') {
 				text = text
 					.replace(new RegExp('\\s+' + SEPARATOR_PATTERN + '\\s+' + token, 'g'), '')
 					.replace(new RegExp(token + '\\s+' + SEPARATOR_PATTERN + '\\s+', 'g'), '')

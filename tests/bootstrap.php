@@ -408,7 +408,8 @@ if (!function_exists('get_bloginfo')) {
         }
 
         if ('description' === $show) {
-            return 'Test Tagline';
+            // A test can stand for a site without a tagline, which is how WordPress installs.
+            return $GLOBALS['lightweight_seo_test_tagline'] ?? 'Test Tagline';
         }
 
         if ('charset' === $show) {

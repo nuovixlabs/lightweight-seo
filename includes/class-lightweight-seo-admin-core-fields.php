@@ -168,7 +168,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 		return array(
 			'%title%'    => __( 'The title of the page, or the name of the term or author.', 'lightweight-seo' ),
 			'%sitename%' => __( 'The site title.', 'lightweight-seo' ),
-			'%tagline%'  => __( 'The site tagline.', 'lightweight-seo' ),
+			'%tagline%'  => __( 'The site tagline. Left out when the site has none.', 'lightweight-seo' ),
 			'%sep%'      => __( 'The title separator chosen below.', 'lightweight-seo' ),
 			'%category%' => __( 'The first category of a post, or the category of a category archive.', 'lightweight-seo' ),
 			'%author%'   => __( 'The author of a post, or the author of an author archive.', 'lightweight-seo' ),
@@ -199,7 +199,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 						</tbody>
 					</table>
 				</div>
-				<p class="lwseo-help"><?php esc_html_e( 'A category, author, year, or page variable that has no value on a page is left out together with the separator beside it.', 'lightweight-seo' ); ?></p>
+				<p class="lwseo-help"><?php esc_html_e( 'A tagline, category, author, year, or page variable that has no value on a page is left out together with the separator beside it.', 'lightweight-seo' ); ?></p>
 			</div>
 		</details>
 		<?php
