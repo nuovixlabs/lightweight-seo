@@ -121,150 +121,162 @@ class Lightweight_SEO_Meta_Boxes {
 			$social_image = $this->settings->get_social_image_url();
 		}
 
-		$checks = $this->get_editor_checks( $post, $post_meta, $preview_title, $preview_description, $social_image, $social_image_id );
-
+		$checks        = $this->get_editor_checks( $post, $post_meta, $preview_title, $preview_description, $social_image, $social_image_id );
+		$to_review     = count(
+			array_filter(
+				$checks,
+				static function ( $check ) {
+					return 'success' !== $check['status'];
+				}
+			)
+		);
+		$title_tokens  = array( '%title%', '%sitename%', '%tagline%', '%sep%' );
+		$robots_fields = array(
+			'noindex'   => array( $seo_noindex, __( 'Prevent search engines from indexing this page', 'lightweight-seo' ) ),
+			'nofollow'  => array( $seo_nofollow, __( 'Prevent search engines from following links on this page', 'lightweight-seo' ) ),
+			'noarchive' => array( $seo_noarchive, __( 'Prevent search engines from showing cached copies', 'lightweight-seo' ) ),
+			'nosnippet' => array( $seo_nosnippet, __( 'Prevent text snippets from showing in search results', 'lightweight-seo' ) ),
+		);
 		?>
-		<div class="lightweight-seo-meta-box" data-tokens="<?php echo esc_attr( wp_json_encode( $tokens ) ); ?>">
-			<div class="lightweight-seo-tabs">
-				<div class="lightweight-seo-tab-nav" role="tablist" aria-label="<?php echo esc_attr( __( 'SEO editor panels', 'lightweight-seo' ) ); ?>">
-					<button type="button" class="nav-tab nav-tab-active" role="tab" aria-selected="true" aria-controls="lightweight-seo-search-panel" id="lightweight-seo-search-tab" data-tab="search"><?php esc_html_e( 'Search appearance', 'lightweight-seo' ); ?></button>
-					<button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="lightweight-seo-social-panel" id="lightweight-seo-social-tab" data-tab="social" tabindex="-1"><?php esc_html_e( 'Social appearance', 'lightweight-seo' ); ?></button>
-					<button type="button" class="nav-tab" role="tab" aria-selected="false" aria-controls="lightweight-seo-checks-panel" id="lightweight-seo-checks-tab" data-tab="checks" tabindex="-1"><?php esc_html_e( 'Checks', 'lightweight-seo' ); ?></button>
+		<div class="lwseo lwseo-metabox" data-tokens="<?php echo esc_attr( wp_json_encode( $tokens ) ); ?>">
+			<div class="lwseo-tabs" role="tablist" aria-label="<?php echo esc_attr( __( 'SEO editor panels', 'lightweight-seo' ) ); ?>">
+				<button type="button" class="lwseo-tabs__tab is-active" role="tab" aria-selected="true" aria-controls="lightweight-seo-search-panel" id="lightweight-seo-search-tab"><?php esc_html_e( 'Search appearance', 'lightweight-seo' ); ?></button>
+				<button type="button" class="lwseo-tabs__tab" role="tab" aria-selected="false" aria-controls="lightweight-seo-social-panel" id="lightweight-seo-social-tab" tabindex="-1"><?php esc_html_e( 'Social appearance', 'lightweight-seo' ); ?></button>
+				<button type="button" class="lwseo-tabs__tab" role="tab" aria-selected="false" aria-controls="lightweight-seo-checks-panel" id="lightweight-seo-checks-tab" tabindex="-1">
+					<?php
+					esc_html_e( 'Checks', 'lightweight-seo' );
+
+					if ( $to_review ) {
+						/* translators: %d: number of on-page checks that need a review. */
+						$review_label = sprintf( _n( '%d check to review', '%d checks to review', $to_review, 'lightweight-seo' ), $to_review );
+
+						echo ' <span class="lwseo-badge is-warning"><span aria-hidden="true">' . esc_html( (string) $to_review ) . '</span><span class="screen-reader-text">' . esc_html( $review_label ) . '</span></span>';
+					}
+					?>
+				</button>
+			</div>
+			<div class="lwseo-panel" id="lightweight-seo-search-panel" role="tabpanel" aria-labelledby="lightweight-seo-search-tab">
+				<p class="lwseo-preview__caption"><?php esc_html_e( 'Search result preview', 'lightweight-seo' ); ?></p>
+				<div class="lwseo-preview lwseo-preview--search" aria-live="polite">
+					<div class="lwseo-preview__body">
+						<p class="lwseo-preview__url"><?php echo esc_html( $preview_url ); ?></p>
+						<p class="lwseo-preview__title" data-preview="title"><?php echo esc_html( $preview_title ); ?></p>
+						<p class="lwseo-preview__description" data-preview="description"><?php echo esc_html( $preview_description ); ?></p>
+					</div>
 				</div>
-				<div class="lightweight-seo-tab-content">
-					<div class="tab-content active" id="lightweight-seo-search-panel" role="tabpanel" aria-labelledby="lightweight-seo-search-tab" data-panel="search">
-						<div class="lightweight-seo-search-preview" aria-live="polite">
-							<p class="lightweight-seo-preview-url"><?php echo esc_html( $preview_url ); ?></p>
-							<p class="lightweight-seo-preview-title"><?php echo esc_html( $preview_title ); ?></p>
-							<p class="lightweight-seo-preview-description"><?php echo esc_html( $preview_description ); ?></p>
-						</div>
-						<table class="form-table">
-							<tr>
-								<th scope="row">
-									<label for="lightweight_seo_title"><?php esc_html_e( 'SEO Title', 'lightweight-seo' ); ?></label>
-								</th>
-								<td>
-									<input type="text" id="lightweight_seo_title" name="lightweight_seo_title" value="<?php echo esc_attr( $seo_title ); ?>" class="large-text" data-fallback="<?php echo esc_attr( $current_title ); ?>" aria-describedby="lightweight-seo-title-guidance">
-									<p class="description" id="lightweight-seo-title-guidance"><span data-count-for="lightweight_seo_title"><?php echo esc_html( (string) Lightweight_SEO_Text::length( $preview_title ) ); ?></span> <?php esc_html_e( 'characters. Aim for a clear, specific title; roughly 30–60 characters is useful preview guidance, not a ranking rule.', 'lightweight-seo' ); ?></p>
-									<p class="description">
-										<?php
-										printf(
-											/* translators: %s: list of supported title variables. */
-											esc_html__( 'These variables are replaced on the page: %s', 'lightweight-seo' ),
-											'<code>%title%</code> <code>%sitename%</code> <code>%tagline%</code> <code>%sep%</code>'
-										);
-										?>
-									</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="lightweight_seo_description"><?php esc_html_e( 'Meta Description', 'lightweight-seo' ); ?></label>
-								</th>
-								<td>
-									<textarea id="lightweight_seo_description" name="lightweight_seo_description" rows="3" class="large-text" data-fallback="<?php echo esc_attr( $fallback_description ); ?>" aria-describedby="lightweight-seo-description-guidance"><?php echo esc_textarea( $seo_description ); ?></textarea>
-									<p class="description" id="lightweight-seo-description-guidance"><span data-count-for="lightweight_seo_description"><?php echo esc_html( (string) Lightweight_SEO_Text::length( $preview_description ) ); ?></span> <?php esc_html_e( 'characters. Roughly 120–160 characters often fits a search preview, but clarity matters more than hitting a number.', 'lightweight-seo' ); ?></p>
-								</td>
-							</tr>
-						</table>
-						<details class="lightweight-seo-advanced">
-							<summary><?php esc_html_e( 'Advanced canonical and robots controls', 'lightweight-seo' ); ?></summary>
-							<p><label for="lightweight_seo_canonical_url"><strong><?php esc_html_e( 'Canonical URL', 'lightweight-seo' ); ?></strong></label><br><input type="url" id="lightweight_seo_canonical_url" name="lightweight_seo_canonical_url" value="<?php echo esc_url( $seo_canonical_url ); ?>" class="large-text"><br><span class="description"><?php esc_html_e( 'Leave empty to use this page’s permalink.', 'lightweight-seo' ); ?></span></p>
-							<fieldset><legend class="screen-reader-text"><?php esc_html_e( 'Robots directives', 'lightweight-seo' ); ?></legend>
-								<label><input type="checkbox" id="lightweight_seo_noindex" name="lightweight_seo_noindex" value="1" <?php checked( $seo_noindex, '1' ); ?>> <?php esc_html_e( 'Prevent search engines from indexing this page', 'lightweight-seo' ); ?></label><br>
-									<label>
-										<input type="checkbox" name="lightweight_seo_nofollow" value="1" <?php checked( $seo_nofollow, '1' ); ?>>
-										<?php esc_html_e( 'Prevent search engines from following links on this page', 'lightweight-seo' ); ?>
-									</label>
-									<br>
-									<label>
-										<input type="checkbox" name="lightweight_seo_noarchive" value="1" <?php checked( $seo_noarchive, '1' ); ?>>
-										<?php esc_html_e( 'Prevent search engines from showing cached copies', 'lightweight-seo' ); ?>
-									</label>
-									<br>
-									<label>
-										<input type="checkbox" name="lightweight_seo_nosnippet" value="1" <?php checked( $seo_nosnippet, '1' ); ?>>
-										<?php esc_html_e( 'Prevent text snippets from showing in search results', 'lightweight-seo' ); ?>
-									</label>
-									<p class="description">
-										<label for="lightweight_seo_max_image_preview"><?php esc_html_e( 'Max Image Preview', 'lightweight-seo' ); ?></label><br>
-										<select id="lightweight_seo_max_image_preview" name="lightweight_seo_max_image_preview">
-											<option value="" <?php selected( $seo_max_image_preview, '' ); ?>><?php esc_html_e( 'Use global default', 'lightweight-seo' ); ?></option>
-											<option value="large" <?php selected( $seo_max_image_preview, 'large' ); ?>><?php esc_html_e( 'Large', 'lightweight-seo' ); ?></option>
-											<option value="standard" <?php selected( $seo_max_image_preview, 'standard' ); ?>><?php esc_html_e( 'Standard', 'lightweight-seo' ); ?></option>
-											<option value="none" <?php selected( $seo_max_image_preview, 'none' ); ?>><?php esc_html_e( 'None', 'lightweight-seo' ); ?></option>
-										</select>
-									</p>
-							</fieldset>
-						</details>
+				<div class="lwseo-field lwseo-field--stacked">
+					<label class="lwseo-field__label" for="lightweight_seo_title"><?php esc_html_e( 'SEO title', 'lightweight-seo' ); ?></label>
+					<div class="lwseo-field__control">
+						<input type="text" id="lightweight_seo_title" name="lightweight_seo_title" value="<?php echo esc_attr( $seo_title ); ?>" class="large-text" data-fallback="<?php echo esc_attr( $current_title ); ?>" aria-describedby="lightweight-seo-title-guidance" data-lwseo-tokens>
+						<div class="lwseo-meter" data-meter-for="lightweight_seo_title" data-min="30" data-max="60" aria-hidden="true"><span class="lwseo-meter__bar"></span></div>
+						<p class="lwseo-help" id="lightweight-seo-title-guidance"><span data-count-for="lightweight_seo_title"><?php echo esc_html( (string) Lightweight_SEO_Text::length( $preview_title ) ); ?></span> <?php esc_html_e( 'characters. Aim for a clear, specific title; roughly 30–60 characters is useful preview guidance, not a ranking rule.', 'lightweight-seo' ); ?></p>
+						<?php Lightweight_SEO_Admin_UI::tokens( $title_tokens ); ?>
 					</div>
-					<div class="tab-content" id="lightweight-seo-social-panel" role="tabpanel" aria-labelledby="lightweight-seo-social-tab" data-panel="social" hidden>
-						<div class="lightweight-seo-social-preview" aria-live="polite">
-							<?php
-							if ( $social_image ) :
-								?>
-								<img src="<?php echo esc_url( $social_image ); ?>" alt=""><?php endif; ?>
-							<div><p class="lightweight-seo-social-site"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></p><p class="lightweight-seo-social-title-preview"><?php echo esc_html( $social_preview_title ); ?></p><p class="lightweight-seo-social-description-preview"><?php echo esc_html( $social_preview_desc ); ?></p></div>
-						</div>
-						<table class="form-table">
-							<tr>
-								<th scope="row">
-									<label for="lightweight_seo_social_title"><?php esc_html_e( 'Social Title', 'lightweight-seo' ); ?></label>
-								</th>
-								<td>
-									<input type="text" id="lightweight_seo_social_title" name="lightweight_seo_social_title" value="<?php echo esc_attr( $social_title ); ?>" class="large-text" data-fallback="<?php echo esc_attr( $preview_title ); ?>">
-									<p class="description">
-										<?php esc_html_e( 'Title used when shared on social media. If empty, the SEO title or post title will be used.', 'lightweight-seo' ); ?>
-									</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="lightweight_seo_social_description"><?php esc_html_e( 'Social Description', 'lightweight-seo' ); ?></label>
-								</th>
-								<td>
-									<textarea id="lightweight_seo_social_description" name="lightweight_seo_social_description" rows="3" class="large-text" data-fallback="<?php echo esc_attr( $preview_description ); ?>"><?php echo esc_textarea( $social_description ); ?></textarea>
-									<p class="description">
-										<?php esc_html_e( 'Description used when shared on social media. If empty, the Meta Description will be used.', 'lightweight-seo' ); ?>
-									</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="lightweight_seo_social_image"><?php esc_html_e( 'Social Image', 'lightweight-seo' ); ?></label>
-								</th>
-								<td>
-									<div class="lightweight-seo-image-field">
-										<input type="hidden" id="lightweight_seo_social_image_id" name="lightweight_seo_social_image_id" value="<?php echo esc_attr( $social_image_id ); ?>" class="lightweight-seo-image-id">
-										<input type="text" id="lightweight_seo_social_image" name="lightweight_seo_social_image" value="<?php echo esc_url( $social_image ); ?>" class="large-text lightweight-seo-image-url">
-										<button type="button" class="button button-secondary lightweight-seo-upload-image"><?php esc_html_e( 'Upload Image', 'lightweight-seo' ); ?></button>
-										<?php if ( ! empty( $social_image ) ) : ?>
-											<div class="lightweight-seo-image-preview">
-												<img src="<?php echo esc_url( $social_image ); ?>" alt="<?php echo esc_attr( __( 'Selected social image', 'lightweight-seo' ) ); ?>">
-											</div>
-										<?php endif; ?>
-									</div>
-									<p class="description">
-										<?php esc_html_e( 'Image used when shared on social media. Recommended size: 1200x630px.', 'lightweight-seo' ); ?>
-									</p>
-								</td>
-							</tr>
-						</table>
+				</div>
+				<div class="lwseo-field lwseo-field--stacked">
+					<label class="lwseo-field__label" for="lightweight_seo_description"><?php esc_html_e( 'Meta description', 'lightweight-seo' ); ?></label>
+					<div class="lwseo-field__control">
+						<textarea id="lightweight_seo_description" name="lightweight_seo_description" rows="3" class="large-text" data-fallback="<?php echo esc_attr( $fallback_description ); ?>" aria-describedby="lightweight-seo-description-guidance"><?php echo esc_textarea( $seo_description ); ?></textarea>
+						<div class="lwseo-meter" data-meter-for="lightweight_seo_description" data-min="120" data-max="160" aria-hidden="true"><span class="lwseo-meter__bar"></span></div>
+						<p class="lwseo-help" id="lightweight-seo-description-guidance"><span data-count-for="lightweight_seo_description"><?php echo esc_html( (string) Lightweight_SEO_Text::length( $preview_description ) ); ?></span> <?php esc_html_e( 'characters. Roughly 120–160 characters often fits a search preview, but clarity matters more than hitting a number.', 'lightweight-seo' ); ?></p>
 					</div>
-					<div class="tab-content" id="lightweight-seo-checks-panel" role="tabpanel" aria-labelledby="lightweight-seo-checks-tab" data-panel="checks" hidden>
-						<h3><?php esc_html_e( 'On-page checks', 'lightweight-seo' ); ?></h3>
-						<p><?php esc_html_e( 'These checks report facts and preview guidance only. They do not predict rankings.', 'lightweight-seo' ); ?></p>
-						<ul class="lightweight-seo-checks">
-							<?php foreach ( $checks as $check ) : ?>
-								<li class="is-<?php echo esc_attr( $check['status'] ); ?>"><span class="dashicons <?php echo esc_attr( 'success' === $check['status'] ? 'dashicons-yes-alt' : 'dashicons-warning' ); ?>" aria-hidden="true"></span><div><strong><?php echo esc_html( $check['label'] ); ?></strong><p><?php echo esc_html( $check['message'] ); ?>
+				</div>
+				<details class="lwseo-details">
+					<summary><?php esc_html_e( 'Advanced canonical and robots controls', 'lightweight-seo' ); ?></summary>
+					<div class="lwseo-details__body">
+						<div class="lwseo-field lwseo-field--stacked">
+							<label class="lwseo-field__label" for="lightweight_seo_canonical_url"><?php esc_html_e( 'Canonical URL', 'lightweight-seo' ); ?></label>
+							<div class="lwseo-field__control">
+								<input type="url" id="lightweight_seo_canonical_url" name="lightweight_seo_canonical_url" value="<?php echo esc_url( $seo_canonical_url ); ?>" class="large-text">
+								<p class="lwseo-help"><?php esc_html_e( 'Leave empty to use this page’s permalink.', 'lightweight-seo' ); ?></p>
+							</div>
+						</div>
+						<fieldset class="lwseo-field lwseo-field--stacked">
+							<legend class="lwseo-field__label"><?php esc_html_e( 'Robots directives', 'lightweight-seo' ); ?></legend>
+							<div class="lwseo-field__control lwseo-choices">
 								<?php
-								if ( ! empty( $check['target'] ) ) :
-									?>
-									<a href="<?php echo esc_attr( $check['target'] ); ?>"><?php esc_html_e( 'Edit', 'lightweight-seo' ); ?></a><?php endif; ?></p></div></li>
-							<?php endforeach; ?>
-						</ul>
+								foreach ( $robots_fields as $directive => $robots_field ) {
+									Lightweight_SEO_Admin_UI::choice( 'lightweight_seo_' . $directive, '1' === (string) $robots_field[0], $robots_field[1], '', 'lightweight_seo_' . $directive );
+								}
+								?>
+							</div>
+						</fieldset>
+						<div class="lwseo-field lwseo-field--stacked">
+							<label class="lwseo-field__label" for="lightweight_seo_max_image_preview"><?php esc_html_e( 'Max image preview', 'lightweight-seo' ); ?></label>
+							<div class="lwseo-field__control">
+								<select id="lightweight_seo_max_image_preview" name="lightweight_seo_max_image_preview">
+									<option value="" <?php selected( $seo_max_image_preview, '' ); ?>><?php esc_html_e( 'Use global default', 'lightweight-seo' ); ?></option>
+									<option value="large" <?php selected( $seo_max_image_preview, 'large' ); ?>><?php esc_html_e( 'Large', 'lightweight-seo' ); ?></option>
+									<option value="standard" <?php selected( $seo_max_image_preview, 'standard' ); ?>><?php esc_html_e( 'Standard', 'lightweight-seo' ); ?></option>
+									<option value="none" <?php selected( $seo_max_image_preview, 'none' ); ?>><?php esc_html_e( 'None', 'lightweight-seo' ); ?></option>
+								</select>
+							</div>
+						</div>
+					</div>
+				</details>
+			</div>
+			<div class="lwseo-panel" id="lightweight-seo-social-panel" role="tabpanel" aria-labelledby="lightweight-seo-social-tab" hidden>
+				<p class="lwseo-preview__caption"><?php esc_html_e( 'Share preview', 'lightweight-seo' ); ?></p>
+				<div class="lwseo-preview lwseo-preview--social" aria-live="polite">
+					<div class="lwseo-preview__media">
+						<?php if ( $social_image ) : ?>
+							<img src="<?php echo esc_url( $social_image ); ?>" alt="">
+						<?php endif; ?>
+					</div>
+					<div class="lwseo-preview__body">
+						<p class="lwseo-preview__site"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></p>
+						<p class="lwseo-preview__title" data-preview="social-title"><?php echo esc_html( $social_preview_title ); ?></p>
+						<p class="lwseo-preview__description" data-preview="social-description"><?php echo esc_html( $social_preview_desc ); ?></p>
 					</div>
 				</div>
+				<div class="lwseo-field lwseo-field--stacked">
+					<label class="lwseo-field__label" for="lightweight_seo_social_title"><?php esc_html_e( 'Social title', 'lightweight-seo' ); ?></label>
+					<div class="lwseo-field__control">
+						<input type="text" id="lightweight_seo_social_title" name="lightweight_seo_social_title" value="<?php echo esc_attr( $social_title ); ?>" class="large-text" data-fallback="<?php echo esc_attr( $preview_title ); ?>">
+						<p class="lwseo-help"><?php esc_html_e( 'Title used when shared on social media. If empty, the SEO title or post title will be used.', 'lightweight-seo' ); ?></p>
+					</div>
+				</div>
+				<div class="lwseo-field lwseo-field--stacked">
+					<label class="lwseo-field__label" for="lightweight_seo_social_description"><?php esc_html_e( 'Social description', 'lightweight-seo' ); ?></label>
+					<div class="lwseo-field__control">
+						<textarea id="lightweight_seo_social_description" name="lightweight_seo_social_description" rows="3" class="large-text" data-fallback="<?php echo esc_attr( $preview_description ); ?>"><?php echo esc_textarea( $social_description ); ?></textarea>
+						<p class="lwseo-help"><?php esc_html_e( 'Description used when shared on social media. If empty, the Meta Description will be used.', 'lightweight-seo' ); ?></p>
+					</div>
+				</div>
+				<div class="lwseo-field lwseo-field--stacked">
+					<label class="lwseo-field__label" for="lightweight_seo_social_image"><?php esc_html_e( 'Social image', 'lightweight-seo' ); ?></label>
+					<div class="lwseo-field__control">
+						<?php
+						Lightweight_SEO_Admin_UI::image_field(
+							array(
+								'url'      => $social_image,
+								'id'       => $social_image_id,
+								'url_name' => 'lightweight_seo_social_image',
+								'id_name'  => 'lightweight_seo_social_image_id',
+								'url_id'   => 'lightweight_seo_social_image',
+								'id_id'    => 'lightweight_seo_social_image_id',
+								'alt'      => __( 'Selected social image', 'lightweight-seo' ),
+							)
+						);
+						?>
+						<p class="lwseo-help"><?php esc_html_e( 'Image used when shared on social media. Recommended size: 1200x630px.', 'lightweight-seo' ); ?></p>
+					</div>
+				</div>
+			</div>
+			<div class="lwseo-panel" id="lightweight-seo-checks-panel" role="tabpanel" aria-labelledby="lightweight-seo-checks-tab" hidden>
+				<p class="lwseo-help"><?php esc_html_e( 'These checks report facts and preview guidance only. They do not predict rankings.', 'lightweight-seo' ); ?></p>
+				<ul class="lwseo-status-list lwseo-checks">
+					<?php
+					foreach ( $checks as $check ) {
+						$action = empty( $check['target'] ) ? array() : array(
+							'label' => __( 'Edit', 'lightweight-seo' ),
+							'url'   => $check['target'],
+						);
+
+						Lightweight_SEO_Admin_UI::status( $check['status'], $check['label'], $check['message'], $action );
+					}
+					?>
+				</ul>
 			</div>
 		</div>
 		<?php

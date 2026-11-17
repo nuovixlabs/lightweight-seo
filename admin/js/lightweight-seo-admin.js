@@ -1,18 +1,21 @@
 /**
- * Lightweight SEO Admin JavaScript
+ * Lightweight SEO admin behavior.
+ *
+ * Every block enhances markup that already works without it. Component names
+ * match admin/css/lightweight-seo-admin.css and docs/design-system.md.
  */
 (function($) {
-    'use strict';
+	'use strict';
 
-    // Document ready
-    $(document).ready(function() {
-        var seoAdminStrings = window.lightweightSeoAdmin || {};
-        var mediaTitle = seoAdminStrings.mediaTitle || 'Select or Upload Image';
-        var mediaButton = seoAdminStrings.mediaButton || 'Use this image';
-        var previewAlt = seoAdminStrings.previewAlt || 'Preview';
+	$(function() {
+		var strings = window.lightweightSeoAdmin || {};
+		var mediaTitle = strings.mediaTitle || 'Select or Upload Image';
+		var mediaButton = strings.mediaButton || 'Use this image';
+
+		/* Setup checklist ---------------------------------------------------- */
 
 		// Storage can be unavailable (private browsing, blocked site data), so never let it break the screen.
-		function readDismissedChecklist() {
+		function isChecklistDismissed() {
 			try {
 				return window.localStorage.getItem('lightweightSeoChecklistDismissed') === '1';
 			} catch (error) {
@@ -20,8 +23,8 @@
 			}
 		}
 
-		$('.lightweight-seo-dismiss-checklist').on('click', function() {
-			$('.lightweight-seo-setup').attr('hidden', true);
+		$('.lwseo-setup__dismiss').on('click', function() {
+			$('.lwseo-setup').attr('hidden', true);
 
 			try {
 				window.localStorage.setItem('lightweightSeoChecklistDismissed', '1');
@@ -30,132 +33,148 @@
 			}
 		});
 
-		if (readDismissedChecklist()) {
-			$('.lightweight-seo-setup').attr('hidden', true);
+		if (isChecklistDismissed()) {
+			$('.lwseo-setup').attr('hidden', true);
 		}
 
-		// Build previews as DOM nodes so URLs and translated text are never parsed as markup.
-		function buildImagePreview(url, maxWidth) {
-			return $('<div>', {'class': 'lightweight-seo-image-preview'}).append(
-				$('<img>', {src: url, alt: previewAlt}).css({maxWidth: maxWidth, marginTop: '10px'})
-			);
+		/* Module cards ------------------------------------------------------- */
+
+		// A link to a collapsed module opens it, so the reader lands on its settings.
+		function openLinkedCard() {
+			var card = window.location.hash ? document.getElementById(window.location.hash.slice(1)) : null;
+
+			if (card && card.tagName === 'DETAILS') {
+				card.open = true;
+				card.scrollIntoView({block: 'start'});
+			}
 		}
+
+		openLinkedCard();
+		$(window).on('hashchange', openLinkedCard);
+
+		/* Redirect table search ---------------------------------------------- */
 
 		$('#lightweight-seo-redirect-search').on('input', function() {
 			var query = $.trim($(this).val()).toLowerCase();
 
-			$('.lightweight-seo-redirect-table tbody tr').each(function() {
+			$('.lwseo-redirect-table tbody tr').each(function() {
 				$(this).toggle(!query || $(this).text().toLowerCase().indexOf(query) !== -1);
 			});
 		});
 
-        // Media uploader for social image
-        var mediaUploader;
+		/* Title variables ---------------------------------------------------- */
 
-        // Handle upload image button click for global settings
-        $('#lightweight_seo_upload_image').on('click', function(e) {
-            e.preventDefault();
-            
-            // If the media uploader already exists, open it
-            if (mediaUploader) {
-                mediaUploader.open();
-                return;
-            }
-            
-            // Create the media uploader
-            mediaUploader = wp.media({
-                title: mediaTitle,
-                button: {
-                    text: mediaButton
-                },
-                multiple: false
-            });
-            
-            // When an image is selected, run a callback
-            mediaUploader.on('select', function() {
-                var attachment = mediaUploader.state().get('selection').first().toJSON();
-                $('#lightweight_seo_social_image').val(attachment.url);
-                $('#lightweight_seo_social_image_id').val(attachment.id);
-                
-                // Add or update preview
-                var preview = $('.lightweight-seo-image-preview');
-                if (preview.length === 0) {
-                    $('.lightweight-seo-image-field').append(buildImagePreview(attachment.url, '200px'));
-                } else {
-                    preview.find('img').attr('src', attachment.url);
-                }
-            });
-            
-            // Open the uploader
-            mediaUploader.open();
-        });
-        
-        // Handle upload image button clicks for meta boxes
-        $('.lightweight-seo-upload-image').on('click', function(e) {
-            e.preventDefault();
-            
-            var button = $(this);
-            var fieldContainer = button.parent();
-            var imageField = fieldContainer.find('.lightweight-seo-image-url');
-            var imageIdField = fieldContainer.find('.lightweight-seo-image-id');
-            
-            // Create a new media uploader instance
-            var metaUploader = wp.media({
-                title: mediaTitle,
-                button: {
-                    text: mediaButton
-                },
-                multiple: false
-            });
-            
-            // When an image is selected, run a callback
-            metaUploader.on('select', function() {
-                var attachment = metaUploader.state().get('selection').first().toJSON();
-                imageField.val(attachment.url);
-                imageIdField.val(attachment.id);
-                
-                // Add or update preview
-                var previewContainer = fieldContainer.find('.lightweight-seo-image-preview');
-                if (previewContainer.length === 0) {
-                    fieldContainer.append(buildImagePreview(attachment.url, '300px'));
-                } else {
-                    previewContainer.find('img').attr('src', attachment.url);
-                }
-                var socialPreviewImage = $('.lightweight-seo-social-preview img');
+		var lastTokenField = null;
 
-                if (!socialPreviewImage.length) {
-                    socialPreviewImage = $('<img>', {alt: ''}).prependTo('.lightweight-seo-social-preview');
-                }
+		$(document).on('focusin', '[data-lwseo-tokens]', function() {
+			lastTokenField = this;
+		});
 
-                socialPreviewImage.attr('src', attachment.url);
-            });
-            
-            // Open the uploader
-            metaUploader.open();
-        });
+		$('.lwseo-token').on('mousedown', function(event) {
+			// Keep the caret in the field being edited while the variable is clicked.
+			event.preventDefault();
+		}).on('click', function() {
+			var scope = $(this).closest('.lwseo-card, .lwseo-metabox');
+			var wasEdited = lastTokenField && $.contains(scope[0], lastTokenField);
+			var field = wasEdited ? lastTokenField : scope.find('[data-lwseo-tokens]')[0];
+			var token = $(this).data('token');
 
-        // Clear attachment IDs when image URLs are manually edited
-        $('.lightweight-seo-image-url').on('input', function() {
-            $(this).siblings('.lightweight-seo-image-id').val('');
-        });
-        
-        // Meta box tabs
-		function activateTab(tab) {
-            var tabId = tab.data('tab');
-			var tabs = tab.closest('.lightweight-seo-tabs').find('[role="tab"]');
-            var panels = tab.closest('.lightweight-seo-tabs').find('[role="tabpanel"]');
+			if (!field) {
+				return;
+			}
 
-            tabs.removeClass('nav-tab-active').attr({'aria-selected': 'false', 'tabindex': '-1'});
-            panels.removeClass('active').attr('hidden', true);
-            tab.addClass('nav-tab-active').attr({'aria-selected': 'true', 'tabindex': '0'}).focus();
-            panels.filter('[data-panel="' + tabId + '"]').addClass('active').removeAttr('hidden');
+			// Insert at the caret. A field that was never edited has no caret yet, so append instead.
+			var start = wasEdited ? field.selectionStart : field.value.length;
+			var end = wasEdited ? field.selectionEnd : field.value.length;
+
+			field.value = field.value.slice(0, start) + token + field.value.slice(end);
+			field.focus();
+			field.setSelectionRange(start + token.length, start + token.length);
+			$(field).trigger('input');
+		});
+
+		/* Image field -------------------------------------------------------- */
+
+		// Build previews as DOM nodes so URLs and translated text are never parsed as markup.
+		function showImage(field, url) {
+			var preview = field.find('.lwseo-image__preview');
+			var image = preview.find('img');
+
+			if (!url) {
+				preview.attr('hidden', true);
+				return;
+			}
+
+			if (!image.length) {
+				image = $('<img>', {alt: preview.data('alt') || ''}).appendTo(preview);
+			}
+
+			image.attr('src', url);
+			preview.removeAttr('hidden');
+
+			// The editor's share preview mirrors the chosen image.
+			var media = field.closest('.lwseo-metabox').find('.lwseo-preview__media');
+			var shared = media.find('img');
+
+			if (media.length && !shared.length) {
+				shared = $('<img>', {alt: ''}).appendTo(media);
+			}
+
+			shared.attr('src', url);
 		}
 
-        $('.lightweight-seo-tab-nav [role="tab"]').on('click', function() {
-			activateTab($(this));
-        });
+		$('.lwseo-image__choose').on('click', function(event) {
+			event.preventDefault();
 
-		$('.lightweight-seo-tab-nav [role="tab"]').on('keydown', function(event) {
+			var field = $(this).closest('.lwseo-image');
+			var frame = field.data('frame');
+
+			if (!frame) {
+				frame = wp.media({
+					title: mediaTitle,
+					button: {text: mediaButton},
+					multiple: false
+				});
+
+				frame.on('select', function() {
+					var attachment = frame.state().get('selection').first().toJSON();
+
+					field.find('.lwseo-image__url').val(attachment.url);
+					field.find('.lwseo-image__id').val(attachment.id);
+					showImage(field, attachment.url);
+				});
+
+				field.data('frame', frame);
+			}
+
+			frame.open();
+		});
+
+		// A hand-edited URL no longer belongs to the previously chosen attachment.
+		$('.lwseo-image__url').on('input', function() {
+			$(this).closest('.lwseo-image').find('.lwseo-image__id').val('');
+		}).on('change', function() {
+			showImage($(this).closest('.lwseo-image'), $.trim($(this).val()));
+		});
+
+		/* Editor tabs -------------------------------------------------------- */
+
+		function activateTab(tab) {
+			var tabs = tab.closest('[role="tablist"]').find('[role="tab"]');
+
+			tabs.each(function() {
+				var isActive = this === tab[0];
+
+				$(this).toggleClass('is-active', isActive).attr({'aria-selected': isActive ? 'true' : 'false', 'tabindex': isActive ? '0' : '-1'});
+				$('#' + $(this).attr('aria-controls')).attr('hidden', !isActive);
+			});
+
+			tab.trigger('focus');
+		}
+
+		$('.lwseo-tabs [role="tab"]').on('click', function() {
+			activateTab($(this));
+		}).on('keydown', function(event) {
 			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
 				return;
 			}
@@ -166,7 +185,8 @@
 			activateTab(tabs.eq((index + tabs.length) % tabs.length));
 		});
 
-		$('.lightweight-seo-checks a[href^="#"]').on('click', function(event) {
+		// A check's "Edit" link opens the panel that holds its field, then focuses the field.
+		$('.lwseo-checks a[href^="#"]').on('click', function(event) {
 			var target = $(this.hash);
 
 			if (!target.length) {
@@ -174,13 +194,15 @@
 			}
 
 			event.preventDefault();
-			var panel = target.closest('[role="tabpanel"]');
-			activateTab($('#' + panel.attr('aria-labelledby')));
+			activateTab($('#' + target.closest('[role="tabpanel"]').attr('aria-labelledby')));
 			target.closest('details').attr('open', true);
 			target.trigger('focus');
 		});
 
-		var previewTokens = $('.lightweight-seo-meta-box').data('tokens') || {};
+		/* Editor previews ---------------------------------------------------- */
+
+		var metabox = $('.lwseo-metabox');
+		var previewTokens = metabox.data('tokens') || {};
 
 		// Mirror the server: %title%, %sitename%, %tagline%, and %sep% are replaced in custom values.
 		function resolveTokens(text) {
@@ -198,22 +220,35 @@
 			return value ? resolveTokens(value) : (field.data('fallback') || '');
 		}
 
+		// Count characters (code points), matching the server-side guidance for non-Latin text.
+		function updateLength(fieldId, text) {
+			var length = Array.from(String(text)).length;
+			var meter = $('[data-meter-for="' + fieldId + '"]');
+			var max = Number(meter.data('max'));
+
+			$('[data-count-for="' + fieldId + '"]').text(length);
+			meter.toggleClass('is-in-range', length >= Number(meter.data('min')) && length <= max);
+			// The guidance range ends at 80% of the track, leaving room to show an overrun.
+			meter.find('.lwseo-meter__bar').css('width', Math.min(100, (length / max) * 80) + '%');
+		}
+
 		function updateEditorPreviews() {
 			var title = fieldValue('#lightweight_seo_title');
 			var description = fieldValue('#lightweight_seo_description');
-			var socialTitle = resolveTokens($.trim($('#lightweight_seo_social_title').val())) || title;
-			var socialDescription = resolveTokens($.trim($('#lightweight_seo_social_description').val())) || description;
 
-			$('.lightweight-seo-preview-title').text(title);
-			$('.lightweight-seo-preview-description').text(description);
-			$('.lightweight-seo-social-title-preview').text(socialTitle);
-			$('.lightweight-seo-social-description-preview').text(socialDescription);
-			// Count characters (code points), matching the server-side guidance for non-Latin text.
-			$('[data-count-for="lightweight_seo_title"]').text(Array.from(String(title)).length);
-			$('[data-count-for="lightweight_seo_description"]').text(Array.from(String(description)).length);
+			metabox.find('[data-preview="title"]').text(title);
+			metabox.find('[data-preview="description"]').text(description);
+			metabox.find('[data-preview="social-title"]').text(resolveTokens($.trim($('#lightweight_seo_social_title').val())) || title);
+			metabox.find('[data-preview="social-description"]').text(resolveTokens($.trim($('#lightweight_seo_social_description').val())) || description);
+			updateLength('lightweight_seo_title', title);
+			updateLength('lightweight_seo_description', description);
 		}
 
-		$('#lightweight_seo_title, #lightweight_seo_description, #lightweight_seo_social_title, #lightweight_seo_social_description').on('input', updateEditorPreviews);
-    });
+		if (metabox.length) {
+			$('#lightweight_seo_title, #lightweight_seo_description, #lightweight_seo_social_title, #lightweight_seo_social_description').on('input', updateEditorPreviews);
+			updateLength('lightweight_seo_title', metabox.find('[data-preview="title"]').text());
+			updateLength('lightweight_seo_description', metabox.find('[data-preview="description"]').text());
+		}
+	});
 
 })(jQuery);

@@ -95,8 +95,11 @@ class Lightweight_SEO_Admin_Settings {
 			add_settings_section( $section_id, $section['title'], $section['callback'], $this->plugin_name );
 
 			foreach ( $section['fields'] as $field_id => $field ) {
+				// A field with one control names it, so the settings page can print a real label for it.
+				$args = empty( $field[2] ) ? array() : array( 'label_for' => 'lightweight_seo_' . $field_id );
+
 				// Every field is rendered by the "{field_id}_render" method of its renderer.
-				add_settings_field( $field_id, $field[0], array( $field[1], $field_id . '_render' ), $this->plugin_name, $section_id );
+				add_settings_field( $field_id, $field[0], array( $field[1], $field_id . '_render' ), $this->plugin_name, $section_id, $args );
 			}
 		}
 	}
@@ -104,7 +107,8 @@ class Lightweight_SEO_Admin_Settings {
 	/**
 	 * Describe every settings section and its fields in display order.
 	 *
-	 * Each field maps to its label and the renderer that owns it.
+	 * Each field maps to its label and the renderer that owns it. A third value of
+	 * true marks a field with a single control whose ID is "lightweight_seo_{field_id}".
 	 *
 	 * @since    1.1.0
 	 * @return   array
@@ -116,92 +120,92 @@ class Lightweight_SEO_Admin_Settings {
 
 		return array(
 			'lightweight_seo_general_section'      => array(
-				'title'    => __( 'Global SEO Settings', 'lightweight-seo' ),
+				'title'    => __( 'Global SEO settings', 'lightweight-seo' ),
 				'callback' => array( $core, 'general_section_callback' ),
 				'fields'   => array(
-					'title_format'         => array( __( 'Default Title Format', 'lightweight-seo' ), $core ),
-					'home_title_format'    => array( __( 'Home Title Format', 'lightweight-seo' ), $core ),
-					'archive_title_format' => array( __( 'Archive Title Format', 'lightweight-seo' ), $core ),
-					'search_title_format'  => array( __( 'Search Title Format', 'lightweight-seo' ), $core ),
-					'meta_description'     => array( __( 'Homepage Meta Description', 'lightweight-seo' ), $core ),
-					'social_image'         => array( __( 'Default Social Image', 'lightweight-seo' ), $core ),
+					'title_format'         => array( __( 'Default title format', 'lightweight-seo' ), $core, true ),
+					'home_title_format'    => array( __( 'Homepage title format', 'lightweight-seo' ), $core, true ),
+					'archive_title_format' => array( __( 'Archive title format', 'lightweight-seo' ), $core, true ),
+					'search_title_format'  => array( __( 'Search title format', 'lightweight-seo' ), $core, true ),
+					'meta_description'     => array( __( 'Homepage meta description', 'lightweight-seo' ), $core, true ),
+					'social_image'         => array( __( 'Default social image', 'lightweight-seo' ), $core, true ),
 				),
 			),
 			'lightweight_seo_indexation_section'   => array(
-				'title'    => __( 'Indexation Controls', 'lightweight-seo' ),
+				'title'    => __( 'Indexation controls', 'lightweight-seo' ),
 				'callback' => array( $core, 'indexation_section_callback' ),
 				'fields'   => array(
-					'noindex_search_results'        => array( __( 'Search Results Pages', 'lightweight-seo' ), $core ),
-					'noindex_attachment_pages'      => array( __( 'Attachment Pages', 'lightweight-seo' ), $core ),
-					'default_max_image_preview'     => array( __( 'Default Max Image Preview', 'lightweight-seo' ), $core ),
-					'enable_media_x_robots_headers' => array( __( 'Media X-Robots Headers', 'lightweight-seo' ), $core ),
+					'noindex_search_results'        => array( __( 'Search results pages', 'lightweight-seo' ), $core ),
+					'noindex_attachment_pages'      => array( __( 'Attachment pages', 'lightweight-seo' ), $core ),
+					'default_max_image_preview'     => array( __( 'Default max image preview', 'lightweight-seo' ), $core, true ),
+					'enable_media_x_robots_headers' => array( __( 'Media X-Robots headers', 'lightweight-seo' ), $core ),
 				),
 			),
 			'lightweight_seo_sitemap_section'      => array(
-				'title'    => __( 'XML Sitemaps', 'lightweight-seo' ),
+				'title'    => __( 'XML sitemaps', 'lightweight-seo' ),
 				'callback' => array( $core, 'sitemap_section_callback' ),
 				'fields'   => array(
-					'exclude_noindex_from_sitemaps'    => array( __( 'Exclude Noindex Content', 'lightweight-seo' ), $core ),
-					'exclude_redirected_from_sitemaps' => array( __( 'Exclude Redirected URLs', 'lightweight-seo' ), $core ),
+					'exclude_noindex_from_sitemaps'    => array( __( 'Exclude noindex content', 'lightweight-seo' ), $core ),
+					'exclude_redirected_from_sitemaps' => array( __( 'Exclude redirected URLs', 'lightweight-seo' ), $core ),
 				),
 			),
 			'lightweight_seo_schema_section'       => array(
-				'title'    => __( 'Structured Data', 'lightweight-seo' ),
+				'title'    => __( 'Structured data', 'lightweight-seo' ),
 				'callback' => array( $core, 'schema_section_callback' ),
 				'fields'   => array(
-					'enable_schema_output'           => array( __( 'Core Schema Output', 'lightweight-seo' ), $core ),
-					'organization_same_as'           => array( __( 'Organization Profiles', 'lightweight-seo' ), $core ),
-					'enable_local_business_schema'   => array( __( 'Local Business Schema', 'lightweight-seo' ), $modules ),
-					'local_business_details'         => array( __( 'Local Business Details', 'lightweight-seo' ), $modules ),
-					'enable_hreflang_output'         => array( __( 'Hreflang Output', 'lightweight-seo' ), $modules ),
-					'hreflang_mappings'              => array( __( 'Hreflang Mappings', 'lightweight-seo' ), $modules ),
-					'enable_hreflang_path_mirroring' => array( __( 'Legacy Path Mirroring', 'lightweight-seo' ), $modules ),
+					'enable_schema_output'           => array( __( 'Core schema output', 'lightweight-seo' ), $core ),
+					'organization_same_as'           => array( __( 'Organization profiles', 'lightweight-seo' ), $core, true ),
+					'enable_local_business_schema'   => array( __( 'Local business schema', 'lightweight-seo' ), $modules ),
+					'local_business_details'         => array( __( 'Business details', 'lightweight-seo' ), $modules ),
+					'enable_hreflang_output'         => array( __( 'Hreflang output', 'lightweight-seo' ), $modules ),
+					'hreflang_mappings'              => array( __( 'Hreflang mappings', 'lightweight-seo' ), $modules, true ),
+					'enable_hreflang_path_mirroring' => array( __( 'Legacy path mirroring', 'lightweight-seo' ), $modules ),
 				),
 			),
 			'lightweight_seo_redirects_section'    => array(
 				'title'    => __( 'Redirects', 'lightweight-seo' ),
 				'callback' => array( $modules, 'redirects_section_callback' ),
 				'fields'   => array(
-					'enable_auto_redirects'    => array( __( 'Automatic Slug Redirects', 'lightweight-seo' ), $modules ),
-					'redirect_rules'           => array( __( 'Manual Redirect Rules', 'lightweight-seo' ), $modules ),
-					'generated_redirect_rules' => array( __( 'Generated Redirects', 'lightweight-seo' ), $modules ),
-					'redirect_export'          => array( __( 'Redirect Export', 'lightweight-seo' ), $modules ),
-					'redirect_health'          => array( __( 'Redirect Health', 'lightweight-seo' ), $modules ),
+					'enable_auto_redirects'    => array( __( 'Automatic slug redirects', 'lightweight-seo' ), $modules ),
+					'redirect_rules'           => array( __( 'Manual redirect rules', 'lightweight-seo' ), $modules, true ),
+					'generated_redirect_rules' => array( __( 'Generated redirects', 'lightweight-seo' ), $modules ),
+					'redirect_export'          => array( __( 'Redirect export', 'lightweight-seo' ), $modules ),
+					'redirect_health'          => array( __( 'Redirect health', 'lightweight-seo' ), $modules ),
 				),
 			),
 			'lightweight_seo_migration_section'    => array(
-				'title'    => __( 'Migration & Imports', 'lightweight-seo' ),
+				'title'    => __( 'Migration and imports', 'lightweight-seo' ),
 				'callback' => array( $tools, 'migration_section_callback' ),
 				'fields'   => array(
-					'import_source'            => array( __( 'Import Source', 'lightweight-seo' ), $tools ),
-					'import_actions'           => array( __( 'Preview or Import', 'lightweight-seo' ), $tools ),
-					'import_report'            => array( __( 'Import Status', 'lightweight-seo' ), $tools ),
-					'legacy_data_transition'   => array( __( 'Legacy Data Transition', 'lightweight-seo' ), $tools ),
-					'delete_data_on_uninstall' => array( __( 'Uninstall Data', 'lightweight-seo' ), $tools ),
+					'import_source'            => array( __( 'Import source', 'lightweight-seo' ), $tools, true ),
+					'import_actions'           => array( __( 'Preview or import', 'lightweight-seo' ), $tools ),
+					'import_report'            => array( __( 'Import status', 'lightweight-seo' ), $tools ),
+					'legacy_data_transition'   => array( __( 'Legacy data', 'lightweight-seo' ), $tools ),
+					'delete_data_on_uninstall' => array( __( 'Uninstall data', 'lightweight-seo' ), $tools ),
 				),
 			),
 			'lightweight_seo_tracking_section'     => array(
-				'title'    => __( 'Tracking Codes', 'lightweight-seo' ),
+				'title'    => __( 'Tracking codes', 'lightweight-seo' ),
 				'callback' => array( $modules, 'tracking_section_callback' ),
 				'fields'   => array(
 					// Google Tag Manager is the recommended primary strategy; the direct IDs are alternatives.
-					'gtm_container_id'               => array( __( 'Google Tag Manager Container ID', 'lightweight-seo' ), $modules ),
-					'ga4_measurement_id'             => array( __( 'Direct Google Analytics 4 Measurement ID', 'lightweight-seo' ), $modules ),
-					'facebook_pixel_id'              => array( __( 'Direct Meta Pixel ID', 'lightweight-seo' ), $modules ),
-					'tracking_excluded_roles'        => array( __( 'Excluded Roles', 'lightweight-seo' ), $modules ),
-					'tracking_excluded_environments' => array( __( 'Excluded Environments', 'lightweight-seo' ), $modules ),
+					'gtm_container_id'               => array( __( 'Google Tag Manager container ID', 'lightweight-seo' ), $modules, true ),
+					'ga4_measurement_id'             => array( __( 'Direct Google Analytics 4 measurement ID', 'lightweight-seo' ), $modules, true ),
+					'facebook_pixel_id'              => array( __( 'Direct Meta Pixel ID', 'lightweight-seo' ), $modules, true ),
+					'tracking_excluded_roles'        => array( __( 'Excluded roles', 'lightweight-seo' ), $modules, true ),
+					'tracking_excluded_environments' => array( __( 'Excluded environments', 'lightweight-seo' ), $modules, true ),
 				),
 			),
 			'lightweight_seo_ai_discovery_section' => array(
-				'title'    => __( 'AI Discovery (Experimental)', 'lightweight-seo' ),
+				'title'    => __( 'AI Discovery', 'lightweight-seo' ),
 				'callback' => array( $modules, 'ai_discovery_section_callback' ),
 				'fields'   => array(
-					'enable_ai_discovery'          => array( __( 'Enable Module', 'lightweight-seo' ), $modules ),
-					'ai_search_crawlers_enabled'   => array( __( 'AI Search Visibility', 'lightweight-seo' ), $modules ),
-					'ai_training_crawlers_enabled' => array( __( 'Model Training Access', 'lightweight-seo' ), $modules ),
+					'enable_ai_discovery'          => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
+					'ai_search_crawlers_enabled'   => array( __( 'AI search visibility', 'lightweight-seo' ), $modules ),
+					'ai_training_crawlers_enabled' => array( __( 'Model training access', 'lightweight-seo' ), $modules ),
 					'enable_llms_txt'              => array( __( 'Curated llms.txt', 'lightweight-seo' ), $modules ),
-					'llms_txt_post_ids'            => array( __( 'Authoritative Page IDs', 'lightweight-seo' ), $modules ),
-					'ai_readiness'                 => array( __( 'Readiness Checks', 'lightweight-seo' ), $modules ),
+					'llms_txt_post_ids'            => array( __( 'Authoritative page IDs', 'lightweight-seo' ), $modules, true ),
+					'ai_readiness'                 => array( __( 'Readiness checks', 'lightweight-seo' ), $modules ),
 				),
 			),
 		);

@@ -1,5 +1,6 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-ui.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-meta-boxes.php';
 
 use PHPUnit\Framework\TestCase;
@@ -222,8 +223,8 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 
 		$this->assertStringContainsString( 'role="tablist"', $output );
 		$this->assertStringContainsString( 'Search appearance', $output );
-		$this->assertStringContainsString( 'lightweight-seo-search-preview', $output );
-		$this->assertStringContainsString( 'lightweight-seo-social-preview', $output );
+		$this->assertStringContainsString( 'lwseo-preview--search', $output );
+		$this->assertStringContainsString( 'lwseo-preview--social', $output );
 		$this->assertStringContainsString( 'Advanced canonical and robots controls', $output );
 		$this->assertStringContainsString( 'below the 1200px width recommendation', $output );
 		$this->assertStringContainsString( 'points to a different host', $output );

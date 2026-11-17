@@ -36,18 +36,45 @@ class Lightweight_SEO_Admin_Module_Fields {
 	}
 
 	/**
+	 * Print a checkbox setting.
+	 *
+	 * @since    1.2.0
+	 * @param    string    $key        Settings key.
+	 * @param    string    $fallback   Stored value used when nothing is saved.
+	 * @param    string    $label      Checkbox label.
+	 * @param    string    $help       Optional. Help text.
+	 * @return   void
+	 */
+	private function render_choice( $key, $fallback, $label, $help = '' ) {
+		$options = $this->settings->get_all();
+		$checked = '1' === (string) ( $options[ $key ] ?? $fallback );
+
+		Lightweight_SEO_Admin_UI::choice( LIGHTWEIGHT_SEO_OPTION_NAME . '[' . $key . ']', $checked, $label, $help );
+	}
+
+	/**
+	 * Print a single-line text setting with help text.
+	 *
+	 * @since    1.2.0
+	 * @param    string    $key      Settings key.
+	 * @param    string    $value    Current value.
+	 * @param    string    $help     Help text.
+	 * @return   void
+	 */
+	private function render_text( $key, $value, $help ) {
+		?>
+		<input type="text" id="<?php echo esc_attr( 'lightweight_seo_' . $key ); ?>" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME . '[' . $key . ']' ); ?>" value="<?php echo esc_attr( $value ); ?>" class="regular-text">
+		<p class="lwseo-help"><?php echo esc_html( $help ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Render the LocalBusiness schema toggle field.
 	 *
 	 * @since    1.1.0
 	 */
 	public function enable_local_business_schema_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_local_business_schema]" value="1" <?php checked( $options['enable_local_business_schema'] ?? '0', '1' ); ?>>
-			<?php esc_html_e( 'Output LocalBusiness schema on the homepage', 'lightweight-seo' ); ?>
-		</label>
-		<?php
+		$this->render_choice( 'enable_local_business_schema', '0', __( 'Output LocalBusiness schema on the homepage', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -57,36 +84,47 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function local_business_details_render() {
 		$options = $this->settings->get_all();
+		$types   = array( 'LocalBusiness', 'Restaurant', 'Store', 'MedicalBusiness', 'ProfessionalService' );
+		// Each entry: settings key suffix, label, placeholder, and whether it spans the full width.
+		$inputs = array(
+			array( 'name', __( 'Business name', 'lightweight-seo' ), '', false ),
+			array( 'phone', __( 'Phone number', 'lightweight-seo' ), '', false ),
+			array( 'price_range', __( 'Price range', 'lightweight-seo' ), '$$', false ),
+			array( 'address_street', __( 'Street address', 'lightweight-seo' ), '', true ),
+			array( 'address_locality', __( 'City or locality', 'lightweight-seo' ), '', false ),
+			array( 'address_region', __( 'Region or state', 'lightweight-seo' ), '', false ),
+			array( 'address_postal_code', __( 'Postal code', 'lightweight-seo' ), '', false ),
+			array( 'address_country', __( 'Country code', 'lightweight-seo' ), 'GB', false ),
+			array( 'latitude', __( 'Latitude', 'lightweight-seo' ), '', false ),
+			array( 'longitude', __( 'Longitude', 'lightweight-seo' ), '', false ),
+		);
 		?>
-		<p>
-			<label><?php esc_html_e( 'Business Type', 'lightweight-seo' ); ?><br>
+		<div class="lwseo-subfields">
+			<label class="lwseo-subfield">
+				<span class="lwseo-subfield__label"><?php esc_html_e( 'Business type', 'lightweight-seo' ); ?></span>
 				<select name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_type]">
-					<option value="LocalBusiness" <?php selected( $options['local_business_type'] ?? 'LocalBusiness', 'LocalBusiness' ); ?>><?php esc_html_e( 'LocalBusiness', 'lightweight-seo' ); ?></option>
-					<option value="Restaurant" <?php selected( $options['local_business_type'] ?? '', 'Restaurant' ); ?>><?php esc_html_e( 'Restaurant', 'lightweight-seo' ); ?></option>
-					<option value="Store" <?php selected( $options['local_business_type'] ?? '', 'Store' ); ?>><?php esc_html_e( 'Store', 'lightweight-seo' ); ?></option>
-					<option value="MedicalBusiness" <?php selected( $options['local_business_type'] ?? '', 'MedicalBusiness' ); ?>><?php esc_html_e( 'MedicalBusiness', 'lightweight-seo' ); ?></option>
-					<option value="ProfessionalService" <?php selected( $options['local_business_type'] ?? '', 'ProfessionalService' ); ?>><?php esc_html_e( 'ProfessionalService', 'lightweight-seo' ); ?></option>
+					<?php foreach ( $types as $type ) : ?>
+						<option value="<?php echo esc_attr( $type ); ?>" <?php selected( $options['local_business_type'] ?? 'LocalBusiness', $type ); ?>><?php echo esc_html( $type ); ?></option>
+					<?php endforeach; ?>
 				</select>
 			</label>
-		</p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_name]" value="<?php echo esc_attr( $options['local_business_name'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Business name', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_phone]" value="<?php echo esc_attr( $options['local_business_phone'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Phone number', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_price_range]" value="<?php echo esc_attr( $options['local_business_price_range'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Price range, e.g. $$', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_street]" value="<?php echo esc_attr( $options['local_business_address_street'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Street address', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_locality]" value="<?php echo esc_attr( $options['local_business_address_locality'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'City / locality', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_region]" value="<?php echo esc_attr( $options['local_business_address_region'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Region / state', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_postal_code]" value="<?php echo esc_attr( $options['local_business_address_postal_code'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Postal code', 'lightweight-seo' ) ); ?>"></p>
-		<p><input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_address_country]" value="<?php echo esc_attr( $options['local_business_address_country'] ?? '' ); ?>" class="small-text" maxlength="2" placeholder="<?php echo esc_attr( __( 'Country code', 'lightweight-seo' ) ); ?>"></p>
-		<p>
-			<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_latitude]" value="<?php echo esc_attr( $options['local_business_latitude'] ?? '' ); ?>" class="small-text" placeholder="<?php echo esc_attr( __( 'Latitude', 'lightweight-seo' ) ); ?>">
-			<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_longitude]" value="<?php echo esc_attr( $options['local_business_longitude'] ?? '' ); ?>" class="small-text" placeholder="<?php echo esc_attr( __( 'Longitude', 'lightweight-seo' ) ); ?>">
-		</p>
-		<p><input type="url" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_image]" value="<?php echo esc_attr( $options['local_business_image'] ?? '' ); ?>" class="regular-text" placeholder="<?php echo esc_attr( __( 'Dedicated business image or logo URL', 'lightweight-seo' ) ); ?>"></p>
-		<p class="description"><?php esc_html_e( 'Use a dedicated business image. The general social sharing image is not reused for LocalBusiness.', 'lightweight-seo' ); ?></p>
-		<p>
-			<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_opening_hours]" rows="4" cols="50" class="large-text"><?php echo esc_textarea( $options['local_business_opening_hours'] ?? '' ); ?></textarea>
-		</p>
-		<p class="description"><?php esc_html_e( 'Add one opening-hours rule per line, e.g. Mo-Fr 09:00-17:00.', 'lightweight-seo' ); ?></p>
+			<?php foreach ( $inputs as $input ) : ?>
+				<label class="lwseo-subfield<?php echo $input[3] ? ' lwseo-subfield--wide' : ''; ?>">
+					<span class="lwseo-subfield__label"><?php echo esc_html( $input[1] ); ?></span>
+					<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME . '[local_business_' . $input[0] . ']' ); ?>" value="<?php echo esc_attr( $options[ 'local_business_' . $input[0] ] ?? '' ); ?>"<?php echo 'address_country' === $input[0] ? ' maxlength="2"' : ''; ?> placeholder="<?php echo esc_attr( $input[2] ); ?>">
+				</label>
+			<?php endforeach; ?>
+			<label class="lwseo-subfield lwseo-subfield--wide">
+				<span class="lwseo-subfield__label"><?php esc_html_e( 'Business image or logo URL', 'lightweight-seo' ); ?></span>
+				<input type="url" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_image]" value="<?php echo esc_attr( $options['local_business_image'] ?? '' ); ?>">
+			</label>
+			<p class="lwseo-help lwseo-subfield--wide"><?php esc_html_e( 'Use a dedicated business image. The general social sharing image is not reused for LocalBusiness.', 'lightweight-seo' ); ?></p>
+			<label class="lwseo-subfield lwseo-subfield--wide">
+				<span class="lwseo-subfield__label"><?php esc_html_e( 'Opening hours', 'lightweight-seo' ); ?></span>
+				<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_opening_hours]" rows="4" class="code"><?php echo esc_textarea( $options['local_business_opening_hours'] ?? '' ); ?></textarea>
+			</label>
+			<p class="lwseo-help lwseo-subfield--wide"><?php esc_html_e( 'Add one opening-hours rule per line, e.g. Mo-Fr 09:00-17:00.', 'lightweight-seo' ); ?></p>
+		</div>
 		<?php
 	}
 
@@ -96,13 +134,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 * @since    1.1.0
 	 */
 	public function enable_hreflang_output_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_hreflang_output]" value="1" <?php checked( $options['enable_hreflang_output'] ?? '0', '1' ); ?>>
-			<?php esc_html_e( 'Output hreflang alternate links', 'lightweight-seo' ); ?>
-		</label>
-		<?php
+		$this->render_choice( 'enable_hreflang_output', '0', __( 'Output hreflang alternate links', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -113,21 +145,14 @@ class Lightweight_SEO_Admin_Module_Fields {
 	public function hreflang_mappings_render() {
 		$options = $this->settings->get_all();
 		?>
-		<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[hreflang_mappings]" rows="5" cols="50" class="large-text code"><?php echo esc_textarea( $options['hreflang_mappings'] ?? '' ); ?></textarea>
-		<p class="description"><?php esc_html_e( 'Use one explicit mapping per line: post:123 en-GB https://example.co.uk/page/ (term: and user: are also supported). Language tags must use BCP 47 format; x-default is supported.', 'lightweight-seo' ); ?></p>
+		<textarea id="lightweight_seo_hreflang_mappings" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[hreflang_mappings]" rows="5" class="large-text code"><?php echo esc_textarea( $options['hreflang_mappings'] ?? '' ); ?></textarea>
+		<p class="lwseo-help"><?php esc_html_e( 'Use one explicit mapping per line: post:123 en-GB https://example.co.uk/page/ (term: and user: are also supported). Language tags must use BCP 47 format; x-default is supported.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
 	/** Render the opt-in retained legacy path-mirroring mode. */
 	public function enable_hreflang_path_mirroring_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_hreflang_path_mirroring]" value="1" <?php checked( $options['enable_hreflang_path_mirroring'] ?? '0', '1' ); ?>>
-			<?php esc_html_e( 'Reuse the current canonical path with retained two-column language/base-URL mappings', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Leave this off unless matching paths are intentionally guaranteed across the configured domains.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'enable_hreflang_path_mirroring', '0', __( 'Reuse the current canonical path with retained two-column language/base-URL mappings', 'lightweight-seo' ), __( 'Leave this off unless matching paths are intentionally guaranteed across the configured domains.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -136,7 +161,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 * @since    1.1.0
 	 */
 	public function redirects_section_callback() {
-		echo '<p>' . esc_html__( 'Manage exact redirect rules and optionally preserve traffic after published slugs change. Continuous 404 logging is not part of this module.', 'lightweight-seo' ) . '</p>';
+		echo '<p class="lwseo-help">' . esc_html__( 'Continuous 404 logging is not part of this module.', 'lightweight-seo' ) . '</p>';
 	}
 
 	/**
@@ -145,14 +170,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 * @since    1.1.0
 	 */
 	public function enable_auto_redirects_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_auto_redirects]" value="1" <?php checked( $options['enable_auto_redirects'] ?? '1', '1' ); ?>>
-			<?php esc_html_e( 'Create 301 redirects automatically when a published post or page slug changes', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Generated redirects are stored separately from manual rules so manual overrides always win.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'enable_auto_redirects', '1', __( 'Create 301 redirects automatically when a published post or page slug changes', 'lightweight-seo' ), __( 'Generated redirects are stored separately from manual rules so manual overrides always win.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -163,9 +181,9 @@ class Lightweight_SEO_Admin_Module_Fields {
 	public function redirect_rules_render() {
 		$options = $this->settings->get_all();
 		?>
-		<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[redirect_rules]" rows="8" cols="50" class="large-text code"><?php echo esc_textarea( $options['redirect_rules'] ?? '' ); ?></textarea>
-		<p class="description"><?php esc_html_e( 'Add one rule per line using the format: /old-path /new-path 301', 'lightweight-seo' ); ?></p>
-		<p class="description"><?php esc_html_e( 'Targets can be local paths or full URLs. External hosts must be explicitly approved through WordPress’s allowed_redirect_hosts filter. Supported status codes: 301, 302, 307, 308.', 'lightweight-seo' ); ?></p>
+		<textarea id="lightweight_seo_redirect_rules" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[redirect_rules]" rows="8" class="large-text code" placeholder="/old-path /new-path 301"><?php echo esc_textarea( $options['redirect_rules'] ?? '' ); ?></textarea>
+		<p class="lwseo-help"><?php esc_html_e( 'Add one rule per line using the format: /old-path /new-path 301', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'Targets can be local paths or full URLs. External hosts must be explicitly approved through WordPress’s allowed_redirect_hosts filter. Supported status codes: 301, 302, 307, 308.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -176,7 +194,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function generated_redirect_rules_render() {
 		if ( ! $this->is_module_enabled( 'redirects' ) ) {
-			echo '<p class="description">' . esc_html__( 'The Redirects module is disabled.', 'lightweight-seo' ) . '</p>';
+			echo '<p class="lwseo-help">' . esc_html__( 'The Redirects module is disabled.', 'lightweight-seo' ) . '</p>';
 
 			return;
 		}
@@ -184,12 +202,12 @@ class Lightweight_SEO_Admin_Module_Fields {
 		$rules = get_option( 'lightweight_seo_generated_redirect_rules', array() );
 
 		if ( empty( $rules ) ) {
-			echo '<p class="description">' . esc_html__( 'No automatic redirects have been generated yet.', 'lightweight-seo' ) . '</p>';
+			echo '<p class="lwseo-help">' . esc_html__( 'No automatic redirects have been generated yet.', 'lightweight-seo' ) . '</p>';
 
 			return;
 		}
 
-		echo '<div class="lightweight-seo-generated-redirects"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Target', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Updated', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+		echo '<div class="lwseo-table-wrap"><table class="lwseo-table"><thead><tr><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Target', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Updated', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
 
 		foreach ( array_slice( $rules, 0, 10 ) as $rule ) {
 			echo '<tr>';
@@ -209,7 +227,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function redirect_export_render() {
 		if ( ! $this->is_module_enabled( 'redirects' ) ) {
-			echo '<p class="description">' . esc_html__( 'Enable Redirects by saving a valid manual rule or automatic slug redirects.', 'lightweight-seo' ) . '</p>';
+			echo '<p class="lwseo-help">' . esc_html__( 'Enable Redirects by saving a valid manual rule or automatic slug redirects.', 'lightweight-seo' ) . '</p>';
 
 			return;
 		}
@@ -219,7 +237,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 		$rules             = $redirects_service->get_all_redirect_rules();
 
 		if ( empty( $rules ) ) {
-			echo '<p class="description">' . esc_html__( 'No redirect rules are available to export yet.', 'lightweight-seo' ) . '</p>';
+			echo '<p class="lwseo-help">' . esc_html__( 'No redirect rules are available to export yet.', 'lightweight-seo' ) . '</p>';
 
 			return;
 		}
@@ -227,7 +245,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 		$lines = array();
 		echo '<label for="lightweight-seo-redirect-search" class="screen-reader-text">' . esc_html__( 'Search redirect rules', 'lightweight-seo' ) . '</label>';
 		echo '<input type="search" id="lightweight-seo-redirect-search" class="regular-text" placeholder="' . esc_attr( __( 'Search redirect rules', 'lightweight-seo' ) ) . '">';
-		echo '<table class="widefat striped lightweight-seo-redirect-table"><thead><tr><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Target', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Status', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+		echo '<div class="lwseo-table-wrap"><table class="lwseo-table lwseo-redirect-table"><thead><tr><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Target', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Status', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
 
 		foreach ( $rules as $rule ) {
 			$lines[] = implode(
@@ -241,9 +259,9 @@ class Lightweight_SEO_Admin_Module_Fields {
 			echo '<tr><td><code>' . esc_html( $rule['source'] ?? '' ) . '</code></td><td><code>' . esc_html( $rule['target'] ?? '' ) . '</code></td><td>' . esc_html( (string) ( $rule['status'] ?? 301 ) ) . '</td></tr>';
 		}
 
-		echo '</tbody></table>';
-		echo '<textarea rows="8" cols="50" class="large-text code" readonly="readonly">' . esc_textarea( implode( "\n", $lines ) ) . '</textarea>';
-		echo '<p class="description">' . esc_html__( 'Copy this snapshot to migrate rules or keep an external backup. Manual rules can be imported by pasting them into the redirect rules field above.', 'lightweight-seo' ) . '</p>';
+		echo '</tbody></table></div>';
+		echo '<textarea rows="6" class="large-text code" readonly="readonly" aria-label="' . esc_attr__( 'Redirect rules snapshot', 'lightweight-seo' ) . '">' . esc_textarea( implode( "\n", $lines ) ) . '</textarea>';
+		echo '<p class="lwseo-help">' . esc_html__( 'Copy this snapshot to migrate rules or keep an external backup. Manual rules can be imported by pasting them into the redirect rules field above.', 'lightweight-seo' ) . '</p>';
 	}
 
 	/**
@@ -253,7 +271,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function redirect_health_render() {
 		if ( ! $this->is_module_enabled( 'redirects' ) ) {
-			echo '<p class="description">' . esc_html__( 'No redirect health checks run while the module is disabled.', 'lightweight-seo' ) . '</p>';
+			echo '<p class="lwseo-help">' . esc_html__( 'No redirect health checks run while the module is disabled.', 'lightweight-seo' ) . '</p>';
 
 			return;
 		}
@@ -281,12 +299,14 @@ class Lightweight_SEO_Admin_Module_Fields {
 		);
 
 		if ( empty( $issues ) ) {
-			echo '<p class="description">' . esc_html__( 'No redirect chains or loops detected.', 'lightweight-seo' ) . '</p>';
+			echo '<ul class="lwseo-status-list">';
+			Lightweight_SEO_Admin_UI::status( 'success', __( 'No redirect chains or loops detected.', 'lightweight-seo' ) );
+			echo '</ul>';
 
 			return;
 		}
 
-		echo '<div class="lightweight-seo-redirect-health"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Type', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Path', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
+		echo '<div class="lwseo-table-wrap"><table class="lwseo-table"><thead><tr><th>' . esc_html__( 'Type', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Path', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
 
 		foreach ( array_slice( $issues, 0, 10 ) as $issue ) {
 			echo '<tr>';
@@ -326,26 +346,14 @@ class Lightweight_SEO_Admin_Module_Fields {
 	public function tracking_section_callback() {
 		$options = $this->settings->get_all();
 
-		echo '<p>' . esc_html__( 'Use Google Tag Manager as the primary strategy. Direct GA4 and Meta Pixel IDs are alternatives and do not output while GTM is configured.', 'lightweight-seo' ) . '</p>';
+		if ( ! empty( $options['gtm_container_id'] ) && ( ! empty( $options['ga4_measurement_id'] ) || ! empty( $options['facebook_pixel_id'] ) ) ) {
+			Lightweight_SEO_Admin_UI::callout( __( 'GTM is active, so the direct GA4 and Meta Pixel alternatives are stored but suppressed to avoid duplicate events.', 'lightweight-seo' ), 'warning' );
+		}
+
+		echo '<details class="lwseo-details"><summary>' . esc_html__( 'Consent, CSP, and theme notes', 'lightweight-seo' ) . '</summary><div class="lwseo-details__body">';
 		echo '<p>' . esc_html__( 'Tracking is excluded from the selected roles and environments. Consent plugins can use the lightweight_seo_tracking_consent_granted filter, and CSP integrations can supply a nonce through lightweight_seo_tracking_script_nonce.', 'lightweight-seo' ) . '</p>';
 		echo '<p>' . esc_html__( 'GTM themes must call wp_body_open(). If they do not, Lightweight SEO adds a diagnostic comment to the page source and omits only the noscript fallback.', 'lightweight-seo' ) . '</p>';
-
-		if ( ! empty( $options['gtm_container_id'] ) && ( ! empty( $options['ga4_measurement_id'] ) || ! empty( $options['facebook_pixel_id'] ) ) ) {
-			echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'GTM is active, so the direct GA4 and Meta Pixel alternatives are stored but suppressed to avoid duplicate events.', 'lightweight-seo' ) . '</p></div>';
-		}
-	}
-
-	/**
-	 * Render the GA4 measurement ID field
-	 *
-	 * @since    1.0.1
-	 */
-	public function ga4_measurement_id_render() {
-		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[ga4_measurement_id]" value="<?php echo esc_attr( $options['ga4_measurement_id'] ?? '' ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Direct alternative: enter a GA4 Measurement ID (e.g., G-XXXXXXXXXX). It is suppressed when GTM is configured.', 'lightweight-seo' ); ?></p>
-		<?php
+		echo '</div></details>';
 	}
 
 	/**
@@ -355,10 +363,19 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function gtm_container_id_render() {
 		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[gtm_container_id]" value="<?php echo esc_attr( $options['gtm_container_id'] ?? '' ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Recommended: enter a Google Tag Manager Container ID (e.g., GTM-XXXXXX).', 'lightweight-seo' ); ?></p>
-		<?php
+
+		$this->render_text( 'gtm_container_id', $options['gtm_container_id'] ?? '', __( 'Recommended: enter a Google Tag Manager Container ID (e.g., GTM-XXXXXX).', 'lightweight-seo' ) );
+	}
+
+	/**
+	 * Render the GA4 measurement ID field
+	 *
+	 * @since    1.0.1
+	 */
+	public function ga4_measurement_id_render() {
+		$options = $this->settings->get_all();
+
+		$this->render_text( 'ga4_measurement_id', $options['ga4_measurement_id'] ?? '', __( 'Direct alternative: enter a GA4 Measurement ID (e.g., G-XXXXXXXXXX). It is suppressed when GTM is configured.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -368,93 +385,73 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function facebook_pixel_id_render() {
 		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[facebook_pixel_id]" value="<?php echo esc_attr( $options['facebook_pixel_id'] ?? '' ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Enter a numeric Meta Pixel ID. This direct alternative is suppressed when GTM is configured.', 'lightweight-seo' ); ?></p>
-		<?php
+
+		$this->render_text( 'facebook_pixel_id', $options['facebook_pixel_id'] ?? '', __( 'Enter a numeric Meta Pixel ID. This direct alternative is suppressed when GTM is configured.', 'lightweight-seo' ) );
 	}
 
 	/** Render role slugs that suppress tracking for logged-in users. */
 	public function tracking_excluded_roles_render() {
 		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[tracking_excluded_roles]" value="<?php echo esc_attr( $options['tracking_excluded_roles'] ?? 'administrator' ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Comma-separated WordPress role slugs, for example administrator, editor. Leave empty to include all logged-in roles.', 'lightweight-seo' ); ?></p>
-		<?php
+
+		$this->render_text( 'tracking_excluded_roles', $options['tracking_excluded_roles'] ?? 'administrator', __( 'Comma-separated WordPress role slugs, for example administrator, editor. Leave empty to include all logged-in roles.', 'lightweight-seo' ) );
 	}
 
 	/** Render environments that suppress tracking. */
 	public function tracking_excluded_environments_render() {
 		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[tracking_excluded_environments]" value="<?php echo esc_attr( str_replace( "\n", ', ', $options['tracking_excluded_environments'] ?? "local\ndevelopment\nstaging" ) ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Choose from local, development, staging, and production. WordPress defaults to production when no environment type is set.', 'lightweight-seo' ); ?></p>
-		<?php
+
+		$this->render_text( 'tracking_excluded_environments', str_replace( "\n", ', ', $options['tracking_excluded_environments'] ?? "local\ndevelopment\nstaging" ), __( 'Choose from local, development, staging, and production. WordPress defaults to production when no environment type is set.', 'lightweight-seo' ) );
 	}
 
 	/** Explain the bounded, experimental AI Discovery scope. */
 	public function ai_discovery_section_callback() {
-		echo '<p><strong>' . esc_html__( 'Experimental:', 'lightweight-seo' ) . '</strong> ' . esc_html__( 'These controls separate AI search access from model-training access and can publish a manually curated llms.txt index.', 'lightweight-seo' ) . '</p>';
-		echo '<p>' . esc_html__( 'Google Search ignores llms.txt for visibility and rankings. No setting can guarantee crawling, citation, training, inclusion, or ranking in any AI product.', 'lightweight-seo' ) . '</p>';
+		Lightweight_SEO_Admin_UI::callout( __( 'Google Search ignores llms.txt for visibility and rankings. No setting can guarantee crawling, citation, training, inclusion, or ranking in any AI product.', 'lightweight-seo' ) );
 	}
 
 	/** Render the explicit AI module toggle. */
 	public function enable_ai_discovery_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_ai_discovery]" value="1" <?php checked( $options['enable_ai_discovery'] ?? '0', '1' ); ?>> <?php esc_html_e( 'Enable the experimental AI Discovery module', 'lightweight-seo' ); ?></label>
-		<?php
+		$this->render_choice( 'enable_ai_discovery', '0', __( 'Enable the experimental AI Discovery module', 'lightweight-seo' ) );
 	}
 
 	/** Render search and user-directed crawler policy. */
 	public function ai_search_crawlers_enabled_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[ai_search_crawlers_enabled]" value="1" <?php checked( $options['ai_search_crawlers_enabled'] ?? '1', '1' ); ?>> <?php esc_html_e( 'Allow bundled AI search and user-directed crawler tokens', 'lightweight-seo' ); ?></label>
-		<p class="description"><?php esc_html_e( 'This affects documented search and user-fetch tokens such as OAI-SearchBot, Claude-SearchBot, and PerplexityBot. It does not guarantee discovery or citation.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'ai_search_crawlers_enabled', '1', __( 'Allow bundled AI search and user-directed crawler tokens', 'lightweight-seo' ), __( 'This affects documented search and user-fetch tokens such as OAI-SearchBot, Claude-SearchBot, and PerplexityBot. It does not guarantee discovery or citation.', 'lightweight-seo' ) );
 	}
 
 	/** Render model-training crawler policy separately from search access. */
 	public function ai_training_crawlers_enabled_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[ai_training_crawlers_enabled]" value="1" <?php checked( $options['ai_training_crawlers_enabled'] ?? '0', '1' ); ?>> <?php esc_html_e( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ); ?></label>
-		<p class="description"><?php esc_html_e( 'Off blocks GPTBot, ClaudeBot, and Google-Extended. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'ai_training_crawlers_enabled', '0', __( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ), __( 'Off blocks GPTBot, ClaudeBot, and Google-Extended. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ) );
 	}
 
 	/** Render the optional curated llms.txt endpoint toggle. */
 	public function enable_llms_txt_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label><input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_llms_txt]" value="1" <?php checked( $options['enable_llms_txt'] ?? '0', '1' ); ?>> <?php esc_html_e( 'Publish an experimental /llms.txt Markdown index', 'lightweight-seo' ); ?></label>
-		<p class="description"><?php esc_html_e( 'Only selected public page summaries are listed. No llms-full.txt or full-page Markdown copies are generated.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'enable_llms_txt', '0', __( 'Publish an experimental /llms.txt Markdown index', 'lightweight-seo' ), __( 'Only selected public page summaries are listed. No llms-full.txt or full-page Markdown copies are generated.', 'lightweight-seo' ) );
 	}
 
 	/** Render the bounded list of manually selected post and page IDs. */
 	public function llms_txt_post_ids_render() {
 		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[llms_txt_post_ids]" value="<?php echo esc_attr( $options['llms_txt_post_ids'] ?? '' ); ?>" class="regular-text">
-		<?php /* translators: %d: Maximum number of curated post or page IDs. */ ?>
-		<p class="description"><?php printf( esc_html__( 'Enter up to %d comma-separated published post or page IDs. Drafts, private/password-protected, noindexed, redirected, external-canonical, or invalid URLs are excluded.', 'lightweight-seo' ), (int) Lightweight_SEO_Settings::MAX_LLMS_POSTS ); ?></p>
-		<?php
+
+		$this->render_text(
+			'llms_txt_post_ids',
+			$options['llms_txt_post_ids'] ?? '',
+			/* translators: %d: Maximum number of curated post or page IDs. */
+			sprintf( __( 'Enter up to %d comma-separated published post or page IDs. Drafts, private/password-protected, noindexed, redirected, external-canonical, or invalid URLs are excluded.', 'lightweight-seo' ), (int) Lightweight_SEO_Settings::MAX_LLMS_POSTS )
+		);
 	}
 
 	/** Render deterministic, local-only readiness checks. */
 	public function ai_readiness_render() {
 		if ( ! $this->is_module_enabled( 'ai' ) || ! class_exists( 'Lightweight_SEO_AI_Discovery_Module', false ) ) {
-			echo '<p>' . esc_html__( 'Enable and save the module to run readiness checks.', 'lightweight-seo' ) . '</p>';
+			echo '<p class="lwseo-help">' . esc_html__( 'Enable and save the module to run readiness checks.', 'lightweight-seo' ) . '</p>';
 			return;
 		}
 
 		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), 'admin' );
 
-		echo '<ul class="lightweight-seo-checklist">';
+		echo '<ul class="lwseo-status-list">';
 		foreach ( $module->get_readiness_checks() as $check ) {
-			echo '<li><strong>' . esc_html( strtoupper( $check['status'] ) ) . ' — ' . esc_html( $check['label'] ) . ':</strong> ' . esc_html( $check['details'] ) . '</li>';
+			Lightweight_SEO_Admin_UI::status( 'pass' === $check['status'] ? 'success' : 'warning', $check['label'], $check['details'] );
 		}
 		echo '</ul>';
 	}
