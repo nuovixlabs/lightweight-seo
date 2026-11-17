@@ -501,4 +501,50 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		$this->assertSame( '%category%: %title%', $post_meta->updates['social_title'] );
 		$this->assertSame( 'Filed under %category%, page %page%.', $post_meta->updates['social_description'] );
 	}
+
+	public function test_a_published_page_links_to_its_report_for_administrators(): void {
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_user_can;
+
+		$render = function ( $status ) {
+			global $lightweight_seo_test_posts;
+
+			$post                           = (object) array(
+				'ID'           => 64,
+				'post_type'    => 'post',
+				'post_status'  => $status,
+				'post_title'   => 'A page to inspect',
+				'post_excerpt' => '',
+				'post_content' => '',
+				'permalink'    => 'https://example.com/inspect-me/',
+			);
+			$lightweight_seo_test_posts[64] = $post;
+			$post_meta                      = new class() {
+				public function get_all( $post_id ) {
+					return array();
+				}
+
+				public function get_social_image_url( $post_id ) {
+					return '';
+				}
+			};
+
+			ob_start();
+			( new Lightweight_SEO_Meta_Boxes( new Lightweight_SEO_Settings(), $post_meta ) )->render_meta_box( $post );
+
+			return (string) ob_get_clean();
+		};
+
+		$published = $render( 'publish' );
+
+		$this->assertStringContainsString( '>Inspect what is sent for this page</a>', $published );
+		$this->assertStringContainsString( 'tab=tools&amp;inspect=https%3A%2F%2Fexample.com%2Finspect-me%2F#lwseo-inspect', $published );
+		$this->assertStringNotContainsString( 'Inspect what is sent', $render( 'draft' ) );
+
+		$lightweight_seo_test_user_can = false;
+
+		$this->assertStringNotContainsString( 'Inspect what is sent', $render( 'publish' ) );
+
+		$lightweight_seo_test_user_can = true;
+	}
 }

@@ -42,6 +42,14 @@ if (!defined('LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR')) {
     define('LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR', '–');
 }
 
+if (!defined('LIGHTWEIGHT_SEO_INSPECT_ARG')) {
+    define('LIGHTWEIGHT_SEO_INSPECT_ARG', 'lightweight_seo_inspect');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_PLUGIN_URL')) {
+    define('LIGHTWEIGHT_SEO_PLUGIN_URL', 'https://example.com/wp-content/plugins/lightweight-seo/');
+}
+
 if (!defined('LIGHTWEIGHT_SEO_PLUGIN_FILE')) {
     define('LIGHTWEIGHT_SEO_PLUGIN_FILE', dirname(__DIR__) . '/lightweight-seo.php');
 }
@@ -1015,8 +1023,21 @@ if (!function_exists('get_locale')) {
 }
 
 if (!function_exists('add_query_arg')) {
-    function add_query_arg($args = array(), $url = '') {
-        return (string) $url;
+    function add_query_arg(...$args) {
+        // Like WordPress: either an array of arguments and an address, or a key, a value, and an address.
+        if (is_array($args[0] ?? null)) {
+            $params = $args[0];
+            $url    = (string) ($args[1] ?? '');
+        } else {
+            $params = array((string) ($args[0] ?? '') => $args[1] ?? '');
+            $url    = (string) ($args[2] ?? '');
+        }
+
+        if (empty($params)) {
+            return $url;
+        }
+
+        return $url . (false === strpos($url, '?') ? '?' : '&') . http_build_query($params);
     }
 }
 
@@ -1264,6 +1285,58 @@ if (!function_exists('get_the_category')) {
 if (!function_exists('wp_date')) {
     function wp_date($format, $timestamp = null, $timezone = null) {
         return gmdate($format, null === $timestamp ? time() : $timestamp);
+    }
+}
+
+if (!function_exists('wp_get_document_title')) {
+    function wp_get_document_title() {
+        global $lightweight_seo_test_query_state;
+
+        return $lightweight_seo_test_query_state['document_title'] ?? '';
+    }
+}
+
+if (!function_exists('wp_get_canonical_url')) {
+    function wp_get_canonical_url($post = null) {
+        global $lightweight_seo_test_query_state;
+
+        return $lightweight_seo_test_query_state['wp_canonical'] ?? '';
+    }
+}
+
+if (!function_exists('remove_query_arg')) {
+    function remove_query_arg($keys, $url = false) {
+        $parts = explode('?', (string) $url, 2);
+
+        if (empty($parts[1])) {
+            return $parts[0];
+        }
+
+        parse_str($parts[1], $query);
+
+        foreach ((array) $keys as $key) {
+            unset($query[$key]);
+        }
+
+        return $parts[0] . (empty($query) ? '' : '?' . http_build_query($query));
+    }
+}
+
+if (!function_exists('includes_url')) {
+    function includes_url($path = '') {
+        return 'https://example.com/wp-includes/' . ltrim($path, '/');
+    }
+}
+
+if (!function_exists('get_language_attributes')) {
+    function get_language_attributes() {
+        return 'lang="en-US"';
+    }
+}
+
+if (!function_exists('post_password_required')) {
+    function post_password_required($post = null) {
+        return '' !== (string) ($post->post_password ?? '');
     }
 }
 

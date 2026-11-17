@@ -86,6 +86,9 @@ class Lightweight_SEO_Post_List {
 			add_action( 'manage_' . $post_type . '_posts_custom_column', array( $this, 'render_column' ), 10, 2 );
 		}
 
+		// WordPress filters the row links of hierarchical post types, such as pages, under another name.
+		add_filter( 'post_row_actions', array( $this, 'add_row_action' ), 10, 2 );
+		add_filter( 'page_row_actions', array( $this, 'add_row_action' ), 10, 2 );
 		add_action( 'quick_edit_custom_box', array( $this, 'render_quick_edit' ), 10, 2 );
 		add_action( 'bulk_edit_custom_box', array( $this, 'render_bulk_edit' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save' ) );
@@ -119,6 +122,28 @@ class Lightweight_SEO_Post_List {
 		}
 
 		return $with_column;
+	}
+
+	/**
+	 * Add an "Inspect SEO" link to the row of a published item, for an administrator.
+	 *
+	 * The report is produced by the public page, so an item that is not published has none.
+	 *
+	 * @since    1.1.0
+	 * @param    array      $actions    Row action links keyed by name.
+	 * @param    WP_Post    $post       Post of the row.
+	 * @return   array
+	 */
+	public function add_row_action( $actions, $post ) {
+		$actions = (array) $actions;
+
+		if ( empty( $post->ID ) || 'publish' !== (string) ( $post->post_status ?? '' ) || ! in_array( (string) ( $post->post_type ?? '' ), $this->get_post_types(), true ) || ! current_user_can( 'manage_options' ) ) {
+			return $actions;
+		}
+
+		$actions['lightweight_seo_inspect'] = '<a href="' . esc_url( Lightweight_SEO_Admin_UI::inspect_url( (string) get_permalink( $post->ID ) ) ) . '">' . esc_html__( 'Inspect SEO', 'lightweight-seo' ) . '</a>';
+
+		return $actions;
 	}
 
 	/**

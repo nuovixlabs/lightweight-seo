@@ -49,7 +49,7 @@ Class names use `lwseo-block__element`, with `--modifier` for variants and `is-s
 | Choice | `lwseo-choice` | `choice()` | A checkbox with its label and help text. |
 | Help | `lwseo-help` | | One line of guidance under a control. |
 | Badge | `lwseo-badge` | `badge()` | A one or two word status: `is-success`, `is-warning`, `is-info`, or neutral. |
-| Status list | `lwseo-status-list`, `lwseo-status` | `status()` | Checklists, health checks, and at-a-glance facts. Pass attributes to `status()` when a script updates the row. |
+| Status list | `lwseo-status-list`, `lwseo-status` | `status()` | Checklists, health checks, and at-a-glance facts. Pass attributes to `status()` when a script updates the row, and several lines of text when a fact needs its source beside it. |
 | Callout | `lwseo-callout` | `callout()` | One message that must stand apart from help text. |
 | Tokens | `lwseo-tokens`, `lwseo-token` | `tokens()` | Title variables that insert themselves into the field being edited. A field that accepts them is sanitized with `Lightweight_SEO_Text::sanitize_template()`, because the WordPress text sanitizer cuts `%ca` out of `%category%`. |
 | Image | `lwseo-image` | `image_field()` | URL input, media picker, and thumbnail. Leave `id_name` out for an image stored as a URL only. |
@@ -60,6 +60,7 @@ Class names use `lwseo-block__element`, with `--modifier` for variants and `is-s
 | Rows | `lwseo-rows` | `rows()` | A setting stored one item per line, edited one item per row. |
 | Hours | `lwseo-hours` | `hours()` | Opening times: one row per day, each with any number of time ranges. |
 | Picker | `lwseo-picker`, `lwseo-pagecell` | `picker()` | Pages chosen by searching instead of typing IDs: a list, or one page inside a row. |
+| Inspect | `lwseo-inspect` | | An address, a button, and the report of that address. The report itself is built from status lists, a table, and a details block. |
 | Actions | `lwseo-actions`, `lwseo-buttons` | | The sticky save bar, and a row of buttons. `lwseo-actions__status` says when the form has unsaved changes. |
 | Preview | `lwseo-preview` | `search_preview()`, `share_preview()` | Search result and share previews, in the editor and on the overview. `lwseo-previews` places two side by side. |
 | Meter | `lwseo-meter` | | Where a length sits against its guidance range. |
@@ -112,6 +113,16 @@ The content types table on the "Content and indexation" tab is the only matrix s
 To use it, build the groups, rows, and cells as arrays and call `Lightweight_SEO_Admin_UI::matrix()`. A cell is a `check`, a `text` field, or `none`.
 
 `Lightweight_SEO_Admin_UI::visibility_select()` prints the matching choice for one page, term, or author. It is a plain select without plugin classes, so the term and user screens use it too.
+
+## Inspect Report
+
+The "Inspect a page" card on the Tools tab shows what the plugin sends for one address and where each value comes from.
+
+- **The page produces its own report.** The browser requests the address with the inspect argument, and `Lightweight_SEO_Inspector` answers in place of the page. The report is printed by PHP with the components above, so it is escaped, translated, and tested like any other screen; the script only places it in the card.
+- **A fact, then its source.** Each row states what is sent on its first line and where it comes from on the next, in the words the settings screen uses. A hidden page is a `warning` to look at, not an error.
+- **The address field has no name**, so it is never saved, and Enter runs the report instead of saving the form.
+- **Without the script** a link opens the same report as a page of its own. That page links the admin stylesheet and carries the few rules WordPress would otherwise supply (`lwseo-inspect-page`).
+- **Nothing is fetched by PHP**, and the inspect argument does nothing without the `manage_options` capability and a valid nonce.
 
 ## Live Editor Checks
 

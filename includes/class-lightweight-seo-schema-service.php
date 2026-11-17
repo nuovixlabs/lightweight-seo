@@ -53,15 +53,38 @@ class Lightweight_SEO_Schema_Service {
 	 * @return   void
 	 */
 	public function add_schema() {
-		if ( ! $this->settings->schema_output_enabled() ) {
+		$graph = $this->get_graph();
+
+		if ( empty( $graph ) ) {
 			return;
+		}
+
+		// JSON_HEX_TAG keeps any "<" in graph values (including third-party filter data) from closing the script element.
+		echo '<script type="application/ld+json">' . wp_json_encode( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON encoded with JSON_HEX_TAG for a script data block.
+			array(
+				'@context' => 'https://schema.org',
+				'@graph'   => $graph,
+			),
+			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG
+		) . '</script>' . "\n";
+	}
+
+	/**
+	 * Get the schema graph of the current request exactly as it is printed.
+	 *
+	 * @since    1.1.0
+	 * @return   array Graph nodes, or an empty array when nothing is printed.
+	 */
+	public function get_graph() {
+		if ( ! $this->settings->schema_output_enabled() ) {
+			return array();
 		}
 
 		$context = $this->page_context->get_context();
 		$graph   = array();
 
 		if ( ! empty( $context['is_404'] ) || is_404() ) {
-			return;
+			return array();
 		}
 
 		$graph[] = $this->build_site_entity_schema();
@@ -85,24 +108,11 @@ class Lightweight_SEO_Schema_Service {
 			$graph[] = $profile_page_schema;
 		}
 
-		$graph = array_values(
+		return array_values(
 			array_filter(
 				apply_filters( 'lightweight_seo_schema_graph', $graph, $context )
 			)
 		);
-
-		if ( empty( $graph ) ) {
-			return;
-		}
-
-		// JSON_HEX_TAG keeps any "<" in graph values (including third-party filter data) from closing the script element.
-		echo '<script type="application/ld+json">' . wp_json_encode( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON encoded with JSON_HEX_TAG for a script data block.
-			array(
-				'@context' => 'https://schema.org',
-				'@graph'   => $graph,
-			),
-			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG
-		) . '</script>' . "\n";
 	}
 
 	/**

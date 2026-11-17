@@ -32,6 +32,8 @@ define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION', 3 );
 define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION', 'lightweight_seo_schema_version' );
 define( 'LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT', '%title% – %sitename%' );
 define( 'LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR', '–' );
+// Query argument, and nonce action, of an administrator's request for the report of a page.
+define( 'LIGHTWEIGHT_SEO_INSPECT_ARG', 'lightweight_seo_inspect' );
 
 /**
  * The core plugin class.

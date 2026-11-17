@@ -187,6 +187,13 @@ class Lightweight_SEO_Admin_Settings {
 					'redirect_health'          => array( __( 'Redirect health', 'lightweight-seo' ), $modules ),
 				),
 			),
+			'lightweight_seo_inspect_section'      => array(
+				'title'    => __( 'Inspect a page', 'lightweight-seo' ),
+				'callback' => '__return_null',
+				'fields'   => array(
+					'inspect_page' => array( __( 'Address', 'lightweight-seo' ), $tools, true ),
+				),
+			),
 			'lightweight_seo_migration_section'    => array(
 				'title'    => __( 'Migration and imports', 'lightweight-seo' ),
 				'callback' => array( $tools, 'migration_section_callback' ),

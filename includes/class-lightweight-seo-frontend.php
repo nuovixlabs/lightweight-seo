@@ -62,6 +62,42 @@ class Lightweight_SEO_Frontend {
 	private $page_context;
 
 	/**
+	 * Shared settings service.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Settings    $settings
+	 */
+	private $settings;
+
+	/**
+	 * Shared post meta service.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Post_Meta    $post_meta
+	 */
+	private $post_meta;
+
+	/**
+	 * Shared archive meta service.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Archive_Meta    $archive_meta
+	 */
+	private $archive_meta;
+
+	/**
+	 * Safe mode detection.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Compatibility_Service    $compatibility
+	 */
+	private $compatibility;
+
+	/**
 	 * Initialize the class.
 	 *
 	 * @since    1.0.2
@@ -72,6 +108,11 @@ class Lightweight_SEO_Frontend {
 	 */
 	public function __construct( $settings, $post_meta, $archive_meta, $page_context = null ) {
 		$compatibility_service = new Lightweight_SEO_Compatibility_Service();
+
+		$this->settings      = $settings;
+		$this->post_meta     = $post_meta;
+		$this->archive_meta  = $archive_meta;
+		$this->compatibility = $compatibility_service;
 
 		$this->page_context      = $page_context ? $page_context : new Lightweight_SEO_Page_Context_Service( $settings, $post_meta, $archive_meta );
 		$this->title_service     = new Lightweight_SEO_Title_Service( $this->page_context );
@@ -101,5 +142,35 @@ class Lightweight_SEO_Frontend {
 		}
 
 		add_filter( 'wp_headers', array( $this->header_service, 'filter_headers' ) );
+
+		// After every redirect has had its chance, so an address that sends visitors elsewhere is never reported as a page.
+		add_action( 'template_redirect', array( $this, 'maybe_inspect' ), 99999 );
+	}
+
+	/**
+	 * Answer an administrator's inspect request with a report instead of the page.
+	 *
+	 * An ordinary request leaves here after one check. The inspector and the
+	 * interface helpers it prints with are loaded only for an administrator who asked.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function maybe_inspect() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checks that the argument is present; the inspector verifies the nonce before it answers.
+		if ( ! isset( $_GET[ LIGHTWEIGHT_SEO_INSPECT_ARG ] ) || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$api = function_exists( 'lightweight_seo_get_api' ) ? lightweight_seo_get_api() : null;
+
+		if ( ! $api ) {
+			return;
+		}
+
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-admin-ui.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-inspector.php';
+
+		( new Lightweight_SEO_Inspector( $api, $this->meta_tags_service, $this->schema_service, $this->settings, $this->post_meta, $this->archive_meta, $this->compatibility ) )->respond();
 	}
 }

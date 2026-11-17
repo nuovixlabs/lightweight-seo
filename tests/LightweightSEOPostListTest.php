@@ -392,4 +392,46 @@ final class LightweightSEOPostListTest extends TestCase {
 
 		$this->assertSame( array(), $post_meta->updates );
 	}
+
+	public function test_published_rows_get_an_inspect_link_for_administrators_only(): void {
+		global $lightweight_seo_test_hook_callbacks;
+		global $lightweight_seo_test_user_can;
+
+		list( $post_list ) = $this->get_list();
+		$post_list->register_hooks();
+
+		$this->assertArrayHasKey( 'post_row_actions', $lightweight_seo_test_hook_callbacks );
+		$this->assertArrayHasKey( 'page_row_actions', $lightweight_seo_test_hook_callbacks );
+
+		$published = (object) array(
+			'ID'          => 7,
+			'post_type'   => 'post',
+			'post_status' => 'publish',
+		);
+		$actions   = $post_list->add_row_action( array( 'edit' => '<a>Edit</a>' ), $published );
+
+		$this->assertSame( array( 'edit', 'lightweight_seo_inspect' ), array_keys( $actions ) );
+		$this->assertStringContainsString( 'admin.php?page=lightweight-seo&amp;tab=tools&amp;inspect=', $actions['lightweight_seo_inspect'] );
+		$this->assertStringContainsString( '#lwseo-inspect">Inspect SEO</a>', $actions['lightweight_seo_inspect'] );
+
+		// The report comes from the public page, so a draft has none; neither has a list the column is not on.
+		foreach ( array(
+			array(
+				'ID'          => 7,
+				'post_type'   => 'post',
+				'post_status' => 'draft',
+			),
+			array(
+				'ID'          => 10,
+				'post_type'   => 'attachment',
+				'post_status' => 'publish',
+			),
+		) as $post ) {
+			$this->assertSame( array( 'edit' => '<a>Edit</a>' ), $post_list->add_row_action( array( 'edit' => '<a>Edit</a>' ), (object) $post ) );
+		}
+
+		$lightweight_seo_test_user_can = false;
+
+		$this->assertArrayNotHasKey( 'lightweight_seo_inspect', $post_list->add_row_action( array(), $published ) );
+	}
 }

@@ -96,7 +96,7 @@ class Lightweight_SEO_Admin_UI {
 	 * @since    1.1.0
 	 * @param    string    $state         One of success, warning, pending, or info.
 	 * @param    string    $title         What is being reported.
-	 * @param    string    $text          Optional. Supporting detail.
+	 * @param    string|array    $text    Optional. Supporting detail: one line, or several.
 	 * @param    array     $action        Optional. Link with label, url, and new_tab keys.
 	 * @param    array     $attributes    Optional. Extra attributes for the row. A true value prints a bare attribute.
 	 * @return   void
@@ -129,8 +129,10 @@ class Lightweight_SEO_Admin_UI {
 
 		echo esc_html( $title ) . '</span>';
 
-		if ( '' !== (string) $text ) {
-			echo '<p class="lwseo-status__text">' . esc_html( $text ) . '</p>';
+		foreach ( (array) $text as $line ) {
+			if ( '' !== (string) $line ) {
+				echo '<p class="lwseo-status__text">' . esc_html( $line ) . '</p>';
+			}
 		}
 
 		echo '</div>';
@@ -295,6 +297,17 @@ class Lightweight_SEO_Admin_UI {
 			<option value="1" <?php selected( $value, '1' ); ?>><?php esc_html_e( 'Hide from search results', 'lightweight-seo' ); ?></option>
 		</select>
 		<?php
+	}
+
+	/**
+	 * Get the address of the "Inspect a page" card with one address ready to be inspected.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $address    Address on this site.
+	 * @return   string
+	 */
+	public static function inspect_url( $address ) {
+		return admin_url( 'admin.php?page=lightweight-seo&tab=tools&inspect=' . rawurlencode( (string) $address ) ) . '#lwseo-inspect';
 	}
 
 	/**

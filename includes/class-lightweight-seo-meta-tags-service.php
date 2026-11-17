@@ -42,6 +42,65 @@ class Lightweight_SEO_Meta_Tags_Service {
 	 * @return   void
 	 */
 	public function add_meta_tags() {
+		list( $tags, $context ) = $this->build_meta_tags();
+
+		do_action( 'lightweight_seo_before_meta_tags', $tags, $context );
+
+		foreach ( $this->get_printable_tags( $tags ) as $tag ) {
+			echo '<meta ' . esc_attr( $tag['attribute'] ) . '="' . esc_attr( $tag['key'] ) . '" content="' . esc_attr( $tag['value'] ) . '" />' . "\n";
+		}
+
+		do_action( 'lightweight_seo_after_meta_tags', $tags, $context );
+	}
+
+	/**
+	 * Get the meta tags of the current request exactly as they are printed.
+	 *
+	 * @since    1.1.0
+	 * @return   array Tags with attribute, key, and value.
+	 */
+	public function get_meta_tags() {
+		list( $tags ) = $this->build_meta_tags();
+
+		return $this->get_printable_tags( $tags );
+	}
+
+	/**
+	 * Keep the tags that can be printed, with their values as they are printed.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $tags    Filtered tag definitions.
+	 * @return   array
+	 */
+	private function get_printable_tags( $tags ) {
+		$printable = array();
+
+		foreach ( (array) $tags as $tag ) {
+			if ( ! isset( $tag['attribute'], $tag['key'], $tag['value'] ) ) {
+				continue;
+			}
+
+			if ( ! in_array( $tag['attribute'], array( 'name', 'property' ), true ) ) {
+				continue;
+			}
+
+			$printable[] = array(
+				'attribute' => $tag['attribute'],
+				'key'       => $tag['key'],
+				'value'     => $this->normalize_attribute_value( $tag['value'] ),
+			);
+		}
+
+		return $printable;
+	}
+
+	/**
+	 * Build the meta tags of the current request and pass them through the public filter.
+	 *
+	 * @since    1.1.0
+	 * @return   array The filtered tag definitions, and the context they were built from.
+	 */
+	private function build_meta_tags() {
 		$context = array_merge(
 			array(
 				'description'     => '',
@@ -180,23 +239,7 @@ class Lightweight_SEO_Meta_Tags_Service {
 			}
 		);
 
-		$tags = apply_filters( 'lightweight_seo_meta_tags', $tags, $context );
-
-		do_action( 'lightweight_seo_before_meta_tags', $tags, $context );
-
-		foreach ( $tags as $tag ) {
-			if ( ! isset( $tag['attribute'], $tag['key'], $tag['value'] ) ) {
-				continue;
-			}
-
-			if ( ! in_array( $tag['attribute'], array( 'name', 'property' ), true ) ) {
-				continue;
-			}
-
-			echo '<meta ' . esc_attr( $tag['attribute'] ) . '="' . esc_attr( $tag['key'] ) . '" content="' . esc_attr( $this->normalize_attribute_value( $tag['value'] ) ) . '" />' . "\n";
-		}
-
-		do_action( 'lightweight_seo_after_meta_tags', $tags, $context );
+		return array( apply_filters( 'lightweight_seo_meta_tags', $tags, $context ), $context );
 	}
 
 	/**

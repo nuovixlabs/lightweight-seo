@@ -294,6 +294,10 @@ class Lightweight_SEO_Admin_Page {
 			),
 			'tools'      => array(
 				array(
+					'section'     => 'lightweight_seo_inspect_section',
+					'description' => __( 'See what Lightweight SEO sends for one address on this site, and where each value comes from.', 'lightweight-seo' ),
+				),
+				array(
 					'section'     => 'lightweight_seo_migration_section',
 					'fields'      => array( 'import_source', 'import_actions', 'import_report' ),
 					'title'       => __( 'Import from another SEO plugin', 'lightweight-seo' ),

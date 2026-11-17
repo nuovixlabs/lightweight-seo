@@ -847,6 +847,58 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( '<summary>What the variables mean</summary>', $appearance );
 	}
 
+	public function test_inspect_card_opens_the_tools_tab_and_never_submits_its_address(): void {
+		$output = $this->render_tab( 'tools' );
+
+		// It is the first card, and it tells the script how to ask a page for its report.
+		$this->assertLessThan( strpos( $output, 'Import from another SEO plugin' ), strpos( $output, 'Inspect a page' ) );
+		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_inspect_page">Address</label>', $output );
+		$this->assertStringContainsString( 'id="lwseo-inspect"', $output );
+		$this->assertStringContainsString( 'data-arg="lightweight_seo_inspect"', $output );
+		$this->assertStringContainsString( 'data-nonce="nonce-lightweight_seo_inspect"', $output );
+		$this->assertStringContainsString( 'data-home-host="example.com"', $output );
+		// The address is a tool input, not a setting: it has no name, so saving the tab cannot store it.
+		$this->assertStringContainsString( '<input type="url" id="lightweight_seo_inspect_page" value="" placeholder="https://example.com/"', $output );
+		$this->assertStringNotContainsString( '[inspect_page]', $output );
+		$this->assertStringContainsString( '<button type="button" class="button lwseo-inspect__run">Inspect</button>', $output );
+		$this->assertStringContainsString( '<div class="lwseo-inspect__report" aria-live="polite"></div>', $output );
+		// With no address yet there is no report to link to.
+		$this->assertStringContainsString( '<p class="lwseo-inspect__fallback" hidden>', $output );
+	}
+
+	public function test_inspect_card_starts_from_an_address_on_this_site_only(): void {
+		$settings = new Lightweight_SEO_Settings();
+		$this->get_admin_settings( $settings )->register_settings();
+
+		$render = function ( $address ) use ( $settings ) {
+			$_GET = array(
+				'tab'     => 'tools',
+				'inspect' => $address,
+			);
+
+			ob_start();
+			( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+
+			return (string) ob_get_clean();
+		};
+
+		$own     = $render( 'https://example.com/a-post/?paged=2' );
+		$foreign = $render( 'https://other.example/a-post/' );
+		$script  = $render( 'javascript:alert(1)' );
+
+		$this->assertStringContainsString( 'id="lightweight_seo_inspect_page" value="https://example.com/a-post/?paged=2"', $own );
+		// Without the script, the same report opens as a page of its own.
+		$this->assertStringContainsString( '<p class="lwseo-inspect__fallback">', $own );
+		$this->assertStringContainsString( 'href="https://example.com/a-post/?paged=2&amp;lightweight_seo_inspect=1&amp;_wpnonce=nonce-lightweight_seo_inspect"', $own );
+
+		foreach ( array( $foreign, $script ) as $output ) {
+			$this->assertStringContainsString( 'id="lightweight_seo_inspect_page" value=""', $output );
+			$this->assertStringContainsString( '<p class="lwseo-inspect__fallback" hidden>', $output );
+			$this->assertStringNotContainsString( 'other.example', $output );
+			$this->assertStringNotContainsString( 'alert(1)', $output );
+		}
+	}
+
 	public function test_tools_save_explicitly_deletes_retained_search_console_data(): void {
 		global $lightweight_seo_test_options;
 
@@ -968,6 +1020,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_schema_section'       => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as', 'enable_schema_output', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
 				'lightweight_seo_verification_section' => array( 'verification_google', 'verification_bing', 'verification_pinterest', 'verification_yandex' ),
 				'lightweight_seo_redirects_section'    => array( 'enable_auto_redirects', 'redirect_rules', 'generated_redirect_rules', 'redirect_export', 'redirect_health' ),
+				'lightweight_seo_inspect_section'      => array( 'inspect_page' ),
 				'lightweight_seo_migration_section'    => array( 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
 				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids', 'ai_readiness' ),

@@ -687,6 +687,76 @@ input[type="search"] + .lwseo-table-wrap {
 	margin-top: var(--lwseo-space-3);
 }
 
+/* Inspect: an address, a button, and the report of that address. ------- */
+
+.lwseo-inspect__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lwseo-space-2);
+}
+
+.lwseo .lwseo-inspect__row input {
+	flex: 1 1 16rem;
+	max-width: none;
+}
+
+.lwseo-inspect__address {
+	margin: var(--lwseo-space-4) 0 0;
+}
+
+.lwseo-inspect__address code {
+	overflow-wrap: anywhere;
+}
+
+.lwseo-inspect__section {
+	margin-top: var(--lwseo-space-4);
+}
+
+.lwseo .lwseo-inspect__heading {
+	font-size: var(--lwseo-text-md);
+	margin: 0 0 var(--lwseo-space-2);
+}
+
+.lwseo-inspect__section .lwseo-table-wrap,
+.lwseo-inspect__section .lwseo-details {
+	margin-top: var(--lwseo-space-2);
+}
+
+.lwseo-inspect__result .lwseo-status__text,
+.lwseo-inspect__result .lwseo-table td {
+	overflow-wrap: anywhere;
+}
+
+/* The report as a page of its own, outside the administration area. */
+.lwseo-inspect-page {
+	background: var(--lwseo-surface);
+	color: var(--lwseo-text);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	font-size: var(--lwseo-text-base);
+	line-height: var(--lwseo-leading);
+	margin: 0 auto;
+	max-width: var(--lwseo-measure);
+	padding: var(--lwseo-space-5) var(--lwseo-space-4);
+}
+
+/* Outside the administration area WordPress supplies neither its list reset nor its screen reader helper. */
+.lwseo-inspect-page ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.lwseo-inspect-page .screen-reader-text {
+	border: 0;
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+}
+
 /* Log: plain output from a tool run. */
 
 .lwseo .lwseo-log {

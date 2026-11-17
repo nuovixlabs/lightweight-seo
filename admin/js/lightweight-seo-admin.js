@@ -41,6 +41,98 @@
 			};
 		}
 
+		/* Inspect ------------------------------------------------------------ */
+
+		// The report of a page is produced by that page. The browser asks the address for it with the
+		// administrator's own sign-in, and shows what comes back. Nothing here is saved.
+		$('.lwseo-inspect').each(function() {
+			var box = $(this);
+			var input = box.find('input[type="url"]');
+			var status = box.find('.lwseo-inspect__status');
+			var report = box.find('.lwseo-inspect__report');
+			var fallback = box.find('.lwseo-inspect__fallback');
+
+			// Build the address that asks for the report, or null when the address is not on this site.
+			function reportUrl(address, form) {
+				var url;
+
+				try {
+					url = new URL(address);
+				} catch (error) {
+					return null;
+				}
+
+				if (url.host !== box.attr('data-home-host')) {
+					return null;
+				}
+
+				url.searchParams.set(box.attr('data-arg'), form);
+				url.searchParams.set('_wpnonce', box.attr('data-nonce'));
+
+				return url;
+			}
+
+			function fail(message) {
+				status.text(message);
+				fallback.prop('hidden', !fallback.find('a').attr('href'));
+			}
+
+			function run() {
+				var address = $.trim(input.val());
+				var url = reportUrl(address, 'fragment');
+
+				report.empty();
+				fallback.prop('hidden', true).find('a').attr('href', '');
+
+				if (!url) {
+					status.text(box.attr('data-outside') || '');
+					return;
+				}
+
+				fallback.find('a').attr('href', reportUrl(address, '1').toString());
+				status.text(box.attr('data-working') || '');
+
+				window.fetch(url.toString(), {credentials: 'same-origin', cache: 'no-store'}).then(function(response) {
+					// Only a report carries this header. Anything else is the page itself, usually after a redirect.
+					if (response.headers.get('X-Lightweight-SEO-Inspect') !== '1') {
+						return {redirected: response.redirected ? response.url : ''};
+					}
+
+					return response.text().then(function(html) {
+						return {html: html};
+					});
+				}).then(function(result) {
+					if (result.html) {
+						status.text('');
+						// The report is markup this plugin printed and escaped; it holds no script.
+						report[0].innerHTML = result.html;
+					} else if (result.redirected) {
+						status.text((box.attr('data-redirected') || '').replace('%s', result.redirected));
+						input.val(result.redirected);
+					} else {
+						fail(box.attr('data-error') || '');
+					}
+				}).catch(function() {
+					fail(box.attr('data-error') || '');
+				});
+			}
+
+			box.find('.lwseo-inspect__run').on('click', run);
+
+			// The field sits inside the settings form, where Enter would otherwise save the settings.
+			input.on('keydown', function(event) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					run();
+				}
+			});
+
+			// Arriving from an "Inspect" link, the address is already filled in.
+			if ($.trim(input.val())) {
+				run();
+			}
+		});
+
 		/* Module cards ------------------------------------------------------- */
 
 		// A link to a collapsed module opens it, so the reader lands on its settings.

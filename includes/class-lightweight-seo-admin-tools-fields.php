@@ -273,6 +273,80 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	}
 
 	/**
+	 * Render the "Inspect a page" field: an address, a button, and the region the report appears in.
+	 *
+	 * The field has no name, so it is never saved. The script asks the address
+	 * itself for its report; without the script, the link opens the same report.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function inspect_page_render() {
+		$address = $this->get_inspect_address();
+		$nonce   = wp_create_nonce( LIGHTWEIGHT_SEO_INSPECT_ARG );
+		$report  = '' !== $address ? add_query_arg(
+			array(
+				LIGHTWEIGHT_SEO_INSPECT_ARG => '1',
+				'_wpnonce'                  => $nonce,
+			),
+			$address
+		) : '';
+		?>
+		<div
+			class="lwseo-inspect"
+			id="lwseo-inspect"
+			data-arg="<?php echo esc_attr( LIGHTWEIGHT_SEO_INSPECT_ARG ); ?>"
+			data-nonce="<?php echo esc_attr( $nonce ); ?>"
+			data-home-host="<?php echo esc_attr( $this->get_home_host() ); ?>"
+			data-working="<?php echo esc_attr( __( 'Asking the page…', 'lightweight-seo' ) ); ?>"
+			data-outside="<?php echo esc_attr( __( 'Enter an address on this site.', 'lightweight-seo' ) ); ?>"
+			data-error="<?php echo esc_attr( __( 'The report could not be loaded here. Open it in a new tab instead, or reload this screen and try again.', 'lightweight-seo' ) ); ?>"
+			<?php /* translators: %s: address a redirect leads to. */ ?>
+			data-redirected="<?php echo esc_attr( __( 'This address sends visitors to %s, so there is nothing to report for it. That address is now in the field.', 'lightweight-seo' ) ); ?>"
+		>
+			<div class="lwseo-inspect__row">
+				<input type="url" id="lightweight_seo_inspect_page" value="<?php echo esc_url( $address ); ?>" placeholder="<?php echo esc_attr( home_url( '/' ) ); ?>" class="regular-text" autocomplete="off">
+				<button type="button" class="button lwseo-inspect__run"><?php esc_html_e( 'Inspect', 'lightweight-seo' ); ?></button>
+			</div>
+			<p class="lwseo-help"><?php esc_html_e( 'Asks the page itself, so the report shows what a visitor’s browser and a search engine receive right now.', 'lightweight-seo' ); ?></p>
+			<p class="lwseo-help lwseo-inspect__status" role="status"></p>
+			<p class="lwseo-inspect__fallback"<?php echo '' === $report ? ' hidden' : ''; ?>>
+				<a href="<?php echo esc_url( $report ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open the report in a new tab', 'lightweight-seo' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'lightweight-seo' ); ?></span></a>
+			</p>
+			<div class="lwseo-inspect__report" aria-live="polite"></div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get the host of this site, with its port when it has one, as a browser reports it.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	private function get_home_host() {
+		$host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+		$port = wp_parse_url( home_url( '/' ), PHP_URL_PORT );
+
+		return $host . ( $port ? ':' . (int) $port : '' );
+	}
+
+	/**
+	 * Get the address the screen was opened to inspect, when it is on this site.
+	 *
+	 * @since    1.1.0
+	 * @return   string Address, or an empty string.
+	 */
+	private function get_inspect_address() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: the address only prefills a field, and is dropped unless it is on this site.
+		$address = isset( $_GET['inspect'] ) ? esc_url_raw( wp_unslash( $_GET['inspect'] ) ) : '';
+		$host    = strtolower( (string) wp_parse_url( $address, PHP_URL_HOST ) );
+		$port    = wp_parse_url( $address, PHP_URL_PORT );
+
+		return '' !== $address && $host . ( $port ? ':' . (int) $port : '' ) === $this->get_home_host() ? $address : '';
+	}
+
+	/**
 	 * Render the standalone forms that the import and deletion controls submit.
 	 *
 	 * Each action carries its own nonce, so one forged or replayed request cannot

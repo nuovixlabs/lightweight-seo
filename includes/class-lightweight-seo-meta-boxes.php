@@ -335,6 +335,10 @@ class Lightweight_SEO_Meta_Boxes {
 					}
 					?>
 				</ul>
+				<?php // The report is produced by the public page, so there is one only once the page is published. ?>
+				<?php if ( 'publish' === (string) ( $post->post_status ?? '' ) && current_user_can( 'manage_options' ) ) : ?>
+					<p class="lwseo-help"><a href="<?php echo esc_url( Lightweight_SEO_Admin_UI::inspect_url( (string) get_permalink( $post->ID ) ) ); ?>"><?php esc_html_e( 'Inspect what is sent for this page', 'lightweight-seo' ); ?></a></p>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php

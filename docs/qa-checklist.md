@@ -81,6 +81,14 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Verification: paste a bare code, then the whole meta tag a service shows; both must save as the code. A value that is not a code must show an error that names the service and keep the saved code.
 - Title variables: save each of the four new variables in a title format, in a content type's format, and in a page's own SEO title, meta description, social title, and social description, and in a term's and an author's SEO title. Reopen each and confirm it still reads exactly as typed; `%category%` in particular must not come back as `tegory%`.
 - Title variables: open "What the variables mean" on "Search appearance" and confirm every variable button has a line there. In the editor, type a title that uses `%page%` and `%category%` on a post without a category and confirm the preview has no stray separator.
+- Inspect: on the Tools tab, inspect a post, a page, a custom post type item, a term archive, an author archive, a date archive, a search, page two of an archive, the homepage, and a missing address. For each, the title, robots directives, canonical, description, sharing tags, and schema types in the report must equal the page source fetched separately.
+- Inspect: hide a content type, hide one item, set one item to "Show", hide author and date archives, and set WordPress to discourage search engines; each reason must appear in the report in the settings screen's own words, and disappear when the cause is removed.
+- Inspect: confirm the title and description sources for an item with its own values, an item using its content type's format, the homepage, and a search page.
+- Inspect: enter an address that a redirect rule sends elsewhere; the card must say where it goes and put that address in the field. Enter an address on another site; the card must refuse it without making a request.
+- Inspect: follow "Inspect SEO" from a post list row and "Inspect what is sent for this page" from the editor's Checks tab; each must open the Tools tab with the report already shown. Neither link may appear for a draft or for a user who cannot manage options.
+- Inspect: press Enter in the address field and confirm the report runs, the settings are not saved, and "Unsaved changes" does not appear.
+- Inspect: with JavaScript disabled, arrive from one of those links and open "Open the report in a new tab"; the same report must show as a page of its own.
+- Inspect: with another SEO plugin active, confirm the report says which outputs are held back instead of listing values that are not printed.
 - Post list: confirm the "SEO" column on the Posts, Pages, and each custom post type list, and not in the Media Library. For an item with nothing set it must read "Title: default" and "Description: from content" or "Description: none"; with its own values, "own"; and "Hidden from search" only when the item is hidden, by its own choice or through its content type.
 - Post list: open Quick Edit; the SEO title, description, and search choice must be filled with the saved values, variables included. Change all three and save; the row must update in place, the page source must follow, and the editor panel must show the same values. Confirm the canonical, social fields, and other robots directives of that item are unchanged.
 - Post list: hide a page for the first time from Quick Edit or Bulk Edit and confirm the page prints `noindex` without `nofollow`.
@@ -122,6 +130,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 ## Security and privacy
 
 - Confirm every mutation requires both the documented capability and a nonce.
+- Request any address with the inspect argument while signed out, as a user who cannot manage options, and with a wrong nonce; each must return the normal page with no report and no `X-Lightweight-SEO-Inspect` header.
 - Confirm object saves use object-specific edit capabilities.
 - Test stored and reflected output escaping with HTML and CSV-formula payloads.
 - Test redirect scheme, host, chain, loop, and malformed-rule validation.

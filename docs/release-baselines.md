@@ -21,7 +21,7 @@ Changes made after these measurements add two shared helper files, split the set
 
 `1.1.0-rc.3` rebuilds the administration interface and adds one administration-only file (44 runtime package files). It was also tagged without repeating these measurements; only the package file count was rechecked. Re-measure every row before tagging the stable `1.1.0` release.
 
-Work after `1.1.0-rc.3` adds two administration-only files: `admin/js/lightweight-seo-formats.js`, loaded on the settings screen, and `includes/class-lightweight-seo-post-list.php`, loaded in the administration area for the post list column. The exported package now holds 46 files, counted with `git archive`. Neither file is loaded on a visitor request. The other rows have not been measured again.
+Work after `1.1.0-rc.3` adds three files. `admin/js/lightweight-seo-formats.js` is loaded on the settings screen, `includes/class-lightweight-seo-post-list.php` in the administration area for the post list column, and `includes/class-lightweight-seo-inspector.php` only when an administrator asks for the report of a page. None is loaded on a visitor request. The exported package now holds 47 files, counted with `git archive`. The other rows have not been measured again.
 
 Reference environment: local WordPress 6.0, Twenty Twenty-Two, PHP 8.5, MySQL 8, loopback HTTP, no persistent object cache. Each response-time result is the median of 100 sequential warm homepage requests after 10 warm-ups. Query and exact peak-memory values are averages of 20 instrumented warm requests.
 

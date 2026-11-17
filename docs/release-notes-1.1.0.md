@@ -129,6 +129,18 @@ Titles, descriptions, and title formats are now sanitized in a way that keeps va
 
 The Media Library and taxonomy term lists are unchanged. One administration-only file is new; see [Release Baselines](release-baselines.md).
 
+## Inspect a page since rc.3
+
+The Tools tab opens with an "Inspect a page" card: enter any address on the site and see what Lightweight SEO sends for it, and where each value comes from.
+
+- The report covers what kind of page WordPress resolved, whether search engines may show it and every reason that hides it, the title and description with their sources, the canonical address, the sharing tags, the sitemap, and the structured data.
+- The page produces its own report, so the report is exactly what a visitor's browser receives. It works for posts, archives, search results, later pages, and missing addresses. An address that redirects is reported as a redirect.
+- An "Inspect SEO" link in each post list row and "Inspect what is sent for this page" in the editor's Checks tab open the report for that item.
+- PHP requests nothing: the administrator's browser asks the site. The inspect argument does nothing without the `manage_options` capability and a valid nonce, and a visitor request pays for one check.
+- The report is read-only and holds no score. It is built on the public API's `get_current_context()` together with the tags and schema graph the page prints.
+
+One file is new and is loaded only for an inspect request; see [Release Baselines](release-baselines.md).
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.
