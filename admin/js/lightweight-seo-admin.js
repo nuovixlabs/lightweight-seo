@@ -12,6 +12,127 @@
 		var mediaTitle = strings.mediaTitle || 'Select or Upload Image';
 		var mediaButton = strings.mediaButton || 'Use this image';
 
+		/* Post list ---------------------------------------------------------- */
+
+		// Quick Edit starts from the values printed in the row's SEO column. The fields are saved only
+		// once they have been filled from there, so a row without them can never save blanks. WordPress
+		// keeps printing a column that Screen Options hides, so a hidden column counts as not there.
+		if (window.inlineEditPost && typeof window.inlineEditPost.edit === 'function') {
+			var coreQuickEdit = window.inlineEditPost.edit;
+
+			window.inlineEditPost.edit = function(id) {
+				var result = coreQuickEdit.apply(this, arguments);
+				var postId = typeof id === 'object' ? this.getId(id) : id;
+				var saved = $('#post-' + postId).find('.lightweight-seo-list-data');
+				var group = $('#edit-' + postId).find('.lightweight-seo-quick-edit');
+
+				var shown = saved.length > 0 && !saved.closest('td').hasClass('hidden');
+
+				group.prop('hidden', !shown);
+
+				if (shown) {
+					group.find('[name="lightweight_seo_list_title"]').val(saved.attr('data-title') || '');
+					group.find('[name="lightweight_seo_list_description"]').val(saved.attr('data-description') || '');
+					group.find('[name="lightweight_seo_list_noindex"]').val(saved.attr('data-noindex') || '');
+					group.find('[name="lightweight_seo_list_loaded"]').val('1');
+				}
+
+				return result;
+			};
+		}
+
+		/* Inspect ------------------------------------------------------------ */
+
+		// The report of a page is produced by that page. The browser asks the address for it with the
+		// administrator's own sign-in, and shows what comes back. Nothing here is saved.
+		$('.lwseo-inspect').each(function() {
+			var box = $(this);
+			var input = box.find('input[type="url"]');
+			var status = box.find('.lwseo-inspect__status');
+			var report = box.find('.lwseo-inspect__report');
+			var fallback = box.find('.lwseo-inspect__fallback');
+
+			// Build the address that asks for the report, or null when the address is not on this site.
+			function reportUrl(address, form) {
+				var url;
+
+				try {
+					url = new URL(address);
+				} catch (error) {
+					return null;
+				}
+
+				if (url.host !== box.attr('data-home-host')) {
+					return null;
+				}
+
+				url.searchParams.set(box.attr('data-arg'), form);
+				url.searchParams.set('_wpnonce', box.attr('data-nonce'));
+
+				return url;
+			}
+
+			function fail(message) {
+				status.text(message);
+				fallback.prop('hidden', !fallback.find('a').attr('href'));
+			}
+
+			function run() {
+				var address = $.trim(input.val());
+				var url = reportUrl(address, 'fragment');
+
+				report.empty();
+				fallback.prop('hidden', true).find('a').attr('href', '');
+
+				if (!url) {
+					status.text(box.attr('data-outside') || '');
+					return;
+				}
+
+				fallback.find('a').attr('href', reportUrl(address, '1').toString());
+				status.text(box.attr('data-working') || '');
+
+				window.fetch(url.toString(), {credentials: 'same-origin', cache: 'no-store'}).then(function(response) {
+					// Only a report carries this header. Anything else is the page itself, usually after a redirect.
+					if (response.headers.get('X-Lightweight-SEO-Inspect') !== '1') {
+						return {redirected: response.redirected ? response.url : ''};
+					}
+
+					return response.text().then(function(html) {
+						return {html: html};
+					});
+				}).then(function(result) {
+					if (result.html) {
+						status.text('');
+						// The report is markup this plugin printed and escaped; it holds no script.
+						report[0].innerHTML = result.html;
+					} else if (result.redirected) {
+						status.text((box.attr('data-redirected') || '').replace('%s', result.redirected));
+						input.val(result.redirected);
+					} else {
+						fail(box.attr('data-error') || '');
+					}
+				}).catch(function() {
+					fail(box.attr('data-error') || '');
+				});
+			}
+
+			box.find('.lwseo-inspect__run').on('click', run);
+
+			// The field sits inside the settings form, where Enter would otherwise save the settings.
+			input.on('keydown', function(event) {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					run();
+				}
+			});
+
+			// Arriving from an "Inspect" link, the address is already filled in.
+			if ($.trim(input.val())) {
+				run();
+			}
+		});
+
 		/* Module cards ------------------------------------------------------- */
 
 		// A link to a collapsed module opens it, so the reader lands on its settings.
@@ -324,6 +445,12 @@
 
 				rows.each(function(index) {
 					var hint = hints[checks[index]] || '';
+					var inactive = format.inactive ? format.inactive(rowValues(this)) : [];
+
+					// A cell the row's type has no use for is switched off, and keeps what was typed.
+					$(this).find('[data-field]').each(function() {
+						$(this).prop('disabled', inactive.indexOf($(this).attr('data-field')) !== -1);
+					});
 
 					$(this).attr('aria-label', fillTemplate(wrapper.attr('data-item'), [index + 1]))
 						.toggleClass('has-hint', hint !== '')
@@ -604,6 +731,75 @@
 			initPagePicker($(this));
 		});
 
+		/* Search preview size ------------------------------------------------ */
+
+		// A search result cuts long titles and descriptions off, differently on a phone. The preview keeps
+		// the full text and shows it shortened for the size that is chosen.
+		function fitSearchPreview(preview) {
+			var limits = (preview.data('limits') || {})[preview.attr('data-device')] || {};
+
+			preview.find('[data-preview="title"], [data-preview="description"]').each(function() {
+				var element = $(this);
+				var full = element.data('lwseoFull');
+
+				if (full === undefined) {
+					full = element.text();
+					element.data('lwseoFull', full);
+				}
+
+				element.text(settingFormats.truncate ? settingFormats.truncate(full, limits[element.attr('data-preview')]) : full);
+			});
+		}
+
+		// Give a preview new text, then show it as the chosen size would.
+		function setSearchPreviewText(preview, part, text) {
+			preview.find('[data-preview="' + part + '"]').data('lwseoFull', text);
+			fitSearchPreview(preview);
+		}
+
+		$('.lwseo-preview--search').each(function() {
+			var preview = $(this);
+			var buttons = preview.find('.lwseo-preview__device');
+
+			buttons.on('click', function() {
+				preview.attr('data-device', $(this).attr('data-device'));
+				buttons.each(function() {
+					$(this).attr('aria-pressed', $(this).attr('data-device') === preview.attr('data-device') ? 'true' : 'false');
+				});
+				fitSearchPreview(preview);
+			});
+
+			preview.find('.lwseo-preview__devices').prop('hidden', false);
+			fitSearchPreview(preview);
+		});
+
+		/* Title format previews ---------------------------------------------- */
+
+		// Each title format shows what it becomes for a real page of this site. The server prints the
+		// preview of what is saved; this keeps it in step while the format or the separator is edited.
+		$('.lwseo-format-preview').each(function() {
+			var preview = $(this);
+			var field = $('#' + preview.attr('data-for'));
+			var separator = $('#lightweight_seo_title_separator');
+			var tokens = preview.data('tokens') || {};
+			var output = preview.find('.lwseo-format-preview__text');
+
+			if (!field.length || !settingFormats.resolveTokens) {
+				return;
+			}
+
+			function render() {
+				if (separator.length && separator.val()) {
+					tokens['%sep%'] = separator.val();
+				}
+
+				output.text($.trim(settingFormats.resolveTokens($.trim(field.val()) || preview.attr('data-fallback') || '', tokens).replace(/\s+/g, ' ')));
+			}
+
+			field.on('input change', render);
+			separator.on('change', render);
+		});
+
 		/* Redirect table search ---------------------------------------------- */
 
 		$('#lightweight-seo-redirect-search').on('input', function() {
@@ -612,6 +808,13 @@
 			$('.lwseo-redirect-table tbody tr').each(function() {
 				$(this).toggle(!query || $(this).text().toLowerCase().indexOf(query) !== -1);
 			});
+		});
+
+		/* Matrix ------------------------------------------------------------- */
+
+		// A remark such as "Shown items only" applies while the row's box is clear.
+		$(document).on('change', '[data-lwseo-matrix-notes]', function() {
+			$(this).closest('tr').find('.lwseo-matrix__check + .lwseo-matrix__note').prop('hidden', this.checked);
 		});
 
 		/* Title variables ---------------------------------------------------- */
@@ -821,7 +1024,12 @@
 				return state.imageWidth ? state.imageWidth >= 1200 : null;
 			},
 			indexing: function(state) {
-				return !state.noindex;
+				// The page's own choice wins. Without one it follows its content type.
+				if (state.noindex === '1') {
+					return false;
+				}
+
+				return state.noindex === 'index' || !state.typeHidden ? true : 'type';
 			},
 			canonical: function(state) {
 				if (state.canonical === '') {
@@ -852,13 +1060,9 @@
 				featuredWidth: Number(metabox.attr('data-featured-width')) || 0
 			};
 
-			// Mirror the server: %title%, %sitename%, %tagline%, and %sep% are replaced in custom values.
+			// Variables are filled by the same tested function the settings previews use.
 			function resolveTokens(text) {
-				$.each(tokens, function(token, value) {
-					text = text.split(token).join(value);
-				});
-
-				return text;
+				return settingFormats.resolveTokens(text, tokens);
 			}
 
 			function readState() {
@@ -870,7 +1074,8 @@
 					description: plainText(description ? resolveTokens(description) : post.descriptionFallback),
 					image: ownImage || post.featuredImage || defaultImage,
 					imageWidth: 0,
-					noindex: $('#lightweight_seo_noindex').prop('checked'),
+					noindex: $('#lightweight_seo_noindex').val() || '',
+					typeHidden: metabox.attr('data-type-noindex') === '1',
 					canonical: $.trim($('#lightweight_seo_canonical_url').val()),
 					homeHost: homeHost
 				};
@@ -960,8 +1165,10 @@
 			function render() {
 				var state = readState();
 
-				metabox.find('[data-preview="title"]').text(state.title);
-				metabox.find('[data-preview="description"]').text(state.description);
+				var searchPreview = metabox.find('.lwseo-preview--search');
+
+				setSearchPreviewText(searchPreview, 'title', state.title);
+				setSearchPreviewText(searchPreview, 'description', state.description);
 				metabox.find('[data-preview="social-title"]').text(state.socialTitle);
 				metabox.find('[data-preview="social-description"]').text(state.socialDescription);
 				renderLength('lightweight_seo_title', state.title);

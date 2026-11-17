@@ -156,6 +156,33 @@ class Lightweight_SEO_Admin_Page {
 	}
 
 	/**
+	 * List the places of the settings screen that the command palette can jump to.
+	 *
+	 * @since    1.1.0
+	 * @return   array[] Commands with a name, a label, and a url.
+	 */
+	public function get_palette_commands() {
+		$commands = array();
+
+		foreach ( $this->get_admin_tabs() as $tab_id => $label ) {
+			$commands[] = array(
+				'name'  => 'lightweight-seo/' . $tab_id,
+				/* translators: %s: name of a settings tab, such as Search appearance. */
+				'label' => sprintf( __( 'Lightweight SEO: %s', 'lightweight-seo' ), $label ),
+				'url'   => $this->get_tab_url( $tab_id ),
+			);
+		}
+
+		$commands[] = array(
+			'name'  => 'lightweight-seo/inspect',
+			'label' => __( 'Lightweight SEO: Inspect a page', 'lightweight-seo' ),
+			'url'   => $this->get_tab_url( 'tools', 'lwseo-inspect' ),
+		);
+
+		return $commands;
+	}
+
+	/**
 	 * Build the URL of a settings tab.
 	 *
 	 * @param string $tab_id   Tab ID.
@@ -182,7 +209,8 @@ class Lightweight_SEO_Admin_Page {
 	 */
 	private function get_tab_cards( $tab ) {
 		$hreflang_fields  = array( 'enable_hreflang_output', 'hreflang_mappings' );
-		$redirects_fields = array( 'enable_auto_redirects', 'redirect_rules' );
+		$redirects_fields = array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules' );
+		$indexnow_fields  = array( 'enable_indexnow' );
 		$ai_fields        = array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids' );
 
 		if ( 'modules' === $tab ) {
@@ -192,11 +220,15 @@ class Lightweight_SEO_Admin_Page {
 			}
 
 			if ( $this->is_module_enabled( 'redirects' ) ) {
-				array_push( $redirects_fields, 'generated_redirect_rules', 'redirect_export', 'redirect_health' );
+				array_push( $redirects_fields, 'redirect_test', 'generated_redirect_rules', 'redirect_export', 'redirect_import', 'redirect_health' );
 			}
 
 			if ( $this->is_module_enabled( 'ai' ) ) {
 				$ai_fields[] = 'ai_readiness';
+			}
+
+			if ( $this->is_module_enabled( 'indexnow' ) ) {
+				$indexnow_fields[] = 'indexnow_status';
 			}
 		}
 
@@ -204,7 +236,7 @@ class Lightweight_SEO_Admin_Page {
 			'appearance' => array(
 				array(
 					'section'     => 'lightweight_seo_general_section',
-					'fields'      => array( 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format' ),
+					'fields'      => array( 'title_separator', 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format' ),
 					'title'       => __( 'Title formats', 'lightweight-seo' ),
 					'description' => __( 'How page titles are built across the site. Any page can override its own title.', 'lightweight-seo' ),
 					'intro'       => true,
@@ -219,8 +251,17 @@ class Lightweight_SEO_Admin_Page {
 			'indexation' => array(
 				array(
 					'section'     => 'lightweight_seo_indexation_section',
-					'description' => __( 'Keep low-value pages out of search results and choose how previews appear.', 'lightweight-seo' ),
+					'fields'      => array( 'content_types' ),
+					'title'       => __( 'Content types', 'lightweight-seo' ),
+					'description' => __( 'What search engines may show, what the sitemap lists, and how titles are built for each kind of content. Any page, term, or author can make its own choice.', 'lightweight-seo' ),
 					'intro'       => true,
+					'plain'       => true,
+				),
+				array(
+					'section'     => 'lightweight_seo_indexation_section',
+					'fields'      => array( 'default_max_image_preview', 'enable_media_x_robots_headers' ),
+					'title'       => __( 'Previews and headers', 'lightweight-seo' ),
+					'description' => __( 'How large an image preview may be, and how attachment pages repeat their instructions.', 'lightweight-seo' ),
 				),
 				array(
 					'section'     => 'lightweight_seo_sitemap_section',
@@ -232,9 +273,18 @@ class Lightweight_SEO_Admin_Page {
 			'identity'   => array(
 				array(
 					'section'     => 'lightweight_seo_schema_section',
-					'fields'      => array( 'enable_schema_output', 'organization_same_as' ),
+					'fields'      => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as' ),
+					'title'       => __( 'Site identity', 'lightweight-seo' ),
+					'description' => __( 'Who this site belongs to. Used in structured data and when pages are shared.', 'lightweight-seo' ),
+				),
+				array(
+					'section'     => 'lightweight_seo_verification_section',
+					'description' => __( 'Proves to each service that you own this site, with a meta tag on the homepage.', 'lightweight-seo' ),
+				),
+				array(
+					'section'     => 'lightweight_seo_schema_section',
+					'fields'      => array( 'enable_schema_output' ),
 					'description' => __( 'JSON-LD schema built from your site identity and SEO context.', 'lightweight-seo' ),
-					'intro'       => true,
 				),
 			),
 			'modules'    => array(
@@ -255,7 +305,7 @@ class Lightweight_SEO_Admin_Page {
 				array(
 					'section'     => 'lightweight_seo_redirects_section',
 					'fields'      => $redirects_fields,
-					'description' => __( 'Exact redirect rules, plus automatic redirects when a published slug changes.', 'lightweight-seo' ),
+					'description' => __( 'Redirects for single addresses or whole sections, plus automatic redirects when a published slug changes.', 'lightweight-seo' ),
 					'intro'       => true,
 					'module'      => 'redirects',
 				),
@@ -264,6 +314,13 @@ class Lightweight_SEO_Admin_Page {
 					'description' => __( 'Google Tag Manager, or direct GA4 and Meta Pixel IDs.', 'lightweight-seo' ),
 					'intro'       => true,
 					'module'      => 'tracking',
+				),
+				array(
+					'section'     => 'lightweight_seo_indexnow_section',
+					'fields'      => $indexnow_fields,
+					'description' => __( 'Tells search engines that support IndexNow when a page is published, changed, or removed.', 'lightweight-seo' ),
+					'intro'       => true,
+					'module'      => 'indexnow',
 				),
 				array(
 					'section'     => 'lightweight_seo_ai_discovery_section',
@@ -276,10 +333,20 @@ class Lightweight_SEO_Admin_Page {
 			),
 			'tools'      => array(
 				array(
+					'section'     => 'lightweight_seo_inspect_section',
+					'description' => __( 'See what Lightweight SEO sends for one address on this site, and where each value comes from.', 'lightweight-seo' ),
+				),
+				array(
+					'section'     => 'lightweight_seo_migration_section',
+					'fields'      => array( 'settings_export', 'settings_import' ),
+					'title'       => __( 'Export and import settings', 'lightweight-seo' ),
+					'description' => __( 'Move the settings of this plugin to another site, or keep a copy. Titles and descriptions saved on pages are not part of the file.', 'lightweight-seo' ),
+				),
+				array(
 					'section'     => 'lightweight_seo_migration_section',
 					'fields'      => array( 'import_source', 'import_actions', 'import_report' ),
 					'title'       => __( 'Import from another SEO plugin', 'lightweight-seo' ),
-					'description' => __( 'Preview and import saved metadata from Yoast SEO, Rank Math, or All in One SEO, 50 posts at a time.', 'lightweight-seo' ),
+					'description' => __( 'Preview and import titles, descriptions, and other fields saved on posts by another SEO plugin, 50 posts at a time.', 'lightweight-seo' ),
 					'intro'       => true,
 				),
 				'legacy' => array(
@@ -315,6 +382,7 @@ class Lightweight_SEO_Admin_Page {
 			'redirects' => __( 'Redirects', 'lightweight-seo' ),
 			'tracking'  => __( 'Tracking codes', 'lightweight-seo' ),
 			'ai'        => __( 'AI Discovery', 'lightweight-seo' ),
+			'indexnow'  => __( 'IndexNow', 'lightweight-seo' ),
 		);
 	}
 
@@ -422,7 +490,12 @@ class Lightweight_SEO_Admin_Page {
 			'%title%'    => (string) get_bloginfo( 'name' ),
 			'%sitename%' => (string) get_bloginfo( 'name' ),
 			'%tagline%'  => (string) get_bloginfo( 'description' ),
-			'%sep%'      => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+			'%sep%'      => $this->settings->get_title_separator(),
+			// The homepage preview is its first page; it has no category, and an author only when it is a page.
+			'%page%'     => '',
+			'%category%' => '',
+			'%author%'   => '',
+			'%year%'     => (string) wp_date( 'Y' ),
 		);
 		$title       = $this->settings->get_home_title_format();
 		$description = (string) ( $options['meta_description'] ?? '' );
@@ -440,9 +513,10 @@ class Lightweight_SEO_Admin_Page {
 		$front_page_id = $this->get_front_page_id();
 
 		if ( $front_page_id ) {
-			$front_page        = get_post( $front_page_id );
-			$post_meta         = $this->post_meta->get_all( $front_page_id );
-			$tokens['%title%'] = (string) get_the_title( $front_page_id );
+			$front_page         = get_post( $front_page_id );
+			$post_meta          = $this->post_meta->get_all( $front_page_id );
+			$tokens['%title%']  = (string) get_the_title( $front_page_id );
+			$tokens['%author%'] = (string) get_the_author_meta( 'display_name', (int) ( $front_page->post_author ?? 0 ) );
 
 			if ( ! empty( $post_meta['seo_title'] ) ) {
 				$title = $post_meta['seo_title'];
@@ -719,6 +793,14 @@ class Lightweight_SEO_Admin_Page {
 		if ( 'tools' === $tab ) {
 			// Tool actions post to their own handlers, and a form cannot nest inside the settings form.
 			$this->tools_fields->render_action_forms();
+		}
+
+		if ( 'modules' === $tab && $this->is_module_enabled( 'redirects' ) ) {
+			$this->tools_fields->render_redirect_forms( $this->plugin_name );
+		}
+
+		if ( 'modules' === $tab && $this->is_module_enabled( 'indexnow' ) ) {
+			$this->tools_fields->render_indexnow_form();
 		}
 	}
 

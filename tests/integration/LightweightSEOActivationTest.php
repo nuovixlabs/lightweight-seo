@@ -17,7 +17,7 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 		Lightweight_SEO_Lifecycle::activate();
 
 		$this->assertIsArray( get_option( LIGHTWEIGHT_SEO_OPTION_NAME ) );
-		$this->assertSame( 3, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertSame( 4, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
 		$this->assertSame(
 			array(
 				'redirects' => false,
@@ -25,6 +25,7 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 				'tracking'  => false,
 				'local-seo' => false,
 				'ai'        => false,
+				'indexnow'  => false,
 			),
 			get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME )
 		);
@@ -62,7 +63,7 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'enable_meta_keywords', $migrated );
 		$this->assertArrayNotHasKey( 'enable_image_sitemaps', $migrated );
 		$this->assertSame( '{"private_key":"preserve-until-cleanup"}', $migrated['search_console_service_account_json'] );
-		$this->assertSame( 3, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertSame( 4, get_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
 		$this->assertTrue( get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME )['tracking'] );
 		$this->assertFalse( get_option( 'lightweight_seo_internal_links_report' ) );
 		$this->assertFalse( get_option( 'lightweight_seo_search_console_token' ) );
@@ -90,6 +91,6 @@ final class LightweightSEOActivationTest extends WP_UnitTestCase {
 
 		Lightweight_SEO_Lifecycle::activate( true );
 
-		$this->assertSame( 3, get_blog_option( $second_site_id, LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
+		$this->assertSame( 4, get_blog_option( $second_site_id, LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION ) );
 	}
 }

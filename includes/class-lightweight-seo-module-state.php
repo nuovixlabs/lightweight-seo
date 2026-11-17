@@ -19,7 +19,7 @@ class Lightweight_SEO_Module_State {
 	private $states;
 
 	/**
-	 * Register the legacy-settings bridge used until module settings screens land.
+	 * Keep module state in step with the switches saved on the settings screen.
 	 */
 	public function __construct() {
 		add_action( 'update_option_' . LIGHTWEIGHT_SEO_OPTION_NAME, array( $this, 'sync_legacy_settings' ), 10, 2 );
@@ -66,7 +66,7 @@ class Lightweight_SEO_Module_State {
 	}
 
 	/**
-	 * Keep the existing settings controls functional during the module UI transition.
+	 * Follow the module switches whenever the settings are saved.
 	 *
 	 * @param mixed $old_value Previous settings.
 	 * @param mixed $new_value Updated settings.
@@ -86,20 +86,28 @@ class Lightweight_SEO_Module_State {
 	}
 
 	/**
-	 * Derive module states from pre-registry settings without exposing those settings.
+	 * Derive module states from the settings without exposing those settings.
 	 *
-	 * @param array $settings Legacy settings.
+	 * Every module follows its own switch. Settings saved before Redirects and Tracking had
+	 * one carry no switch for them, so those two fall back to what was configured.
+	 *
+	 * @param array $settings Stored settings.
 	 * @return array
 	 */
 	public static function derive_from_legacy_settings( $settings ) {
 		$redirect_rules = trim( (string) ( $settings['redirect_rules'] ?? '' ) );
 
 		return array(
-			'redirects' => '1' === (string) ( $settings['enable_auto_redirects'] ?? '' ) || '' !== $redirect_rules,
+			'redirects' => isset( $settings['enable_redirects'] )
+				? '1' === (string) $settings['enable_redirects']
+				: '1' === (string) ( $settings['enable_auto_redirects'] ?? '' ) || '' !== $redirect_rules,
 			'hreflang'  => '1' === (string) ( $settings['enable_hreflang_output'] ?? '' ),
-			'tracking'  => self::has_tracking_identifier( $settings ),
+			'tracking'  => isset( $settings['enable_tracking'] )
+				? '1' === (string) $settings['enable_tracking']
+				: self::has_tracking_identifier( $settings ),
 			'local-seo' => '1' === (string) ( $settings['enable_local_business_schema'] ?? '' ),
 			'ai'        => '1' === (string) ( $settings['enable_ai_discovery'] ?? '' ),
+			'indexnow'  => '1' === (string) ( $settings['enable_indexnow'] ?? '' ),
 		);
 	}
 
@@ -113,7 +121,7 @@ class Lightweight_SEO_Module_State {
 		$normalized = array();
 		$states     = is_array( $states ) ? $states : array();
 
-		foreach ( array( 'redirects', 'hreflang', 'tracking', 'local-seo', 'ai' ) as $module_id ) {
+		foreach ( array( 'redirects', 'hreflang', 'tracking', 'local-seo', 'ai', 'indexnow' ) as $module_id ) {
 			$normalized[ $module_id ] = ! empty( $states[ $module_id ] );
 		}
 

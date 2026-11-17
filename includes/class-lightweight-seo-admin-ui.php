@@ -21,6 +21,27 @@ if ( ! defined( 'WPINC' ) ) {
 class Lightweight_SEO_Admin_UI {
 
 	/**
+	 * About how many characters of a title and a description a search result shows before it cuts them off.
+	 *
+	 * These are approximations that match the length guidance of the editor panel;
+	 * a search engine measures width, not characters. A phone gives a title a
+	 * second line and a description less room.
+	 *
+	 * @since    1.1.0
+	 * @var      array
+	 */
+	const SEARCH_PREVIEW_LIMITS = array(
+		'desktop' => array(
+			'title'       => 60,
+			'description' => 160,
+		),
+		'mobile'  => array(
+			'title'       => 78,
+			'description' => 120,
+		),
+	);
+
+	/**
 	 * Dashicon and screen reader prefix for each status.
 	 *
 	 * @since    1.1.0
@@ -96,7 +117,7 @@ class Lightweight_SEO_Admin_UI {
 	 * @since    1.1.0
 	 * @param    string    $state         One of success, warning, pending, or info.
 	 * @param    string    $title         What is being reported.
-	 * @param    string    $text          Optional. Supporting detail.
+	 * @param    string|array    $text    Optional. Supporting detail: one line, or several.
 	 * @param    array     $action        Optional. Link with label, url, and new_tab keys.
 	 * @param    array     $attributes    Optional. Extra attributes for the row. A true value prints a bare attribute.
 	 * @return   void
@@ -129,8 +150,10 @@ class Lightweight_SEO_Admin_UI {
 
 		echo esc_html( $title ) . '</span>';
 
-		if ( '' !== (string) $text ) {
-			echo '<p class="lwseo-status__text">' . esc_html( $text ) . '</p>';
+		foreach ( (array) $text as $line ) {
+			if ( '' !== (string) $line ) {
+				echo '<p class="lwseo-status__text">' . esc_html( $line ) . '</p>';
+			}
 		}
 
 		echo '</div>';
@@ -175,6 +198,148 @@ class Lightweight_SEO_Admin_UI {
 	}
 
 	/**
+	 * Print a matrix: one row per item and one column per setting, with one control in each cell.
+	 *
+	 * A tick box follows a hidden input of the same name, so the cell always submits
+	 * a value and the form posts the shape that is stored.
+	 *
+	 * @since    1.1.0
+	 * @param    array    $args    Matrix settings:
+	 *                             first    Heading of the column that names each row.
+	 *                             columns  Column headings keyed by column.
+	 *                             groups   Groups of rows, each with label and rows. A row has label
+	 *                                      and cells keyed by column. A cell has a type:
+	 *                                      check  name, checked, on, and off (submitted values), plus
+	 *                                             optional note and note_hidden for a remark beside the
+	 *                                             box, and toggles_notes when the box hides the row's
+	 *                                             notes while it is ticked.
+	 *                                      text   name, value, placeholder, and tokens (accepts title variables).
+	 *                                      none   optional text; without it the cell reads as having no setting.
+	 * @return   void
+	 */
+	public static function matrix( $args ) {
+		$columns = (array) $args['columns'];
+		?>
+		<div class="lwseo-table-wrap">
+			<table class="lwseo-table lwseo-matrix">
+				<thead>
+					<tr>
+						<th scope="col"><?php echo esc_html( $args['first'] ); ?></th>
+						<?php foreach ( $columns as $key => $label ) : ?>
+							<th scope="col" class="<?php echo esc_attr( 'lwseo-matrix__' . sanitize_key( $key ) ); ?>"><?php echo esc_html( $label ); ?></th>
+						<?php endforeach; ?>
+					</tr>
+				</thead>
+				<?php foreach ( (array) $args['groups'] as $group ) : ?>
+					<tbody>
+						<tr class="lwseo-matrix__group">
+							<th scope="rowgroup" colspan="<?php echo esc_attr( (string) ( count( $columns ) + 1 ) ); ?>"><?php echo esc_html( $group['label'] ); ?></th>
+						</tr>
+						<?php foreach ( (array) $group['rows'] as $row ) : ?>
+							<tr>
+								<th scope="row"><?php echo esc_html( $row['label'] ); ?></th>
+								<?php
+								foreach ( $columns as $key => $label ) {
+									/* translators: 1: name of a content type, such as Posts, 2: name of a setting, such as Title format. */
+									self::matrix_cell( $row['cells'][ $key ] ?? array(), $label, sprintf( _x( '%1$s: %2$s', 'matrix control label', 'lightweight-seo' ), $row['label'], $label ) );
+								}
+								?>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				<?php endforeach; ?>
+			</table>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Print one cell of a matrix.
+	 *
+	 * @since    1.1.0
+	 * @param    array     $cell      Cell settings, as described in matrix().
+	 * @param    string    $column    Column heading, shown beside the control when rows stack on a narrow screen.
+	 * @param    string    $label     Accessible name of the control: the row and the column.
+	 * @return   void
+	 */
+	private static function matrix_cell( $cell, $column, $label ) {
+		$type = (string) ( $cell['type'] ?? 'none' );
+
+		echo '<td class="' . esc_attr( 'lwseo-matrix__cell lwseo-matrix__cell--' . sanitize_key( $type ) ) . '" data-label="' . esc_attr( $column ) . '">';
+
+		if ( 'check' === $type ) {
+			echo '<input type="hidden" name="' . esc_attr( $cell['name'] ) . '" value="' . esc_attr( $cell['off'] ) . '">';
+			echo '<label class="lwseo-matrix__check"><input type="checkbox" name="' . esc_attr( $cell['name'] ) . '" value="' . esc_attr( $cell['on'] ) . '"' . ( empty( $cell['checked'] ) ? '' : ' checked="checked"' ) . ( empty( $cell['toggles_notes'] ) ? '' : ' data-lwseo-matrix-notes' ) . '>';
+			echo '<span class="screen-reader-text">' . esc_html( $label ) . '</span></label>';
+
+			if ( '' !== (string) ( $cell['note'] ?? '' ) ) {
+				echo '<span class="lwseo-matrix__note"' . ( empty( $cell['note_hidden'] ) ? '' : ' hidden' ) . '>' . esc_html( $cell['note'] ) . '</span>';
+			}
+		} elseif ( 'select' === $type ) {
+			echo '<select name="' . esc_attr( $cell['name'] ) . '" aria-label="' . esc_attr( $label ) . '">';
+
+			foreach ( (array) $cell['options'] as $value => $text ) {
+				echo '<option value="' . esc_attr( (string) $value ) . '"' . selected( (string) $value, (string) ( $cell['value'] ?? '' ), false ) . '>' . esc_html( $text ) . '</option>';
+			}
+
+			echo '</select>';
+		} elseif ( 'text' === $type ) {
+			echo '<input type="text" name="' . esc_attr( $cell['name'] ) . '" value="' . esc_attr( $cell['value'] ?? '' ) . '" placeholder="' . esc_attr( $cell['placeholder'] ?? '' ) . '" aria-label="' . esc_attr( $label ) . '" autocomplete="off"' . ( empty( $cell['tokens'] ) ? '' : ' data-lwseo-tokens' ) . '>';
+		} elseif ( '' !== (string) ( $cell['text'] ?? '' ) ) {
+			echo '<span class="lwseo-matrix__note">' . esc_html( $cell['text'] ) . '</span>';
+		} else {
+			echo '<span aria-hidden="true">–</span><span class="screen-reader-text">' . esc_html__( 'No setting', 'lightweight-seo' ) . '</span>';
+		}
+
+		echo '</td>';
+	}
+
+	/**
+	 * Print the search visibility choice of one page, term, or author: follow its content type, show, or hide.
+	 *
+	 * The markup is a plain select with no plugin classes, so it also fits the native term and user screens.
+	 *
+	 * @since    1.1.0
+	 * @param    string         $name           Input name.
+	 * @param    mixed          $value          Stored choice.
+	 * @param    string         $type_label     Plural name of the content type, such as Posts.
+	 * @param    bool           $type_hidden    Whether the content type is hidden from search results.
+	 * @param    string|null    $id             Optional. Input ID. Defaults to the name; pass an empty string for a
+	 *                                          select that WordPress copies, such as one in Quick Edit.
+	 * @return   void
+	 */
+	public static function visibility_select( $name, $value, $type_label, $type_hidden, $id = null ) {
+		$id    = null === $id ? $name : $id;
+		$value = in_array( (string) $value, array( '1', Lightweight_SEO_Settings::INDEX_OVERRIDE ), true ) ? (string) $value : '';
+
+		if ( $type_hidden ) {
+			/* translators: %s: plural name of a content type, such as Posts or Categories. */
+			$default = sprintf( __( 'Default for %s (currently hidden)', 'lightweight-seo' ), $type_label );
+		} else {
+			/* translators: %s: plural name of a content type, such as Posts or Categories. */
+			$default = sprintf( __( 'Default for %s (currently shown)', 'lightweight-seo' ), $type_label );
+		}
+		?>
+		<select<?php echo '' === $id ? '' : ' id="' . esc_attr( $id ) . '"'; ?> name="<?php echo esc_attr( $name ); ?>">
+			<option value="" <?php selected( $value, '' ); ?>><?php echo esc_html( $default ); ?></option>
+			<option value="<?php echo esc_attr( Lightweight_SEO_Settings::INDEX_OVERRIDE ); ?>" <?php selected( $value, Lightweight_SEO_Settings::INDEX_OVERRIDE ); ?>><?php esc_html_e( 'Show in search results', 'lightweight-seo' ); ?></option>
+			<option value="1" <?php selected( $value, '1' ); ?>><?php esc_html_e( 'Hide from search results', 'lightweight-seo' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Get the address of the "Inspect a page" card with one address ready to be inspected.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $address    Address on this site.
+	 * @return   string
+	 */
+	public static function inspect_url( $address ) {
+		return admin_url( 'admin.php?page=lightweight-seo&tab=tools&inspect=' . rawurlencode( (string) $address ) ) . '#lwseo-inspect';
+	}
+
+	/**
 	 * Print title variables as buttons that insert themselves into the focused field.
 	 *
 	 * @since    1.1.0
@@ -203,7 +368,12 @@ class Lightweight_SEO_Admin_UI {
 		$icon        = (string) get_site_icon_url( 64 );
 		$description = (string) ( $args['description'] ?? '' );
 		?>
-		<div class="lwseo-preview lwseo-preview--search"<?php echo empty( $args['live'] ) ? '' : ' aria-live="polite"'; ?>>
+		<div class="lwseo-preview lwseo-preview--search" data-device="desktop" data-limits="<?php echo esc_attr( wp_json_encode( self::SEARCH_PREVIEW_LIMITS ) ); ?>"<?php echo empty( $args['live'] ) ? '' : ' aria-live="polite"'; ?>>
+			<?php // The switch only works with the script, which also shortens the text; without it the full text is shown. ?>
+			<div class="lwseo-preview__devices" role="group" aria-label="<?php esc_attr_e( 'Preview size', 'lightweight-seo' ); ?>" hidden>
+				<button type="button" class="button button-small lwseo-preview__device" data-device="desktop" aria-pressed="true"><?php esc_html_e( 'Desktop', 'lightweight-seo' ); ?></button>
+				<button type="button" class="button button-small lwseo-preview__device" data-device="mobile" aria-pressed="false"><?php esc_html_e( 'Mobile', 'lightweight-seo' ); ?></button>
+			</div>
 			<div class="lwseo-preview__body">
 				<div class="lwseo-preview__source">
 					<?php if ( '' !== $icon ) : ?>

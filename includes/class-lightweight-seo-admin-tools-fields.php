@@ -27,6 +27,24 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	/** ID of the form that deletes retained legacy 404 log entries. */
 	const DELETE_404_LOGS_FORM_ID = 'lightweight-seo-delete-404-logs-form';
 
+	/** ID of the form that uploads a settings file. */
+	const SETTINGS_IMPORT_FORM_ID = 'lightweight-seo-settings-import-form';
+
+	/** ID of the form that undoes the last settings import. */
+	const SETTINGS_UNDO_FORM_ID = 'lightweight-seo-settings-undo-form';
+
+	/** ID of the form that uploads a CSV file of redirect rules. */
+	const REDIRECT_IMPORT_FORM_ID = 'lightweight-seo-redirect-import-form';
+
+	/** ID of the form that asks which redirect rule applies to an address. */
+	const REDIRECT_TEST_FORM_ID = 'lightweight-seo-redirect-test-form';
+
+	/** ID of the form that sends one test address to IndexNow. */
+	const INDEXNOW_TEST_FORM_ID = 'lightweight-seo-indexnow-test-form';
+
+	/** Query argument that carries the address to test against the redirect rules. */
+	const REDIRECT_TEST_ARG = 'lightweight_seo_test_path';
+
 	/**
 	 * Shared settings service.
 	 *
@@ -99,6 +117,9 @@ class Lightweight_SEO_Admin_Tools_Fields {
 			<option value="yoast" <?php selected( $state['source'], 'yoast' ); ?>><?php esc_html_e( 'Yoast SEO', 'lightweight-seo' ); ?></option>
 			<option value="rank_math" <?php selected( $state['source'], 'rank_math' ); ?>><?php esc_html_e( 'Rank Math', 'lightweight-seo' ); ?></option>
 			<option value="aioseo" <?php selected( $state['source'], 'aioseo' ); ?>><?php esc_html_e( 'All in One SEO', 'lightweight-seo' ); ?></option>
+			<option value="seopress" <?php selected( $state['source'], 'seopress' ); ?>><?php esc_html_e( 'SEOPress', 'lightweight-seo' ); ?></option>
+			<option value="the_seo_framework" <?php selected( $state['source'], 'the_seo_framework' ); ?>><?php esc_html_e( 'The SEO Framework', 'lightweight-seo' ); ?></option>
+			<option value="slim_seo" <?php selected( $state['source'], 'slim_seo' ); ?>><?php esc_html_e( 'Slim SEO', 'lightweight-seo' ); ?></option>
 		</select>
 		<?php
 	}
@@ -273,6 +294,128 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	}
 
 	/**
+	 * Render the "Inspect a page" field: an address, a button, and the region the report appears in.
+	 *
+	 * The field has no name, so it is never saved. The script asks the address
+	 * itself for its report; without the script, the link opens the same report.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function inspect_page_render() {
+		$address = $this->get_inspect_address();
+		$nonce   = wp_create_nonce( LIGHTWEIGHT_SEO_INSPECT_ARG );
+		$report  = '' !== $address ? add_query_arg(
+			array(
+				LIGHTWEIGHT_SEO_INSPECT_ARG => '1',
+				'_wpnonce'                  => $nonce,
+			),
+			$address
+		) : '';
+		?>
+		<div
+			class="lwseo-inspect"
+			id="lwseo-inspect"
+			data-arg="<?php echo esc_attr( LIGHTWEIGHT_SEO_INSPECT_ARG ); ?>"
+			data-nonce="<?php echo esc_attr( $nonce ); ?>"
+			data-home-host="<?php echo esc_attr( $this->get_home_host() ); ?>"
+			data-working="<?php echo esc_attr( __( 'Asking the page…', 'lightweight-seo' ) ); ?>"
+			data-outside="<?php echo esc_attr( __( 'Enter an address on this site.', 'lightweight-seo' ) ); ?>"
+			data-error="<?php echo esc_attr( __( 'The report could not be loaded here. Open it in a new tab instead, or reload this screen and try again.', 'lightweight-seo' ) ); ?>"
+			<?php /* translators: %s: address a redirect leads to. */ ?>
+			data-redirected="<?php echo esc_attr( __( 'This address sends visitors to %s, so there is nothing to report for it. That address is now in the field.', 'lightweight-seo' ) ); ?>"
+		>
+			<div class="lwseo-inspect__row">
+				<input type="url" id="lightweight_seo_inspect_page" value="<?php echo esc_url( $address ); ?>" placeholder="<?php echo esc_attr( home_url( '/' ) ); ?>" class="regular-text" autocomplete="off">
+				<button type="button" class="button lwseo-inspect__run"><?php esc_html_e( 'Inspect', 'lightweight-seo' ); ?></button>
+			</div>
+			<p class="lwseo-help"><?php esc_html_e( 'Asks the page itself, so the report shows what a visitor’s browser and a search engine receive right now.', 'lightweight-seo' ); ?></p>
+			<p class="lwseo-help lwseo-inspect__status" role="status"></p>
+			<p class="lwseo-inspect__fallback"<?php echo '' === $report ? ' hidden' : ''; ?>>
+				<a href="<?php echo esc_url( $report ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open the report in a new tab', 'lightweight-seo' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'lightweight-seo' ); ?></span></a>
+			</p>
+			<div class="lwseo-inspect__report" aria-live="polite"></div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get the host of this site, with its port when it has one, as a browser reports it.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	private function get_home_host() {
+		$host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+		$port = wp_parse_url( home_url( '/' ), PHP_URL_PORT );
+
+		return $host . ( $port ? ':' . (int) $port : '' );
+	}
+
+	/**
+	 * Get the address the screen was opened to inspect, when it is on this site.
+	 *
+	 * @since    1.1.0
+	 * @return   string Address, or an empty string.
+	 */
+	private function get_inspect_address() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: the address only prefills a field, and is dropped unless it is on this site.
+		$address = isset( $_GET['inspect'] ) ? esc_url_raw( wp_unslash( $_GET['inspect'] ) ) : '';
+		$host    = strtolower( (string) wp_parse_url( $address, PHP_URL_HOST ) );
+		$port    = wp_parse_url( $address, PHP_URL_PORT );
+
+		return '' !== $address && $host . ( $port ? ':' . (int) $port : '' ) === $this->get_home_host() ? $address : '';
+	}
+
+	/**
+	 * Render the settings file download.
+	 *
+	 * @since    1.1.0
+	 */
+	public function settings_export_render() {
+		$url = wp_nonce_url( admin_url( 'admin-post.php?action=' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT ), Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT );
+		?>
+		<div class="lwseo-buttons">
+			<a class="button" href="<?php echo esc_url( $url ); ?>"><?php esc_html_e( 'Download settings file', 'lightweight-seo' ); ?></a>
+		</div>
+		<p class="lwseo-help"><?php esc_html_e( 'A JSON file with the settings of every tab and which modules are on, as they are saved now. It holds no credentials and nothing kept from retired features.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the settings file upload, its confirmation, and the undo of the last import.
+	 *
+	 * @since    1.1.0
+	 */
+	public function settings_import_render() {
+		$undo_time = (int) ( get_option( 'lightweight_seo_settings_backup', array() )['saved_at'] ?? 0 );
+		?>
+		<div class="lwseo-inline">
+			<input type="file" id="lightweight_seo_settings_import" name="lightweight_seo_settings_file" accept=".json,application/json" form="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>">
+		</div>
+		<div class="lwseo-buttons">
+			<label class="lwseo-choice"><input type="checkbox" name="confirm_settings_import" value="1" required form="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>"><span><?php esc_html_e( 'Replace every Lightweight SEO setting on this site with the file', 'lightweight-seo' ); ?></span></label>
+			<button type="submit" class="button" form="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>"><?php esc_html_e( 'Import settings', 'lightweight-seo' ); ?></button>
+		</div>
+		<p class="lwseo-help"><?php esc_html_e( 'Every value goes through the same checks as on the settings tabs. A value the file does not hold, or one that fails a check, is set to its default. The settings in place now are kept, so the import can be undone.', 'lightweight-seo' ); ?></p>
+		<?php if ( $undo_time > 0 ) : ?>
+			<div class="lwseo-buttons">
+				<button type="submit" class="button-link button-link-delete" form="<?php echo esc_attr( self::SETTINGS_UNDO_FORM_ID ); ?>"><?php esc_html_e( 'Undo last import', 'lightweight-seo' ); ?></button>
+			</div>
+			<p class="lwseo-help">
+				<?php
+				printf(
+					/* translators: %s: date and time of the last settings import. */
+					esc_html__( 'Puts back the settings as they were before the import of %s. Changes saved since then are lost.', 'lightweight-seo' ),
+					esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $undo_time ) )
+				);
+				?>
+			</p>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
 	 * Render the standalone forms that the import and deletion controls submit.
 	 *
 	 * Each action carries its own nonce, so one forged or replayed request cannot
@@ -296,9 +439,55 @@ class Lightweight_SEO_Admin_Tools_Fields {
 			}
 			?>
 		</form>
+		<form id="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT ) ); ?>
+		</form>
+		<form id="<?php echo esc_attr( self::SETTINGS_UNDO_FORM_ID ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO ) ); ?>
+		</form>
 		<form id="<?php echo esc_attr( self::DELETE_404_LOGS_FORM_ID ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS ); ?>">
 			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS ) ); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Render the standalone forms that the Redirects card submits.
+	 *
+	 * The test is a plain GET of this screen, so it works without JavaScript and
+	 * changes nothing. The import posts a file to its own handler and nonce.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $plugin_name    Menu slug of the settings screen.
+	 * @return   void
+	 */
+	public function render_redirect_forms( $plugin_name ) {
+		?>
+		<form id="<?php echo esc_attr( self::REDIRECT_TEST_FORM_ID ); ?>" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) . '#lwseo-module-redirects' ); ?>">
+			<input type="hidden" name="page" value="<?php echo esc_attr( $plugin_name ); ?>">
+			<input type="hidden" name="tab" value="modules">
+		</form>
+		<form id="<?php echo esc_attr( self::REDIRECT_IMPORT_FORM_ID ); ?>" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT ) ); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Render the standalone form that the IndexNow test button submits.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function render_indexnow_form() {
+		?>
+		<form id="<?php echo esc_attr( self::INDEXNOW_TEST_FORM_ID ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST ) ); ?>
 		</form>
 		<?php
 	}

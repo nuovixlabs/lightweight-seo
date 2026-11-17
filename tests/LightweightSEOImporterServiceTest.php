@@ -41,7 +41,8 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 
 		$this->assertSame( 1, $preview['scanned_posts'] );
 		$this->assertSame( 1, $preview['eligible_posts'] );
-		$this->assertSame( 2, $preview['updated_fields'] );
+		// The description, the hidden state, and "follow links" for the page this import hides.
+		$this->assertSame( 3, $preview['updated_fields'] );
 		$this->assertSame( 1, $preview['skipped_fields'] );
 		$this->assertSame( array( 81 => array( 'seo_title' => 'Keep Existing' ) ), $values );
 
@@ -51,7 +52,156 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 		$this->assertSame( 'Keep Existing', $values[81]['seo_title'] );
 		$this->assertSame( 'Imported Description', $values[81]['seo_description'] );
 		$this->assertSame( '1', $values[81]['seo_noindex'] );
+		// Hidden by the import, so it prints "noindex" without the "nofollow" kept for pages hidden before 1.1.
+		$this->assertSame( '0', $values[81]['seo_nofollow'] );
 		$this->assertTrue( $service->has_rollback() );
+	}
+
+	public function test_a_page_that_was_already_hidden_keeps_its_follow_choice(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_post_meta = array( 81 => array( '_yoast_wpseo_meta-robots-noindex' => '1' ) );
+		$lightweight_seo_test_posts     = array(
+			81 => (object) array(
+				'ID'          => 81,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			),
+		);
+		$values                         = array( 81 => array( 'seo_noindex' => '1' ) );
+
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $values ) ) )->import_batch( 'yoast' );
+
+		$this->assertSame( array( 81 => array( 'seo_noindex' => '1' ) ), $values );
+	}
+
+	public function test_seopress_the_seo_framework_and_slim_seo_fields_are_read_from_where_each_plugin_stores_them(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_posts = array(
+			55 => (object) array(
+				'ID'             => 55,
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'attachment_url' => 'https://example.com/uploads/slim.jpg',
+			),
+		);
+
+		foreach ( array( 81, 82, 83, 84 ) as $post_id ) {
+			$lightweight_seo_test_posts[ $post_id ] = (object) array(
+				'ID'          => $post_id,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			);
+		}
+
+		$lightweight_seo_test_post_meta = array(
+			81 => array(
+				'_seopress_titles_title'       => '%%post_title%% %%page%% %%sep%% %%sitetitle%%',
+				'_seopress_titles_desc'        => 'About %%post_category%% by %%post_author%%, %%currentyear%%',
+				'_seopress_analysis_target_kw' => 'kept, for, export',
+				'_seopress_robots_canonical'   => 'https://example.com/canonical/',
+				'_seopress_robots_index'       => 'yes',
+				'_seopress_robots_follow'      => 'yes',
+				'_seopress_robots_snippet'     => 'yes',
+				'_seopress_social_fb_title'    => 'Shared %%wc_single_price%%',
+				'_seopress_social_fb_desc'     => 'Shared description',
+				'_seopress_social_fb_img'      => 'https://example.com/share.jpg',
+			),
+			82 => array(
+				'_genesis_title'          => 'Framework title',
+				'_genesis_description'    => 'Framework description',
+				'_genesis_canonical_uri'  => 'https://example.com/framework/',
+				'_genesis_noindex'        => '1',
+				'_genesis_nofollow'       => '-1',
+				'_genesis_noarchive'      => '1',
+				'_open_graph_title'       => 'Framework share title',
+				'_open_graph_description' => 'Framework share description',
+				'_social_image_url'       => 'https://example.com/framework.jpg',
+				'_social_image_id'        => '77',
+			),
+			83 => array(
+				// "Always show" for one page, with the other choices left at the site default.
+				'_genesis_noindex'   => -1,
+				'_genesis_nofollow'  => 0,
+				'_genesis_noarchive' => '',
+			),
+			84 => array(
+				'slim_seo' => array(
+					'title'          => '{{ post.title }} {{sep}} {{ page }} {{ sep }} {{ site.title }}',
+					'description'    => 'By {{ author.display_name }} in {{ current.year }}, {{ post.custom_field }}',
+					'canonical'      => 'https://example.com/slim/',
+					'noindex'        => 1,
+					'facebook_image' => '55',
+				),
+			),
+		);
+
+		$values  = array();
+		$service = new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $values ) );
+
+		$report = $service->import_batch( 'seopress' );
+
+		$this->assertSame(
+			array(
+				'seo_title'          => '%title% %sep% %page% %sep% %sitename%',
+				'seo_description'    => 'About %category% by %author%, %year%',
+				'seo_keywords'       => 'kept, for, export',
+				'seo_canonical_url'  => 'https://example.com/canonical/',
+				'seo_noindex'        => '1',
+				'seo_nofollow'       => '1',
+				'seo_nosnippet'      => '1',
+				'social_description' => 'Shared description',
+				'social_image'       => 'https://example.com/share.jpg',
+			),
+			$values[81]
+		);
+		// The WooCommerce price has no equivalent, so that one field waits for a person.
+		$this->assertSame( 1, $report['unsupported_fields'] );
+		$this->assertArrayNotHasKey( 82, $values );
+
+		$values = array();
+		$report = $service->import_batch( 'the_seo_framework' );
+
+		$this->assertSame(
+			array(
+				'seo_title'          => 'Framework title',
+				'seo_description'    => 'Framework description',
+				'seo_canonical_url'  => 'https://example.com/framework/',
+				'seo_noindex'        => '1',
+				'seo_nofollow'       => '0',
+				'seo_noarchive'      => '1',
+				'social_title'       => 'Framework share title',
+				'social_description' => 'Framework share description',
+				'social_image'       => 'https://example.com/framework.jpg',
+				'social_image_id'    => '77',
+			),
+			$values[82]
+		);
+		$this->assertSame( array( 'seo_noindex' => 'index' ), $values[83] );
+		$this->assertSame( 0, $report['unsupported_fields'] );
+
+		$values = array();
+		$report = $service->import_batch( 'slim_seo' );
+
+		$this->assertSame(
+			array(
+				'seo_title'         => '%title% %sep% %page% %sep% %sitename%',
+				'seo_canonical_url' => 'https://example.com/slim/',
+				'seo_noindex'       => '1',
+				'social_image'      => 'https://example.com/uploads/slim.jpg',
+				'seo_nofollow'      => '0',
+			),
+			$values[84]
+		);
+		$this->assertSame( 1, $report['unsupported_fields'] );
+
+		// A source this importer does not know reads nothing.
+		$values = array();
+		$this->assertSame( 0, $service->import_batch( 'another_plugin' )['scanned_posts'] );
+		$this->assertSame( array(), $values );
 	}
 
 	public function test_import_is_batched_and_exposes_a_stable_cursor(): void {
@@ -158,7 +308,8 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 
 		$report = $service->import_batch( 'yoast' );
 
-		$this->assertSame( 'Guide %sep% %sitename%', $values[91]['seo_title'] );
+		// The page variable has an equivalent now, so it is kept instead of dropped.
+		$this->assertSame( 'Guide %page% %sep% %sitename%', $values[91]['seo_title'] );
 		$this->assertArrayNotHasKey( 'seo_description', $values[91], 'An unconvertible variable must not be imported as literal text.' );
 		$this->assertSame( 1, $report['updated_fields'] );
 		$this->assertSame( 1, $report['unsupported_fields'] );
@@ -188,7 +339,48 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 		$aioseo_values = array();
 		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $aioseo_values ) ) )->import_batch( 'aioseo' );
 
-		$this->assertSame( '%title% %sep% %tagline%', $rank_math_values[92]['seo_title'] );
+		$this->assertSame( '%title% %page% %sep% %tagline%', $rank_math_values[92]['seo_title'] );
 		$this->assertSame( '%title% %sep% %sitename%', $aioseo_values[92]['seo_title'] );
+	}
+
+	public function test_year_author_and_category_variables_convert_only_where_they_mean_the_same(): void {
+		global $lightweight_seo_test_post_meta;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_post_meta = array(
+			93 => array(
+				'_yoast_wpseo_title'    => 'Best lenses %%currentyear%% %%sep%% by %%name%%',
+				// Yoast lists every category, which is not what %category% means here.
+				'_yoast_wpseo_metadesc' => 'Filed under %%category%%.',
+				'rank_math_title'       => '%title% %sep% %category% %sep% %currentyear% %sep% %name%',
+				'rank_math_description' => 'Tagged %tags%.',
+				'_aioseo_title'         => '#post_title #separator_sa #author_name #separator_sa #current_year',
+				// A bare page number and a list of categories have no equivalent.
+				'_aioseo_description'   => 'In #categories, page #page_number.',
+			),
+		);
+		$lightweight_seo_test_posts     = array(
+			93 => (object) array(
+				'ID'          => 93,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			),
+		);
+
+		$yoast = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $yoast ) ) )->import_batch( 'yoast' );
+
+		$rank_math = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $rank_math ) ) )->import_batch( 'rank_math' );
+
+		$aioseo = array();
+		( new Lightweight_SEO_Importer_Service( $this->get_post_meta_stub( $aioseo ) ) )->import_batch( 'aioseo' );
+
+		$this->assertSame( 'Best lenses %year% %sep% by %author%', $yoast[93]['seo_title'] );
+		$this->assertArrayNotHasKey( 'seo_description', $yoast[93] );
+		$this->assertSame( '%title% %sep% %category% %sep% %year% %sep% %author%', $rank_math[93]['seo_title'] );
+		$this->assertArrayNotHasKey( 'seo_description', $rank_math[93] );
+		$this->assertSame( '%title% %sep% %author% %sep% %year%', $aioseo[93]['seo_title'] );
+		$this->assertArrayNotHasKey( 'seo_description', $aioseo[93] );
 	}
 }

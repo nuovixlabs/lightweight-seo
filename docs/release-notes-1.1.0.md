@@ -74,6 +74,151 @@ No setting, option key, or saved format changes.
 
 Fixed: the editor filled the social image field with the featured image or the site default, so saving a post stored that image as the post's own. A later change of featured image or site default then left `og:image` on the old image. The field now holds only an image chosen for that post. Posts saved before this fix keep the image that was stored; clear their social image field to follow the featured image again.
 
+## Content types since rc.3
+
+The "Content and indexation" tab opens with one table for every public post type and taxonomy, plus author archives, date archives, and internal search pages.
+
+- Each post type and taxonomy can be shown in or hidden from search results, listed in or left out of the sitemap, and given its own title format. An empty title format keeps the site-wide format.
+- Author archives and date archives can be hidden from search results.
+- A single page, term, or author can still decide for itself, in both directions. The "Prevent search engines from indexing this page" tick box in the editor, and the "Noindex" tick box on term and author screens, became a "Search results" choice: follow the content type, show, or hide.
+- Hiding a post type also hides its archive page. A hidden content type lists only the items set to show in the sitemap, while "Leave hidden pages out of the sitemap" is on.
+- The editor's Indexing check says when a page is hidden only because its content type is hidden, and how to make an exception.
+- A homepage that is a page follows the Pages row like any other page. The table warns when Pages are hidden on such a site.
+- The two tick boxes for internal search pages and attachment pages moved into the table as its "Internal search pages" and "Media" rows.
+
+Nothing changes until a row is changed: every default matches the previous behavior, and no stored value is rewritten. Three settings are new in the existing settings option: `content_types`, `noindex_author_archives`, and `noindex_date_archives`. The per-item noindex value keeps `1` for hide, treats `0` or nothing as the content type default, and stores `index` for show. Earlier versions read `index` as not hidden.
+
+One existing rule changes once the new choice is used: an attachment page set to "Show" is indexable even while attachment pages are hidden as a type. Before, the attachment setting always won.
+
+For extensions, `is_indexable()` and the `indexable` and `robots` values of `get_object_context()` now include the content type default.
+
+## Site identity since rc.3
+
+"Schema and identity" opens with a "Site identity" card, and "Search appearance" gains a title separator.
+
+- The site can represent an organization or a person. A person is printed as a `Person` node with the identifier `#person`, and becomes the publisher of the WebSite and Article nodes.
+- The organization or person has its own name, which defaults to the site title, and its own logo or photo.
+- An organization without a logo keeps using the default social image, as before. A person never borrows it: a photo is printed only when one is chosen.
+- An X handle is printed as `twitter:site`. It can be typed as a handle or as a profile address.
+- The title separator sets what `%sep%` becomes: an en dash by default, or one of seven other characters.
+- "Organization profiles" is now "Profiles". Its stored key and format are unchanged.
+
+Nothing changes until a field is changed. Six settings are new in the existing settings option: `identity_type`, `identity_name`, `identity_logo`, `identity_logo_id`, `x_handle`, and `title_separator`. There is no migration.
+
+For extensions, the page context gains `twitter_site`, and the first node of the schema graph may be a `Person` with the identifier `#person` instead of an `Organization` with `#organization`.
+
+## Verification codes and title variables since rc.3
+
+- "Schema and identity" gains a "Site verification" card for Google Search Console, Bing Webmaster Tools, Pinterest, and Yandex Webmaster. Each code is printed as a meta tag on the homepage only. A field accepts the code or the whole meta tag the service shows. Nothing is requested from any service.
+- Titles and descriptions understand four more variables: `%category%` (a post's first category, or the category of a category archive), `%author%` (a post's author, or the author of an author archive), `%year%` (the current year), and `%page%` ("Page 2" and so on, from the second page of an archive or of a post split into pages).
+- One of these variables that has no value on a page is left out together with the separator beside it, so `%title% %sep% %page% %sep% %sitename%` has no gap on the first page. The four earlier variables behave exactly as before, including an empty tagline.
+- "Search appearance" explains every variable under "What the variables mean", and the variable buttons in the settings and in the editor offer the new ones.
+- Import converts more source variables instead of leaving them for review: the current year and the author name from Yoast SEO, Rank Math, and All in One SEO; `%category%` from Rank Math; and the page variable of Yoast SEO and Rank Math, which was dropped before. Theirs reads "Page 2 of 5"; `%page%` reads "Page 2".
+
+Four settings are new in the existing settings option: `verification_google`, `verification_bing`, `verification_pinterest`, and `verification_yandex`. There is no migration.
+
+Titles, descriptions, and title formats are now sanitized in a way that keeps variables whole. The WordPress text sanitizer removes anything shaped like a percent-encoded byte, which would have cut `%ca` out of `%category%`.
+
+## Post list since rc.3
+
+- The Posts, Pages, and custom post type lists gain a compact "SEO" column: whether the title and the description are the item's own, and "Hidden from search" when that applies. It reads only what WordPress has already loaded for the rows, adds no database query, and can be switched off in Screen Options.
+- Quick Edit gains an SEO title, a description, and the search visibility choice, filled with the saved values.
+- Bulk Edit gains the search visibility choice, with "— No change —" first. Titles and descriptions are not offered in bulk, because giving many pages the same one creates duplicates.
+- The list saves only the fields it shows, only when they were filled from the row, and only with its own nonce and the right to edit that item. Hiding the SEO column also hides its Quick Edit fields.
+- A page hidden from the list for the first time prints `noindex` only. A page hidden before 1.1 and not saved since keeps the `nofollow` it inherited.
+
+The Media Library and taxonomy term lists are unchanged. One administration-only file is new; see [Release Baselines](release-baselines.md).
+
+## Inspect a page since rc.3
+
+The Tools tab opens with an "Inspect a page" card: enter any address on the site and see what Lightweight SEO sends for it, and where each value comes from.
+
+- The report covers what kind of page WordPress resolved, whether search engines may show it and every reason that hides it, the title and description with their sources, the canonical address, the sharing tags, the sitemap, and the structured data.
+- The page produces its own report, so the report is exactly what a visitor's browser receives. It works for posts, archives, search results, later pages, and missing addresses. An address that redirects is reported as a redirect.
+- An "Inspect SEO" link in each post list row and "Inspect what is sent for this page" in the editor's Checks tab open the report for that item.
+- PHP requests nothing: the administrator's browser asks the site. The inspect argument does nothing without the `manage_options` capability and a valid nonce, and a visitor request pays for one check.
+- The report is read-only and holds no score. It is built on the public API's `get_current_context()` together with the tags and schema graph the page prints.
+
+One file is new and is loaded only for an inspect request; see [Release Baselines](release-baselines.md).
+
+## Module switches since rc.3
+
+- Every module card on "Optional modules" now starts with the same "Enable module" checkbox. Redirects and Tracking had none: they were on whenever a rule or an ID was saved, so the only way to turn one off was to delete what was configured.
+- A module that is switched off keeps its rules, IDs, and other settings, and loads no code.
+- On upgrade each of the two new switches is set to what its module is doing at that moment, so nothing turns on or off by itself.
+
+Two settings are new in the existing settings option: `enable_redirects` and `enable_tracking`. The settings schema version is now 4; migration step 4 writes the two switches from the stored module state and changes nothing else.
+
+## Redirects since rc.3
+
+- **Whole sections.** A rule whose old path ends in `/*` covers that path and everything under it. End the new path with `/*` as well and the rest of each address is kept: `/old-blog/* /blog/*` sends `/old-blog/2024/post` to `/blog/2024/post`. A rule for one exact path always wins, then the longest matching section.
+- **410 Gone.** A rule can answer that a page was removed on purpose: `/old-path 410`, or the "410 Gone" type in the row editor. The visitor sees the theme's "not found" page with the status 410, WordPress does not guess a similar address, and the page leaves the sitemap like any redirected page.
+- **Test an address.** The Redirects card shows which saved rule applies to a path, every hop it takes, and where it ends. It reads the saved rules only, requests nothing, and works without JavaScript.
+- **CSV import.** Upload a file with one rule per row (old path, new path or address, status code). Rows go through the same checks as typed rules; a rule for a path that already has one replaces it. The notice counts what was added, replaced, already there, and left out. The file is read and not kept.
+- Rules that would loop between sections, cover the whole site, or grow an address on every hop are refused when they are saved.
+- The redirect health report follows sections too, and a redirect that leads to a gone address is listed with `410` as its end.
+
+Stored rules keep their format, so nothing is migrated. One file is new, `includes/class-lightweight-seo-redirect-import.php`, loaded only for an import; see [Release Baselines](release-baselines.md).
+
+## Settings export, import, and WP-CLI since rc.3
+
+- The Tools tab gains "Export and import settings". The download is one JSON file with the settings of every tab and which modules are on. It holds no titles or descriptions of pages, no credentials, and nothing kept from retired features.
+- An import replaces every setting, only after its confirmation box is ticked. Each value goes through the same checks as on the settings tabs; a value the file does not hold, or one that fails a check, is set to its default and reported. A file from another site keeps image addresses and leaves out image IDs, the `llms.txt` page list, and translations tied to a page.
+- The settings in place before an import are kept, and "Undo last import" puts them back exactly as they were stored.
+- WP-CLI: `wp lightweight-seo settings export|import|undo-import`, `wp lightweight-seo module list|enable|disable`, and `wp lightweight-seo redirects import|test`. See [Developer API](developer-api.md#wp-cli).
+
+One option is new, `lightweight_seo_settings_backup`. It is not autoloaded, exists only between an import and its undo or the next import, and is removed on uninstall. Two files are new and neither is loaded on a visitor request; see [Release Baselines](release-baselines.md).
+
+## Structured data since rc.3
+
+- **A page node on every page.** The graph now describes the page itself: a `WebPage`, a `CollectionPage` for lists of posts, a `SearchResultsPage`, or a `ProfilePage` for an author archive. It carries the name, description, language, dates, and featured image, and ties the site, the breadcrumb trail, and the article together. The separate `ProfilePage` node of author archives is now that page node.
+- **A schema type per post type.** The content types table has a "Schema type" column: "Web page", "Article", "Blog post", or "News article". Posts stay "Article" and every other post type stays "Web page" until you choose otherwise. The `lightweight_seo_article_post_types` filter still sets the default.
+- **Breadcrumbs that match the WordPress Breadcrumbs block.** The trail in the structured data follows the block's default rules: Home, the archive of the post type when it has one, parent pages or the first category with its parents, then the page. A post therefore lists its category, a day archive lists its year and month, and the posts page sits below Home. The block's own filters are applied, so a customized trail is the same in both places. The first item is named "Home", as in the block, not after the site.
+- The article node now belongs to the page node (`isPartOf` and `mainEntityOfPage` point at `…#webpage`), and the page node belongs to the site.
+
+These are changes to what is printed on every page. No setting is migrated: a schema type is stored in a content type's row only when it differs from the default.
+
+## Importers since rc.3
+
+- The import on the Tools tab reads three more plugins: SEOPress, The SEO Framework, and Slim SEO. Titles, descriptions, canonical addresses, robots choices, and sharing fields are imported in the same bounded way: a preview first, 50 posts at a time, empty fields only, and a rollback of the latest batch.
+- Variables of SEOPress and Slim SEO that mean the same as a Lightweight SEO variable are converted. A field with any other variable is left for review and counted, as before.
+- The SEO Framework's "always index" choice becomes "Show in search results" for that page.
+- A page hidden by an import, from any of the six sources, now prints `noindex` only. Before, a page imported as hidden also printed `nofollow`, through the rule that keeps the behaviour of pages hidden before 1.1.
+
+The field names of each plugin were taken from its published source code. See [Migration and RC Testing](migration.md) for the list.
+
+## Abilities API since rc.3
+
+On WordPress 6.9 and later, three abilities let agents and other clients of the Abilities API work with the SEO fields of a post: `lightweight-seo/get-seo-fields`, `lightweight-seo/update-seo-fields`, and `lightweight-seo/get-seo-context`.
+
+- Each one requires the right to edit that post, and an update goes through the same sanitizers as the editor panel.
+- They cover posts, pages, and other content items with SEO fields. Site settings, terms, and authors are not exposed.
+- Nothing is loaded for them until WordPress collects abilities, and older WordPress versions never do.
+
+See [Developer API](developer-api.md#abilities). One file is new; see [Release Baselines](release-baselines.md).
+
+## IndexNow module since rc.3
+
+A sixth optional module, off by default, tells search engines that support IndexNow (such as Bing and Yandex; not Google) when a page is published, changed, or removed.
+
+- It is the one part of the plugin, besides tracking codes you add yourself, that makes a request to another service: `api.indexnow.org`. Nothing is sent, and no code is loaded, while the module is off.
+- Addresses are sent once at the end of the request that saved them, without waiting for the answer. There is no queue and no scheduled job.
+- Only public pages that search engines may show are sent. Nothing is sent from a site that is not a production site, that discourages search engines, or whose address search engines cannot reach, such as `localhost`.
+- The key is created when the module is first switched on and is answered at `/{key}.txt` by the plugin; no file is written. The key is never exported with the settings.
+- The card shows whether the site sends, the key address, what was last sent, and a "Send a test" button.
+
+Settings `enable_indexnow` and `indexnow_key` and the non-autoloaded option `lightweight_seo_indexnow_last` are new. One file is new, loaded only while the module is on.
+
+## Previews, toolbar, and command palette since rc.3
+
+- **Title format previews.** Each title format on "Search appearance" shows what it becomes for the newest post of the site, and follows the format and the separator while you edit them.
+- **Desktop and mobile search preview.** The search result preview in the editor panel and on the Overview has a Desktop/Mobile switch and cuts a long title or description off about where a search result would. The length count still uses the full text, and nothing here is a score.
+- **Toolbar status.** On the front end, administrators see "SEO: shown in search", "SEO: hidden from search", or "SEO: page not found" in the toolbar, linked to the Inspect report of that page. It adds no style or script to the page.
+- **Command palette.** On WordPress 6.9 and later the command palette lists every Lightweight SEO settings tab and "Inspect a page".
+- The "Essential setup" card on the Overview gives its title and description the full width on a phone, with the badge and the dismiss link below.
+
+The editor screens now load `lightweight-seo-formats.js` as well, because the editor preview and the settings previews share its variable and shortening rules. No setting and no file is new.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

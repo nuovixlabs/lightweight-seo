@@ -53,6 +53,15 @@ class Lightweight_SEO_Page_Context_Service {
 	private $context;
 
 	/**
+	 * Values of the request-dependent title variables resolved so far.
+	 *
+	 * @since    1.1.0
+	 * @access   private
+	 * @var      array<string,string>    $token_values
+	 */
+	private $token_values = array();
+
+	/**
 	 * Initialize the service.
 	 *
 	 * @since    1.0.2
@@ -107,6 +116,9 @@ class Lightweight_SEO_Page_Context_Service {
 			'published_time'   => '',
 			'modified_time'    => '',
 			'twitter_card'     => 'summary',
+			'twitter_site'     => '' !== $this->settings->get_x_handle() ? '@' . $this->settings->get_x_handle() : '',
+			// A service checks the homepage for its code, so the codes travel with that page only.
+			'verification'     => is_front_page() && absint( get_query_var( 'paged' ) ) < 2 ? $this->settings->get_verification_codes() : array(),
 			'is_404'           => is_404(),
 		);
 
@@ -125,8 +137,9 @@ class Lightweight_SEO_Page_Context_Service {
 
 			if ( $post_id ) {
 				$post           = get_post( $post_id );
+				$post_type      = (string) ( $post->post_type ?? '' );
 				$post_meta      = $this->post_meta->get_all( $post_id );
-				$title_template = is_front_page() ? $this->settings->get_home_title_format() : $this->settings->get_title_format();
+				$title_template = is_front_page() ? $this->settings->get_home_title_format() : $this->settings->get_title_format_for_post_type( $post_type );
 				$tokens         = array( 'title' => get_the_title( $post_id ) );
 
 				$context['object_title']   = $tokens['title'];
@@ -146,11 +159,7 @@ class Lightweight_SEO_Page_Context_Service {
 				$context['canonical_custom'] = ! empty( $post_meta['seo_canonical_url'] );
 				$context['canonical_url']    = $context['canonical_custom'] ? $post_meta['seo_canonical_url'] : get_permalink( $post_id );
 
-				$context['robots'] = $this->build_robots_directives( $post_meta, true );
-
-				if ( $this->should_noindex_attachment_page( $post ) ) {
-					$context['robots'] = $this->ensure_robots_directive( $context['robots'], 'noindex' );
-				}
+				$context['robots'] = $this->build_robots_directives( $post_meta, true, $this->settings->is_post_type_noindex( $post_type ) );
 
 				if ( empty( $context['canonical_url'] ) ) {
 					$context['canonical_url'] = get_permalink( $post_id );
@@ -160,7 +169,7 @@ class Lightweight_SEO_Page_Context_Service {
 				$context['og_description'] = ! empty( $post_meta['social_description'] ) ? $this->replace_title_template_vars( $post_meta['social_description'], $tokens ) : $context['description'];
 				$context['og_url']         = $context['canonical_url'];
 				$article_post_types        = (array) apply_filters( 'lightweight_seo_article_post_types', array( 'post' ) );
-				$context['og_type']        = in_array( (string) ( $post->post_type ?? '' ), $article_post_types, true ) ? 'article' : 'website';
+				$context['og_type']        = in_array( $post_type, $article_post_types, true ) ? 'article' : 'website';
 
 				if ( 'article' === $context['og_type'] ) {
 					$context['published_time'] = (string) get_the_date( DATE_W3C, $post_id );
@@ -204,13 +213,13 @@ class Lightweight_SEO_Page_Context_Service {
 
 			$context['object_title']     = $tokens['title'];
 			$context['document_title']   = $this->replace_title_template_vars(
-				! empty( $post_meta['seo_title'] ) ? $post_meta['seo_title'] : $this->settings->get_title_format(),
+				! empty( $post_meta['seo_title'] ) ? $post_meta['seo_title'] : $this->settings->get_title_format_for_post_type( 'page' ),
 				$tokens
 			);
 			$context['description']      = ! empty( $post_meta['seo_description'] ) ? $this->replace_title_template_vars( $post_meta['seo_description'], $tokens ) : '';
 			$context['canonical_custom'] = ! empty( $post_meta['seo_canonical_url'] );
 			$context['canonical_url']    = $context['canonical_custom'] ? $post_meta['seo_canonical_url'] : $this->add_pagination_to_url( (string) get_permalink( $posts_page_id ) );
-			$context['robots']           = $this->build_robots_directives( $post_meta );
+			$context['robots']           = $this->build_robots_directives( $post_meta, false, $this->settings->is_post_type_noindex( 'page' ) );
 			$context['og_title']         = ! empty( $post_meta['social_title'] ) ? $this->replace_title_template_vars( $post_meta['social_title'], $tokens ) : $context['document_title'];
 			$context['og_description']   = ! empty( $post_meta['social_description'] ) ? $this->replace_title_template_vars( $post_meta['social_description'], $tokens ) : $context['description'];
 			$context['og_url']           = $context['canonical_url'];
@@ -238,17 +247,18 @@ class Lightweight_SEO_Page_Context_Service {
 			$context['og_description'] = $context['description'];
 		} elseif ( is_category() || is_tag() || is_tax() ) {
 			$term                        = get_queried_object();
+			$taxonomy                    = (string) ( $term->taxonomy ?? '' );
 			$term_meta                   = ! empty( $term->term_id ) ? $this->archive_meta->get_term_all( $term->term_id ) : array();
 			$tokens                      = array( 'title' => isset( $term->name ) ? $term->name : '' );
 			$context['object_title']     = $tokens['title'];
 			$context['document_title']   = $this->replace_title_template_vars(
-				! empty( $term_meta['seo_title'] ) ? $term_meta['seo_title'] : $this->settings->get_archive_title_format(),
+				! empty( $term_meta['seo_title'] ) ? $term_meta['seo_title'] : $this->settings->get_title_format_for_taxonomy( $taxonomy ),
 				$tokens
 			);
 			$context['description']      = ! empty( $term_meta['seo_description'] ) ? $this->replace_title_template_vars( $term_meta['seo_description'], $tokens ) : $this->summarize_text( $term->description ?? '' );
 			$context['canonical_custom'] = ! empty( $term_meta['seo_canonical_url'] );
 			$context['canonical_url']    = $context['canonical_custom'] ? $term_meta['seo_canonical_url'] : $this->add_pagination_to_url( $this->get_term_archive_url( $term, $context['canonical_url'] ) );
-			$context['robots']           = $this->build_robots_directives( $term_meta );
+			$context['robots']           = $this->build_robots_directives( $term_meta, false, $this->settings->is_taxonomy_noindex( $taxonomy ) );
 			$context['og_title']         = $context['document_title'];
 			$context['og_description']   = $context['description'];
 			$context['og_url']           = $context['canonical_url'];
@@ -265,7 +275,7 @@ class Lightweight_SEO_Page_Context_Service {
 			$context['description']      = ! empty( $author_meta['seo_description'] ) ? $this->replace_title_template_vars( $author_meta['seo_description'], $tokens ) : $this->summarize_text( $this->get_author_description( $author, $author_id, '' ) );
 			$context['canonical_custom'] = ! empty( $author_meta['seo_canonical_url'] );
 			$context['canonical_url']    = $context['canonical_custom'] ? $author_meta['seo_canonical_url'] : $this->add_pagination_to_url( $this->get_author_archive_url( $author_id, $context['canonical_url'] ) );
-			$context['robots']           = $this->build_robots_directives( $author_meta );
+			$context['robots']           = $this->build_robots_directives( $author_meta, false, $this->settings->author_archives_noindex_enabled() );
 			$context['og_title']         = $context['document_title'];
 			$context['og_description']   = $context['description'];
 			$context['og_url']           = $context['canonical_url'];
@@ -283,6 +293,10 @@ class Lightweight_SEO_Page_Context_Service {
 			$context['og_title']       = $context['document_title'];
 			$context['og_description'] = $context['description'];
 			$context['og_url']         = $context['canonical_url'];
+
+			if ( $this->is_hidden_archive() ) {
+				$context['robots'] = $this->ensure_robots_directive( $context['robots'], 'noindex' );
+			}
 		}
 
 		$image_id = method_exists( $this->settings, 'get' ) ? absint( $this->settings->get( 'social_image_id', 0 ) ) : 0;
@@ -448,16 +462,18 @@ class Lightweight_SEO_Page_Context_Service {
 	}
 
 	/**
-	 * Build singular robots directives, preserving legacy noindex behavior.
+	 * Build the robots directives of a page, term, or author, preserving legacy noindex behavior.
 	 *
 	 * @since    1.1.0
-	 * @param    array    $post_meta    Resolved SEO post meta.
+	 * @param    array    $meta_values                 Resolved SEO meta of the object.
+	 * @param    bool     $preserve_legacy_nofollow    Whether a 1.0 noindex still implies nofollow.
+	 * @param    bool     $type_hidden                 Whether the object's content type is hidden from search results.
 	 * @return   string
 	 */
-	private function build_robots_directives( $meta_values, $preserve_legacy_nofollow = false ) {
+	private function build_robots_directives( $meta_values, $preserve_legacy_nofollow = false, $type_hidden = false ) {
 		$directives = array();
 
-		if ( '1' === (string) ( $meta_values['seo_noindex'] ?? '' ) ) {
+		if ( $this->settings->resolve_noindex( $meta_values['seo_noindex'] ?? '', $type_hidden ) ) {
 			$directives[] = 'noindex';
 		}
 
@@ -487,14 +503,26 @@ class Lightweight_SEO_Page_Context_Service {
 	}
 
 	/**
-	 * Determine whether the current singular object should default to attachment noindex.
+	 * Determine whether the current date or post type archive is hidden from search results.
+	 *
+	 * Neither archive has an object of its own to carry an exception, so the
+	 * content type setting decides.
 	 *
 	 * @since    1.1.0
-	 * @param    object|null    $post    Current queried post object.
 	 * @return   bool
 	 */
-	private function should_noindex_attachment_page( $post ) {
-		return ! empty( $post ) && 'attachment' === (string) ( $post->post_type ?? '' ) && $this->settings->attachment_pages_noindex_enabled();
+	private function is_hidden_archive() {
+		if ( is_date() ) {
+			return $this->settings->date_archives_noindex_enabled();
+		}
+
+		if ( is_post_type_archive() ) {
+			$post_type = get_queried_object();
+
+			return ! empty( $post_type->name ) && $this->settings->is_post_type_noindex( $post_type->name );
+		}
+
+		return false;
 	}
 
 	/**
@@ -571,10 +599,62 @@ class Lightweight_SEO_Page_Context_Service {
 			'%search%'   => $variables['search'] ?? '',
 			'%sitename%' => get_bloginfo( 'name' ),
 			'%tagline%'  => get_bloginfo( 'description' ),
-			'%sep%'      => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+			'%sep%'      => $this->settings->get_title_separator(),
 		);
 
-		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );
+		// These need a lookup, so each is resolved only when the text uses it.
+		foreach ( Lightweight_SEO_Text::OPTIONAL_TOKENS as $token ) {
+			if ( false !== strpos( $template, $token ) ) {
+				$replacements[ $token ] = $this->get_optional_token_value( $token );
+			}
+		}
+
+		return Lightweight_SEO_Text::resolve_tokens( $template, $replacements );
+	}
+
+	/**
+	 * Resolve a title variable that depends on the current request, once per request.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $token    Variable including its percent signs.
+	 * @return   string Value, or an empty string when the request has none.
+	 */
+	private function get_optional_token_value( $token ) {
+		if ( isset( $this->token_values[ $token ] ) ) {
+			return $this->token_values[ $token ];
+		}
+
+		$value = '';
+
+		if ( '%page%' === $token ) {
+			// Archives count pages in "paged", and a post split into pages counts them in "page".
+			$page = max( absint( get_query_var( 'paged' ) ), absint( get_query_var( 'page' ) ) );
+
+			if ( $page > 1 ) {
+				/* translators: %d: page number of a paginated archive or post, from 2 upwards. */
+				$value = sprintf( __( 'Page %d', 'lightweight-seo' ), $page );
+			}
+		} elseif ( '%category%' === $token ) {
+			if ( is_singular() ) {
+				$categories = get_the_category( get_queried_object_id() );
+				$value      = ! empty( $categories[0]->name ) ? (string) $categories[0]->name : '';
+			} elseif ( is_category() ) {
+				$value = (string) ( get_queried_object()->name ?? '' );
+			}
+		} elseif ( '%author%' === $token ) {
+			if ( is_singular() ) {
+				$value = (string) get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', get_queried_object_id() ) );
+			} elseif ( is_author() ) {
+				$author = get_queried_object();
+				$value  = (string) $this->get_author_display_name( $author, isset( $author->ID ) ? (int) $author->ID : get_queried_object_id() );
+			}
+		} elseif ( '%year%' === $token ) {
+			$value = (string) wp_date( 'Y' );
+		}
+
+		$this->token_values[ $token ] = $value;
+
+		return $value;
 	}
 
 	/**

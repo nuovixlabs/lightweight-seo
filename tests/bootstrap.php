@@ -15,7 +15,7 @@ if (!defined('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME')) {
 }
 
 if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
-    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 3);
+    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 4);
 }
 
 if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
@@ -40,6 +40,14 @@ if (!defined('LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT')) {
 
 if (!defined('LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR')) {
     define('LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR', '–');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_INSPECT_ARG')) {
+    define('LIGHTWEIGHT_SEO_INSPECT_ARG', 'lightweight_seo_inspect');
+}
+
+if (!defined('LIGHTWEIGHT_SEO_PLUGIN_URL')) {
+    define('LIGHTWEIGHT_SEO_PLUGIN_URL', 'https://example.com/wp-content/plugins/lightweight-seo/');
 }
 
 if (!defined('LIGHTWEIGHT_SEO_PLUGIN_FILE')) {
@@ -184,13 +192,32 @@ if (!function_exists('apply_filters')) {
 
 if (!function_exists('selected')) {
     function selected($selected, $current = true, $display = true) {
-        return $selected == $current ? 'selected="selected"' : '';
+        // Like WordPress, print the attribute unless the caller asks for it back.
+        $result = (string) $selected === (string) $current ? " selected='selected'" : '';
+
+        if ($display) {
+            echo $result;
+        }
+
+        return $result;
     }
 }
 
 if (!function_exists('do_action')) {
     function do_action(...$args) {
         return null;
+    }
+}
+
+if (!function_exists('__return_null')) {
+    function __return_null() {
+        return null;
+    }
+}
+
+if (!function_exists('_x')) {
+    function _x($text, $context, $domain = null) {
+        return $text;
     }
 }
 
@@ -242,7 +269,14 @@ if (!function_exists('wp_unslash')) {
 
 if (!function_exists('sanitize_text_field')) {
     function sanitize_text_field($value) {
-        return trim(strip_tags((string) $value));
+        $value = trim(strip_tags((string) $value));
+
+        // Like WordPress, remove anything shaped like a percent-encoded byte.
+        while (preg_match('/%[a-f0-9]{2}/i', $value, $match)) {
+            $value = str_replace($match[0], '', $value);
+        }
+
+        return trim($value);
     }
 }
 
@@ -254,7 +288,14 @@ if (!function_exists('sanitize_key')) {
 
 if (!function_exists('sanitize_textarea_field')) {
     function sanitize_textarea_field($value) {
-        return trim(strip_tags((string) $value));
+        $value = trim(strip_tags((string) $value));
+
+        // Like WordPress, remove anything shaped like a percent-encoded byte.
+        while (preg_match('/%[a-f0-9]{2}/i', $value, $match)) {
+            $value = str_replace($match[0], '', $value);
+        }
+
+        return trim($value);
     }
 }
 
@@ -453,6 +494,23 @@ if (!function_exists('get_post_types')) {
 if (!function_exists('get_taxonomies')) {
     function get_taxonomies($args = array(), $output = 'names') {
         return array('category', 'post_tag');
+    }
+}
+
+if (!function_exists('get_taxonomy')) {
+    function get_taxonomy($taxonomy) {
+        $labels = array(
+            'category' => 'Categories',
+            'post_tag' => 'Tags',
+        );
+
+        return isset($labels[$taxonomy]) ? (object) array('name' => $taxonomy, 'labels' => (object) array('name' => $labels[$taxonomy])) : false;
+    }
+}
+
+if (!function_exists('current_theme_supports')) {
+    function current_theme_supports($feature) {
+        return false;
     }
 }
 
@@ -829,6 +887,22 @@ if (!function_exists('is_archive')) {
     }
 }
 
+if (!function_exists('is_date')) {
+    function is_date() {
+        global $lightweight_seo_test_query_state;
+
+        return (bool) ( $lightweight_seo_test_query_state['is_date'] ?? false );
+    }
+}
+
+if (!function_exists('is_post_type_archive')) {
+    function is_post_type_archive() {
+        global $lightweight_seo_test_query_state;
+
+        return (bool) ( $lightweight_seo_test_query_state['is_post_type_archive'] ?? false );
+    }
+}
+
 if (!function_exists('is_search')) {
     function is_search() {
         global $lightweight_seo_test_query_state;
@@ -949,8 +1023,21 @@ if (!function_exists('get_locale')) {
 }
 
 if (!function_exists('add_query_arg')) {
-    function add_query_arg($args = array(), $url = '') {
-        return (string) $url;
+    function add_query_arg(...$args) {
+        // Like WordPress: either an array of arguments and an address, or a key, a value, and an address.
+        if (is_array($args[0] ?? null)) {
+            $params = $args[0];
+            $url    = (string) ($args[1] ?? '');
+        } else {
+            $params = array((string) ($args[0] ?? '') => $args[1] ?? '');
+            $url    = (string) ($args[2] ?? '');
+        }
+
+        if (empty($params)) {
+            return $url;
+        }
+
+        return $url . (false === strpos($url, '?') ? '?' : '&') . http_build_query($params);
     }
 }
 
@@ -1144,7 +1231,8 @@ if (!function_exists('get_the_archive_description')) {
 
 if (!function_exists('get_term_link')) {
     function get_term_link($term) {
-        return 'https://example.com/term/' . $term->term_id;
+        // WordPress accepts a term object or a term ID.
+        return 'https://example.com/term/' . ( is_object( $term ) ? $term->term_id : (int) $term );
     }
 }
 
@@ -1183,6 +1271,88 @@ if (!function_exists('get_the_modified_date')) {
         global $lightweight_seo_test_query_state;
 
         return $lightweight_seo_test_query_state['modified_date'] ?? '';
+    }
+}
+
+if (!function_exists('get_the_category')) {
+    function get_the_category($post_id = false) {
+        global $lightweight_seo_test_categories;
+
+        return $lightweight_seo_test_categories[(int) $post_id] ?? array();
+    }
+}
+
+if (!function_exists('wp_date')) {
+    function wp_date($format, $timestamp = null, $timezone = null) {
+        return gmdate($format, null === $timestamp ? time() : $timestamp);
+    }
+}
+
+if (!function_exists('wp_get_document_title')) {
+    function wp_get_document_title() {
+        global $lightweight_seo_test_query_state;
+
+        return $lightweight_seo_test_query_state['document_title'] ?? '';
+    }
+}
+
+if (!function_exists('wp_get_canonical_url')) {
+    function wp_get_canonical_url($post = null) {
+        global $lightweight_seo_test_query_state;
+
+        return $lightweight_seo_test_query_state['wp_canonical'] ?? '';
+    }
+}
+
+if (!function_exists('remove_query_arg')) {
+    function remove_query_arg($keys, $url = false) {
+        $parts = explode('?', (string) $url, 2);
+
+        if (empty($parts[1])) {
+            return $parts[0];
+        }
+
+        parse_str($parts[1], $query);
+
+        foreach ((array) $keys as $key) {
+            unset($query[$key]);
+        }
+
+        return $parts[0] . (empty($query) ? '' : '?' . http_build_query($query));
+    }
+}
+
+if (!function_exists('includes_url')) {
+    function includes_url($path = '') {
+        return 'https://example.com/wp-includes/' . ltrim($path, '/');
+    }
+}
+
+if (!function_exists('get_language_attributes')) {
+    function get_language_attributes() {
+        return 'lang="en-US"';
+    }
+}
+
+if (!function_exists('post_password_required')) {
+    function post_password_required($post = null) {
+        return '' !== (string) ($post->post_password ?? '');
+    }
+}
+
+if (!function_exists('get_post_type')) {
+    function get_post_type($post = null) {
+        $post = get_post($post);
+
+        return $post->post_type ?? false;
+    }
+}
+
+if (!function_exists('wp_is_post_revision')) {
+    function wp_is_post_revision($post) {
+        $post = get_post($post);
+
+        return 'revision' === ($post->post_type ?? '') ? (int) ($post->post_parent ?? 0) : false;
     }
 }
 
@@ -1289,6 +1459,10 @@ if (!function_exists('wp_enqueue_script')) {
 
 if (!function_exists('wp_enqueue_style')) {
     function wp_enqueue_style(...$args) {
+        global $lightweight_seo_test_enqueued_styles;
+
+        $lightweight_seo_test_enqueued_styles[] = $args[0];
+
         return true;
     }
 }
@@ -1367,7 +1541,10 @@ if (!function_exists('get_post_type_object')) {
 			return null;
 		}
 
-		return (object) array( 'public' => true );
+		return (object) array(
+			'public' => true,
+			'labels' => (object) array( 'name' => 'post' === $post_type ? 'Posts' : 'Pages' ),
+		);
 	}
 }
 
@@ -1524,5 +1701,164 @@ if (!function_exists('add_menu_page')) {
         );
 
         return 'toplevel_page_' . $menu_slug;
+    }
+}
+
+if (!function_exists('status_header')) {
+    function status_header($code, $description = '') {
+        global $lightweight_seo_test_status_headers;
+
+        $lightweight_seo_test_status_headers[] = (int) $code;
+    }
+}
+
+if (!function_exists('nocache_headers')) {
+    function nocache_headers() {
+        global $lightweight_seo_test_nocache_headers_calls;
+
+        $lightweight_seo_test_nocache_headers_calls = (int) $lightweight_seo_test_nocache_headers_calls + 1;
+    }
+}
+
+if (!function_exists('remove_action')) {
+    function remove_action($hook_name, $callback, $priority = 10) {
+        global $lightweight_seo_test_removed_actions;
+
+        $lightweight_seo_test_removed_actions[] = array($hook_name, $callback);
+
+        return true;
+    }
+}
+
+if (!function_exists('get_post_type_archive_link')) {
+    function get_post_type_archive_link($post_type) {
+        global $lightweight_seo_test_post_type_archives;
+
+        return $lightweight_seo_test_post_type_archives[$post_type] ?? false;
+    }
+}
+
+if (!function_exists('is_post_type_hierarchical')) {
+    function is_post_type_hierarchical($post_type) {
+        return 'page' === $post_type;
+    }
+}
+
+if (!function_exists('get_object_taxonomies')) {
+    function get_object_taxonomies($object_type, $output = 'names') {
+        global $lightweight_seo_test_object_taxonomies;
+
+        return $lightweight_seo_test_object_taxonomies[$object_type] ?? array();
+    }
+}
+
+if (!function_exists('wp_filter_object_list')) {
+    function wp_filter_object_list($input_list, $args = array()) {
+        return array_filter(
+            (array) $input_list,
+            static function ($item) use ($args) {
+                foreach ($args as $key => $value) {
+                    if (($item->$key ?? null) !== $value) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        );
+    }
+}
+
+if (!function_exists('get_the_terms')) {
+    function get_the_terms($post, $taxonomy) {
+        global $lightweight_seo_test_post_terms;
+
+        return $lightweight_seo_test_post_terms[(int) $post][$taxonomy] ?? false;
+    }
+}
+
+if (!function_exists('is_taxonomy_hierarchical')) {
+    function is_taxonomy_hierarchical($taxonomy) {
+        return 'category' === $taxonomy;
+    }
+}
+
+if (!function_exists('get_post_ancestors')) {
+    function get_post_ancestors($post) {
+        global $lightweight_seo_test_post_ancestors;
+
+        return $lightweight_seo_test_post_ancestors[(int) $post] ?? array();
+    }
+}
+
+if (!function_exists('get_ancestors')) {
+    function get_ancestors($object_id = 0, $object_type = '', $resource_type = '') {
+        global $lightweight_seo_test_term_ancestors;
+
+        return $lightweight_seo_test_term_ancestors[(int) $object_id] ?? array();
+    }
+}
+
+if (!function_exists('get_year_link')) {
+    function get_year_link($year) {
+        return 'https://example.com/' . (int) $year . '/';
+    }
+}
+
+if (!function_exists('get_month_link')) {
+    function get_month_link($year, $month) {
+        return 'https://example.com/' . (int) $year . '/' . sprintf('%02d', (int) $month) . '/';
+    }
+}
+
+if (!function_exists('date_i18n')) {
+    function date_i18n($format, $timestamp_with_offset = false, $gmt = false) {
+        return gmdate($format, (int) $timestamp_with_offset);
+    }
+}
+
+if (!function_exists('wp_register_ability_category')) {
+    function wp_register_ability_category($slug, $args) {
+        global $lightweight_seo_test_ability_categories;
+
+        $lightweight_seo_test_ability_categories[$slug] = $args;
+
+        return null;
+    }
+}
+
+if (!function_exists('wp_register_ability')) {
+    function wp_register_ability($name, $args) {
+        global $lightweight_seo_test_abilities;
+
+        $lightweight_seo_test_abilities[$name] = $args;
+
+        return null;
+    }
+}
+
+if (!function_exists('wp_script_is')) {
+    function wp_script_is($handle, $status = 'enqueued') {
+        global $lightweight_seo_test_enqueued_scripts;
+
+        return isset($lightweight_seo_test_enqueued_scripts[$handle]);
+    }
+}
+
+if (!function_exists('wp_add_inline_script')) {
+    function wp_add_inline_script($handle, $data, $position = 'after') {
+        global $lightweight_seo_test_inline_scripts;
+
+        $lightweight_seo_test_inline_scripts[$handle][] = $data;
+
+        return true;
+    }
+}
+
+if (!function_exists('is_admin')) {
+    function is_admin() {
+        global $lightweight_seo_test_is_admin;
+
+        return !empty($lightweight_seo_test_is_admin);
     }
 }

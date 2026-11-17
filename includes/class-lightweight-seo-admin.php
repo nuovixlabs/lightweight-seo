@@ -80,7 +80,7 @@ class Lightweight_SEO_Admin {
 			$tools_fields
 		);
 		$notices        = new Lightweight_SEO_Admin_Notices( $plugin_name );
-		$tools          = new Lightweight_SEO_Admin_Tools( $plugin_name, $importer, $import_state );
+		$tools          = new Lightweight_SEO_Admin_Tools( $plugin_name, $importer, $import_state, $settings );
 		$this->page     = new Lightweight_SEO_Admin_Page( $plugin_name, $settings, $tools_fields, $post_meta );
 
 		// Add menu item
@@ -106,9 +106,17 @@ class Lightweight_SEO_Admin {
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_IMPORT_BATCH, array( $tools, 'handle_import_batch' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_IMPORT_ROLLBACK, array( $tools, 'handle_import_rollback' ) );
 		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS, array( $tools, 'handle_delete_legacy_404_logs' ) );
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT, array( $tools, 'handle_redirect_import' ) );
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST, array( $tools, 'handle_indexnow_test' ) );
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT, array( $tools, 'handle_settings_export' ) );
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, array( $tools, 'handle_settings_import' ) );
+		add_action( 'admin_post_' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO, array( $tools, 'handle_settings_undo' ) );
 
 		// Enqueue admin scripts and styles
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+
+		// After WordPress has loaded its command palette, where it has one
+		add_action( 'admin_enqueue_scripts', array( $this, 'add_palette_commands' ), 20 );
 	}
 
 	/**
@@ -147,6 +155,30 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Add the tabs of the settings screen, and "Inspect a page", to the command palette.
+	 *
+	 * WordPress 6.9 and later load the palette on every administration screen.
+	 * The commands ride on its script as one short inline call; no file is added,
+	 * and nothing is printed where the palette is not loaded.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function add_palette_commands() {
+		if ( ! current_user_can( 'manage_options' ) || ! wp_script_is( 'wp-core-commands', 'enqueued' ) ) {
+			return;
+		}
+
+		wp_add_inline_script(
+			'wp-core-commands',
+			sprintf(
+				'( function ( commands ) { var store = window.wp && wp.data && wp.data.dispatch( "core/commands" ); if ( ! store || ! store.registerCommand ) { return; } commands.forEach( function ( command ) { store.registerCommand( { name: command.name, label: command.label, searchLabel: command.label, category: "view", callback: function ( options ) { document.location = command.url; if ( options && options.close ) { options.close(); } } } ); } ); } )( %s );',
+				wp_json_encode( $this->page->get_palette_commands(), JSON_HEX_TAG | JSON_UNESCAPED_SLASHES )
+			)
+		);
+	}
+
+	/**
 	 * Enqueue admin scripts and styles
 	 *
 	 * @since    1.0.0
@@ -156,6 +188,19 @@ class Lightweight_SEO_Admin {
 		$is_plugin_page             = 'toplevel_page_' . $this->plugin_name === $hook;
 		$is_public_post_type_screen = $screen && 'post' === $screen->base && in_array( $screen->post_type, $this->post_meta->get_supported_post_types(), true );
 
+		// A post list needs only the script, to fill its Quick Edit fields: no stylesheet, media library, or formats.
+		if ( $screen && 'edit' === $screen->base && in_array( $screen->post_type, array_diff( $this->post_meta->get_supported_post_types(), array( 'attachment' ) ), true ) ) {
+			wp_enqueue_script(
+				$this->plugin_name . '-admin-script',
+				LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-admin.js',
+				array( 'jquery', 'inline-edit-post' ),
+				$this->version,
+				true
+			);
+
+			return;
+		}
+
 		// Only load scripts on our plugin page or supported post edit screens
 		if ( ! $is_plugin_page && ! $is_public_post_type_screen ) {
 			return;
@@ -164,26 +209,20 @@ class Lightweight_SEO_Admin {
 		// Enqueue the WordPress media uploader
 		wp_enqueue_media();
 
-		$dependencies = array( 'jquery' );
-
-		// The settings screen shows some stored line formats as rows. The editor screens never need them.
-		if ( $is_plugin_page ) {
-			wp_enqueue_script(
-				$this->plugin_name . '-formats',
-				LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-formats.js',
-				array(),
-				$this->version,
-				true
-			);
-
-			$dependencies[] = $this->plugin_name . '-formats';
-		}
+		// The settings screen shows stored line formats as rows, and both screens fill variables and shorten previews with it.
+		wp_enqueue_script(
+			$this->plugin_name . '-formats',
+			LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-formats.js',
+			array(),
+			$this->version,
+			true
+		);
 
 		// Enqueue our admin script
 		wp_enqueue_script(
 			$this->plugin_name . '-admin-script',
 			LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-admin.js',
-			$dependencies,
+			array( 'jquery', $this->plugin_name . '-formats' ),
 			$this->version,
 			true
 		);

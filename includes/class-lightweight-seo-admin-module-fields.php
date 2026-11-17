@@ -259,6 +259,15 @@ class Lightweight_SEO_Admin_Module_Fields {
 	}
 
 	/**
+	 * Render the Redirects module switch.
+	 *
+	 * @since    1.1.0
+	 */
+	public function enable_redirects_render() {
+		$this->render_choice( 'enable_redirects', '0', __( 'Apply the redirects below on this site', 'lightweight-seo' ), __( 'Rules stay saved while the module is off.', 'lightweight-seo' ) );
+	}
+
+	/**
 	 * Render the automatic slug redirect toggle field.
 	 *
 	 * @since    1.1.0
@@ -304,6 +313,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 							'302' => __( '302 Temporary', 'lightweight-seo' ),
 							'307' => __( '307 Temporary, same method', 'lightweight-seo' ),
 							'308' => __( '308 Permanent, same method', 'lightweight-seo' ),
+							'410' => __( '410 Gone', 'lightweight-seo' ),
 						),
 					),
 				),
@@ -315,7 +325,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 				'filter'  => __( 'Filter redirects', 'lightweight-seo' ),
 				'limit'   => Lightweight_SEO_Settings::MAX_MANUAL_REDIRECTS,
 				'hints'   => array(
-					'incomplete' => __( 'Add both a path to redirect from and somewhere to go. This row is not saved until it has both.', 'lightweight-seo' ),
+					'incomplete' => __( 'Add both a path to redirect from and somewhere to go, or choose "410 Gone". This row is not saved until then.', 'lightweight-seo' ),
 					'same'       => __( 'From and To are the same, so this redirect would do nothing.', 'lightweight-seo' ),
 					'duplicate'  => __( 'A later row redirects the same path, so this one is ignored.', 'lightweight-seo' ),
 				),
@@ -323,9 +333,11 @@ class Lightweight_SEO_Admin_Module_Fields {
 		);
 		?>
 		<details class="lwseo-details">
-			<summary><?php esc_html_e( 'Status codes and other sites', 'lightweight-seo' ); ?></summary>
+			<summary><?php esc_html_e( 'Status codes, whole sections, and other sites', 'lightweight-seo' ); ?></summary>
 			<div class="lwseo-details__body">
 				<p><?php esc_html_e( 'A rule is a permanent 301 redirect unless it ends with 302, 307, or 308.', 'lightweight-seo' ); ?></p>
+				<p><?php esc_html_e( 'End the old path with /* to cover everything under it, for example /old-section/*. End the new path with /* as well to keep the rest of each address: /old-section/* /new-section/*. A rule for one exact path always wins, then the longest matching section.', 'lightweight-seo' ); ?></p>
+				<p><?php esc_html_e( 'Choose "410 Gone" for a page that was removed on purpose and has no replacement. Visitors see the "not found" page of your theme, and search engines are told the page will not come back. As text: /old-path 410', 'lightweight-seo' ); ?></p>
 				<p><?php esc_html_e( 'A redirect to another site works only after that host is approved through the WordPress allowed_redirect_hosts filter.', 'lightweight-seo' ); ?></p>
 			</div>
 		</details>
@@ -372,7 +384,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function redirect_export_render() {
 		if ( ! $this->is_module_enabled( 'redirects' ) ) {
-			echo '<p class="lwseo-help">' . esc_html__( 'Enable Redirects by saving a valid manual rule or automatic slug redirects.', 'lightweight-seo' ) . '</p>';
+			echo '<p class="lwseo-help">' . esc_html__( 'Switch the Redirects module on to export its rules.', 'lightweight-seo' ) . '</p>';
 
 			return;
 		}
@@ -393,20 +405,114 @@ class Lightweight_SEO_Admin_Module_Fields {
 		echo '<div class="lwseo-table-wrap"><table class="lwseo-table lwseo-redirect-table"><thead><tr><th>' . esc_html__( 'Source', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Target', 'lightweight-seo' ) . '</th><th>' . esc_html__( 'Status', 'lightweight-seo' ) . '</th></tr></thead><tbody>';
 
 		foreach ( $rules as $rule ) {
-			$lines[] = implode(
-				' ',
-				array(
-					$rule['source'] ?? '',
-					$rule['target'] ?? '',
-					$rule['status'] ?? 301,
-				)
-			);
+			$lines[] = Lightweight_SEO_Settings::format_redirect_rule( $rule + array( 'status' => 301 ) );
 			echo '<tr><td><code>' . esc_html( $rule['source'] ?? '' ) . '</code></td><td><code>' . esc_html( $rule['target'] ?? '' ) . '</code></td><td>' . esc_html( (string) ( $rule['status'] ?? 301 ) ) . '</td></tr>';
 		}
 
 		echo '</tbody></table></div>';
 		echo '<textarea rows="6" class="large-text code" readonly="readonly" aria-label="' . esc_attr__( 'Redirect rules snapshot', 'lightweight-seo' ) . '">' . esc_textarea( implode( "\n", $lines ) ) . '</textarea>';
-		echo '<p class="lwseo-help">' . esc_html__( 'Copy this snapshot to migrate rules or keep an external backup. Manual rules can be imported by pasting them into the redirect rules field above.', 'lightweight-seo' ) . '</p>';
+		echo '<p class="lwseo-help">' . esc_html__( 'Copy this snapshot to migrate rules or keep an external backup. It can be pasted into the rules above through "Edit as text".', 'lightweight-seo' ) . '</p>';
+	}
+
+	/**
+	 * Render the CSV import control. It belongs to its own form, outside the settings form.
+	 *
+	 * @since    1.1.0
+	 */
+	public function redirect_import_render() {
+		$form = Lightweight_SEO_Admin_Tools_Fields::REDIRECT_IMPORT_FORM_ID;
+		?>
+		<div class="lwseo-inline">
+			<input type="file" id="lightweight_seo_redirect_import" name="lightweight_seo_redirect_csv" accept=".csv,text/csv" form="<?php echo esc_attr( $form ); ?>">
+			<button type="submit" class="button" form="<?php echo esc_attr( $form ); ?>"><?php esc_html_e( 'Import rules', 'lightweight-seo' ); ?></button>
+		</div>
+		<p class="lwseo-help"><?php esc_html_e( 'One rule per row: the old path, the new path or address, and the status code (301 when left out; 410 needs no new path). A header row is ignored. A rule for a path that already has one replaces it.', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'The import saves straight away. Save other changes on this screen first, because they are not kept.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the box that shows which saved rule applies to one address.
+	 *
+	 * @since    1.1.0
+	 */
+	public function redirect_test_render() {
+		$form = Lightweight_SEO_Admin_Tools_Fields::REDIRECT_TEST_FORM_ID;
+		$path = $this->get_redirect_test_path();
+		?>
+		<div class="lwseo-inline">
+			<input type="text" id="lightweight_seo_redirect_test" name="<?php echo esc_attr( Lightweight_SEO_Admin_Tools_Fields::REDIRECT_TEST_ARG ); ?>" value="<?php echo esc_attr( $path ); ?>" placeholder="/old-path" class="regular-text" autocomplete="off" form="<?php echo esc_attr( $form ); ?>">
+			<button type="submit" class="button" form="<?php echo esc_attr( $form ); ?>"><?php esc_html_e( 'Test', 'lightweight-seo' ); ?></button>
+		</div>
+		<?php
+		if ( '' !== $path ) {
+			$this->render_redirect_test_result( $path );
+		}
+		?>
+		<p class="lwseo-help"><?php esc_html_e( 'Enter a path or an address on this site to see which saved rule applies to it. Rules are tested as they are saved, without visiting the address.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Get the path the screen was opened to test, reduced to a path on this site.
+	 *
+	 * @since    1.1.0
+	 * @return   string Path, or an empty string.
+	 */
+	private function get_redirect_test_path() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only: the path is only looked up in the saved rules and shown.
+		$value = isset( $_GET[ Lightweight_SEO_Admin_Tools_Fields::REDIRECT_TEST_ARG ] ) ? sanitize_text_field( wp_unslash( $_GET[ Lightweight_SEO_Admin_Tools_Fields::REDIRECT_TEST_ARG ] ) ) : '';
+		$path  = (string) wp_parse_url( trim( $value ), PHP_URL_PATH );
+
+		return '' === $path ? '' : '/' . ltrim( $path, '/' );
+	}
+
+	/**
+	 * Say what the saved rules do with one path.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $path    Path to follow through the rules.
+	 * @return   void
+	 */
+	private function render_redirect_test_result( $path ) {
+		$this->load_redirects_service_for_read_only_admin();
+
+		$trace = ( new Lightweight_SEO_Redirects_Service( $this->settings, false ) )->trace_request( $path );
+		$hops  = $trace['hops'];
+		$last  = empty( $hops ) ? array() : $hops[ count( $hops ) - 1 ];
+		$steps = array();
+
+		foreach ( $hops as $hop ) {
+			if ( 410 === (int) $hop['status'] ) {
+				/* translators: %s: redirect rule as it is saved, for example "/old-path". */
+				$steps[] = sprintf( __( 'Rule %s: gone (410)', 'lightweight-seo' ), $hop['rule'] );
+			} else {
+				/* translators: 1: redirect rule as it is saved. 2: where it sends the visitor. 3: status code. */
+				$steps[] = sprintf( __( 'Rule %1$s: to %2$s (%3$d)', 'lightweight-seo' ), $hop['rule'], $hop['target'], (int) $hop['status'] );
+			}
+		}
+
+		echo '<ul class="lwseo-status-list" role="status">';
+
+		if ( empty( $hops ) ) {
+			/* translators: %s: tested path. */
+			Lightweight_SEO_Admin_UI::status( 'info', sprintf( __( 'No rule applies to %s', 'lightweight-seo' ), $path ), __( 'WordPress handles this address as usual.', 'lightweight-seo' ) );
+		} elseif ( $trace['loop'] ) {
+			/* translators: %s: tested path. */
+			Lightweight_SEO_Admin_UI::status( 'warning', sprintf( __( 'The rules for %s loop', 'lightweight-seo' ), $path ), array_merge( $steps, array( __( 'No redirect is sent for a loop. Change one of these rules.', 'lightweight-seo' ) ) ) );
+		} elseif ( 410 === (int) $last['status'] ) {
+			/* translators: %s: tested path. */
+			Lightweight_SEO_Admin_UI::status( 'info', sprintf( __( '%s answers "410 Gone"', 'lightweight-seo' ), $path ), $steps );
+		} else {
+			if ( count( $hops ) > 1 ) {
+				$steps[] = __( 'Visitors are sent straight to the last address.', 'lightweight-seo' );
+			}
+
+			/* translators: 1: tested path. 2: address the visitor ends up at. */
+			Lightweight_SEO_Admin_UI::status( 'info', sprintf( __( '%1$s redirects to %2$s', 'lightweight-seo' ), $path, $last['target'] ), $steps );
+		}
+
+		echo '</ul>';
 	}
 
 	/**
@@ -502,6 +608,15 @@ class Lightweight_SEO_Admin_Module_Fields {
 	}
 
 	/**
+	 * Render the Tracking module switch.
+	 *
+	 * @since    1.1.0
+	 */
+	public function enable_tracking_render() {
+		$this->render_choice( 'enable_tracking', '0', __( 'Add the tracking codes below to the site', 'lightweight-seo' ), __( 'IDs stay saved while the module is off.', 'lightweight-seo' ) );
+	}
+
+	/**
 	 * Render the GTM container ID field
 	 *
 	 * @since    1.0.1
@@ -583,6 +698,79 @@ class Lightweight_SEO_Admin_Module_Fields {
 		);
 
 		$this->render_choice_list( 'tracking_excluded_environments', $environments, $this->settings->normalize_key_list( $options['tracking_excluded_environments'] ?? "local\ndevelopment\nstaging" ), __( 'Tracking stays off in a ticked environment. WordPress treats a site as production unless it is told otherwise.', 'lightweight-seo' ) );
+	}
+
+	/** Say plainly that this module contacts another service. */
+	public function indexnow_section_callback() {
+		Lightweight_SEO_Admin_UI::callout(
+			array(
+				__( 'When this module is on, the address of a page you publish, change, or remove is sent to api.indexnow.org, which passes it to the search engines that take part, such as Bing and Yandex. Google does not use IndexNow.', 'lightweight-seo' ),
+				__( 'Besides tracking codes you add yourself, this is the only part of Lightweight SEO that contacts another service. Nothing is sent while the module is off.', 'lightweight-seo' ),
+			)
+		);
+	}
+
+	/** Render the IndexNow module switch. */
+	public function enable_indexnow_render() {
+		$this->render_choice( 'enable_indexnow', '0', __( 'Send changed addresses to IndexNow', 'lightweight-seo' ), __( 'Only public pages that search engines may show are sent, once per save, and saving never waits for the answer.', 'lightweight-seo' ) );
+	}
+
+	/** Render what the IndexNow module is doing: its key file, whether it sends, and what it last sent. */
+	public function indexnow_status_render() {
+		if ( ! class_exists( 'Lightweight_SEO_IndexNow_Module', false ) ) {
+			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-indexnow-module.php';
+		}
+
+		$module  = new Lightweight_SEO_IndexNow_Module( $this->settings, null, false );
+		$key_url = $module->get_key_url();
+		$reason  = $module->get_blocking_reason();
+		$last    = get_option( Lightweight_SEO_IndexNow_Module::LAST_OPTION, array() );
+		$form    = Lightweight_SEO_Admin_Tools_Fields::INDEXNOW_TEST_FORM_ID;
+
+		echo '<ul class="lwseo-status-list">';
+
+		if ( '' === $reason ) {
+			Lightweight_SEO_Admin_UI::status( 'success', __( 'Changed pages are sent when they are saved', 'lightweight-seo' ) );
+		} else {
+			Lightweight_SEO_Admin_UI::status( 'info', __( 'Nothing is sent from this site', 'lightweight-seo' ), $reason );
+		}
+
+		if ( '' !== $key_url ) {
+			Lightweight_SEO_Admin_UI::status(
+				'info',
+				__( 'Key file', 'lightweight-seo' ),
+				array( $key_url, __( 'Search engines read this address to confirm that the site sends its own pages. It is answered by the plugin; no file is written.', 'lightweight-seo' ) ),
+				array(
+					'label' => __( 'Open', 'lightweight-seo' ),
+					'url'   => $key_url,
+				)
+			);
+		}
+
+		if ( is_array( $last ) && ! empty( $last['time'] ) ) {
+			$sent = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $last['time'] );
+			$more = max( 0, (int) ( $last['count'] ?? 1 ) - 1 );
+
+			Lightweight_SEO_Admin_UI::status(
+				'info',
+				/* translators: %s: date and time. */
+				sprintf( __( 'Last sent on %s', 'lightweight-seo' ), $sent ),
+				$more > 0
+					/* translators: 1: address. 2: number of further addresses. */
+					? sprintf( _n( '%1$s and %2$d more address', '%1$s and %2$d more addresses', $more, 'lightweight-seo' ), (string) ( $last['url'] ?? '' ), $more )
+					: (string) ( $last['url'] ?? '' )
+			);
+		} else {
+			Lightweight_SEO_Admin_UI::status( 'info', __( 'Nothing has been sent yet', 'lightweight-seo' ) );
+		}
+
+		echo '</ul>';
+		?>
+		<div class="lwseo-buttons">
+			<button type="submit" class="button" form="<?php echo esc_attr( $form ); ?>"><?php esc_html_e( 'Send a test', 'lightweight-seo' ); ?></button>
+		</div>
+		<p class="lwseo-help"><?php esc_html_e( 'Sends the address of the homepage once, waits for the answer, and shows it.', 'lightweight-seo' ); ?></p>
+		<?php
 	}
 
 	/** Explain the bounded, experimental AI Discovery scope. */

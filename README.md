@@ -10,24 +10,31 @@ Core provides:
 - meta descriptions, canonical URLs, and WordPress-native robots directives
 - Open Graph and X/Twitter metadata
 - post, term, and author SEO controls
-- Organization, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
+- search visibility, sitemap listing, and a title format for each post type and taxonomy
+- Organization or Person, WebSite, a page node for every page, BreadcrumbList, and Article, Blog post, or News article schema chosen per post type
+- a site identity with its own name, logo or photo, X handle, and profile links, plus a choice of title separator
+- verification meta tags for Google Search Console, Bing Webmaster Tools, Pinterest, and Yandex Webmaster
 - filtering of WordPress core XML sitemaps
 - safe mode when Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, or Slim SEO is active
 - bounded migration tools and a versioned, read-only extension API
+- abilities for the WordPress Abilities API, so agents can read and fill the SEO fields of a post with the editing rights of the signed-in user
 
-Five optional modules are lazy-loaded only in their declared request contexts:
+Six optional modules are lazy-loaded only in their declared request contexts:
 
-- Redirects: exact manual redirects and optional published-slug redirects
+- Redirects: manual redirects for single addresses or whole sections, "410 Gone" answers, CSV import, a test box, and optional published-slug redirects
 - Hreflang: validated manual mappings and adapter hooks
 - Tracking: GTM-first output with direct GA4 or Meta Pixel alternatives
 - Local SEO: validated LocalBusiness schema fields
+- IndexNow: tells participating search engines when a page is published, changed, or removed. This is the one module that sends a request to another service (`api.indexnow.org`), and only from a public production site
 - AI Discovery (experimental): crawler policies, a curated `/llms.txt`, and local readiness checks
 
 AI Discovery does not guarantee crawling, training, citation, inclusion, visibility, or ranking.
 
+Settings can be exported to one file and imported on another site from **SEO → Tools**, with an undo for the last import. The same, module switches, and redirect tools are available as `wp lightweight-seo` commands.
+
 ## Deliberate boundaries
 
-Core makes no remote requests, schedules no recurring jobs, creates no custom tables, and performs no site-wide frontend scans. Search Console/GA4 reporting, URL Inspection, rank tracking, internal-link crawling, and historical analytics belong outside core.
+Core makes no remote requests, schedules no recurring jobs, creates no custom tables, and performs no site-wide frontend scans. The optional IndexNow module is the one exception to the first: while it is switched on, it sends the addresses of changed pages to `api.indexnow.org`. Search Console/GA4 reporting, URL Inspection, rank tracking, internal-link crawling, and historical analytics belong outside core.
 
 Meta-keywords output, Product schema, specialized image/video/news sitemap providers, continuous 404 logging, Search Console synchronization, internal-link reports, and site-wide image audits were retired in 1.1. Stored legacy keyword values remain exportable during migration.
 
@@ -44,14 +51,18 @@ For a 1.0.3 upgrade or release-candidate test, follow [Migration and RC Testing]
 
 The SEO panel on supported posts and pages provides:
 
-- an optional SEO title and meta description, with `%title%`, `%sitename%`, `%tagline%`, and `%sep%` resolved on the page
-- canonical and robots controls
+- an optional SEO title and meta description, with `%title%`, `%sitename%`, `%tagline%`, `%sep%`, `%category%`, `%author%`, `%year%`, and `%page%` resolved on the page
+- canonical and robots controls, including a choice to show or hide the page whatever its content type is set to
 - social title, description, and image overrides
 - deterministic checks explaining missing or conflicting inputs
 
 When no description is written, a 160-character summary of the excerpt or content is used. Legacy focus-keyword values are preserved for export but are not edited or emitted.
 
-Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`.
+Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`. A source ending in `/*` covers everything under it, a target ending in `/*` keeps the rest of the address, and `/old-path 410` answers that the page is gone.
+
+The Tools tab can inspect any address on the site: it shows what is sent for that page and where each value comes from.
+
+The Posts, Pages, and custom post type lists show a compact SEO column, and their Quick Edit and Bulk Edit can change the SEO title, the description, and whether the item is shown in search results.
 
 ## Development
 

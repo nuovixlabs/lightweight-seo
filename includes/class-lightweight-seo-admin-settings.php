@@ -123,6 +123,7 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Global SEO settings', 'lightweight-seo' ),
 				'callback' => array( $core, 'general_section_callback' ),
 				'fields'   => array(
+					'title_separator'      => array( __( 'Title separator', 'lightweight-seo' ), $core, true ),
 					'title_format'         => array( __( 'Default title format', 'lightweight-seo' ), $core, true ),
 					'home_title_format'    => array( __( 'Homepage title format', 'lightweight-seo' ), $core, true ),
 					'archive_title_format' => array( __( 'Archive title format', 'lightweight-seo' ), $core, true ),
@@ -135,8 +136,7 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Indexation controls', 'lightweight-seo' ),
 				'callback' => array( $core, 'indexation_section_callback' ),
 				'fields'   => array(
-					'noindex_search_results'        => array( __( 'Search results pages', 'lightweight-seo' ), $core ),
-					'noindex_attachment_pages'      => array( __( 'Attachment pages', 'lightweight-seo' ), $core ),
+					'content_types'                 => array( __( 'Content types', 'lightweight-seo' ), $core ),
 					'default_max_image_preview'     => array( __( 'Image preview size', 'lightweight-seo' ), $core, true ),
 					'enable_media_x_robots_headers' => array( __( 'Attachment page headers', 'lightweight-seo' ), $core ),
 				),
@@ -151,32 +151,58 @@ class Lightweight_SEO_Admin_Settings {
 			),
 			'lightweight_seo_schema_section'       => array(
 				'title'    => __( 'Structured data', 'lightweight-seo' ),
-				'callback' => array( $core, 'schema_section_callback' ),
+				'callback' => '__return_null',
 				'fields'   => array(
+					'identity_type'                  => array( __( 'This site represents', 'lightweight-seo' ), $core, true ),
+					'identity_name'                  => array( __( 'Name', 'lightweight-seo' ), $core, true ),
+					'identity_logo'                  => array( __( 'Logo or photo', 'lightweight-seo' ), $core, true ),
+					'x_handle'                       => array( __( 'X handle', 'lightweight-seo' ), $core, true ),
+					'organization_same_as'           => array( __( 'Profiles', 'lightweight-seo' ), $core, true ),
 					'enable_schema_output'           => array( __( 'Core schema output', 'lightweight-seo' ), $core ),
-					'organization_same_as'           => array( __( 'Organization profiles', 'lightweight-seo' ), $core, true ),
-					'enable_local_business_schema'   => array( __( 'Local business schema', 'lightweight-seo' ), $modules ),
+					'enable_local_business_schema'   => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					'local_business_details'         => array( __( 'Business details', 'lightweight-seo' ), $modules ),
-					'enable_hreflang_output'         => array( __( 'Hreflang output', 'lightweight-seo' ), $modules ),
+					'enable_hreflang_output'         => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					'hreflang_mappings'              => array( __( 'Hreflang mappings', 'lightweight-seo' ), $modules ),
 					'enable_hreflang_path_mirroring' => array( __( 'Legacy path mirroring', 'lightweight-seo' ), $modules ),
+				),
+			),
+			'lightweight_seo_verification_section' => array(
+				'title'    => __( 'Site verification', 'lightweight-seo' ),
+				'callback' => '__return_null',
+				'fields'   => array_map(
+					static function ( $label ) use ( $core ) {
+						return array( $label, $core, true );
+					},
+					$this->get_verification_labels()
 				),
 			),
 			'lightweight_seo_redirects_section'    => array(
 				'title'    => __( 'Redirects', 'lightweight-seo' ),
 				'callback' => array( $modules, 'redirects_section_callback' ),
 				'fields'   => array(
+					'enable_redirects'         => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					'enable_auto_redirects'    => array( __( 'Automatic slug redirects', 'lightweight-seo' ), $modules ),
 					'redirect_rules'           => array( __( 'Manual redirect rules', 'lightweight-seo' ), $modules ),
+					'redirect_test'            => array( __( 'Test an address', 'lightweight-seo' ), $modules, true ),
 					'generated_redirect_rules' => array( __( 'Generated redirects', 'lightweight-seo' ), $modules ),
 					'redirect_export'          => array( __( 'Redirect export', 'lightweight-seo' ), $modules ),
+					'redirect_import'          => array( __( 'Import from a CSV file', 'lightweight-seo' ), $modules, true ),
 					'redirect_health'          => array( __( 'Redirect health', 'lightweight-seo' ), $modules ),
+				),
+			),
+			'lightweight_seo_inspect_section'      => array(
+				'title'    => __( 'Inspect a page', 'lightweight-seo' ),
+				'callback' => '__return_null',
+				'fields'   => array(
+					'inspect_page' => array( __( 'Address', 'lightweight-seo' ), $tools, true ),
 				),
 			),
 			'lightweight_seo_migration_section'    => array(
 				'title'    => __( 'Migration and imports', 'lightweight-seo' ),
 				'callback' => array( $tools, 'migration_section_callback' ),
 				'fields'   => array(
+					'settings_export'          => array( __( 'Export', 'lightweight-seo' ), $tools ),
+					'settings_import'          => array( __( 'Import', 'lightweight-seo' ), $tools, true ),
 					'import_source'            => array( __( 'Import source', 'lightweight-seo' ), $tools, true ),
 					'import_actions'           => array( __( 'Preview or import', 'lightweight-seo' ), $tools ),
 					'import_report'            => array( __( 'Import status', 'lightweight-seo' ), $tools ),
@@ -188,12 +214,21 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Tracking codes', 'lightweight-seo' ),
 				'callback' => array( $modules, 'tracking_section_callback' ),
 				'fields'   => array(
+					'enable_tracking'                => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					// Google Tag Manager is the recommended primary strategy; the direct IDs are alternatives.
 					'gtm_container_id'               => array( __( 'Google Tag Manager container ID', 'lightweight-seo' ), $modules, true ),
 					'ga4_measurement_id'             => array( __( 'Direct Google Analytics 4 measurement ID', 'lightweight-seo' ), $modules, true ),
 					'facebook_pixel_id'              => array( __( 'Direct Meta Pixel ID', 'lightweight-seo' ), $modules, true ),
 					'tracking_excluded_roles'        => array( __( 'Excluded roles', 'lightweight-seo' ), $modules ),
 					'tracking_excluded_environments' => array( __( 'Excluded environments', 'lightweight-seo' ), $modules ),
+				),
+			),
+			'lightweight_seo_indexnow_section'     => array(
+				'title'    => __( 'IndexNow', 'lightweight-seo' ),
+				'callback' => array( $modules, 'indexnow_section_callback' ),
+				'fields'   => array(
+					'enable_indexnow' => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
+					'indexnow_status' => array( __( 'Status', 'lightweight-seo' ), $modules ),
 				),
 			),
 			'lightweight_seo_ai_discovery_section' => array(
@@ -208,6 +243,21 @@ class Lightweight_SEO_Admin_Settings {
 					'ai_readiness'                 => array( __( 'Readiness checks', 'lightweight-seo' ), $modules ),
 				),
 			),
+		);
+	}
+
+	/**
+	 * Name the services a verification code can be entered for, keyed by their setting.
+	 *
+	 * @since    1.1.0
+	 * @return   array<string,string>
+	 */
+	private function get_verification_labels() {
+		return array(
+			'verification_google'    => __( 'Google Search Console', 'lightweight-seo' ),
+			'verification_bing'      => __( 'Bing Webmaster Tools', 'lightweight-seo' ),
+			'verification_pinterest' => __( 'Pinterest', 'lightweight-seo' ),
+			'verification_yandex'    => __( 'Yandex Webmaster', 'lightweight-seo' ),
 		);
 	}
 
@@ -255,7 +305,7 @@ class Lightweight_SEO_Admin_Settings {
 	}
 
 	/**
-	 * Keep the stored social image URL and attachment ID in sync.
+	 * Keep a stored image URL and its attachment ID in sync, for the social image and the identity logo.
 	 *
 	 * @since    1.0.2
 	 * @param    string    $image_url             Submitted image URL.
@@ -298,6 +348,11 @@ class Lightweight_SEO_Admin_Settings {
 	 * @return   array
 	 */
 	public function validate_settings( $input ) {
+		// An undo puts back exactly what was stored before an import; that value was checked when it was saved.
+		if ( class_exists( 'Lightweight_SEO_Settings_Transfer', false ) && Lightweight_SEO_Settings_Transfer::is_restoring() ) {
+			return $input;
+		}
+
 		$existing_settings = $this->settings->get_all();
 		$sanitized_input   = array();
 		$active_tab        = sanitize_key( $input['settings_tab'] ?? 'all' );
@@ -311,25 +366,28 @@ class Lightweight_SEO_Admin_Settings {
 		};
 
 		if ( isset( $input['title_format'] ) ) {
-			$sanitized_input['title_format'] = sanitize_text_field( $input['title_format'] );
+			$sanitized_input['title_format'] = Lightweight_SEO_Text::sanitize_template( $input['title_format'] );
 		} else {
 			$sanitized_input['title_format'] = $existing_settings['title_format'] ?? LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT;
 		}
 
+		// An unknown separator, or a save from another tab, keeps the separator that is stored.
+		$sanitized_input['title_separator'] = $this->settings->normalize_title_separator( $input['title_separator'] ?? null, $this->settings->get_title_separator() );
+
 		if ( isset( $input['home_title_format'] ) ) {
-			$sanitized_input['home_title_format'] = sanitize_text_field( $input['home_title_format'] );
+			$sanitized_input['home_title_format'] = Lightweight_SEO_Text::sanitize_template( $input['home_title_format'] );
 		} else {
 			$sanitized_input['home_title_format'] = $existing_settings['home_title_format'] ?? '%sitename% %sep% %tagline%';
 		}
 
 		if ( isset( $input['archive_title_format'] ) ) {
-			$sanitized_input['archive_title_format'] = sanitize_text_field( $input['archive_title_format'] );
+			$sanitized_input['archive_title_format'] = Lightweight_SEO_Text::sanitize_template( $input['archive_title_format'] );
 		} else {
 			$sanitized_input['archive_title_format'] = $existing_settings['archive_title_format'] ?? '%title% %sep% %sitename%';
 		}
 
 		if ( isset( $input['search_title_format'] ) ) {
-			$sanitized_input['search_title_format'] = sanitize_text_field( $input['search_title_format'] );
+			$sanitized_input['search_title_format'] = Lightweight_SEO_Text::sanitize_template( $input['search_title_format'] );
 		} else {
 			$sanitized_input['search_title_format'] = $existing_settings['search_title_format'] ?? 'Search Results for "%search%" %sep% %sitename%';
 		}
@@ -346,6 +404,8 @@ class Lightweight_SEO_Admin_Settings {
 
 		$sanitized_input['noindex_search_results']           = $checkbox_value( 'noindex_search_results', 'indexation' );
 		$sanitized_input['noindex_attachment_pages']         = $checkbox_value( 'noindex_attachment_pages', 'indexation' );
+		$sanitized_input['noindex_author_archives']          = $checkbox_value( 'noindex_author_archives', 'indexation' );
+		$sanitized_input['noindex_date_archives']            = $checkbox_value( 'noindex_date_archives', 'indexation' );
 		$sanitized_input['enable_media_x_robots_headers']    = $checkbox_value( 'enable_media_x_robots_headers', 'indexation' );
 		$sanitized_input['exclude_noindex_from_sitemaps']    = $checkbox_value( 'exclude_noindex_from_sitemaps', 'indexation' );
 		$sanitized_input['exclude_redirected_from_sitemaps'] = $checkbox_value( 'exclude_redirected_from_sitemaps', 'indexation' );
@@ -353,8 +413,11 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['enable_local_business_schema']     = $checkbox_value( 'enable_local_business_schema', 'modules' );
 		$sanitized_input['enable_hreflang_output']           = $checkbox_value( 'enable_hreflang_output', 'modules' );
 		$sanitized_input['enable_hreflang_path_mirroring']   = $checkbox_value( 'enable_hreflang_path_mirroring', 'modules' );
+		$sanitized_input['enable_redirects']                 = $checkbox_value( 'enable_redirects', 'modules' );
 		$sanitized_input['enable_auto_redirects']            = $checkbox_value( 'enable_auto_redirects', 'modules' );
+		$sanitized_input['enable_tracking']                  = $checkbox_value( 'enable_tracking', 'modules' );
 		$sanitized_input['enable_ai_discovery']              = $checkbox_value( 'enable_ai_discovery', 'modules' );
+		$sanitized_input['enable_indexnow']                  = $checkbox_value( 'enable_indexnow', 'modules' );
 		$sanitized_input['ai_search_crawlers_enabled']       = $checkbox_value( 'ai_search_crawlers_enabled', 'modules' );
 		$sanitized_input['ai_training_crawlers_enabled']     = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );
 		$sanitized_input['enable_llms_txt']                  = $checkbox_value( 'enable_llms_txt', 'modules' );
@@ -362,6 +425,30 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['default_max_image_preview']        = $this->settings->normalize_max_image_preview(
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),
 			'large'
+		);
+
+		// The key is created once, when the module is first switched on, and never comes from a form field.
+		$indexnow_key = Lightweight_SEO_Settings::normalize_indexnow_key( $existing_settings['indexnow_key'] ?? '' );
+
+		if ( '' === $indexnow_key ) {
+			// WordPress validates twice when it creates the option row; the second pass receives the key the first one made.
+			$indexnow_key = Lightweight_SEO_Settings::normalize_indexnow_key( $input['indexnow_key'] ?? '' );
+		}
+
+		if ( '' === $indexnow_key && '1' === $sanitized_input['enable_indexnow'] ) {
+			$indexnow_key = Lightweight_SEO_Settings::generate_indexnow_key();
+		}
+
+		$sanitized_input['indexnow_key'] = $indexnow_key;
+
+		$content_types = isset( $input['content_types'] ) && is_array( $input['content_types'] ) ? $input['content_types'] : array();
+
+		// A row is accepted for a post type or taxonomy that exists; stored rows of the others are carried over.
+		$sanitized_input['content_types'] = $this->settings->normalize_content_types(
+			$content_types,
+			$existing_settings['content_types'] ?? array(),
+			array_filter( array_keys( (array) ( $content_types['post_types'] ?? array() ) ), 'post_type_exists' ),
+			array_filter( array_keys( (array) ( $content_types['taxonomies'] ?? array() ) ), 'taxonomy_exists' )
 		);
 
 		if ( isset( $input['redirect_rules'] ) ) {
@@ -374,6 +461,46 @@ class Lightweight_SEO_Admin_Settings {
 			}
 		} else {
 			$sanitized_input['redirect_rules'] = $existing_settings['redirect_rules'] ?? '';
+		}
+
+		$sanitized_input['identity_type'] = $this->settings->normalize_identity_type( $input['identity_type'] ?? ( $existing_settings['identity_type'] ?? 'organization' ) );
+		$sanitized_input['identity_name'] = sanitize_text_field( $input['identity_name'] ?? ( $existing_settings['identity_name'] ?? '' ) );
+
+		list( $sanitized_input['identity_logo'], $sanitized_input['identity_logo_id'] ) = $this->normalize_social_image(
+			$input['identity_logo'] ?? ( $existing_settings['identity_logo'] ?? '' ),
+			$input['identity_logo_id'] ?? ( $existing_settings['identity_logo_id'] ?? 0 ),
+			$existing_settings['identity_logo'] ?? '',
+			$existing_settings['identity_logo_id'] ?? 0
+		);
+
+		$sanitized_input['x_handle'] = $existing_settings['x_handle'] ?? '';
+
+		if ( isset( $input['x_handle'] ) ) {
+			$x_handle = $this->settings->normalize_x_handle( sanitize_text_field( $input['x_handle'] ) );
+
+			if ( null === $x_handle ) {
+				add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'invalid_x_handle', __( 'Invalid X handle. Use a handle like @example, or the address of the profile.', 'lightweight-seo' ), 'error' );
+			} else {
+				$sanitized_input['x_handle'] = $x_handle;
+			}
+		}
+
+		foreach ( $this->get_verification_labels() as $key => $label ) {
+			$sanitized_input[ $key ] = $existing_settings[ $key ] ?? '';
+
+			if ( ! isset( $input[ $key ] ) ) {
+				continue;
+			}
+
+			// The whole pasted meta tag is accepted, so the code is extracted before anything strips the tag.
+			$code = $this->settings->normalize_verification_code( $input[ $key ] );
+
+			if ( null === $code ) {
+				/* translators: %s: name of the service, such as Google Search Console. */
+				add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'invalid_' . $key, sprintf( __( 'The %s verification code was not saved. Paste the code, or the whole meta tag the service shows.', 'lightweight-seo' ), $label ), 'error' );
+			} else {
+				$sanitized_input[ $key ] = $code;
+			}
 		}
 
 		if ( isset( $input['organization_same_as'] ) ) {

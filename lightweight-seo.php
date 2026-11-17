@@ -28,10 +28,12 @@ define( 'LIGHTWEIGHT_SEO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LIGHTWEIGHT_SEO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'LIGHTWEIGHT_SEO_OPTION_NAME', 'lightweight_seo_settings' );
 define( 'LIGHTWEIGHT_SEO_MODULES_OPTION_NAME', 'lightweight_seo_modules' );
-define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION', 3 );
+define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION', 4 );
 define( 'LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION', 'lightweight_seo_schema_version' );
 define( 'LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT', '%title% – %sitename%' );
 define( 'LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR', '–' );
+// Query argument, and nonce action, of an administrator's request for the report of a page.
+define( 'LIGHTWEIGHT_SEO_INSPECT_ARG', 'lightweight_seo_inspect' );
 
 /**
  * The core plugin class.
@@ -67,6 +69,11 @@ function run_lightweight_seo() {
 
 	$plugin = new Lightweight_SEO();
 	$plugin->run();
+
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-cli.php';
+		Lightweight_SEO_CLI::register();
+	}
 }
 
 add_action( 'init', 'run_lightweight_seo', 0 );

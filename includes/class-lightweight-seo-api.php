@@ -19,12 +19,14 @@ final class Lightweight_SEO_API {
 	private $post_meta;
 	private $archive_meta;
 	private $module_registry;
+	private $settings;
 
-	public function __construct( $page_context, $post_meta, $archive_meta, $module_registry ) {
+	public function __construct( $page_context, $post_meta, $archive_meta, $module_registry, $settings ) {
 		$this->page_context    = $page_context;
 		$this->post_meta       = $post_meta;
 		$this->archive_meta    = $archive_meta;
 		$this->module_registry = $module_registry;
+		$this->settings        = $settings;
 	}
 
 	public function get_api_version() {
@@ -67,7 +69,8 @@ final class Lightweight_SEO_API {
 			return array();
 		}
 
-		$restricted = false;
+		$restricted  = false;
+		$type_hidden = false;
 
 		if ( 'post' === $object_type ) {
 			$meta        = $this->post_meta->get_all( $object_id );
@@ -78,7 +81,8 @@ final class Lightweight_SEO_API {
 			$description = ! empty( $meta['seo_description'] ) ? $meta['seo_description'] : $this->summarize_text( '' !== $excerpt ? $excerpt : ( $post->post_content ?? '' ) );
 
 			// Unpublished and password-protected posts are never indexable, whatever their stored directives say.
-			$restricted = empty( $post ) || 'publish' !== (string) ( $post->post_status ?? 'publish' ) || '' !== (string) ( $post->post_password ?? '' );
+			$restricted  = empty( $post ) || 'publish' !== (string) ( $post->post_status ?? 'publish' ) || '' !== (string) ( $post->post_password ?? '' );
+			$type_hidden = $this->settings->is_post_type_noindex( (string) ( $post->post_type ?? '' ) );
 
 			if ( $restricted && empty( $meta['seo_description'] ) ) {
 				$description = '';
@@ -90,12 +94,14 @@ final class Lightweight_SEO_API {
 			$term        = get_term( $object_id );
 			$title       = ! empty( $meta['seo_title'] ) ? $meta['seo_title'] : ( $term->name ?? '' );
 			$description = ! empty( $meta['seo_description'] ) ? $meta['seo_description'] : ( $term->description ?? '' );
+			$type_hidden = $this->settings->is_taxonomy_noindex( (string) ( $term->taxonomy ?? '' ) );
 		} else {
 			$meta        = $this->archive_meta->get_user_all( $object_id );
 			$canonical   = ! empty( $meta['seo_canonical_url'] ) ? $meta['seo_canonical_url'] : get_author_posts_url( $object_id );
 			$user        = get_userdata( $object_id );
 			$title       = ! empty( $meta['seo_title'] ) ? $meta['seo_title'] : ( $user->display_name ?? '' );
 			$description = ! empty( $meta['seo_description'] ) ? $meta['seo_description'] : ( $user->description ?? '' );
+			$type_hidden = $this->settings->author_archives_noindex_enabled();
 		}
 
 		$context                  = array(
@@ -104,7 +110,7 @@ final class Lightweight_SEO_API {
 			'title'         => $this->normalize_text( $title ),
 			'description'   => $this->normalize_text( $description ),
 			'canonical_url' => esc_url_raw( $canonical ),
-			'robots'        => $this->build_robots( $meta, $restricted ),
+			'robots'        => $this->build_robots( $meta, $restricted, $type_hidden ),
 		);
 		$context['indexable']     = $this->is_indexable( $object_type, $object_id, $context );
 		$context['canonical_url'] = $this->get_canonical_url( $object_type, $object_id, $context['canonical_url'] );
@@ -162,11 +168,19 @@ final class Lightweight_SEO_API {
 		return $normalized;
 	}
 
-	private function build_robots( $meta, $force_noindex = false ) {
-		$robots = $force_noindex ? array( 'noindex' ) : array();
+	/**
+	 * Build the robots directives of one object.
+	 *
+	 * @param array $meta          Stored SEO meta of the object.
+	 * @param bool  $force_noindex Whether the object can never be indexed, such as an unpublished post.
+	 * @param bool  $type_hidden   Whether the object's content type is hidden from search results.
+	 * @return string
+	 */
+	private function build_robots( $meta, $force_noindex = false, $type_hidden = false ) {
+		$robots = $force_noindex || $this->settings->resolve_noindex( $meta['seo_noindex'] ?? '', $type_hidden ) ? array( 'noindex' ) : array();
 
-		foreach ( array( 'noindex', 'nofollow', 'noarchive', 'nosnippet' ) as $directive ) {
-			if ( '1' === (string) ( $meta[ 'seo_' . $directive ] ?? '' ) && ! in_array( $directive, $robots, true ) ) {
+		foreach ( array( 'nofollow', 'noarchive', 'nosnippet' ) as $directive ) {
+			if ( '1' === (string) ( $meta[ 'seo_' . $directive ] ?? '' ) ) {
 				$robots[] = $directive;
 			}
 		}

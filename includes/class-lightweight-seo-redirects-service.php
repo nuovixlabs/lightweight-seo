@@ -86,6 +86,12 @@ class Lightweight_SEO_Redirects_Service {
 			return;
 		}
 
+		if ( 410 === (int) $rule['status'] ) {
+			$this->send_gone();
+
+			return;
+		}
+
 		$target_url  = $this->resolve_redirect_target( $rule['target'] );
 		$target_path = $this->normalize_path( (string) wp_parse_url( $target_url, PHP_URL_PATH ) );
 		$target_host = strtolower( (string) wp_parse_url( $target_url, PHP_URL_HOST ) );
@@ -103,34 +109,62 @@ class Lightweight_SEO_Redirects_Service {
 	/**
 	 * Find a matching redirect rule for a request path.
 	 *
+	 * An exact rule wins over a prefix rule, and the longest prefix wins over a shorter
+	 * one. Local targets are followed, so the visitor is sent straight to where the
+	 * trail ends; a trail that ends at a "gone" rule answers gone.
+	 *
 	 * @since    1.1.0
 	 * @param    string    $path    Request path.
-	 * @return   array
+	 * @return   array Rule with the final target, or an empty array when no rule applies or the rules loop.
 	 */
 	public function find_matching_redirect( $path ) {
-		$normalized_path = $this->normalize_path( $path );
-		$rule_map        = $this->get_redirect_rule_map();
+		$trace = $this->trace_request( $path );
 
-		if ( ! isset( $rule_map[ $normalized_path ] ) ) {
+		if ( empty( $trace['hops'] ) || $trace['loop'] ) {
 			return array();
 		}
 
-		$rule    = $rule_map[ $normalized_path ];
-		$target  = $rule['target'];
-		$visited = array( $normalized_path => true );
+		$rule = $trace['hops'][0];
+		$last = end( $trace['hops'] );
 
-		while ( 0 === strpos( $target, '/' ) && isset( $rule_map[ $target ] ) ) {
-			if ( isset( $visited[ $target ] ) || count( $visited ) >= 10 ) {
-				return array();
-			}
+		$rule['target'] = $last['target'];
 
-			$visited[ $target ] = true;
-			$target             = $rule_map[ $target ]['target'];
+		if ( 410 === (int) $last['status'] ) {
+			$rule['status'] = 410;
 		}
 
-		$rule['target'] = $target;
-
 		return $rule;
+	}
+
+	/**
+	 * Follow a request path through every rule that applies to it.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $path    Request path.
+	 * @return   array{hops:array,loop:bool}
+	 */
+	public function trace_request( $path ) {
+		return Lightweight_SEO_Settings::trace_redirect_hops( $this->normalize_path( $path ), $this->get_redirect_rule_index() );
+	}
+
+	/**
+	 * Answer that the requested address is gone, using the theme's "not found" template.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	protected function send_gone() {
+		global $wp_query;
+
+		// WordPress would otherwise guess a similar address for a missing page and redirect to it.
+		remove_action( 'template_redirect', 'redirect_canonical' );
+
+		if ( is_object( $wp_query ) && method_exists( $wp_query, 'set_404' ) ) {
+			$wp_query->set_404();
+		}
+
+		status_header( 410 );
+		nocache_headers();
 	}
 
 	/**
@@ -250,34 +284,44 @@ class Lightweight_SEO_Redirects_Service {
 	 * @return   array
 	 */
 	public function get_redirect_health_report() {
-		$rules    = $this->get_all_redirect_rules();
-		$rule_map = array();
-		$chains   = array();
-		$loops    = array();
+		$index  = $this->get_redirect_rule_index();
+		$chains = array();
+		$loops  = array();
 
-		foreach ( $rules as $rule ) {
-			if ( ! isset( $rule_map[ $rule['source'] ] ) ) {
-				$rule_map[ $rule['source'] ] = $rule;
-			}
-		}
+		foreach ( array_merge( array_keys( $index['exact'] ), array_keys( $index['prefix'] ) ) as $source ) {
+			// A prefix rule is followed from an address under it.
+			$start = '/*' === substr( $source, -2 ) ? substr( $source, 0, -2 ) . '/…' : $source;
+			$trace = Lightweight_SEO_Settings::trace_redirect_hops( $start, $index );
 
-		foreach ( array_keys( $rule_map ) as $source ) {
-			$path_report = $this->trace_redirect_path( $source, $rule_map );
-
-			if ( ! empty( $path_report['loop'] ) ) {
-				$loops[ $source ] = $path_report;
-
+			if ( ! $trace['loop'] && count( $trace['hops'] ) < 2 ) {
 				continue;
 			}
 
-			if ( ! empty( $path_report['chain'] ) ) {
-				$chains[ $source ] = $path_report;
+			$report = array(
+				'source'   => $source,
+				'sequence' => array_merge(
+					array( $source ),
+					array_map(
+						static function ( $hop ) {
+							return 410 === (int) $hop['status'] ? '410' : $hop['target'];
+						},
+						$trace['hops']
+					)
+				),
+				'loop'     => $trace['loop'],
+				'chain'    => ! $trace['loop'],
+			);
+
+			if ( $trace['loop'] ) {
+				$loops[] = $report;
+			} else {
+				$chains[] = $report;
 			}
 		}
 
 		return array(
-			'chains' => array_values( $chains ),
-			'loops'  => array_values( $loops ),
+			'chains' => $chains,
+			'loops'  => $loops,
 		);
 	}
 
@@ -337,17 +381,9 @@ class Lightweight_SEO_Redirects_Service {
 		return in_array( $target_host, array_map( 'strtolower', $allowed_hosts ), true );
 	}
 
-	/** Return redirect rules keyed by source with manual rules taking precedence. */
-	private function get_redirect_rule_map() {
-		$rule_map = array();
-
-		foreach ( $this->get_all_redirect_rules() as $rule ) {
-			if ( ! isset( $rule_map[ $rule['source'] ] ) ) {
-				$rule_map[ $rule['source'] ] = $rule;
-			}
-		}
-
-		return $rule_map;
+	/** Return exact and prefix redirect rules, with manual rules taking precedence. */
+	private function get_redirect_rule_index() {
+		return Lightweight_SEO_Settings::index_redirect_rules( $this->get_all_redirect_rules() );
 	}
 
 	/**
@@ -480,60 +516,6 @@ class Lightweight_SEO_Redirects_Service {
 			'status'     => $status,
 			'object_id'  => absint( $rule['object_id'] ?? 0 ),
 			'updated_at' => sanitize_text_field( $rule['updated_at'] ?? '' ),
-		);
-	}
-
-	/**
-	 * Trace a redirect path to detect chains and loops.
-	 *
-	 * @since    1.1.0
-	 * @param    string    $source      Redirect source path.
-	 * @param    array     $rule_map    Redirect rules keyed by source.
-	 * @return   array
-	 */
-	private function trace_redirect_path( $source, $rule_map ) {
-		$visited_paths = array();
-		$sequence      = array( $source );
-		$current       = $source;
-
-		while ( isset( $rule_map[ $current ] ) ) {
-			if ( isset( $visited_paths[ $current ] ) ) {
-				$sequence[] = $current;
-
-				return array(
-					'source'   => $source,
-					'sequence' => $sequence,
-					'loop'     => true,
-					'chain'    => false,
-				);
-			}
-
-			$visited_paths[ $current ] = true;
-			$target                    = $rule_map[ $current ]['target'];
-
-			if ( 0 !== strpos( $target, '/' ) ) {
-				break;
-			}
-
-			$target     = $this->normalize_path( $target );
-			$sequence[] = $target;
-			$current    = $target;
-
-			if ( count( $sequence ) > 10 ) {
-				return array(
-					'source'   => $source,
-					'sequence' => $sequence,
-					'loop'     => false,
-					'chain'    => true,
-				);
-			}
-		}
-
-		return array(
-			'source'   => $source,
-			'sequence' => $sequence,
-			'loop'     => false,
-			'chain'    => count( $sequence ) > 2,
 		);
 	}
 

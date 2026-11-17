@@ -1,5 +1,7 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-ui.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-archive-meta.php';
 
 use PHPUnit\Framework\TestCase;
@@ -93,13 +95,89 @@ final class LightweightSEOArchiveMetaTest extends TestCase {
 		$this->assertSame( '', $values['seo_noindex'] );
 	}
 
-	private function get_settings_stub() {
-		return new class() {
-			public function normalize_max_image_preview( $value, $fallback = '' ) {
-				$allowed = array( 'none', 'standard', 'large' );
+	public function test_search_visibility_saves_one_of_three_values_for_terms_and_authors(): void {
+		$service = new Lightweight_SEO_Archive_Meta( $this->get_settings_stub() );
 
-				return in_array( $value, $allowed, true ) ? $value : $fallback;
-			}
-		};
+		foreach ( array(
+			'index'  => 'index',
+			'1'      => '1',
+			''       => '0',
+			'noidea' => '0',
+		) as $posted => $stored ) {
+			$_POST = array(
+				'lightweight_seo_term_meta_nonce'     => 'nonce',
+				'lightweight_seo_user_meta_nonce'     => 'nonce',
+				'lightweight_seo_archive_seo_noindex' => (string) $posted,
+			);
+
+			$service->save_term_fields( 23 );
+			$service->save_user_fields( 17 );
+
+			$this->assertSame( $stored, $service->get_term_all( 23 )['seo_noindex'], 'Posted "' . $posted . '" for a term.' );
+			$this->assertSame( $stored, $service->get_user_all( 17 )['seo_noindex'], 'Posted "' . $posted . '" for an author.' );
+		}
+	}
+
+	public function test_term_and_author_screens_offer_the_three_way_choice_with_their_content_type_default(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_term_meta;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'noindex_author_archives' => '1',
+			'content_types'           => array( 'taxonomies' => array( 'post_tag' => array( 'noindex' => '1' ) ) ),
+		);
+
+		$service = new Lightweight_SEO_Archive_Meta( new Lightweight_SEO_Settings() );
+		$service->update_term( 9, 'seo_noindex', 'index' );
+
+		ob_start();
+		$service->render_term_edit_fields(
+			(object) array(
+				'term_id'  => 9,
+				'taxonomy' => 'post_tag',
+			)
+		);
+		$tag = (string) ob_get_clean();
+
+		ob_start();
+		$service->render_term_add_fields( 'category' );
+		$category = (string) ob_get_clean();
+
+		ob_start();
+		$service->render_user_fields( (object) array( 'ID' => 17 ) );
+		$author = (string) ob_get_clean();
+
+		$this->assertStringContainsString( '<label for="lightweight_seo_archive_seo_noindex">Search results</label>', $tag );
+		$this->assertStringContainsString( '<select id="lightweight_seo_archive_seo_noindex" name="lightweight_seo_archive_seo_noindex">', $tag );
+		$this->assertMatchesRegularExpression( '/<option value="" >Default for Tags \(currently hidden\)<\/option>/', $tag );
+		$this->assertMatchesRegularExpression( '/<option value="index"\s+selected=\'selected\'>Show in search results<\/option>/', $tag );
+		$this->assertMatchesRegularExpression( '/<option value=""\s+selected=\'selected\'>Default for Categories \(currently shown\)<\/option>/', $category );
+		$this->assertMatchesRegularExpression( '/<option value=""\s+selected=\'selected\'>Default for author archives \(currently hidden\)<\/option>/', $author );
+		$this->assertStringNotContainsString( 'type="checkbox" id="lightweight_seo_archive_seo_noindex"', $tag . $category . $author );
+
+		$lightweight_seo_test_options   = array();
+		$lightweight_seo_test_term_meta = array();
+	}
+
+	private function get_settings_stub() {
+		return new Lightweight_SEO_Settings();
+	}
+
+	public function test_every_title_variable_survives_saving_a_term_or_an_author(): void {
+		$service = new Lightweight_SEO_Archive_Meta( $this->get_settings_stub() );
+
+		$_POST = array(
+			'lightweight_seo_term_meta_nonce'         => 'nonce',
+			'lightweight_seo_user_meta_nonce'         => 'nonce',
+			'lightweight_seo_archive_seo_title'       => '%category% %sep% %page%',
+			'lightweight_seo_archive_seo_description' => 'Posts in %category% by %author%.',
+		);
+
+		$service->save_term_fields( 23 );
+		$service->save_user_fields( 17 );
+
+		$this->assertSame( '%category% %sep% %page%', $service->get_term_all( 23 )['seo_title'] );
+		$this->assertSame( 'Posts in %category% by %author%.', $service->get_term_all( 23 )['seo_description'] );
+		$this->assertSame( '%category% %sep% %page%', $service->get_user_all( 17 )['seo_title'] );
 	}
 }

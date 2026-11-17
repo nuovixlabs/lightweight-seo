@@ -40,6 +40,10 @@ class Lightweight_SEO_Migrator {
 			self::migrate_to_version_3( $had_settings );
 		}
 
+		if ( $stored_version < 4 ) {
+			self::migrate_to_version_4();
+		}
+
 		update_option( LIGHTWEIGHT_SEO_SCHEMA_VERSION_OPTION, LIGHTWEIGHT_SEO_SCHEMA_VERSION, false );
 	}
 
@@ -119,5 +123,30 @@ class Lightweight_SEO_Migrator {
 		if ( $had_settings ) {
 			update_option( 'lightweight_seo_upgrade_summary', $summary, false );
 		}
+	}
+
+	/**
+	 * Give Redirects and Tracking their own switch, set to what each module is doing now.
+	 *
+	 * Until this version the two modules were on whenever rules or an ID were saved. The
+	 * switches take over from that rule, so nothing turns on or off during the upgrade.
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_version_4() {
+		$settings = get_option( LIGHTWEIGHT_SEO_OPTION_NAME, false );
+
+		if ( ! is_array( $settings ) ) {
+			return;
+		}
+
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-module-state.php';
+
+		$states = Lightweight_SEO_Module_State::normalize( get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME, array() ) );
+
+		$settings['enable_redirects'] = $states['redirects'] ? '1' : '0';
+		$settings['enable_tracking']  = $states['tracking'] ? '1' : '0';
+
+		update_option( LIGHTWEIGHT_SEO_OPTION_NAME, $settings );
 	}
 }

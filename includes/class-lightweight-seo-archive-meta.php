@@ -267,12 +267,14 @@ class Lightweight_SEO_Archive_Meta {
 	public function render_term_add_fields( $taxonomy ) {
 		wp_nonce_field( 'lightweight_seo_term_meta', 'lightweight_seo_term_meta_nonce' );
 
+		$content_type = $this->get_taxonomy_content_type( $taxonomy );
+
 		foreach ( $this->get_fields() as $field => $definition ) {
 			$value = $definition['default'];
 			?>
 			<div class="form-field term-<?php echo esc_attr( $field ); ?>-wrap">
 				<label for="lightweight_seo_archive_<?php echo esc_attr( $field ); ?>"><?php echo esc_html( $definition['label'] ); ?></label>
-				<?php $this->render_field_control( $field, $value ); ?>
+				<?php $this->render_field_control( $field, $value, $content_type ); ?>
 				<p class="description"><?php echo esc_html( $definition['description'] ); ?></p>
 			</div>
 			<?php
@@ -287,7 +289,8 @@ class Lightweight_SEO_Archive_Meta {
 	 * @return   void
 	 */
 	public function render_term_edit_fields( $term ) {
-		$values = $this->get_term_all( $term->term_id );
+		$values       = $this->get_term_all( $term->term_id );
+		$content_type = $this->get_taxonomy_content_type( (string) ( $term->taxonomy ?? '' ) );
 
 		wp_nonce_field( 'lightweight_seo_term_meta', 'lightweight_seo_term_meta_nonce' );
 
@@ -297,7 +300,7 @@ class Lightweight_SEO_Archive_Meta {
 			<tr class="form-field term-<?php echo esc_attr( $field ); ?>-wrap">
 				<th scope="row"><label for="lightweight_seo_archive_<?php echo esc_attr( $field ); ?>"><?php echo esc_html( $definition['label'] ); ?></label></th>
 				<td>
-					<?php $this->render_field_control( $field, $value ); ?>
+					<?php $this->render_field_control( $field, $value, $content_type ); ?>
 					<p class="description"><?php echo esc_html( $definition['description'] ); ?></p>
 				</td>
 			</tr>
@@ -340,7 +343,11 @@ class Lightweight_SEO_Archive_Meta {
 	 * @return   void
 	 */
 	public function render_user_fields( $user ) {
-		$values = $this->get_user_all( $user->ID );
+		$values       = $this->get_user_all( $user->ID );
+		$content_type = array(
+			'label'  => __( 'author archives', 'lightweight-seo' ),
+			'hidden' => $this->settings->author_archives_noindex_enabled(),
+		);
 		?>
 		<h2><?php esc_html_e( 'SEO settings', 'lightweight-seo' ); ?></h2>
 		<?php wp_nonce_field( 'lightweight_seo_user_meta', 'lightweight_seo_user_meta_nonce' ); ?>
@@ -349,7 +356,7 @@ class Lightweight_SEO_Archive_Meta {
 				<tr>
 					<th><label for="lightweight_seo_archive_<?php echo esc_attr( $field ); ?>"><?php echo esc_html( $definition['label'] ); ?></label></th>
 					<td>
-						<?php $this->render_field_control( $field, $values[ $field ] ?? $definition['default'] ); ?>
+						<?php $this->render_field_control( $field, $values[ $field ] ?? $definition['default'], $content_type ); ?>
 						<p class="description"><?php echo esc_html( $definition['description'] ); ?></p>
 					</td>
 				</tr>
@@ -451,8 +458,8 @@ class Lightweight_SEO_Archive_Meta {
 				'default'     => '',
 			),
 			'seo_noindex'           => array(
-				'label'       => __( 'Noindex', 'lightweight-seo' ),
-				'description' => __( 'Prevent this archive page from being indexed.', 'lightweight-seo' ),
+				'label'       => __( 'Search results', 'lightweight-seo' ),
+				'description' => __( 'Decides whether search engines may show this archive page, whatever its content type is set to.', 'lightweight-seo' ),
 				'default'     => '0',
 			),
 			'seo_nofollow'          => array(
@@ -488,11 +495,11 @@ class Lightweight_SEO_Archive_Meta {
 		return array(
 			'seo_title'             => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_template' ),
 			),
 			'seo_description'       => array(
 				'type'              => 'string',
-				'sanitize_callback' => 'sanitize_textarea_field',
+				'sanitize_callback' => array( 'Lightweight_SEO_Text', 'sanitize_textarea_template' ),
 			),
 			'seo_canonical_url'     => array(
 				'type'              => 'string',
@@ -522,16 +529,39 @@ class Lightweight_SEO_Archive_Meta {
 	}
 
 	/**
+	 * Describe the content type a term belongs to, for the search visibility choice.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $taxonomy    Taxonomy name.
+	 * @return   array Plural label, and whether the taxonomy is hidden from search results.
+	 */
+	private function get_taxonomy_content_type( $taxonomy ) {
+		$object = get_taxonomy( $taxonomy );
+
+		return array(
+			'label'  => (string) ( $object->labels->name ?? $taxonomy ),
+			'hidden' => $this->settings->is_taxonomy_noindex( $taxonomy ),
+		);
+	}
+
+	/**
 	 * Render a single control for a field.
 	 *
 	 * @since    1.1.0
-	 * @param    string    $field    Field alias.
-	 * @param    mixed     $value    Current field value.
+	 * @param    string    $field           Field alias.
+	 * @param    mixed     $value           Current field value.
+	 * @param    array     $content_type    Plural label of the object's content type, and whether it is hidden from search results.
 	 * @return   void
 	 */
-	private function render_field_control( $field, $value ) {
+	private function render_field_control( $field, $value, $content_type ) {
 		$field_id   = 'lightweight_seo_archive_' . $field;
 		$field_name = 'lightweight_seo_archive_' . $field;
+
+		if ( 'seo_noindex' === $field ) {
+			Lightweight_SEO_Admin_UI::visibility_select( $field_name, $value, $content_type['label'], $content_type['hidden'] );
+
+			return;
+		}
 
 		if ( 'seo_description' === $field ) {
 			echo '<textarea id="' . esc_attr( $field_id ) . '" name="' . esc_attr( $field_name ) . '" rows="3" class="large-text">' . esc_textarea( $value ) . '</textarea>';
@@ -552,7 +582,7 @@ class Lightweight_SEO_Archive_Meta {
 			return;
 		}
 
-		if ( in_array( $field, array( 'seo_noindex', 'seo_nofollow', 'seo_noarchive', 'seo_nosnippet' ), true ) ) {
+		if ( in_array( $field, array( 'seo_nofollow', 'seo_noarchive', 'seo_nosnippet' ), true ) ) {
 			echo '<label><input type="checkbox" id="' . esc_attr( $field_id ) . '" name="' . esc_attr( $field_name ) . '" value="1" ' . checked( $value, '1', false ) . '> ' . esc_html__( 'Enabled', 'lightweight-seo' ) . '</label>';
 
 			return;
@@ -573,7 +603,7 @@ class Lightweight_SEO_Archive_Meta {
 		$post_key = 'lightweight_seo_archive_' . $field;
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The calling save handlers verify the nonce and capability; sanitize_meta_value() sanitizes each field by type.
-		if ( in_array( $field, array( 'seo_noindex', 'seo_nofollow', 'seo_noarchive', 'seo_nosnippet' ), true ) ) {
+		if ( in_array( $field, array( 'seo_nofollow', 'seo_noarchive', 'seo_nosnippet' ), true ) ) {
 			return isset( $_POST[ $post_key ] ) ? '1' : '0';
 		}
 
@@ -596,12 +626,13 @@ class Lightweight_SEO_Archive_Meta {
 	private function sanitize_meta_value( $field, $value ) {
 		switch ( $field ) {
 			case 'seo_title':
-				return sanitize_text_field( $value );
+				return Lightweight_SEO_Text::sanitize_template( $value );
 			case 'seo_description':
-				return sanitize_textarea_field( $value );
+				return Lightweight_SEO_Text::sanitize_textarea_template( $value );
 			case 'seo_canonical_url':
 				return esc_url_raw( $value );
 			case 'seo_noindex':
+				return $this->settings->normalize_noindex_choice( $value );
 			case 'seo_nofollow':
 			case 'seo_noarchive':
 			case 'seo_nosnippet':

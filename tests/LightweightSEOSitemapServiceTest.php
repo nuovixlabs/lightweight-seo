@@ -1,5 +1,6 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-sitemap-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-redirects-service.php';
 
@@ -128,8 +129,85 @@ final class LightweightSEOSitemapServiceTest extends TestCase {
 		$this->assertSame( array( 21 ), $post_again['post__not_in'], 'The second lookup must reuse the per-request result.' );
 	}
 
-	private function get_service() {
-		$settings = new class() {
+	public function test_content_types_left_out_of_the_sitemap_are_removed_from_the_index(): void {
+		$service = $this->get_service(
+			array(
+				'content_types' => array(
+					'post_types' => array( 'portfolio' => array( 'sitemap' => '0' ) ),
+					'taxonomies' => array( 'post_tag' => array( 'sitemap' => '0' ) ),
+				),
+			)
+		);
+
+		$post_types = $service->filter_post_types(
+			array(
+				'post'      => (object) array( 'name' => 'post' ),
+				'portfolio' => (object) array( 'name' => 'portfolio' ),
+			)
+		);
+		$taxonomies = $service->filter_taxonomies(
+			array(
+				'category' => (object) array( 'name' => 'category' ),
+				'post_tag' => (object) array( 'name' => 'post_tag' ),
+			)
+		);
+
+		$this->assertSame( array( 'post' ), array_keys( $post_types ) );
+		$this->assertSame( array( 'category' ), array_keys( $taxonomies ) );
+
+		$untouched = $this->get_service();
+
+		$this->assertCount( 2, $untouched->filter_post_types( array_fill_keys( array( 'post', 'portfolio' ), (object) array() ) ) );
+		$this->assertCount( 2, $untouched->filter_taxonomies( array_fill_keys( array( 'category', 'post_tag' ), (object) array() ) ) );
+	}
+
+	public function test_a_hidden_content_type_lists_only_the_items_set_to_show(): void {
+		$service    = $this->get_service(
+			array(
+				'noindex_author_archives' => '1',
+				'content_types'           => array(
+					'post_types' => array( 'portfolio' => array( 'noindex' => '1' ) ),
+					'taxonomies' => array( 'post_tag' => array( 'noindex' => '1' ) ),
+				),
+			)
+		);
+		$only_shown = array(
+			array(
+				'key'   => '_lightweight_seo_noindex',
+				'value' => 'index',
+			),
+		);
+
+		$this->assertSame( array( $only_shown ), $service->filter_posts_query_args( array(), 'portfolio' )['meta_query'] );
+		$this->assertSame( array( $only_shown ), $service->filter_taxonomies_query_args( array(), 'post_tag' )['meta_query'] );
+		$this->assertSame( array( $only_shown ), $service->filter_users_query_args( array() )['meta_query'] );
+
+		// A content type that is shown keeps the original "everything except hidden items" query.
+		$this->assertSame( 'NOT EXISTS', $service->filter_posts_query_args( array(), 'post' )['meta_query'][0][0]['compare'] );
+		$this->assertSame( 'NOT EXISTS', $service->filter_taxonomies_query_args( array(), 'category' )['meta_query'][0][0]['compare'] );
+	}
+
+	public function test_a_hidden_content_type_keeps_an_existing_meta_query(): void {
+		$service = $this->get_service( array( 'content_types' => array( 'post_types' => array( 'portfolio' => array( 'noindex' => '1' ) ) ) ) );
+		$args    = $service->filter_posts_query_args( array( 'meta_query' => array( array( 'key' => 'featured' ) ) ), 'portfolio' );
+
+		$this->assertSame( 'AND', $args['meta_query']['relation'] );
+		$this->assertSame( 'featured', $args['meta_query'][0][0]['key'] );
+		$this->assertSame( 'index', $args['meta_query'][1][0]['value'] );
+	}
+
+	private function get_service( array $overrides = array() ) {
+		$settings = new class( $overrides ) extends Lightweight_SEO_Settings {
+			private $overrides;
+
+			public function __construct( array $overrides ) {
+				$this->overrides = $overrides;
+			}
+
+			public function get_all() {
+				return array_merge( $this->get_defaults(), $this->overrides );
+			}
+
 			public function exclude_noindex_from_sitemaps_enabled() {
 				return true;
 			}

@@ -37,6 +37,8 @@ If `lightweight_seo_get_api()` does not exist or returns `null`, core is missing
 
 Returned values are copies of normalized public data. They never contain settings arrays, credentials, tokens, nonces, module factories, or mutable internal services.
 
+`is_indexable()` and the `robots` and `indexable` values of `get_object_context()` follow the same rule as the page output: the object's own choice to show or hide wins, and without one the object follows the search visibility of its post type, taxonomy, or, for a user, author archives.
+
 For posts, `get_object_context()` reports unpublished and password-protected content as not indexable and returns no derived description for it. A description derived from an excerpt or content is a summary of at most 160 characters, never the full body.
 
 ## Stable lifecycle hooks
@@ -68,23 +70,39 @@ The optional Tracking module emits nothing until it is enabled by a valid provid
 
 The consent filter supports a basic blocking integration; Lightweight SEO does not create a consent banner or persist consent choices. GTM's noscript fallback uses `wp_body_open`. A theme that omits that hook receives a diagnostic comment in page source while the head container continues to operate.
 
+## IndexNow extension point
+
+The optional IndexNow module is the only place where the plugin's PHP sends a request to another service. It sends nothing unless the module is on, a key exists, the site is public, the environment type is `production`, and the site's host is one search engines can reach.
+
+| Hook | Arguments | Contract |
+|---|---|---|
+| `lightweight_seo_indexnow_urls` | `string[] $urls` | Filters the addresses about to be submitted. Return fewer addresses, or an empty array to send nothing. Addresses on another host are dropped afterwards, and at most 100 are sent by one request. |
+
+Posts saved through WP-CLI are not announced, because the module collects changes only in the administration, editor, REST, and cron contexts.
+
 ## Core output filters and actions
 
 | Hook | Arguments | Contract |
 |---|---|---|
-| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. Besides the title, description, canonical, robots, and Open Graph keys, the context carries `object_title` (the visible name without the title template), `og_locale`, and `published_time`/`modified_time` for article content. |
+| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. Besides the title, description, canonical, robots, and Open Graph keys, the context carries `object_title` (the visible name without the title template), `og_locale`, `twitter_site` (the site's X handle with its `@`, or an empty string), `verification` (verification codes keyed by meta tag name, on the first page of the homepage only), and `published_time`/`modified_time` for article content. |
 | `lightweight_seo_document_title` | `string $title, array $context` | Filters the final plugin document title. |
 | `lightweight_seo_meta_tags` | `array $tags, array $context` | Filters normalized name/property meta-tag definitions before escaping. |
 | `lightweight_seo_before_meta_tags` | `array $tags, array $context` | Fires before meta tags are printed. |
 | `lightweight_seo_after_meta_tags` | `array $tags, array $context` | Fires after meta tags are printed. |
 | `lightweight_seo_link_tags` | `array $links, array $context` | Filters normalized link-tag definitions such as canonical output. |
-| `lightweight_seo_schema_graph` | `array $graph, array $context` | Filters schema graph nodes before JSON encoding. Return arrays only. |
-| `lightweight_seo_article_post_types` | `string[] $post_types` | Selects post types eligible for Article schema; Product is excluded by default. |
+| `lightweight_seo_schema_graph` | `array $graph, array $context` | Filters schema graph nodes before JSON encoding. Return arrays only. The node for the site's publisher is an `Organization` with the identifier `{home}/#organization`, or a `Person` with `{home}/#person` when the site is set to represent a person. |
+| `lightweight_seo_article_post_types` | `string[] $post_types` | Selects the post types whose default schema type is Article. The site owner can choose another type for each post type in the content types table, and that choice wins. Product is excluded by default. |
 | `lightweight_seo_supported_post_types` | `string[] $post_types` | Filters public post types that receive SEO metadata controls. |
 | `lightweight_seo_supported_taxonomies` | `string[] $taxonomies` | Filters public taxonomies that receive archive SEO controls. |
 | `lightweight_seo_compatibility_plugins` | `array $plugins` | Filters plugin-basename to label mappings used for safe-mode detection. |
 | `lightweight_seo_suppressed_features` | `string[] $features, string[] $plugins` | Filters the safe-mode feature matrix. Known full SEO plugins suppress title, meta, robots, canonical, and schema output by default. |
 | `lightweight_seo_multilingual_provider_active` | `bool $active` | Lets an additional multilingual provider claim hreflang ownership. |
+
+### Schema graph
+
+Every page with a canonical address has a page node with the identifier `{canonical}#webpage`: a `WebPage`, a `CollectionPage` for lists of posts, a `SearchResultsPage` for a search, or a `ProfilePage` for an author archive. It belongs to the `WebSite` node, points at the breadcrumb trail (`{canonical}#breadcrumb`) when there is one, and on the front page is `about` the publisher. An `Article`, `BlogPosting`, or `NewsArticle` node (`{canonical}#article`) is `isPartOf` and the `mainEntityOfPage` of that page node.
+
+The breadcrumb trail follows the default rules of the WordPress Breadcrumbs block, so the two agree: Home, the archive of the post type when it has one, parent pages or the first term with its parents, then the page. Two filters of that block are applied to the structured data as well: `block_core_breadcrumbs_post_type_settings` (preferred taxonomy and term) and `block_core_breadcrumbs_items` (the finished trail). An item without a link is left out, except the last one, which takes the canonical address.
 
 ## Module hooks
 
@@ -99,6 +117,42 @@ The consent filter supports a basic blocking integration; Lightweight SEO does n
 The built-in Redirects module loads in the `frontend`, `admin`, `editor`, and `rest` contexts so slug changes are tracked wherever a post can be saved; only the `frontend` context matches requests.
 
 Redirect, Hreflang, Tracking, Local SEO, and AI Discovery implementation classes are private runtime details. Integrations should use the registry and documented hooks, not instantiate those classes.
+
+## Abilities
+
+On WordPress 6.9 and later the plugin registers three abilities in the `lightweight-seo` category, so agents and other clients of the Abilities API can read and fill the SEO fields of a post. They are public and available over REST. The class behind them loads only when WordPress collects abilities.
+
+| Ability | Input | Returns |
+|---|---|---|
+| `lightweight-seo/get-seo-fields` | `post_id` | The fields as stored: `title`, `description`, `canonical_url`, `search_visibility` (`default`, `show`, or `hide`), `social_title`, `social_description`, `social_image`. An empty field means the default is used. |
+| `lightweight-seo/update-seo-fields` | `post_id` and any of the fields above | The fields as stored afterwards. Only the fields that are sent change; an empty string clears a field. |
+| `lightweight-seo/get-seo-context` | `post_id` | `title`, `description`, `canonical_url`, `robots`, and `indexable`, from `get_object_context()`. Variables in the title and description are returned as written. |
+
+- **Permission.** Every ability requires the `edit_post` capability for that post. A signed-out request, or a post that does not exist, is refused.
+- **Validation.** WordPress checks the input against the schema first, so an unknown field or an unknown `search_visibility` value is refused. Text is sanitized like the editor panel and keeps variables such as `%title%`. `canonical_url` and `social_image` must be `http` or `https` addresses; otherwise nothing is saved.
+- **Search visibility.** A page hidden for the first time is stored with "follow links", so it prints `noindex` only.
+- **Scope.** Posts and other content items with SEO fields. Terms and authors are not covered yet, and site settings are never changed through an ability.
+
+## WP-CLI
+
+The commands are registered only when WordPress runs under WP-CLI.
+
+| Command | What it does |
+|---|---|
+| `wp lightweight-seo settings export [--file=<path>]` | Prints the settings file, or writes it to a path. |
+| `wp lightweight-seo settings import <file> [--yes]` | Replaces every setting with the file, after the checks of the settings screen. |
+| `wp lightweight-seo settings undo-import [--yes]` | Puts back the settings the last import replaced. |
+| `wp lightweight-seo module list [--format=<format>]` | Lists the modules and whether each is on. |
+| `wp lightweight-seo module enable <module>` | Switches `redirects`, `hreflang`, `tracking`, `local-seo`, or `ai` on. |
+| `wp lightweight-seo module disable <module>` | Switches a module off; its settings stay saved. |
+| `wp lightweight-seo redirects import <file>` | Merges a CSV file of redirect rules into the saved rules. |
+| `wp lightweight-seo redirects test <path>` | Shows which saved rule applies to a path, without requesting it. |
+
+### Settings file
+
+A settings file is JSON with `format` (`lightweight-seo-settings`), `format_version`, `plugin_version`, `schema_version`, `site_url`, `exported_at`, `settings`, and `modules`. It holds the settings option without credentials, data kept from retired features, and the import source. It never holds titles, descriptions, or other fields saved on posts, terms, or users.
+
+An import refuses a file with a newer `schema_version`. It validates every value like a save of the settings screen, measured against the defaults: a value the file does not hold, or one that fails a check, becomes the default. A file whose `site_url` is another site loses its attachment IDs, its `llms.txt` page list, and hreflang lines tied to an object ID. Module state follows the imported switches; the `modules` entry of the file is informational. The replaced settings are kept in the non-autoloaded `lightweight_seo_settings_backup` option until the next import or an undo.
 
 ## Compatibility policy
 

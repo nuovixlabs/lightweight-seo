@@ -12,6 +12,8 @@
 
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+    <!-- A stand-in for WP-CLI: it has to declare WP-CLI's own class and namespaced function in one file. -->
+    <exclude-pattern>tests/fixtures/wp-cli-stub.php</exclude-pattern>
     <!-- JavaScript tests run under Node and are not PHP. -->
     <exclude-pattern>tests/js/*</exclude-pattern>
 

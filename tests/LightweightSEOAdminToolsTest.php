@@ -2,6 +2,9 @@
 
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-importer-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-import-state.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-module-state.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-tools.php';
 
 use PHPUnit\Framework\TestCase;
@@ -386,6 +389,200 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 		$this->assertSame( 150, $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['import_cursor'] );
 	}
 
+	public function test_redirect_import_merges_a_csv_file_into_the_saved_rules(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'title_format'     => 'Kept %title%',
+			'enable_redirects' => '1',
+			'redirect_rules'   => "/kept /kept-target 301\n/changed /old-target 301\n/same /same-target 302",
+		);
+
+		$csv = tempnam( sys_get_temp_dir(), 'lwseo' );
+		file_put_contents(
+			$csv,
+			"\xEF\xBB\xBFSource,Target,Status\n"
+			. "/changed,/new-target,302\n"
+			. "/same,/same-target,302\n"
+			. "/added,\"/with space\",\n"
+			. "/gone,,410\n"
+			. "/section/*,/moved/*,308\n"
+			. "\n"
+			. "no-leading-slash,/anywhere,301\n"
+			. "/unsafe,https://unapproved.example/x,301\n"
+			. "/added,/second-wins,301\n"
+		);
+
+		$tools = $this->get_tools( $this->get_importer(), $csv );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT );
+		$tools->handle_redirect_import();
+		unlink( $csv );
+
+		$stored = $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ];
+
+		$this->assertSame(
+			array(
+				'/kept /kept-target 301',
+				'/changed /new-target 302',
+				'/same /same-target 302',
+				'/added /second-wins 301',
+				'/gone 410',
+				'/section/* /moved/* 308',
+				// A path typed without its leading slash gets one, as on the settings screen.
+				'/no-leading-slash /anywhere 301',
+			),
+			explode( "\n", $stored['redirect_rules'] )
+		);
+		// Nothing else in the settings is touched.
+		$this->assertSame( 'Kept %title%', $stored['title_format'] );
+		$this->assertSame( '1', $stored['enable_redirects'] );
+
+		$notice = $this->get_last_notice();
+
+		$this->assertSame( 'success', $notice['type'] );
+		$this->assertStringContainsString( '4 added, 1 replaced, 1 already saved, 2 left out', $notice['message'] );
+		$this->assertSame( array( 'https://example.com/wp-admin/admin.php?page=lightweight-seo&tab=modules&settings-updated=true' ), $tools->redirects );
+	}
+
+	public function test_redirect_import_without_a_usable_file_changes_nothing(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'redirect_rules' => '/kept /kept-target 301' );
+		$before = $lightweight_seo_test_options;
+
+		$tools = $this->get_tools( $this->get_importer(), '' );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT );
+		$tools->handle_redirect_import();
+
+		$this->assertSame( $before, $lightweight_seo_test_options );
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+		$this->assertStringContainsString( 'tab=modules', $tools->redirects[0] );
+	}
+
+	public function test_settings_file_is_downloaded_imported_only_when_confirmed_and_undone(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'title_format'                        => 'First %title%',
+			'search_console_service_account_json' => '{"private_key":"secret"}',
+		);
+
+		$tools = $this->get_tools( $this->get_importer() );
+		$_GET  = array( '_wpnonce' => wp_create_nonce( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT ) );
+		$tools->handle_settings_export();
+		$_GET = array();
+
+		$this->assertCount( 1, $tools->downloads );
+		$this->assertStringStartsWith( 'lightweight-seo-settings-', $tools->downloads[0]['filename'] );
+		$this->assertSame( 'application/json', $tools->downloads[0]['type'] );
+		$this->assertStringNotContainsString( 'secret', $tools->downloads[0]['contents'] );
+
+		$file = tempnam( sys_get_temp_dir(), 'lwseo' );
+		file_put_contents( $file, $tools->downloads[0]['contents'] );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['title_format'] = 'Second %title%';
+		$before = $lightweight_seo_test_options;
+
+		// Without the confirmation box, and without a file, nothing changes.
+		$tools = $this->get_tools( $this->get_importer(), $file );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT );
+		$tools->handle_settings_import();
+
+		$this->assertSame( $before, $lightweight_seo_test_options );
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+
+		$tools = $this->get_tools( $this->get_importer(), '' );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, array( 'confirm_settings_import' => '1' ) );
+		$tools->handle_settings_import();
+
+		$this->assertSame( $before, $lightweight_seo_test_options );
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+
+		$tools = $this->get_tools( $this->get_importer(), $file );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, array( 'confirm_settings_import' => '1' ) );
+		$tools->handle_settings_import();
+		unlink( $file );
+
+		$this->assertSame( 'First %title%', $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['title_format'] );
+		$this->assertSame( '{"private_key":"secret"}', $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['search_console_service_account_json'] );
+		$this->assertSame( 'success', $this->get_last_notice()['type'] );
+		$this->assertSame( array( self::TOOLS_URL ), $tools->redirects );
+
+		$tools = $this->get_tools( $this->get_importer() );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO );
+		$tools->handle_settings_undo();
+
+		$this->assertSame( $before[ LIGHTWEIGHT_SEO_OPTION_NAME ], $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] );
+		$this->assertSame( 'success', $this->get_last_notice()['type'] );
+
+		// A second undo has nothing to put back.
+		$tools = $this->get_tools( $this->get_importer() );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO );
+		$tools->handle_settings_undo();
+
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+	}
+
+	public function test_indexnow_test_sends_the_homepage_once_and_reports_the_answer_or_why_nothing_was_sent(): void {
+		global $lightweight_seo_test_environment_type;
+		global $lightweight_seo_test_home_url;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_remote_post_responses;
+
+		$requests = array();
+		$answer   = 200;
+		$run      = function () {
+			$tools = $this->get_tools( $this->get_importer() );
+			$this->submit( Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST );
+			$tools->handle_indexnow_test();
+
+			$this->assertStringContainsString( 'tab=modules', $tools->redirects[0] );
+
+			return $this->get_last_notice();
+		};
+
+		$lightweight_seo_test_remote_post_responses = array(
+			'https://api.indexnow.org/indexnow' => function ( $url, $args ) use ( &$requests, &$answer ) {
+				$requests[] = $args;
+
+				return array( 'response' => array( 'code' => $answer ) );
+			},
+		);
+
+		// Module off: nothing is sent.
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'indexnow_key' => '0123456789abcdef0123456789abcdef' );
+		$this->assertSame( 'error', $run()['type'] );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['enable_indexnow'] = '1';
+
+		// A site search engines cannot reach: nothing is sent, and the notice says why.
+		$lightweight_seo_test_home_url = 'http://localhost/site';
+		$notice                        = $run();
+
+		$this->assertSame( 'info', $notice['type'] );
+		$this->assertStringContainsString( 'Nothing was sent.', $notice['message'] );
+		$this->assertSame( array(), $requests );
+
+		$lightweight_seo_test_home_url         = 'https://www.example.org';
+		$lightweight_seo_test_environment_type = 'production';
+
+		$this->assertSame( 'success', $run()['type'] );
+		$this->assertCount( 1, $requests );
+		$this->assertTrue( $requests[0]['blocking'] );
+		$this->assertSame( array( 'https://www.example.org/' ), json_decode( $requests[0]['body'], true )['urlList'] );
+
+		$answer = 403;
+		$notice = $run();
+
+		$this->assertSame( 'error', $notice['type'] );
+		$this->assertStringContainsString( '0123456789abcdef0123456789abcdef.txt', $notice['message'] );
+
+		$answer = 429;
+		$this->assertStringContainsString( '429', $run()['message'] );
+
+		$lightweight_seo_test_home_url = 'https://example.com';
+	}
+
 	/** Handler method => admin-post action. */
 	private function get_handlers() {
 		return array(
@@ -393,6 +590,11 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 			'handle_import_batch'           => Lightweight_SEO_Admin_Tools::ACTION_IMPORT_BATCH,
 			'handle_import_rollback'        => Lightweight_SEO_Admin_Tools::ACTION_IMPORT_ROLLBACK,
 			'handle_delete_legacy_404_logs' => Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS,
+			'handle_redirect_import'        => Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT,
+			'handle_settings_export'        => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT,
+			'handle_settings_import'        => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT,
+			'handle_settings_undo'          => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO,
+			'handle_indexnow_test'          => Lightweight_SEO_Admin_Tools::ACTION_INDEXNOW_TEST,
 		);
 	}
 
@@ -462,9 +664,23 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 	}
 
 	/** The handlers with the redirect observed instead of ending the process. */
-	private function get_tools( $importer ) {
-		return new class( 'lightweight-seo', $importer, new Lightweight_SEO_Import_State() ) extends Lightweight_SEO_Admin_Tools {
+	private function get_tools( $importer, $upload = '' ) {
+		$tools = new class( 'lightweight-seo', $importer, new Lightweight_SEO_Import_State(), new Lightweight_SEO_Settings() ) extends Lightweight_SEO_Admin_Tools {
 			public $redirects = array();
+
+			public $upload = '';
+
+			public $downloads = array();
+
+			protected function send_download( $filename, $type, $contents ) {
+				$this->downloads[] = compact( 'filename', 'type', 'contents' );
+
+				return false;
+			}
+
+			protected function get_uploaded_file( $field, $max_bytes ) {
+				return $this->upload;
+			}
 
 			protected function redirect( $url ) {
 				$this->redirects[] = $url;
@@ -472,6 +688,10 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 				return false;
 			}
 		};
+
+		$tools->upload = $upload;
+
+		return $tools;
 	}
 
 	/** An importer that records its calls and returns the given reports. */
