@@ -2,21 +2,21 @@
 # This file is distributed under the MIT.
 msgid ""
 msgstr ""
-"Project-Id-Version: Lightweight SEO 1.1.0-rc.3\n"
+"Project-Id-Version: Lightweight SEO 1.1.0-rc.4\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/lightweight-seo\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T13:47:02+00:00\n"
+"POT-Creation-Date: 2026-11-17T17:10:04+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
 
 #. Plugin Name of the plugin
 #: lightweight-seo.php
-#: includes/class-lightweight-seo-abilities.php:78
+#: includes/class-lightweight-seo-abilities.php:97
 msgid "Lightweight SEO"
 msgstr ""
 
@@ -36,83 +36,94 @@ msgstr ""
 msgid "Rakesh Mandal"
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:79
-msgid "Read and fill the search and sharing fields of posts and pages."
+#: includes/class-lightweight-seo-abilities.php:98
+msgid "Read and fill the search and sharing fields of posts, pages, terms, and authors."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:94
-msgid "ID of the post, page, or other content item."
+#: includes/class-lightweight-seo-abilities.php:115
+msgid "What the ID belongs to: \"post\" for a post, page, or other content item, \"term\" for a category, tag, or other term, \"user\" for an author."
+msgstr ""
+
+#: includes/class-lightweight-seo-abilities.php:120
+msgid "ID of the post, term, or user."
 msgstr ""
 
 #. translators: %s: examples of title variables, such as %title%.
-#: includes/class-lightweight-seo-abilities.php:100
+#: includes/class-lightweight-seo-abilities.php:127
 #, php-format
 msgid "SEO title. Empty means the title format of the content type is used. May hold variables such as %s."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:104
+#: includes/class-lightweight-seo-abilities.php:131
 msgid "Meta description. Empty means a summary of the excerpt or content is used."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:108
+#: includes/class-lightweight-seo-abilities.php:135
 msgid "Canonical address. Empty means the page's own address."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:113
+#: includes/class-lightweight-seo-abilities.php:140
 msgid "Whether search engines may show the page: \"default\" follows its content type, \"show\" and \"hide\" are the page's own choice."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:117
-msgid "Title used when the page is shared. Empty means the SEO title."
+#: includes/class-lightweight-seo-abilities.php:144
+msgid "Title used when the page is shared. Empty means the SEO title. Posts only."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:121
-msgid "Description used when the page is shared. Empty means the meta description."
+#: includes/class-lightweight-seo-abilities.php:148
+msgid "Description used when the page is shared. Empty means the meta description. Posts only."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:125
-msgid "Address of the image used when the page is shared. Empty means the featured image or the site default."
+#: includes/class-lightweight-seo-abilities.php:152
+msgid "Address of the image used when the page is shared. Empty means the featured image or the site default. Posts only."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:142
+#: includes/class-lightweight-seo-abilities.php:169
 msgid "Get SEO fields"
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:143
-msgid "Returns the SEO fields saved on one post or page, exactly as they are stored. An empty field means the page uses the default."
+#: includes/class-lightweight-seo-abilities.php:170
+msgid "Returns the SEO fields saved on one post, term, or author, exactly as they are stored. An empty field means the default is used. Terms and authors have no sharing fields of their own."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:156
+#: includes/class-lightweight-seo-abilities.php:183
 msgid "Update SEO fields"
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:157
-msgid "Saves SEO fields on one post or page. Only the fields that are sent change; an empty string clears a field. Returns the fields as they are stored afterwards."
+#: includes/class-lightweight-seo-abilities.php:184
+msgid "Saves SEO fields on one post, term, or author. Only the fields that are sent change; an empty string clears a field. Returns the fields as they are stored afterwards. Sharing fields can only be saved on posts."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:175
+#: includes/class-lightweight-seo-abilities.php:202
 msgid "Get SEO result"
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:176
-msgid "Returns what search engines are told about one post or page after its own fields and the site settings are combined: the title and description in use, the canonical address, the robots directives, and whether the page may be indexed. Variables in the title and description are returned as written, not filled in."
+#: includes/class-lightweight-seo-abilities.php:203
+msgid "Returns what search engines are told about one post, term archive, or author archive after its own fields and the site settings are combined: the title and description with their variables filled in, the canonical address, the robots directives, and whether the page may be indexed."
+msgstr ""
+
+#. translators: %s: name of an SEO field, such as social_title.
+#: includes/class-lightweight-seo-abilities.php:294
+#, php-format
+msgid "Only posts have the field %s. Nothing was saved."
 msgstr ""
 
 #. translators: %s: name of an SEO field, such as canonical_url.
-#: includes/class-lightweight-seo-abilities.php:263
+#: includes/class-lightweight-seo-abilities.php:301
 #, php-format
 msgid "The value for %s is not a web address. Nothing was saved."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:310
+#: includes/class-lightweight-seo-abilities.php:351
 msgid "The SEO result of this item is not available."
 msgstr ""
 
-#: includes/class-lightweight-seo-abilities.php:366
-msgid "This item does not exist, or its content type has no SEO fields."
+#: includes/class-lightweight-seo-abilities.php:472
+msgid "This item does not exist, or it has no SEO fields."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:65
+#: includes/class-lightweight-seo-admin-core-fields.php:502
 msgid "Preview:"
 msgstr ""
 
@@ -283,7 +294,7 @@ msgid "Content type"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:412
-#: includes/class-lightweight-seo-admin-ui.php:325
+#: includes/class-lightweight-seo-admin-ui.php:332
 #: includes/class-lightweight-seo-post-list.php:261
 msgid "Show in search results"
 msgstr ""
@@ -320,116 +331,116 @@ msgstr ""
 msgid "The schema type says what a single item is in structured data. Every page is described as a web page; \"Article\", \"Blog post\", and \"News article\" add a node with the headline, dates, author, and image."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:511
+#: includes/class-lightweight-seo-admin-core-fields.php:522
 #: includes/class-lightweight-seo-archive-meta.php:576
 #: includes/class-lightweight-seo-meta-boxes.php:253
 msgid "Large"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:512
+#: includes/class-lightweight-seo-admin-core-fields.php:523
 #: includes/class-lightweight-seo-archive-meta.php:577
 #: includes/class-lightweight-seo-meta-boxes.php:254
 msgid "Standard"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:513
+#: includes/class-lightweight-seo-admin-core-fields.php:524
 #: includes/class-lightweight-seo-archive-meta.php:578
 #: includes/class-lightweight-seo-meta-boxes.php:255
 msgid "None"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:515
+#: includes/class-lightweight-seo-admin-core-fields.php:526
 msgid "Sets how large an image search engines may show beside your pages, through the max-image-preview directive."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:525
+#: includes/class-lightweight-seo-admin-core-fields.php:536
 msgid "Send the same instruction as an HTTP header on attachment pages"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:525
+#: includes/class-lightweight-seo-admin-core-fields.php:536
 msgid "Adds an X-Robots-Tag header; files served directly by the web server or a CDN need it set there instead."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:536
+#: includes/class-lightweight-seo-admin-core-fields.php:547
 msgid "Sitemap index:"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:536
+#: includes/class-lightweight-seo-admin-core-fields.php:547
 #: includes/class-lightweight-seo-admin-tools-fields.php:335
 #: includes/class-lightweight-seo-admin-ui.php:167
 msgid "(opens in a new tab)"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:545
+#: includes/class-lightweight-seo-admin-core-fields.php:556
 msgid "Leave hidden pages out of the sitemap"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:545
+#: includes/class-lightweight-seo-admin-core-fields.php:556
 msgid "Keeps the sitemap to pages that search engines may show, which is recommended."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:554
+#: includes/class-lightweight-seo-admin-core-fields.php:565
 msgid "Leave redirected pages out of the sitemap"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:554
+#: includes/class-lightweight-seo-admin-core-fields.php:565
 msgid "Keeps the sitemap from listing addresses that currently redirect somewhere else."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:566
+#: includes/class-lightweight-seo-admin-core-fields.php:577
 msgid "An organization"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:567
+#: includes/class-lightweight-seo-admin-core-fields.php:578
 msgid "A person"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:569
+#: includes/class-lightweight-seo-admin-core-fields.php:580
 msgid "Sets whether structured data describes the publisher of this site as an organization or as a person."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:582
+#: includes/class-lightweight-seo-admin-core-fields.php:593
 msgid "Names the organization or person; leave empty to use the site title."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:602
+#: includes/class-lightweight-seo-admin-core-fields.php:613
 #: includes/class-lightweight-seo-admin-settings.php:158
 msgid "Logo or photo"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:606
+#: includes/class-lightweight-seo-admin-core-fields.php:617
 msgid "Shows the logo of an organization or the photo of a person in structured data; an organization without one uses the default social image."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:619
+#: includes/class-lightweight-seo-admin-core-fields.php:630
 msgid "Credits this account when a page is shared on X, through the twitter:site tag."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:646
+#: includes/class-lightweight-seo-admin-core-fields.php:657
 msgid "Paste the code, or the whole HTML tag, from the “HTML tag” method in Google Search Console."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:655
+#: includes/class-lightweight-seo-admin-core-fields.php:666
 msgid "Paste the code, or the whole meta tag, from Bing Webmaster Tools."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:664
+#: includes/class-lightweight-seo-admin-core-fields.php:675
 msgid "Paste the code, or the whole meta tag, from the “Claim your website” step on Pinterest."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:673
+#: includes/class-lightweight-seo-admin-core-fields.php:684
 msgid "Paste the code, or the whole meta tag, from Yandex Webmaster."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:682
+#: includes/class-lightweight-seo-admin-core-fields.php:693
 msgid "Output core Organization or Person, WebSite, Article, and Breadcrumb schema"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:682
+#: includes/class-lightweight-seo-admin-core-fields.php:693
 msgid "Disable this if your theme or another plugin already outputs equivalent structured data."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:694
+#: includes/class-lightweight-seo-admin-core-fields.php:705
 msgid "Add one profile URL per line for the organization or person, such as social profiles or knowledge sources."
 msgstr ""
 
@@ -1187,7 +1198,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:301
 #: includes/class-lightweight-seo-admin-page.php:381
-#: includes/class-lightweight-seo.php:288
+#: includes/class-lightweight-seo.php:293
 msgid "Hreflang"
 msgstr ""
 
@@ -1254,7 +1265,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:382
 #: includes/class-lightweight-seo-admin-settings.php:180
-#: includes/class-lightweight-seo.php:282
+#: includes/class-lightweight-seo.php:287
 msgid "Redirects"
 msgstr ""
 
@@ -1265,13 +1276,13 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:384
 #: includes/class-lightweight-seo-admin-settings.php:235
-#: includes/class-lightweight-seo.php:303
+#: includes/class-lightweight-seo.php:308
 msgid "AI Discovery"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:385
 #: includes/class-lightweight-seo-admin-settings.php:227
-#: includes/class-lightweight-seo.php:309
+#: includes/class-lightweight-seo.php:314
 msgid "IndexNow"
 msgstr ""
 
@@ -2037,115 +2048,115 @@ msgctxt "matrix control label"
 msgid "%1$s: %2$s"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:291
+#: includes/class-lightweight-seo-admin-ui.php:298
 msgid "No setting"
 msgstr ""
 
 #. translators: %s: plural name of a content type, such as Posts or Categories.
-#: includes/class-lightweight-seo-admin-ui.php:317
+#: includes/class-lightweight-seo-admin-ui.php:324
 #: includes/class-lightweight-seo-post-list.php:246
 #, php-format
 msgid "Default for %s (currently hidden)"
 msgstr ""
 
 #. translators: %s: plural name of a content type, such as Posts or Categories.
-#: includes/class-lightweight-seo-admin-ui.php:320
+#: includes/class-lightweight-seo-admin-ui.php:327
 #: includes/class-lightweight-seo-post-list.php:249
 #, php-format
 msgid "Default for %s (currently shown)"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:326
+#: includes/class-lightweight-seo-admin-ui.php:333
 #: includes/class-lightweight-seo-post-list.php:262
 msgid "Hide from search results"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:350
+#: includes/class-lightweight-seo-admin-ui.php:357
 msgid "Insert a variable:"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:373
+#: includes/class-lightweight-seo-admin-ui.php:380
 msgid "Preview size"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:374
+#: includes/class-lightweight-seo-admin-ui.php:381
 msgid "Desktop"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:375
+#: includes/class-lightweight-seo-admin-ui.php:382
 msgid "Mobile"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:500
-#: includes/class-lightweight-seo-admin-ui.php:555
-#: includes/class-lightweight-seo-admin-ui.php:641
+#: includes/class-lightweight-seo-admin-ui.php:507
+#: includes/class-lightweight-seo-admin-ui.php:562
+#: includes/class-lightweight-seo-admin-ui.php:648
 msgid "Remove"
 msgstr ""
 
 #. translators: 1: number of items, 2: most items the setting keeps.
-#: includes/class-lightweight-seo-admin-ui.php:518
+#: includes/class-lightweight-seo-admin-ui.php:525
 #, php-format
 msgid "%1$d of %2$d"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:528
+#: includes/class-lightweight-seo-admin-ui.php:535
 msgid "Searching…"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:529
+#: includes/class-lightweight-seo-admin-ui.php:536
 msgid "Nothing matches that search."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:530
+#: includes/class-lightweight-seo-admin-ui.php:537
 msgid "Search is not available right now. Use “Edit as text” instead."
 msgstr ""
 
 #. translators: %d: number of lines that are kept as text.
-#: includes/class-lightweight-seo-admin-ui.php:581
-#: includes/class-lightweight-seo-admin-ui.php:583
+#: includes/class-lightweight-seo-admin-ui.php:588
+#: includes/class-lightweight-seo-admin-ui.php:590
 #, php-format
 msgid "%d line could not be shown as a row and is kept as text."
 msgid_plural "%d lines could not be shown as rows and are kept as text."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-admin-ui.php:586
+#: includes/class-lightweight-seo-admin-ui.php:593
 msgid "Edit as text"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:586
+#: includes/class-lightweight-seo-admin-ui.php:593
 msgid "Edit as rows"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:617
+#: includes/class-lightweight-seo-admin-ui.php:624
 msgid "Hours removed."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:617
+#: includes/class-lightweight-seo-admin-ui.php:624
 msgid "Monday’s hours copied to Tuesday to Friday."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:624
+#: includes/class-lightweight-seo-admin-ui.php:631
 msgid "Closed"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:626
+#: includes/class-lightweight-seo-admin-ui.php:633
 msgid "Add hours"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:630
+#: includes/class-lightweight-seo-admin-ui.php:637
 msgid "Copy Monday to Tuesday–Friday"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:636
+#: includes/class-lightweight-seo-admin-ui.php:643
 msgid "Opens"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:638
+#: includes/class-lightweight-seo-admin-ui.php:645
 msgid "Closes"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-ui.php:667
+#: includes/class-lightweight-seo-admin-ui.php:674
 msgid "Choose image"
 msgstr ""
 
@@ -3053,34 +3064,34 @@ msgstr ""
 msgid "A business name and complete address are required before Local SEO can be enabled."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:283
+#: includes/class-lightweight-seo.php:288
 msgid "Manage redirects and optional slug-change handling."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:289
+#: includes/class-lightweight-seo.php:294
 msgid "Output alternate-language links."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:293
+#: includes/class-lightweight-seo.php:298
 msgid "Tracking"
 msgstr ""
 
-#: includes/class-lightweight-seo.php:294
+#: includes/class-lightweight-seo.php:299
 msgid "Output configured analytics containers."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:298
+#: includes/class-lightweight-seo.php:303
 msgid "Local SEO"
 msgstr ""
 
-#: includes/class-lightweight-seo.php:299
+#: includes/class-lightweight-seo.php:304
 msgid "Add single-location LocalBusiness data."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:304
+#: includes/class-lightweight-seo.php:309
 msgid "Experimental crawler policy controls."
 msgstr ""
 
-#: includes/class-lightweight-seo.php:310
+#: includes/class-lightweight-seo.php:315
 msgid "Tell search engines when a page is published, changed, or removed."
 msgstr ""

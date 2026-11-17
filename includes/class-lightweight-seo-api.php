@@ -104,6 +104,11 @@ final class Lightweight_SEO_API {
 			$type_hidden = $this->settings->author_archives_noindex_enabled();
 		}
 
+		// A title or description written with variables is returned as the page prints it, not as it was typed.
+		$tokens      = $this->get_object_tokens( $object_type, $object_id );
+		$title       = Lightweight_SEO_Text::resolve_tokens( (string) $title, $tokens );
+		$description = Lightweight_SEO_Text::resolve_tokens( (string) $description, $tokens );
+
 		$context                  = array(
 			'object_type'   => $object_type,
 			'object_id'     => $object_id,
@@ -156,6 +161,47 @@ final class Lightweight_SEO_API {
 
 	public function get_modules() {
 		return $this->module_registry->get_public_modules();
+	}
+
+	/**
+	 * Get the values of the title variables for one object.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $object_type    Object type: post, term, or user.
+	 * @param    int       $object_id      Object ID.
+	 * @return   array<string,string> Values keyed by variable.
+	 */
+	private function get_object_tokens( $object_type, $object_id ) {
+		$title    = '';
+		$category = '';
+		$author   = '';
+
+		if ( 'post' === $object_type ) {
+			$title      = get_the_title( $object_id );
+			$categories = get_the_category( $object_id );
+			$category   = ! empty( $categories[0]->name ) ? (string) $categories[0]->name : '';
+			$author     = (string) get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', $object_id ) );
+		} elseif ( 'term' === $object_type ) {
+			$term     = get_term( $object_id );
+			$title    = empty( $term ) || is_wp_error( $term ) ? '' : (string) ( $term->name ?? '' );
+			$category = 'category' === (string) ( $term->taxonomy ?? '' ) ? $title : '';
+		} else {
+			$user   = get_userdata( $object_id );
+			$title  = (string) ( $user->display_name ?? '' );
+			$author = $title;
+		}
+
+		return array(
+			'%title%'    => $this->normalize_text( $title ),
+			'%sitename%' => (string) get_bloginfo( 'name' ),
+			'%tagline%'  => (string) get_bloginfo( 'description' ),
+			'%sep%'      => is_object( $this->settings ) && method_exists( $this->settings, 'get_title_separator' ) ? $this->settings->get_title_separator() : LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+			'%category%' => $category,
+			'%author%'   => $author,
+			'%year%'     => (string) wp_date( 'Y' ),
+			// An object is described by its first page.
+			'%page%'     => '',
+		);
 	}
 
 	private function normalize_context( $context ) {

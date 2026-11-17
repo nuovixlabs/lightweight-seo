@@ -284,7 +284,14 @@ class Lightweight_SEO_Admin_UI {
 
 			echo '</select>';
 		} elseif ( 'text' === $type ) {
-			echo '<input type="text" name="' . esc_attr( $cell['name'] ) . '" value="' . esc_attr( $cell['value'] ?? '' ) . '" placeholder="' . esc_attr( $cell['placeholder'] ?? '' ) . '" aria-label="' . esc_attr( $label ) . '" autocomplete="off"' . ( empty( $cell['tokens'] ) ? '' : ' data-lwseo-tokens' ) . '>';
+			echo '<input type="text"' . ( empty( $cell['id'] ) ? '' : ' id="' . esc_attr( $cell['id'] ) . '"' ) . ' name="' . esc_attr( $cell['name'] ) . '" value="' . esc_attr( $cell['value'] ?? '' ) . '" placeholder="' . esc_attr( $cell['placeholder'] ?? '' ) . '" aria-label="' . esc_attr( $label ) . '" autocomplete="off"' . ( empty( $cell['tokens'] ) ? '' : ' data-lwseo-tokens' ) . '>';
+
+			// What the format becomes for a real page, printed for the saved value and kept live by the script.
+			if ( ! empty( $cell['preview'] ) && ! empty( $cell['id'] ) ) {
+				echo '<p class="lwseo-format-preview" data-for="' . esc_attr( $cell['id'] ) . '" data-fallback="' . esc_attr( $cell['preview']['fallback'] ?? '' ) . '" data-tokens="' . esc_attr( wp_json_encode( $cell['preview']['tokens'] ?? array() ) ) . '">';
+				echo '<span class="lwseo-format-preview__label">' . esc_html( $cell['preview']['label'] ?? '' ) . '</span> ';
+				echo '<span class="lwseo-format-preview__text">' . esc_html( $cell['preview']['text'] ?? '' ) . '</span></p>';
+			}
 		} elseif ( '' !== (string) ( $cell['text'] ?? '' ) ) {
 			echo '<span class="lwseo-matrix__note">' . esc_html( $cell['text'] ) . '</span>';
 		} else {

@@ -1,8 +1,8 @@
 # Lightweight SEO 1.1 Release Notes
 
-Release candidate: `1.1.0-rc.3`
+Release candidate: `1.1.0-rc.4`
 
-`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package. This candidate adds the redesigned administration interface.
+`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package, and `1.1.0-rc.3` added the redesigned administration interface. This candidate adds everything in the sections marked "since rc.3" below: the content types table, site identity, more title variables, the post list column, Inspect a page, a switch for every module, redirect upgrades, settings export and import, deeper structured data, three more importers, abilities, the IndexNow module, and live previews.
 
 ## Highlights
 
@@ -183,19 +183,25 @@ These are changes to what is printed on every page. No setting is migrated: a sc
 - The import on the Tools tab reads three more plugins: SEOPress, The SEO Framework, and Slim SEO. Titles, descriptions, canonical addresses, robots choices, and sharing fields are imported in the same bounded way: a preview first, 50 posts at a time, empty fields only, and a rollback of the latest batch.
 - Variables of SEOPress and Slim SEO that mean the same as a Lightweight SEO variable are converted. A field with any other variable is left for review and counted, as before.
 - The SEO Framework's "always index" choice becomes "Show in search results" for that page.
+- A title from The SEO Framework is imported with the site name that plugin added when it printed the title, so the page title stays the same after the switch.
 - A page hidden by an import, from any of the six sources, now prints `noindex` only. Before, a page imported as hidden also printed `nofollow`, through the rule that keeps the behaviour of pages hidden before 1.1.
 
-The field names of each plugin were taken from its published source code. See [Migration and RC Testing](migration.md) for the list.
+The field names of each plugin were taken from its published source code, and each import was compared with what the real plugin printed for the same page. See [Migration and RC Testing](migration.md) for the list.
 
 ## Abilities API since rc.3
 
-On WordPress 6.9 and later, three abilities let agents and other clients of the Abilities API work with the SEO fields of a post: `lightweight-seo/get-seo-fields`, `lightweight-seo/update-seo-fields`, and `lightweight-seo/get-seo-context`.
+On WordPress 6.9 and later, three abilities let agents and other clients of the Abilities API work with the SEO fields of a post, a term, or an author: `lightweight-seo/get-seo-fields`, `lightweight-seo/update-seo-fields`, and `lightweight-seo/get-seo-context`.
 
-- Each one requires the right to edit that post, and an update goes through the same sanitizers as the editor panel.
-- They cover posts, pages, and other content items with SEO fields. Site settings, terms, and authors are not exposed.
+- Each one takes an `object_id` and an optional `object_type` (`post`, `term`, or `user`), requires the right to edit that item, and an update goes through the same sanitizers as the editing screens.
+- Terms and authors have a title, a description, a canonical address, and a search visibility. The sharing fields exist for posts only.
+- Site settings are not exposed.
 - Nothing is loaded for them until WordPress collects abilities, and older WordPress versions never do.
 
 See [Developer API](developer-api.md#abilities). One file is new; see [Release Baselines](release-baselines.md).
+
+## Public API since rc.3
+
+`get_object_context()` now returns the `title` and `description` of a post, term, or user with their variables filled in. Before, a custom SEO title such as `%title% %sep% %sitename%` was returned as it was typed.
 
 ## IndexNow module since rc.3
 
@@ -206,12 +212,13 @@ A sixth optional module, off by default, tells search engines that support Index
 - Only public pages that search engines may show are sent. Nothing is sent from a site that is not a production site, that discourages search engines, or whose address search engines cannot reach, such as `localhost`.
 - The key is created when the module is first switched on and is answered at `/{key}.txt` by the plugin; no file is written. The key is never exported with the settings.
 - The card shows whether the site sends, the key address, what was last sent, and a "Send a test" button.
+- A post saved by a WP-CLI command is announced like one saved in the administration.
 
 Settings `enable_indexnow` and `indexnow_key` and the non-autoloaded option `lightweight_seo_indexnow_last` are new. One file is new, loaded only while the module is on.
 
 ## Previews, toolbar, and command palette since rc.3
 
-- **Title format previews.** Each title format on "Search appearance" shows what it becomes for the newest post of the site, and follows the format and the separator while you edit them.
+- **Title format previews.** Each title format on "Search appearance", and each title format in the content types table, shows what it becomes for the newest post of the site, and follows the format and the separator while you edit them.
 - **Desktop and mobile search preview.** The search result preview in the editor panel and on the Overview has a Desktop/Mobile switch and cuts a long title or description off about where a search result would. The length count still uses the full text, and nothing here is a score.
 - **Toolbar status.** On the front end, administrators see "SEO: shown in search", "SEO: hidden from search", or "SEO: page not found" in the toolbar, linked to the Inspect report of that page. It adds no style or script to the page.
 - **Command palette.** On WordPress 6.9 and later the command palette lists every Lightweight SEO settings tab and "Inspect a page".

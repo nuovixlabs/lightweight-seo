@@ -17,7 +17,7 @@ Core provides:
 - filtering of WordPress core XML sitemaps
 - safe mode when Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, or Slim SEO is active
 - bounded migration tools and a versioned, read-only extension API
-- abilities for the WordPress Abilities API, so agents can read and fill the SEO fields of a post with the editing rights of the signed-in user
+- abilities for the WordPress Abilities API, so agents can read and fill the SEO fields of a post, term, or author with the editing rights of the signed-in user
 
 Six optional modules are lazy-loaded only in their declared request contexts:
 

@@ -77,6 +77,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - IndexNow: with the module off, confirm no key exists, the key address answers 404, and the module file is not loaded. Switch it on and save; a key must be created once, the key address must answer 200 as plain text with the key, and no file may be written.
 - IndexNow: on a local, development, or staging site, on a site that discourages search engines, and on `localhost`, confirm the card names the reason, "Send a test" sends nothing, and saving a post attempts no request.
 - IndexNow: on a public production site, publish a post, update it, change its slug, and move it to the trash. Each save must send one request with the right addresses and must not wait for the answer. A draft, a password-protected post, and a post or content type hidden from search results must send nothing. "Send a test" must report the answer.
+- IndexNow: publish a post with `wp post create --post_status=publish` on a public production site and confirm it is announced; with the module off, confirm a command loads no module file.
 - IndexNow: export the settings and confirm the key is not in the file; import a file and confirm the key of the site is unchanged.
 - AI Discovery: test physical/virtual `robots.txt`, model-training default off, curated `/llms.txt`, conflict behavior, ETag `304`, privacy exclusions, invalid IDs, and readiness messages.
 
@@ -112,7 +113,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Post list: use the list at phone width and Quick Edit with the keyboard only.
 - Site identity: enter an X handle as `handle`, as `@handle`, and as an `x.com` profile address; each must save as the same handle and show with its `@`. An invalid value must show an error and keep the saved handle.
 - Site identity: choose a logo with the media picker, save, and confirm the thumbnail and the stored address; clear the address, save, and confirm both are gone.
-- Title formats: confirm each of the four formats shows a preview built from the newest post, that editing a format or changing the separator updates it without a save, that an emptied format previews its default, and that the previews are complete with JavaScript disabled.
+- Title formats: confirm each of the four formats, and each title format in the content types table, shows a preview built from the newest post, that editing a format or changing the separator updates it without a save, that an emptied format previews its default, and that the previews are complete with JavaScript disabled.
 - Search preview: in the block editor, the classic editor, and on the Overview, switch between Desktop and Mobile with the mouse and the keyboard. A long title and description must end in an ellipsis at a word, the character count must stay on the full text, and with JavaScript disabled the switch must be absent and the full text shown.
 - Toolbar: signed in as an administrator, open a normal page, a page hidden from search, a search, and a missing address on the front end. The toolbar item must name the state and open the Inspect report of that address. Confirm an editor and a signed-out visitor get no item, and that the page loads no Lightweight SEO style or script.
 - Command palette (WordPress 6.9 or later): open it with Ctrl/Cmd+K, type "Lightweight", and run "Inspect a page" and one tab command. Confirm a user who cannot manage options has none of them.
@@ -162,7 +163,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Confirm credentials/tokens never appear in public APIs, frontend markup, diagnostics, JavaScript data, or logs.
 - Confirm `/llms.txt` includes only selected public, indexable, local, canonical, non-redirected posts/pages and never full content.
 - Confirm core makes no external request and stores no new 404 or analytics history.
-- Abilities (WordPress 6.9 or later): run each `lightweight-seo/…` ability as an administrator, as a user who cannot edit the post, and signed out. Only the first may read or write. Confirm an unknown field, an unknown visibility value, and an address that is not `http` or `https` save nothing, and that the REST routes answer 401 without a sign-in.
+- Abilities (WordPress 6.9 or later): run each `lightweight-seo/…` ability for a post, a term, and an author as an administrator, as a user who cannot edit that item, and signed out. Only the first may read or write. Confirm an unknown field, an unknown visibility value, and an address that is not `http` or `https` save nothing, and that the REST routes answer 401 without a sign-in.
 - Abilities: on WordPress older than 6.9, confirm the plugin loads without errors and `includes/class-lightweight-seo-abilities.php` is never loaded.
 
 ## Performance and packaging

@@ -75,7 +75,7 @@ class Lightweight_SEO_IndexNow_Module {
 
 		if ( 'frontend' === $context ) {
 			add_action( 'template_redirect', array( $this, 'maybe_render_key_file' ), 0 );
-		} elseif ( in_array( $context, array( 'admin', 'editor', 'rest', 'cron' ), true ) ) {
+		} elseif ( in_array( $context, array( 'admin', 'editor', 'rest', 'cron', 'cli' ), true ) ) {
 			add_action( 'pre_post_update', array( $this, 'remember_previous_address' ), 10, 1 );
 			add_action( 'transition_post_status', array( $this, 'collect_changed_post' ), 10, 3 );
 			add_action( 'shutdown', array( $this, 'submit_changes' ), 5 );

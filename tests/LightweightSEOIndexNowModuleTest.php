@@ -57,7 +57,7 @@ final class LightweightSEOIndexNowModuleTest extends TestCase {
 		$this->get_module( 'frontend' );
 		$this->assertSame( array( 'template_redirect' ), $lightweight_seo_test_hooks );
 
-		foreach ( array( 'admin', 'editor', 'rest', 'cron' ) as $context ) {
+		foreach ( array( 'admin', 'editor', 'rest', 'cron', 'cli' ) as $context ) {
 			$lightweight_seo_test_hooks = array();
 			$this->get_module( $context );
 			$this->assertSame( array( 'pre_post_update', 'transition_post_status', 'shutdown' ), $lightweight_seo_test_hooks, $context );

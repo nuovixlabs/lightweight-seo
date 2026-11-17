@@ -63,6 +63,47 @@ final class LightweightSEOModuleRegistryTest extends TestCase {
 		$this->assertFalse( $registry->register( 'late-module', array() ) );
 	}
 
+	public function test_a_command_loads_only_the_modules_that_ask_for_it(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array(
+			'indexnow' => true,
+			'tracking' => true,
+		);
+
+		$loaded   = array();
+		$registry = new Lightweight_SEO_Module_Registry( new Lightweight_SEO_Module_State() );
+		$factory  = function ( $context, $module_id ) use ( &$loaded ) {
+			$loaded[] = $module_id . ' in ' . $context;
+		};
+
+		$registry->register(
+			'indexnow',
+			array(
+				'name'     => 'IndexNow',
+				'contexts' => array( 'frontend', 'cli' ),
+				'factory'  => $factory,
+			)
+		);
+		$registry->register(
+			'tracking',
+			array(
+				'name'     => 'Tracking',
+				'contexts' => array( 'frontend' ),
+				'factory'  => $factory,
+			)
+		);
+		$registry->finalize();
+		$registry->load_context( 'cli' );
+
+		$this->assertSame( array( 'indexnow in cli' ), $loaded );
+
+		// Loaded once: the visitor context later in the same process does not load it again.
+		$registry->load_context( 'frontend' );
+
+		$this->assertSame( array( 'indexnow in cli', 'tracking in frontend' ), $loaded );
+	}
+
 	public function test_legacy_state_derivation_requires_explicit_or_valid_configuration(): void {
 		$states = Lightweight_SEO_Module_State::derive_from_legacy_settings(
 			array(

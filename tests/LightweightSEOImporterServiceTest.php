@@ -167,7 +167,8 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 
 		$this->assertSame(
 			array(
-				'seo_title'          => 'Framework title',
+				// The SEO Framework adds the site name when it prints a title, so the import writes it in.
+				'seo_title'          => 'Framework title %sep% %sitename%',
 				'seo_description'    => 'Framework description',
 				'seo_canonical_url'  => 'https://example.com/framework/',
 				'seo_noindex'        => '1',
@@ -197,6 +198,28 @@ final class LightweightSEOImporterServiceTest extends TestCase {
 			$values[84]
 		);
 		$this->assertSame( 1, $report['unsupported_fields'] );
+
+		// The site name is left out where The SEO Framework was told not to add it, and leads where it led.
+		$lightweight_seo_test_post_meta[82]['_tsf_title_no_blogname'] = 1;
+
+		$values = array();
+		$service->import_batch( 'the_seo_framework' );
+		$this->assertSame( 'Framework title', $values[82]['seo_title'] );
+
+		unset( $lightweight_seo_test_post_meta[82]['_tsf_title_no_blogname'] );
+		$GLOBALS['lightweight_seo_test_options']['autodescription-site-settings'] = array( 'title_location' => 'left' );
+
+		$values = array();
+		$service->import_batch( 'the_seo_framework' );
+		$this->assertSame( '%sitename% %sep% Framework title', $values[82]['seo_title'] );
+
+		$GLOBALS['lightweight_seo_test_options']['autodescription-site-settings'] = array( 'title_rem_additions' => 1 );
+
+		$values = array();
+		$service->import_batch( 'the_seo_framework' );
+		$this->assertSame( 'Framework title', $values[82]['seo_title'] );
+
+		unset( $GLOBALS['lightweight_seo_test_options']['autodescription-site-settings'] );
 
 		// A source this importer does not know reads nothing.
 		$values = array();

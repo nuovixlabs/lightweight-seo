@@ -213,7 +213,7 @@ class Lightweight_SEO {
 	}
 
 	/**
-	 * Register the abilities that read and fill the SEO fields of posts.
+	 * Register the abilities that read and fill the SEO fields of posts, terms, and authors.
 	 *
 	 * @since    1.1.0
 	 * @return   void
@@ -232,7 +232,7 @@ class Lightweight_SEO {
 		if ( null === $this->abilities ) {
 			require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-abilities.php';
 
-			$this->abilities = new Lightweight_SEO_Abilities( $this->post_meta, lightweight_seo_get_api() );
+			$this->abilities = new Lightweight_SEO_Abilities( $this->post_meta, $this->archive_meta, lightweight_seo_get_api() );
 		}
 
 		return $this->abilities;
@@ -254,6 +254,11 @@ class Lightweight_SEO {
 		if ( in_array( $context, array( 'admin', 'editor', 'cron' ), true ) ) {
 			$this->module_registry->load_context( $context );
 			return;
+		}
+
+		// A command can save posts too. Only a module that asks for it is loaded for a command.
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			$this->module_registry->load_context( 'cli' );
 		}
 
 		add_action( 'rest_api_init', array( $this, 'load_rest_modules' ), 1, 0 );
@@ -308,8 +313,8 @@ class Lightweight_SEO {
 			'indexnow'  => array(
 				'name'        => __( 'IndexNow', 'lightweight-seo' ),
 				'description' => __( 'Tell search engines when a page is published, changed, or removed.', 'lightweight-seo' ),
-				// A page can be saved in every writing context, and a scheduled post is published by cron. Visitors only read the key file.
-				'contexts'    => array( 'frontend', 'admin', 'editor', 'rest', 'cron' ),
+				// A page can be saved in every writing context, by cron when it was scheduled, and by a WP-CLI command. Visitors only read the key file.
+				'contexts'    => array( 'frontend', 'admin', 'editor', 'rest', 'cron', 'cli' ),
 			),
 		);
 

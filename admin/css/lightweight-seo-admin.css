@@ -1099,6 +1099,11 @@ input[type="search"] + .lwseo-table-wrap {
 	overflow-wrap: anywhere;
 }
 
+/* In the content types table the preview sits right under its field. */
+.lwseo .lwseo-matrix .lwseo-format-preview {
+	margin-top: var(--lwseo-space-1);
+}
+
 .lwseo-format-preview__text {
 	color: var(--lwseo-text);
 	font-weight: 500;
