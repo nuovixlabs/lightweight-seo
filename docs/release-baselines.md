@@ -47,6 +47,10 @@ On 2026-11-17, on local WordPress 7.1.4 unless noted:
 
 Not checked: a real IndexNow submission, which needs a public site.
 
+## 1.1.0-rc.5
+
+`1.1.0-rc.5` changes one rule of the title variables (an empty tagline leaves with its separator) and adds no file. Only the package was rechecked: 52 files, 219,127 bytes (214.0 KiB). The timing, memory, and query rows of `1.1.0-rc.4` were not measured again; the change adds no query and no file to a request.
+
 ## 1.1.0-rc.1
 
 Reference measurements for `1.1.0-rc.1` were recorded on 2026-08-24.
