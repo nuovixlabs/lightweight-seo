@@ -1,8 +1,8 @@
 # Lightweight SEO 1.1 Release Notes
 
-Release candidate: `1.1.0-rc.3`
+Release candidate: `1.1.0-rc.4`
 
-`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package. This candidate adds the redesigned administration interface.
+`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package, and `1.1.0-rc.3` added the redesigned administration interface. This candidate adds everything in the sections marked "since rc.3" below: the content types table, site identity, more title variables, the post list column, Inspect a page, a switch for every module, redirect upgrades, settings export and import, deeper structured data, three more importers, abilities, the IndexNow module, and live previews.
 
 ## Highlights
 
