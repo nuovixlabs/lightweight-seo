@@ -160,6 +160,15 @@ Two settings are new in the existing settings option: `enable_redirects` and `en
 
 Stored rules keep their format, so nothing is migrated. One file is new, `includes/class-lightweight-seo-redirect-import.php`, loaded only for an import; see [Release Baselines](release-baselines.md).
 
+## Settings export, import, and WP-CLI since rc.3
+
+- The Tools tab gains "Export and import settings". The download is one JSON file with the settings of every tab and which modules are on. It holds no titles or descriptions of pages, no credentials, and nothing kept from retired features.
+- An import replaces every setting, only after its confirmation box is ticked. Each value goes through the same checks as on the settings tabs; a value the file does not hold, or one that fails a check, is set to its default and reported. A file from another site keeps image addresses and leaves out image IDs, the `llms.txt` page list, and translations tied to a page.
+- The settings in place before an import are kept, and "Undo last import" puts them back exactly as they were stored.
+- WP-CLI: `wp lightweight-seo settings export|import|undo-import`, `wp lightweight-seo module list|enable|disable`, and `wp lightweight-seo redirects import|test`. See [Developer API](developer-api.md#wp-cli).
+
+One option is new, `lightweight_seo_settings_backup`. It is not autoloaded, exists only between an import and its undo or the next import, and is removed on uninstall. Two files are new and neither is loaded on a visitor request; see [Release Baselines](release-baselines.md).
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

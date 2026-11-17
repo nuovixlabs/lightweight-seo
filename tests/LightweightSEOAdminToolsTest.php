@@ -3,6 +3,8 @@
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-importer-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-import-state.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-module-state.php';
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-tools.php';
 
 use PHPUnit\Framework\TestCase;
@@ -457,6 +459,70 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 		$this->assertStringContainsString( 'tab=modules', $tools->redirects[0] );
 	}
 
+	public function test_settings_file_is_downloaded_imported_only_when_confirmed_and_undone(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'title_format'                        => 'First %title%',
+			'search_console_service_account_json' => '{"private_key":"secret"}',
+		);
+
+		$tools = $this->get_tools( $this->get_importer() );
+		$_GET  = array( '_wpnonce' => wp_create_nonce( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT ) );
+		$tools->handle_settings_export();
+		$_GET = array();
+
+		$this->assertCount( 1, $tools->downloads );
+		$this->assertStringStartsWith( 'lightweight-seo-settings-', $tools->downloads[0]['filename'] );
+		$this->assertSame( 'application/json', $tools->downloads[0]['type'] );
+		$this->assertStringNotContainsString( 'secret', $tools->downloads[0]['contents'] );
+
+		$file = tempnam( sys_get_temp_dir(), 'lwseo' );
+		file_put_contents( $file, $tools->downloads[0]['contents'] );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['title_format'] = 'Second %title%';
+		$before = $lightweight_seo_test_options;
+
+		// Without the confirmation box, and without a file, nothing changes.
+		$tools = $this->get_tools( $this->get_importer(), $file );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT );
+		$tools->handle_settings_import();
+
+		$this->assertSame( $before, $lightweight_seo_test_options );
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+
+		$tools = $this->get_tools( $this->get_importer(), '' );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, array( 'confirm_settings_import' => '1' ) );
+		$tools->handle_settings_import();
+
+		$this->assertSame( $before, $lightweight_seo_test_options );
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+
+		$tools = $this->get_tools( $this->get_importer(), $file );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, array( 'confirm_settings_import' => '1' ) );
+		$tools->handle_settings_import();
+		unlink( $file );
+
+		$this->assertSame( 'First %title%', $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['title_format'] );
+		$this->assertSame( '{"private_key":"secret"}', $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]['search_console_service_account_json'] );
+		$this->assertSame( 'success', $this->get_last_notice()['type'] );
+		$this->assertSame( array( self::TOOLS_URL ), $tools->redirects );
+
+		$tools = $this->get_tools( $this->get_importer() );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO );
+		$tools->handle_settings_undo();
+
+		$this->assertSame( $before[ LIGHTWEIGHT_SEO_OPTION_NAME ], $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] );
+		$this->assertSame( 'success', $this->get_last_notice()['type'] );
+
+		// A second undo has nothing to put back.
+		$tools = $this->get_tools( $this->get_importer() );
+		$this->submit( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO );
+		$tools->handle_settings_undo();
+
+		$this->assertSame( 'error', $this->get_last_notice()['type'] );
+	}
+
 	/** Handler method => admin-post action. */
 	private function get_handlers() {
 		return array(
@@ -465,6 +531,9 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 			'handle_import_rollback'        => Lightweight_SEO_Admin_Tools::ACTION_IMPORT_ROLLBACK,
 			'handle_delete_legacy_404_logs' => Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS,
 			'handle_redirect_import'        => Lightweight_SEO_Admin_Tools::ACTION_REDIRECT_IMPORT,
+			'handle_settings_export'        => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT,
+			'handle_settings_import'        => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT,
+			'handle_settings_undo'          => Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO,
 		);
 	}
 
@@ -539,6 +608,14 @@ final class LightweightSEOAdminToolsTest extends TestCase {
 			public $redirects = array();
 
 			public $upload = '';
+
+			public $downloads = array();
+
+			protected function send_download( $filename, $type, $contents ) {
+				$this->downloads[] = compact( 'filename', 'type', 'contents' );
+
+				return false;
+			}
 
 			protected function get_uploaded_file( $field, $max_bytes ) {
 				return $this->upload;

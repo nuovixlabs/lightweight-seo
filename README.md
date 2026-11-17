@@ -28,6 +28,8 @@ Five optional modules are lazy-loaded only in their declared request contexts:
 
 AI Discovery does not guarantee crawling, training, citation, inclusion, visibility, or ranking.
 
+Settings can be exported to one file and imported on another site from **SEO → Tools**, with an undo for the last import. The same, module switches, and redirect tools are available as `wp lightweight-seo` commands.
+
 ## Deliberate boundaries
 
 Core makes no remote requests, schedules no recurring jobs, creates no custom tables, and performs no site-wide frontend scans. Search Console/GA4 reporting, URL Inspection, rank tracking, internal-link crawling, and historical analytics belong outside core.

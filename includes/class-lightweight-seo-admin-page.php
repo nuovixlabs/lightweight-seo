@@ -299,6 +299,12 @@ class Lightweight_SEO_Admin_Page {
 				),
 				array(
 					'section'     => 'lightweight_seo_migration_section',
+					'fields'      => array( 'settings_export', 'settings_import' ),
+					'title'       => __( 'Export and import settings', 'lightweight-seo' ),
+					'description' => __( 'Move the settings of this plugin to another site, or keep a copy. Titles and descriptions saved on pages are not part of the file.', 'lightweight-seo' ),
+				),
+				array(
+					'section'     => 'lightweight_seo_migration_section',
 					'fields'      => array( 'import_source', 'import_actions', 'import_report' ),
 					'title'       => __( 'Import from another SEO plugin', 'lightweight-seo' ),
 					'description' => __( 'Preview and import saved metadata from Yoast SEO, Rank Math, or All in One SEO, 50 posts at a time.', 'lightweight-seo' ),

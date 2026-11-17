@@ -102,6 +102,27 @@ The built-in Redirects module loads in the `frontend`, `admin`, `editor`, and `r
 
 Redirect, Hreflang, Tracking, Local SEO, and AI Discovery implementation classes are private runtime details. Integrations should use the registry and documented hooks, not instantiate those classes.
 
+## WP-CLI
+
+The commands are registered only when WordPress runs under WP-CLI.
+
+| Command | What it does |
+|---|---|
+| `wp lightweight-seo settings export [--file=<path>]` | Prints the settings file, or writes it to a path. |
+| `wp lightweight-seo settings import <file> [--yes]` | Replaces every setting with the file, after the checks of the settings screen. |
+| `wp lightweight-seo settings undo-import [--yes]` | Puts back the settings the last import replaced. |
+| `wp lightweight-seo module list [--format=<format>]` | Lists the modules and whether each is on. |
+| `wp lightweight-seo module enable <module>` | Switches `redirects`, `hreflang`, `tracking`, `local-seo`, or `ai` on. |
+| `wp lightweight-seo module disable <module>` | Switches a module off; its settings stay saved. |
+| `wp lightweight-seo redirects import <file>` | Merges a CSV file of redirect rules into the saved rules. |
+| `wp lightweight-seo redirects test <path>` | Shows which saved rule applies to a path, without requesting it. |
+
+### Settings file
+
+A settings file is JSON with `format` (`lightweight-seo-settings`), `format_version`, `plugin_version`, `schema_version`, `site_url`, `exported_at`, `settings`, and `modules`. It holds the settings option without credentials, data kept from retired features, and the import source. It never holds titles, descriptions, or other fields saved on posts, terms, or users.
+
+An import refuses a file with a newer `schema_version`. It validates every value like a save of the settings screen, measured against the defaults: a value the file does not hold, or one that fails a check, becomes the default. A file whose `site_url` is another site loses its attachment IDs, its `llms.txt` page list, and hreflang lines tied to an object ID. Module state follows the imported switches; the `modules` entry of the file is informational. The replaced settings are kept in the non-autoloaded `lightweight_seo_settings_backup` option until the next import or an undo.
+
 ## Compatibility policy
 
 API `1.0` remains backward compatible throughout the 1.1 release line. New fields may be added to returned associative arrays, so consumers must ignore unknown keys. Existing methods, hook names, argument order, and documented value types are not removed without an API version change. Experimental AI crawler metadata may add tokens, but the purpose categories and opt-in training boundary remain stable.

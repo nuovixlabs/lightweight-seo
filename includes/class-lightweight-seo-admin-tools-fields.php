@@ -27,6 +27,12 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	/** ID of the form that deletes retained legacy 404 log entries. */
 	const DELETE_404_LOGS_FORM_ID = 'lightweight-seo-delete-404-logs-form';
 
+	/** ID of the form that uploads a settings file. */
+	const SETTINGS_IMPORT_FORM_ID = 'lightweight-seo-settings-import-form';
+
+	/** ID of the form that undoes the last settings import. */
+	const SETTINGS_UNDO_FORM_ID = 'lightweight-seo-settings-undo-form';
+
 	/** ID of the form that uploads a CSV file of redirect rules. */
 	const REDIRECT_IMPORT_FORM_ID = 'lightweight-seo-redirect-import-form';
 
@@ -356,6 +362,54 @@ class Lightweight_SEO_Admin_Tools_Fields {
 	}
 
 	/**
+	 * Render the settings file download.
+	 *
+	 * @since    1.1.0
+	 */
+	public function settings_export_render() {
+		$url = wp_nonce_url( admin_url( 'admin-post.php?action=' . Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT ), Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_EXPORT );
+		?>
+		<div class="lwseo-buttons">
+			<a class="button" href="<?php echo esc_url( $url ); ?>"><?php esc_html_e( 'Download settings file', 'lightweight-seo' ); ?></a>
+		</div>
+		<p class="lwseo-help"><?php esc_html_e( 'A JSON file with the settings of every tab and which modules are on, as they are saved now. It holds no credentials and nothing kept from retired features.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the settings file upload, its confirmation, and the undo of the last import.
+	 *
+	 * @since    1.1.0
+	 */
+	public function settings_import_render() {
+		$undo_time = (int) ( get_option( 'lightweight_seo_settings_backup', array() )['saved_at'] ?? 0 );
+		?>
+		<div class="lwseo-inline">
+			<input type="file" id="lightweight_seo_settings_import" name="lightweight_seo_settings_file" accept=".json,application/json" form="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>">
+		</div>
+		<div class="lwseo-buttons">
+			<label class="lwseo-choice"><input type="checkbox" name="confirm_settings_import" value="1" required form="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>"><span><?php esc_html_e( 'Replace every Lightweight SEO setting on this site with the file', 'lightweight-seo' ); ?></span></label>
+			<button type="submit" class="button" form="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>"><?php esc_html_e( 'Import settings', 'lightweight-seo' ); ?></button>
+		</div>
+		<p class="lwseo-help"><?php esc_html_e( 'Every value goes through the same checks as on the settings tabs. A value the file does not hold, or one that fails a check, is set to its default. The settings in place now are kept, so the import can be undone.', 'lightweight-seo' ); ?></p>
+		<?php if ( $undo_time > 0 ) : ?>
+			<div class="lwseo-buttons">
+				<button type="submit" class="button-link button-link-delete" form="<?php echo esc_attr( self::SETTINGS_UNDO_FORM_ID ); ?>"><?php esc_html_e( 'Undo last import', 'lightweight-seo' ); ?></button>
+			</div>
+			<p class="lwseo-help">
+				<?php
+				printf(
+					/* translators: %s: date and time of the last settings import. */
+					esc_html__( 'Puts back the settings as they were before the import of %s. Changes saved since then are lost.', 'lightweight-seo' ),
+					esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $undo_time ) )
+				);
+				?>
+			</p>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
 	 * Render the standalone forms that the import and deletion controls submit.
 	 *
 	 * Each action carries its own nonce, so one forged or replayed request cannot
@@ -378,6 +432,14 @@ class Lightweight_SEO_Admin_Tools_Fields {
 				wp_nonce_field( $action, Lightweight_SEO_Admin_Tools::get_nonce_name( $action ), 0 === $index );
 			}
 			?>
+		</form>
+		<form id="<?php echo esc_attr( self::SETTINGS_IMPORT_FORM_ID ); ?>" method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_IMPORT ) ); ?>
+		</form>
+		<form id="<?php echo esc_attr( self::SETTINGS_UNDO_FORM_ID ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO ); ?>">
+			<?php wp_nonce_field( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO, Lightweight_SEO_Admin_Tools::get_nonce_name( Lightweight_SEO_Admin_Tools::ACTION_SETTINGS_UNDO ) ); ?>
 		</form>
 		<form id="<?php echo esc_attr( self::DELETE_404_LOGS_FORM_ID ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( Lightweight_SEO_Admin_Tools::ACTION_DELETE_404_LOGS ); ?>">

@@ -133,6 +133,11 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Confirm occupied Lightweight SEO fields are never overwritten and roll back the latest batch.
 - Import a source title containing template variables and confirm the page title shows resolved text, with unsupported variables reported rather than imported.
 - Import titles that use the source plugin's current year, author name, and page variables, and Rank Math's `%category%`; each must arrive as `%year%`, `%author%`, `%page%`, or `%category%`. A Yoast or All in One SEO variable that lists every category must still be reported, not imported.
+- Settings file: download it from Tools and confirm it holds no credentials, no retained legacy values, and no page titles or descriptions.
+- Settings file: change several settings, import the file, and confirm every setting equals the file. Confirm the import does nothing without its confirmation box or without a file, and that a file that is not a settings file, or one from a newer version, is refused with nothing changed.
+- Settings file: import a file whose site address differs and confirm image addresses are kept while image IDs, the `llms.txt` list, and page-bound hreflang lines are left out, with a notice saying so.
+- Settings file: use "Undo last import" and confirm the settings option is byte-for-byte what it was before the import, then confirm the button is gone.
+- WP-CLI: run each `wp lightweight-seo` command once, including an import of a damaged file and `module enable` with an unknown module, which must end with an error and change nothing.
 
 ## Security and privacy
 

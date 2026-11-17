@@ -201,6 +201,8 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Migration and imports', 'lightweight-seo' ),
 				'callback' => array( $tools, 'migration_section_callback' ),
 				'fields'   => array(
+					'settings_export'          => array( __( 'Export', 'lightweight-seo' ), $tools ),
+					'settings_import'          => array( __( 'Import', 'lightweight-seo' ), $tools, true ),
 					'import_source'            => array( __( 'Import source', 'lightweight-seo' ), $tools, true ),
 					'import_actions'           => array( __( 'Preview or import', 'lightweight-seo' ), $tools ),
 					'import_report'            => array( __( 'Import status', 'lightweight-seo' ), $tools ),
@@ -338,6 +340,11 @@ class Lightweight_SEO_Admin_Settings {
 	 * @return   array
 	 */
 	public function validate_settings( $input ) {
+		// An undo puts back exactly what was stored before an import; that value was checked when it was saved.
+		if ( class_exists( 'Lightweight_SEO_Settings_Transfer', false ) && Lightweight_SEO_Settings_Transfer::is_restoring() ) {
+			return $input;
+		}
+
 		$existing_settings = $this->settings->get_all();
 		$sanitized_input   = array();
 		$active_tab        = sanitize_key( $input['settings_tab'] ?? 'all' );

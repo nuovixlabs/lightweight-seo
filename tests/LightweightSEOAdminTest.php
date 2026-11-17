@@ -1021,7 +1021,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_verification_section' => array( 'verification_google', 'verification_bing', 'verification_pinterest', 'verification_yandex' ),
 				'lightweight_seo_redirects_section'    => array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules', 'redirect_test', 'generated_redirect_rules', 'redirect_export', 'redirect_import', 'redirect_health' ),
 				'lightweight_seo_inspect_section'      => array( 'inspect_page' ),
-				'lightweight_seo_migration_section'    => array( 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
+				'lightweight_seo_migration_section'    => array( 'settings_export', 'settings_import', 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'enable_tracking', 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
 				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids', 'ai_readiness' ),
 			),
@@ -1094,6 +1094,26 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'lightweight_seo_settings[delete_data_on_uninstall]', $output );
 		$this->assertStringNotContainsString( 'lightweight_seo_settings[import_', $output );
 		$this->assertStringNotContainsString( 'lightweight_seo_settings[delete_legacy_404_logs]', $output );
+	}
+
+	public function test_tools_tab_offers_the_settings_file_and_the_undo_only_after_an_import(): void {
+		global $lightweight_seo_test_options;
+
+		$tools = $this->render_tab( 'tools' );
+
+		$this->assertStringContainsString( 'admin-post.php?action=lightweight_seo_settings_export', $tools );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings_file" accept=".json,application/json" form="lightweight-seo-settings-import-form"', $tools );
+		$this->assertStringContainsString( 'name="confirm_settings_import" value="1" required form="lightweight-seo-settings-import-form"', $tools );
+		$this->assertStringContainsString( '<form id="lightweight-seo-settings-import-form" method="post" enctype="multipart/form-data"', $tools );
+		$this->assertStringNotContainsString( 'Undo last import', $tools );
+
+		$lightweight_seo_test_options['lightweight_seo_settings_backup'] = array(
+			'settings' => array(),
+			'modules'  => array(),
+			'saved_at' => 1794900000,
+		);
+
+		$this->assertStringContainsString( 'form="lightweight-seo-settings-undo-form">Undo last import</button>', $this->render_tab( 'tools' ) );
 	}
 
 	public function test_other_tabs_do_not_render_tool_forms(): void {

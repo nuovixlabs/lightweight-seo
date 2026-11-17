@@ -69,6 +69,11 @@ function run_lightweight_seo() {
 
 	$plugin = new Lightweight_SEO();
 	$plugin->run();
+
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-cli.php';
+		Lightweight_SEO_CLI::register();
+	}
 }
 
 add_action( 'init', 'run_lightweight_seo', 0 );

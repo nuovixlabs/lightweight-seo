@@ -31,6 +31,15 @@ class Lightweight_SEO_Admin_Tools {
 	/** Admin-post action and nonce action for deleting retained legacy 404 log entries. */
 	const ACTION_DELETE_404_LOGS = 'lightweight_seo_delete_legacy_404_logs';
 
+	/** Admin-post action and nonce action for downloading the settings file. */
+	const ACTION_SETTINGS_EXPORT = 'lightweight_seo_settings_export';
+
+	/** Admin-post action and nonce action for replacing the settings with a settings file. */
+	const ACTION_SETTINGS_IMPORT = 'lightweight_seo_settings_import';
+
+	/** Admin-post action and nonce action for undoing the last settings import. */
+	const ACTION_SETTINGS_UNDO = 'lightweight_seo_settings_undo';
+
 	/** Admin-post action and nonce action for importing redirect rules from a CSV file. */
 	const ACTION_REDIRECT_IMPORT = 'lightweight_seo_redirect_import';
 
@@ -154,6 +163,101 @@ class Lightweight_SEO_Admin_Tools {
 
 		$this->import_state->save( $state );
 		$this->finish( 'import_rollback', $state['report'], 'success' );
+	}
+
+	/**
+	 * Send the settings of this site as a JSON file.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function handle_settings_export() {
+		$this->require_capability();
+		check_admin_referer( self::ACTION_SETTINGS_EXPORT );
+
+		$json = $this->get_settings_transfer()->export_json();
+
+		if ( $this->send_download( 'lightweight-seo-settings-' . gmdate( 'Y-m-d' ) . '.json', 'application/json', $json ) ) {
+			exit;
+		}
+	}
+
+	/**
+	 * Replace the settings of this site with an uploaded settings file.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function handle_settings_import() {
+		$this->require_capability();
+		check_admin_referer( self::ACTION_SETTINGS_IMPORT, self::get_nonce_name( self::ACTION_SETTINGS_IMPORT ) );
+
+		if ( empty( $_POST['confirm_settings_import'] ) ) {
+			$this->finish( 'settings_import', __( 'Tick the confirmation box before importing a settings file. Nothing was changed.', 'lightweight-seo' ), 'error' );
+
+			return;
+		}
+
+		$transfer = $this->get_settings_transfer();
+		$file     = $this->get_uploaded_file( 'lightweight_seo_settings_file', Lightweight_SEO_Settings_Transfer::MAX_FILE_BYTES );
+
+		if ( '' === $file ) {
+			$this->finish( 'settings_import', __( 'Choose a settings file of up to 1 MB to import. Nothing was changed.', 'lightweight-seo' ), 'error' );
+
+			return;
+		}
+
+		$result = $transfer->import( (string) file_get_contents( $file ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads the uploaded temporary file from disk.
+
+		// Values the checks did not accept are already reported as settings notices of their own.
+		$this->finish( 'settings_import', implode( ' ', array_merge( array( $result['message'] ), $result['notes'] ) ), $result['ok'] ? 'success' : 'error' );
+	}
+
+	/**
+	 * Put back the settings that the last import replaced.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function handle_settings_undo() {
+		$this->require_capability();
+		check_admin_referer( self::ACTION_SETTINGS_UNDO, self::get_nonce_name( self::ACTION_SETTINGS_UNDO ) );
+
+		$result = $this->get_settings_transfer()->undo();
+
+		$this->finish( 'settings_undo', $result['message'], $result['ok'] ? 'success' : 'error' );
+	}
+
+	/**
+	 * Load the settings transfer service for a request that needs it.
+	 *
+	 * @since    1.1.0
+	 * @return   Lightweight_SEO_Settings_Transfer
+	 */
+	private function get_settings_transfer() {
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-data-registry.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-settings-transfer.php';
+
+		return new Lightweight_SEO_Settings_Transfer( $this->settings );
+	}
+
+	/**
+	 * Send a file to the browser. Kept separate so the response can be observed without ending the process.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $filename    Name the browser saves the file under.
+	 * @param    string    $type        Media type.
+	 * @param    string    $contents    File contents.
+	 * @return   bool Whether the file was sent.
+	 */
+	protected function send_download( $filename, $type, $contents ) {
+		nocache_headers();
+		header( 'Content-Type: ' . $type . '; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+
+		echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- A JSON download, not markup.
+
+		return true;
 	}
 
 	/**

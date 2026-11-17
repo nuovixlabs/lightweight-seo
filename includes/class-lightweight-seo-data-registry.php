@@ -43,6 +43,7 @@ class Lightweight_SEO_Data_Registry {
 			'lightweight_seo_search_console_token',
 			'lightweight_seo_import_rollback',
 			'lightweight_seo_import_state',
+			'lightweight_seo_settings_backup',
 			'lightweight_seo_upgrade_summary',
 		);
 	}
