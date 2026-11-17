@@ -70,6 +70,16 @@ The optional Tracking module emits nothing until it is enabled by a valid provid
 
 The consent filter supports a basic blocking integration; Lightweight SEO does not create a consent banner or persist consent choices. GTM's noscript fallback uses `wp_body_open`. A theme that omits that hook receives a diagnostic comment in page source while the head container continues to operate.
 
+## IndexNow extension point
+
+The optional IndexNow module is the only place where the plugin's PHP sends a request to another service. It sends nothing unless the module is on, a key exists, the site is public, the environment type is `production`, and the site's host is one search engines can reach.
+
+| Hook | Arguments | Contract |
+|---|---|---|
+| `lightweight_seo_indexnow_urls` | `string[] $urls` | Filters the addresses about to be submitted. Return fewer addresses, or an empty array to send nothing. Addresses on another host are dropped afterwards, and at most 100 are sent by one request. |
+
+Posts saved through WP-CLI are not announced, because the module collects changes only in the administration, editor, REST, and cron contexts.
+
 ## Core output filters and actions
 
 | Hook | Arguments | Contract |

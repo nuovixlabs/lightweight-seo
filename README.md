@@ -34,7 +34,7 @@ Settings can be exported to one file and imported on another site from **SEO →
 
 ## Deliberate boundaries
 
-Core makes no remote requests, schedules no recurring jobs, creates no custom tables, and performs no site-wide frontend scans. Search Console/GA4 reporting, URL Inspection, rank tracking, internal-link crawling, and historical analytics belong outside core.
+Core makes no remote requests, schedules no recurring jobs, creates no custom tables, and performs no site-wide frontend scans. The optional IndexNow module is the one exception to the first: while it is switched on, it sends the addresses of changed pages to `api.indexnow.org`. Search Console/GA4 reporting, URL Inspection, rank tracking, internal-link crawling, and historical analytics belong outside core.
 
 Meta-keywords output, Product schema, specialized image/video/news sitemap providers, continuous 404 logging, Search Console synchronization, internal-link reports, and site-wide image audits were retired in 1.1. Stored legacy keyword values remain exportable during migration.
 

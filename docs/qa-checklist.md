@@ -74,6 +74,10 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Hreflang: test reciprocal mappings, `x-default`, invalid locale/URL rejection, path mirroring, and WPML or Polylang ownership.
 - Tracking: test GTM precedence, direct GA4/Meta alternatives, consent filters, role/environment exclusions, CSP nonce, and a missing `wp_body_open` diagnostic.
 - Local SEO: test required fields, supported subtype, address, coordinates, hours, image, and disabled behavior.
+- IndexNow: with the module off, confirm no key exists, the key address answers 404, and the module file is not loaded. Switch it on and save; a key must be created once, the key address must answer 200 as plain text with the key, and no file may be written.
+- IndexNow: on a local, development, or staging site, on a site that discourages search engines, and on `localhost`, confirm the card names the reason, "Send a test" sends nothing, and saving a post attempts no request.
+- IndexNow: on a public production site, publish a post, update it, change its slug, and move it to the trash. Each save must send one request with the right addresses and must not wait for the answer. A draft, a password-protected post, and a post or content type hidden from search results must send nothing. "Send a test" must report the answer.
+- IndexNow: export the settings and confirm the key is not in the file; import a file and confirm the key of the site is unchanged.
 - AI Discovery: test physical/virtual `robots.txt`, model-training default off, curated `/llms.txt`, conflict behavior, ETag `304`, privacy exclusions, invalid IDs, and readiness messages.
 
 ## Editor and accessibility
