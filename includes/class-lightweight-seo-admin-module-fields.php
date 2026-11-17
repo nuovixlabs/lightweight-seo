@@ -114,16 +114,27 @@ class Lightweight_SEO_Admin_Module_Fields {
 					<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME . '[local_business_' . $input[0] . ']' ); ?>" value="<?php echo esc_attr( $options[ 'local_business_' . $input[0] ] ?? '' ); ?>"<?php echo 'address_country' === $input[0] ? ' maxlength="2"' : ''; ?> placeholder="<?php echo esc_attr( $input[2] ); ?>">
 				</label>
 			<?php endforeach; ?>
-			<label class="lwseo-subfield lwseo-subfield--wide">
-				<span class="lwseo-subfield__label"><?php esc_html_e( 'Business image or logo URL', 'lightweight-seo' ); ?></span>
-				<input type="url" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_image]" value="<?php echo esc_attr( $options['local_business_image'] ?? '' ); ?>">
-			</label>
+			<div class="lwseo-subfield lwseo-subfield--wide">
+				<label class="lwseo-subfield__label" for="lightweight_seo_local_business_image"><?php esc_html_e( 'Business image or logo', 'lightweight-seo' ); ?></label>
+				<?php
+				// The image is stored as a URL only, so the field carries no attachment ID.
+				Lightweight_SEO_Admin_UI::image_field(
+					array(
+						'url'      => $options['local_business_image'] ?? '',
+						'url_name' => LIGHTWEIGHT_SEO_OPTION_NAME . '[local_business_image]',
+						'url_id'   => 'lightweight_seo_local_business_image',
+						'alt'      => __( 'Business image', 'lightweight-seo' ),
+					)
+				);
+				?>
+			</div>
 			<p class="lwseo-help lwseo-subfield--wide"><?php esc_html_e( 'Use a dedicated business image. The general social sharing image is not reused for LocalBusiness.', 'lightweight-seo' ); ?></p>
-			<label class="lwseo-subfield lwseo-subfield--wide">
-				<span class="lwseo-subfield__label"><?php esc_html_e( 'Opening hours', 'lightweight-seo' ); ?></span>
-				<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_opening_hours]" rows="4" class="code"><?php echo esc_textarea( $options['local_business_opening_hours'] ?? '' ); ?></textarea>
-			</label>
-			<p class="lwseo-help lwseo-subfield--wide"><?php esc_html_e( 'Add one opening-hours rule per line, e.g. Mo-Fr 09:00-17:00.', 'lightweight-seo' ); ?></p>
+			<div class="lwseo-subfield lwseo-subfield--wide" role="group" aria-labelledby="lwseo-label-opening-hours">
+				<span class="lwseo-subfield__label" id="lwseo-label-opening-hours"><?php esc_html_e( 'Opening hours', 'lightweight-seo' ); ?></span>
+				<textarea id="lightweight_seo_local_business_opening_hours" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[local_business_opening_hours]" rows="4" class="code" aria-labelledby="lwseo-label-opening-hours"><?php echo esc_textarea( $options['local_business_opening_hours'] ?? '' ); ?></textarea>
+				<p class="lwseo-help" data-lwseo-text-for="lightweight_seo_local_business_opening_hours"><?php esc_html_e( 'Add one opening-hours rule per line, e.g. Mo-Fr 09:00-17:00.', 'lightweight-seo' ); ?></p>
+				<?php Lightweight_SEO_Admin_UI::hours( 'lightweight_seo_local_business_opening_hours' ); ?>
+			</div>
 		</div>
 		<?php
 	}
@@ -144,9 +155,92 @@ class Lightweight_SEO_Admin_Module_Fields {
 	 */
 	public function hreflang_mappings_render() {
 		$options = $this->settings->get_all();
+		$labels  = array();
+
+		// Name the pages, terms, and authors already mapped. A bounded lookup by ID.
+		foreach ( $this->settings->get_hreflang_mappings() as $mapping ) {
+			$object_id = absint( $mapping['object_id'] );
+			$key       = $mapping['object_type'] . ':' . $object_id;
+
+			if ( isset( $labels[ $key ] ) || 'mirror' === $mapping['object_type'] ) {
+				continue;
+			}
+
+			if ( 'post' === $mapping['object_type'] ) {
+				$label = get_post( $object_id ) ? wp_strip_all_tags( (string) get_the_title( $object_id ), true ) : '';
+				/* translators: %d: post ID. */
+				$fallback = __( 'Page #%d', 'lightweight-seo' );
+			} elseif ( 'term' === $mapping['object_type'] ) {
+				$term  = get_term( $object_id );
+				$label = $term && ! is_wp_error( $term ) ? (string) $term->name : '';
+				/* translators: %d: term ID. */
+				$fallback = __( 'Term #%d', 'lightweight-seo' );
+			} else {
+				$user  = get_userdata( $object_id );
+				$label = $user ? (string) $user->display_name : '';
+				/* translators: %d: user ID. */
+				$fallback = __( 'Author #%d', 'lightweight-seo' );
+			}
+
+			$labels[ $key ] = '' !== $label ? $label : sprintf( $fallback, $object_id );
+		}
 		?>
-		<textarea id="lightweight_seo_hreflang_mappings" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[hreflang_mappings]" rows="5" class="large-text code"><?php echo esc_textarea( $options['hreflang_mappings'] ?? '' ); ?></textarea>
-		<p class="lwseo-help"><?php esc_html_e( 'Use one explicit mapping per line: post:123 en-GB https://example.co.uk/page/ (term: and user: are also supported). Language tags must use BCP 47 format; x-default is supported.', 'lightweight-seo' ); ?></p>
+		<textarea id="lightweight_seo_hreflang_mappings" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[hreflang_mappings]" rows="5" class="large-text code" aria-labelledby="lwseo-label-hreflang_mappings"><?php echo esc_textarea( $options['hreflang_mappings'] ?? '' ); ?></textarea>
+		<p class="lwseo-help" data-lwseo-text-for="lightweight_seo_hreflang_mappings"><?php esc_html_e( 'Add one line per translation: the page on this site, its language, and the address of the translated page, for example post:123 en-GB https://example.co.uk/page/', 'lightweight-seo' ); ?></p>
+		<?php
+		Lightweight_SEO_Admin_UI::rows(
+			array(
+				'format'  => 'hreflang',
+				'field'   => 'lightweight_seo_hreflang_mappings',
+				'columns' => array(
+					array(
+						'key'    => 'page',
+						'label'  => __( 'Page on this site', 'lightweight-seo' ),
+						'type'   => 'page',
+						'choose' => __( 'Choose a page', 'lightweight-seo' ),
+						'search' => __( 'Search pages, posts, and terms', 'lightweight-seo' ),
+						'mirror' => __( 'Every page (legacy)', 'lightweight-seo' ),
+					),
+					array(
+						'key'         => 'language',
+						'label'       => __( 'Language', 'lightweight-seo' ),
+						'type'        => 'text',
+						'placeholder' => 'en-GB',
+						'list'        => 'lwseo-hreflang-languages',
+					),
+					array(
+						'key'         => 'url',
+						'label'       => __( 'Address of the translated page', 'lightweight-seo' ),
+						'type'        => 'url',
+						'placeholder' => 'https://example.co.uk/page/',
+					),
+				),
+				'add'     => __( 'Add translation', 'lightweight-seo' ),
+				/* translators: %d: position of the translation in the list. */
+				'item'    => __( 'Translation %d', 'lightweight-seo' ),
+				'empty'   => __( 'No translations mapped yet.', 'lightweight-seo' ),
+				'removed' => __( 'Translation removed.', 'lightweight-seo' ),
+				'filter'  => __( 'Filter translations', 'lightweight-seo' ),
+				'limit'   => Lightweight_SEO_Settings::MAX_HREFLANG_MAPPINGS,
+				'labels'  => $labels,
+				'hints'   => array(
+					'incomplete' => __( 'Choose the page, its language, and the address of the translation. This row is not saved until it has all three.', 'lightweight-seo' ),
+					'duplicate'  => __( 'An earlier row already maps this page to this language, so this one is ignored.', 'lightweight-seo' ),
+				),
+			)
+		);
+		?>
+		<datalist id="lwseo-hreflang-languages">
+			<?php foreach ( array( 'x-default', 'en', 'en-GB', 'en-US', 'en-AU', 'en-CA', 'en-IN', 'fr', 'fr-FR', 'fr-CA', 'de', 'de-DE', 'de-AT', 'de-CH', 'es', 'es-ES', 'es-MX', 'it', 'pt', 'pt-BR', 'pt-PT', 'nl', 'sv', 'da', 'nb', 'fi', 'pl', 'ja', 'ko', 'zh-Hans', 'zh-Hant', 'ar', 'hi' ) as $language ) : ?>
+				<option value="<?php echo esc_attr( $language ); ?>"></option>
+			<?php endforeach; ?>
+		</datalist>
+		<details class="lwseo-details">
+			<summary><?php esc_html_e( 'Format details', 'lightweight-seo' ); ?></summary>
+			<div class="lwseo-details__body">
+				<p><?php esc_html_e( 'As text, each line starts with post:, term:, or user: followed by the ID. Language tags follow BCP 47, such as en, en-GB, or pt-BR, and x-default is supported. Author pages are mapped as text, for example user:2 en-GB https://example.co.uk/author/jane/', 'lightweight-seo' ); ?></p>
+			</div>
+		</details>
 		<?php
 	}
 
@@ -181,9 +275,60 @@ class Lightweight_SEO_Admin_Module_Fields {
 	public function redirect_rules_render() {
 		$options = $this->settings->get_all();
 		?>
-		<textarea id="lightweight_seo_redirect_rules" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[redirect_rules]" rows="8" class="large-text code" placeholder="/old-path /new-path 301"><?php echo esc_textarea( $options['redirect_rules'] ?? '' ); ?></textarea>
-		<p class="lwseo-help"><?php esc_html_e( 'Add one rule per line using the format: /old-path /new-path 301', 'lightweight-seo' ); ?></p>
-		<p class="lwseo-help"><?php esc_html_e( 'Targets can be local paths or full URLs. External hosts must be explicitly approved through WordPress’s allowed_redirect_hosts filter. Supported status codes: 301, 302, 307, 308.', 'lightweight-seo' ); ?></p>
+		<textarea id="lightweight_seo_redirect_rules" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[redirect_rules]" rows="8" class="large-text code" placeholder="/old-path /new-path 301" aria-labelledby="lwseo-label-redirect_rules"><?php echo esc_textarea( $options['redirect_rules'] ?? '' ); ?></textarea>
+		<p class="lwseo-help" data-lwseo-text-for="lightweight_seo_redirect_rules"><?php esc_html_e( 'Add one rule per line: the old path, then the new path or full address, for example /old-path /new-path', 'lightweight-seo' ); ?></p>
+		<?php
+		Lightweight_SEO_Admin_UI::rows(
+			array(
+				'format'  => 'redirects',
+				'field'   => 'lightweight_seo_redirect_rules',
+				'columns' => array(
+					array(
+						'key'         => 'source',
+						'label'       => __( 'From', 'lightweight-seo' ),
+						'type'        => 'text',
+						'placeholder' => '/old-path',
+					),
+					array(
+						'key'         => 'target',
+						'label'       => __( 'To', 'lightweight-seo' ),
+						'type'        => 'text',
+						'placeholder' => '/new-path',
+					),
+					array(
+						'key'     => 'status',
+						'label'   => __( 'Type', 'lightweight-seo' ),
+						'type'    => 'select',
+						'options' => array(
+							'301' => __( '301 Permanent', 'lightweight-seo' ),
+							'302' => __( '302 Temporary', 'lightweight-seo' ),
+							'307' => __( '307 Temporary, same method', 'lightweight-seo' ),
+							'308' => __( '308 Permanent, same method', 'lightweight-seo' ),
+						),
+					),
+				),
+				'add'     => __( 'Add redirect', 'lightweight-seo' ),
+				/* translators: %d: position of the redirect in the list. */
+				'item'    => __( 'Redirect %d', 'lightweight-seo' ),
+				'empty'   => __( 'No redirects yet.', 'lightweight-seo' ),
+				'removed' => __( 'Redirect removed.', 'lightweight-seo' ),
+				'filter'  => __( 'Filter redirects', 'lightweight-seo' ),
+				'limit'   => Lightweight_SEO_Settings::MAX_MANUAL_REDIRECTS,
+				'hints'   => array(
+					'incomplete' => __( 'Add both a path to redirect from and somewhere to go. This row is not saved until it has both.', 'lightweight-seo' ),
+					'same'       => __( 'From and To are the same, so this redirect would do nothing.', 'lightweight-seo' ),
+					'duplicate'  => __( 'A later row redirects the same path, so this one is ignored.', 'lightweight-seo' ),
+				),
+			)
+		);
+		?>
+		<details class="lwseo-details">
+			<summary><?php esc_html_e( 'Status codes and other sites', 'lightweight-seo' ); ?></summary>
+			<div class="lwseo-details__body">
+				<p><?php esc_html_e( 'A rule is a permanent 301 redirect unless it ends with 302, 307, or 308.', 'lightweight-seo' ); ?></p>
+				<p><?php esc_html_e( 'A redirect to another site works only after that host is approved through the WordPress allowed_redirect_hosts filter.', 'lightweight-seo' ); ?></p>
+			</div>
+		</details>
 		<?php
 	}
 
@@ -389,18 +534,55 @@ class Lightweight_SEO_Admin_Module_Fields {
 		$this->render_text( 'facebook_pixel_id', $options['facebook_pixel_id'] ?? '', __( 'Enter a numeric Meta Pixel ID. This direct alternative is suppressed when GTM is configured.', 'lightweight-seo' ) );
 	}
 
-	/** Render role slugs that suppress tracking for logged-in users. */
-	public function tracking_excluded_roles_render() {
-		$options = $this->settings->get_all();
+	/**
+	 * Print a list of tick boxes that is saved as one list of keys.
+	 *
+	 * An empty first entry keeps the setting in the request when every box is cleared,
+	 * so an empty list can be saved.
+	 *
+	 * @since    1.1.0
+	 * @param    string    $key         Settings key.
+	 * @param    array     $choices     Labels keyed by the value each box submits.
+	 * @param    array     $selected    Values that are ticked.
+	 * @param    string    $help        Help text shown under the list.
+	 * @return   void
+	 */
+	private function render_choice_list( $key, $choices, $selected, $help ) {
+		$name = LIGHTWEIGHT_SEO_OPTION_NAME . '[' . $key . '][]';
 
-		$this->render_text( 'tracking_excluded_roles', $options['tracking_excluded_roles'] ?? 'administrator', __( 'Comma-separated WordPress role slugs, for example administrator, editor. Leave empty to include all logged-in roles.', 'lightweight-seo' ) );
+		echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="">';
+		echo '<div class="lwseo-choices">';
+
+		foreach ( $choices as $value => $label ) {
+			Lightweight_SEO_Admin_UI::choice( $name, in_array( (string) $value, $selected, true ), $label, '', '', (string) $value );
+		}
+
+		echo '</div><p class="lwseo-help">' . esc_html( $help ) . '</p>';
 	}
 
-	/** Render environments that suppress tracking. */
-	public function tracking_excluded_environments_render() {
+	/** Render the roles whose logged-in visits are not tracked. */
+	public function tracking_excluded_roles_render() {
 		$options = $this->settings->get_all();
+		$roles   = array();
 
-		$this->render_text( 'tracking_excluded_environments', str_replace( "\n", ', ', $options['tracking_excluded_environments'] ?? "local\ndevelopment\nstaging" ), __( 'Choose from local, development, staging, and production. WordPress defaults to production when no environment type is set.', 'lightweight-seo' ) );
+		foreach ( wp_roles()->get_names() as $slug => $name ) {
+			$roles[ $slug ] = translate_user_role( $name );
+		}
+
+		$this->render_choice_list( 'tracking_excluded_roles', $roles, $this->settings->normalize_key_list( $options['tracking_excluded_roles'] ?? 'administrator' ), __( 'Visits by signed-in users with a ticked role are not tracked.', 'lightweight-seo' ) );
+	}
+
+	/** Render the environments where tracking stays off. */
+	public function tracking_excluded_environments_render() {
+		$options      = $this->settings->get_all();
+		$environments = array(
+			'local'       => __( 'Local', 'lightweight-seo' ),
+			'development' => __( 'Development', 'lightweight-seo' ),
+			'staging'     => __( 'Staging', 'lightweight-seo' ),
+			'production'  => __( 'Production', 'lightweight-seo' ),
+		);
+
+		$this->render_choice_list( 'tracking_excluded_environments', $environments, $this->settings->normalize_key_list( $options['tracking_excluded_environments'] ?? "local\ndevelopment\nstaging" ), __( 'Tracking stays off in a ticked environment. WordPress treats a site as production unless it is told otherwise.', 'lightweight-seo' ) );
 	}
 
 	/** Explain the bounded, experimental AI Discovery scope. */
@@ -431,13 +613,50 @@ class Lightweight_SEO_Admin_Module_Fields {
 	/** Render the bounded list of manually selected post and page IDs. */
 	public function llms_txt_post_ids_render() {
 		$options = $this->settings->get_all();
+		$items   = array();
 
-		$this->render_text(
-			'llms_txt_post_ids',
-			$options['llms_txt_post_ids'] ?? '',
+		// Name the pages already chosen. A bounded lookup by ID, never a site-wide query.
+		foreach ( $this->settings->get_llms_post_ids() as $post_id ) {
+			$post  = get_post( $post_id );
+			$title = $post ? wp_strip_all_tags( (string) get_the_title( $post_id ), true ) : '';
+			$note  = '';
+
+			if ( ! $post ) {
+				$note = __( 'No longer exists', 'lightweight-seo' );
+			} elseif ( 'publish' !== (string) ( $post->post_status ?? '' ) || '' !== (string) ( $post->post_password ?? '' ) ) {
+				$note = __( 'Not public, so it is left out', 'lightweight-seo' );
+			}
+
+			$items[ $post_id ] = array(
+				'title' => $title,
+				'note'  => $note,
+			);
+		}
+		?>
+		<input type="text" id="lightweight_seo_llms_txt_post_ids" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME . '[llms_txt_post_ids]' ); ?>" value="<?php echo esc_attr( $options['llms_txt_post_ids'] ?? '' ); ?>" class="regular-text" aria-labelledby="lwseo-label-llms_txt_post_ids">
+		<p class="lwseo-help" data-lwseo-text-for="lightweight_seo_llms_txt_post_ids">
+			<?php
 			/* translators: %d: Maximum number of curated post or page IDs. */
-			sprintf( __( 'Enter up to %d comma-separated published post or page IDs. Drafts, private/password-protected, noindexed, redirected, external-canonical, or invalid URLs are excluded.', 'lightweight-seo' ), (int) Lightweight_SEO_Settings::MAX_LLMS_POSTS )
+			echo esc_html( sprintf( __( 'Enter up to %d post or page IDs, separated by commas.', 'lightweight-seo' ), (int) Lightweight_SEO_Settings::MAX_LLMS_POSTS ) );
+			?>
+		</p>
+		<?php
+		Lightweight_SEO_Admin_UI::picker(
+			array(
+				'field'    => 'lightweight_seo_llms_txt_post_ids',
+				'items'    => $items,
+				'limit'    => Lightweight_SEO_Settings::MAX_LLMS_POSTS,
+				'search'   => __( 'Search posts and pages to add', 'lightweight-seo' ),
+				'chosen'   => __( 'Pages listed in llms.txt', 'lightweight-seo' ),
+				'empty'    => __( 'No pages chosen yet.', 'lightweight-seo' ),
+				'removed'  => __( 'Page removed.', 'lightweight-seo' ),
+				/* translators: %d: post ID. */
+				'fallback' => __( 'Page #%d', 'lightweight-seo' ),
+			)
 		);
+		?>
+		<p class="lwseo-help"><?php esc_html_e( 'Drafts, private or password-protected pages, pages hidden from search engines, and redirected pages are left out of llms.txt.', 'lightweight-seo' ); ?></p>
+		<?php
 	}
 
 	/** Render deterministic, local-only readiness checks. */

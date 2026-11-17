@@ -96,7 +96,7 @@ class Lightweight_SEO_Admin_Notices {
 		}
 
 		if ( ! empty( $summary['has_search_console_private'] ) || ! empty( $summary['legacy_404_entries'] ) || ! empty( $summary['has_meta_keywords'] ) ) {
-			echo '<li>' . esc_html__( 'Legacy credentials, 404 entries, or keyword values need an explicit export or deletion decision on Tools and migration.', 'lightweight-seo' ) . '</li>';
+			echo '<li>' . esc_html__( 'Legacy credentials, 404 entries, or keyword values need an explicit export or deletion decision on the Tools tab.', 'lightweight-seo' ) . '</li>';
 		}
 
 		echo '</ul><p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=' . $this->plugin_name . '&tab=tools' ) ) . '">' . esc_html__( 'Review migration data', 'lightweight-seo' ) . '</a> <a href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss summary', 'lightweight-seo' ) . '</a></p></div>';

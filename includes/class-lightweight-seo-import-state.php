@@ -1,6 +1,6 @@
 <?php
 /**
- * Import progress for the Tools and migration tab.
+ * Import progress for the Tools tab.
  *
  * @since      1.1.0
  * @package    Lightweight_SEO

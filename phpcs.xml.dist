@@ -12,6 +12,8 @@
 
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+    <!-- JavaScript tests run under Node and are not PHP. -->
+    <exclude-pattern>tests/js/*</exclude-pattern>
 
     <rule ref="WordPress-Core">
         <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>

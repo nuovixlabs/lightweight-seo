@@ -34,6 +34,9 @@ jobs:
       - name: PHPUnit
         run: composer run test
 
+      - name: JavaScript unit tests
+        run: node --test tests/js/*.test.js
+
   wordpress-integration:
     runs-on: ubuntu-latest
     strategy:

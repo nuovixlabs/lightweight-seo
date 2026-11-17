@@ -342,7 +342,7 @@ class Lightweight_SEO_Archive_Meta {
 	public function render_user_fields( $user ) {
 		$values = $this->get_user_all( $user->ID );
 		?>
-		<h2><?php esc_html_e( 'SEO Settings', 'lightweight-seo' ); ?></h2>
+		<h2><?php esc_html_e( 'SEO settings', 'lightweight-seo' ); ?></h2>
 		<?php wp_nonce_field( 'lightweight_seo_user_meta', 'lightweight_seo_user_meta_nonce' ); ?>
 		<table class="form-table" role="presentation">
 			<?php foreach ( $this->get_fields() as $field => $definition ) : ?>
@@ -436,12 +436,12 @@ class Lightweight_SEO_Archive_Meta {
 	private function get_fields() {
 		return array(
 			'seo_title'             => array(
-				'label'       => __( 'SEO Title', 'lightweight-seo' ),
+				'label'       => __( 'SEO title', 'lightweight-seo' ),
 				'description' => __( 'Optional title override for this archive page.', 'lightweight-seo' ),
 				'default'     => '',
 			),
 			'seo_description'       => array(
-				'label'       => __( 'Meta Description', 'lightweight-seo' ),
+				'label'       => __( 'Meta description', 'lightweight-seo' ),
 				'description' => __( 'Optional description override for this archive page.', 'lightweight-seo' ),
 				'default'     => '',
 			),
@@ -471,7 +471,7 @@ class Lightweight_SEO_Archive_Meta {
 				'default'     => '0',
 			),
 			'seo_max_image_preview' => array(
-				'label'       => __( 'Max Image Preview', 'lightweight-seo' ),
+				'label'       => __( 'Image preview size', 'lightweight-seo' ),
 				'description' => __( 'Override the global image preview robots directive for this archive page.', 'lightweight-seo' ),
 				'default'     => '',
 			),

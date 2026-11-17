@@ -63,6 +63,7 @@ composer validate --strict
 composer audit
 composer test
 composer phpcs
+node --test tests/js/*.test.js
 ```
 
 `composer phpcs` enforces WordPress core style plus output escaping, nonce, input-sanitization, and text-domain checks on shipped code. Real WordPress tests use `tests/bin/install-wp-tests.sh` and `composer test:integration`. CI covers the compatibility matrix documented in [QA Checklist](docs/qa-checklist.md).

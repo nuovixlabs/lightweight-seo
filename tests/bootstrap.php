@@ -678,6 +678,85 @@ if (!function_exists('update_user_meta')) {
     }
 }
 
+if (!function_exists('delete_user_meta')) {
+    function delete_user_meta($user_id, $meta_key, $meta_value = '') {
+        global $lightweight_seo_test_user_meta;
+
+        unset($lightweight_seo_test_user_meta[$user_id][$meta_key]);
+
+        return true;
+    }
+}
+
+// Weekday names come from the WordPress locale; index 0 is Sunday.
+$GLOBALS['wp_locale'] = new class() {
+    public function get_weekday($weekday_number) {
+        return array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday')[(int) $weekday_number];
+    }
+};
+
+if (!function_exists('get_term')) {
+    function get_term($term, $taxonomy = '', $output = 'OBJECT', $filter = 'raw') {
+        global $lightweight_seo_test_terms;
+
+        return $lightweight_seo_test_terms[(int) $term] ?? null;
+    }
+}
+
+if (!function_exists('get_userdata')) {
+    function get_userdata($user_id) {
+        global $lightweight_seo_test_users;
+
+        return $lightweight_seo_test_users[(int) $user_id] ?? false;
+    }
+}
+
+if (!function_exists('rest_url')) {
+    function rest_url($path = '', $scheme = 'rest') {
+        return 'https://example.com/wp-json/' . ltrim($path, '/');
+    }
+}
+
+if (!function_exists('wp_roles')) {
+    function wp_roles() {
+        return new class() {
+            public function get_names() {
+                return array(
+                    'administrator' => 'Administrator',
+                    'editor' => 'Editor',
+                    'subscriber' => 'Subscriber',
+                );
+            }
+        };
+    }
+}
+
+if (!function_exists('translate_user_role')) {
+    function translate_user_role($name, $domain = 'default') {
+        return $name;
+    }
+}
+
+if (!function_exists('get_site_icon_url')) {
+    function get_site_icon_url($size = 512, $url = '', $blog_id = 0) {
+        global $lightweight_seo_test_site_icon_url;
+
+        return (string) ($lightweight_seo_test_site_icon_url ?? $url);
+    }
+}
+
+if (!function_exists('get_edit_post_link')) {
+    function get_edit_post_link($post = 0, $context = 'display') {
+        return 'https://example.com/wp-admin/post.php?post=' . (int) (is_object($post) ? $post->ID : $post) . '&action=edit';
+    }
+}
+
+if (!function_exists('get_current_user_id')) {
+    function get_current_user_id() {
+        return 1;
+    }
+}
+
 if (!function_exists('is_singular')) {
     function is_singular() {
         global $lightweight_seo_test_query_state;
@@ -1199,6 +1278,11 @@ if (!function_exists('wp_enqueue_media')) {
 
 if (!function_exists('wp_enqueue_script')) {
     function wp_enqueue_script(...$args) {
+        global $lightweight_seo_test_enqueued_scripts;
+
+        // Handle => dependencies, so tests can see what was loaded and in which order.
+        $lightweight_seo_test_enqueued_scripts[$args[0]] = $args[2] ?? array();
+
         return true;
     }
 }
@@ -1211,6 +1295,10 @@ if (!function_exists('wp_enqueue_style')) {
 
 if (!function_exists('wp_localize_script')) {
     function wp_localize_script(...$args) {
+        global $lightweight_seo_test_localized_scripts;
+
+        $lightweight_seo_test_localized_scripts[$args[0]] = $args[2] ?? array();
+
         return true;
     }
 }

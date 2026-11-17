@@ -58,4 +58,27 @@ final class Lightweight_SEO_Text {
 		// Only single-byte characters are trimmed so a multibyte character is never split.
 		return rtrim( $summary, " \t\n\r.,;:-" ) . '…';
 	}
+
+	/**
+	 * Replace title variables such as %title% in a format or a custom value.
+	 *
+	 * @param mixed $template Text that may contain variables.
+	 * @param array $tokens   Variables and their values, keyed by the variable including its percent signs.
+	 * @return string
+	 */
+	public static function resolve_tokens( $template, $tokens ) {
+		return str_replace( array_keys( $tokens ), array_values( $tokens ), (string) $template );
+	}
+
+	/**
+	 * Reduce content to the plain, single-spaced text an administration preview shows.
+	 *
+	 * @param mixed $value Text that may contain markup or shortcodes.
+	 * @return string
+	 */
+	public static function plain( $value ) {
+		$value = wp_strip_all_tags( strip_shortcodes( (string) $value ), true );
+
+		return trim( preg_replace( '/\s+/', ' ', $value ) );
+	}
 }

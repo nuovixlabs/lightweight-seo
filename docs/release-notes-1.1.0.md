@@ -57,6 +57,23 @@ The settings screen and the editor panel are rebuilt on one small design system.
 
 Administration CSS class names changed from `lightweight-seo-*` to `lwseo-*`. Custom administration styles that target the old names need updating.
 
+## Administration interface since rc.3
+
+No setting, option key, or saved format changes.
+
+- The editor panel follows the page as it is edited. The previews, length meters, and checks update with the post title, excerpt, content, and featured image, and the check count becomes a tick when nothing is left to review.
+- The overview opens with the homepage as it appears in search results and when shared.
+- The setup checklist counts a step only when it is done. It is dismissed per user instead of per browser, and can be shown again.
+- A settings tab warns before it is left with unsaved changes.
+- Tracking exclusions are tick boxes for roles and environments, and the business image uses the media picker.
+- Redirect rules and hreflang mappings are edited as rows, opening hours as one row per day, and the `llms.txt` pages are chosen by searching. Each is still stored in the same text format, and "Edit as text" shows it for pasting many lines at once.
+- Saving the Modules tab says how many redirect rules or translations were left out, instead of dropping them silently.
+- A module that is off shows only the controls that turn it on. The Legacy data card and the legacy hreflang path-mirroring option appear only on sites that still hold that data.
+- The Developer API reference moved onto the Tools tab. Links to the old tab still work.
+- Labels describe what a setting does before naming the directive, and use sentence case throughout.
+
+Fixed: the editor filled the social image field with the featured image or the site default, so saving a post stored that image as the post's own. A later change of featured image or site default then left `og:image` on the old image. The field now holds only an image chosen for that post. Posts saved before this fix keep the image that was stored; clear their social image field to follow the featured image again.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.
