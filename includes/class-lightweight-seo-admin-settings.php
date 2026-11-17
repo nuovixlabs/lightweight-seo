@@ -123,6 +123,7 @@ class Lightweight_SEO_Admin_Settings {
 				'title'    => __( 'Global SEO settings', 'lightweight-seo' ),
 				'callback' => array( $core, 'general_section_callback' ),
 				'fields'   => array(
+					'title_separator'      => array( __( 'Title separator', 'lightweight-seo' ), $core, true ),
 					'title_format'         => array( __( 'Default title format', 'lightweight-seo' ), $core, true ),
 					'home_title_format'    => array( __( 'Homepage title format', 'lightweight-seo' ), $core, true ),
 					'archive_title_format' => array( __( 'Archive title format', 'lightweight-seo' ), $core, true ),
@@ -150,10 +151,14 @@ class Lightweight_SEO_Admin_Settings {
 			),
 			'lightweight_seo_schema_section'       => array(
 				'title'    => __( 'Structured data', 'lightweight-seo' ),
-				'callback' => array( $core, 'schema_section_callback' ),
+				'callback' => '__return_null',
 				'fields'   => array(
+					'identity_type'                  => array( __( 'This site represents', 'lightweight-seo' ), $core, true ),
+					'identity_name'                  => array( __( 'Name', 'lightweight-seo' ), $core, true ),
+					'identity_logo'                  => array( __( 'Logo or photo', 'lightweight-seo' ), $core, true ),
+					'x_handle'                       => array( __( 'X handle', 'lightweight-seo' ), $core, true ),
+					'organization_same_as'           => array( __( 'Profiles', 'lightweight-seo' ), $core, true ),
 					'enable_schema_output'           => array( __( 'Core schema output', 'lightweight-seo' ), $core ),
-					'organization_same_as'           => array( __( 'Organization profiles', 'lightweight-seo' ), $core, true ),
 					'enable_local_business_schema'   => array( __( 'Local business schema', 'lightweight-seo' ), $modules ),
 					'local_business_details'         => array( __( 'Business details', 'lightweight-seo' ), $modules ),
 					'enable_hreflang_output'         => array( __( 'Hreflang output', 'lightweight-seo' ), $modules ),
@@ -254,7 +259,7 @@ class Lightweight_SEO_Admin_Settings {
 	}
 
 	/**
-	 * Keep the stored social image URL and attachment ID in sync.
+	 * Keep a stored image URL and its attachment ID in sync, for the social image and the identity logo.
 	 *
 	 * @since    1.0.2
 	 * @param    string    $image_url             Submitted image URL.
@@ -314,6 +319,9 @@ class Lightweight_SEO_Admin_Settings {
 		} else {
 			$sanitized_input['title_format'] = $existing_settings['title_format'] ?? LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT;
 		}
+
+		// An unknown separator, or a save from another tab, keeps the separator that is stored.
+		$sanitized_input['title_separator'] = $this->settings->normalize_title_separator( $input['title_separator'] ?? null, $this->settings->get_title_separator() );
 
 		if ( isset( $input['home_title_format'] ) ) {
 			$sanitized_input['home_title_format'] = sanitize_text_field( $input['home_title_format'] );
@@ -385,6 +393,28 @@ class Lightweight_SEO_Admin_Settings {
 			}
 		} else {
 			$sanitized_input['redirect_rules'] = $existing_settings['redirect_rules'] ?? '';
+		}
+
+		$sanitized_input['identity_type'] = $this->settings->normalize_identity_type( $input['identity_type'] ?? ( $existing_settings['identity_type'] ?? 'organization' ) );
+		$sanitized_input['identity_name'] = sanitize_text_field( $input['identity_name'] ?? ( $existing_settings['identity_name'] ?? '' ) );
+
+		list( $sanitized_input['identity_logo'], $sanitized_input['identity_logo_id'] ) = $this->normalize_social_image(
+			$input['identity_logo'] ?? ( $existing_settings['identity_logo'] ?? '' ),
+			$input['identity_logo_id'] ?? ( $existing_settings['identity_logo_id'] ?? 0 ),
+			$existing_settings['identity_logo'] ?? '',
+			$existing_settings['identity_logo_id'] ?? 0
+		);
+
+		$sanitized_input['x_handle'] = $existing_settings['x_handle'] ?? '';
+
+		if ( isset( $input['x_handle'] ) ) {
+			$x_handle = $this->settings->normalize_x_handle( sanitize_text_field( $input['x_handle'] ) );
+
+			if ( null === $x_handle ) {
+				add_settings_error( LIGHTWEIGHT_SEO_OPTION_NAME, 'invalid_x_handle', __( 'Invalid X handle. Use a handle like @example, or the address of the profile.', 'lightweight-seo' ), 'error' );
+			} else {
+				$sanitized_input['x_handle'] = $x_handle;
+			}
 		}
 
 		if ( isset( $input['organization_same_as'] ) ) {

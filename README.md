@@ -11,7 +11,8 @@ Core provides:
 - Open Graph and X/Twitter metadata
 - post, term, and author SEO controls
 - search visibility, sitemap listing, and a title format for each post type and taxonomy
-- Organization, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
+- Organization or Person, WebSite, BreadcrumbList, ProfilePage, and scoped Article schema
+- a site identity with its own name, logo or photo, X handle, and profile links, plus a choice of title separator
 - filtering of WordPress core XML sitemaps
 - safe mode when Yoast SEO, Rank Math, All in One SEO, SEOPress, The SEO Framework, or Slim SEO is active
 - bounded migration tools and a versioned, read-only extension API

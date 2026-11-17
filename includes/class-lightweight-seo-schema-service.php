@@ -64,7 +64,7 @@ class Lightweight_SEO_Schema_Service {
 			return;
 		}
 
-		$graph[] = $this->build_organization_schema();
+		$graph[] = $this->build_site_entity_schema();
 		$graph[] = $this->build_website_schema();
 
 		$breadcrumb_schema = $this->build_breadcrumb_schema( $context );
@@ -131,23 +131,43 @@ class Lightweight_SEO_Schema_Service {
 	}
 
 	/**
-	 * Build the organization schema for the site homepage.
+	 * Get the identifier of the node that describes who the site belongs to.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	private function get_site_entity_id() {
+		return home_url( 'person' === $this->settings->get_identity_type() ? '/#person' : '/#organization' );
+	}
+
+	/**
+	 * Build the node for the organization or person the site represents.
 	 *
 	 * @since    1.1.0
 	 * @return   array
 	 */
-	private function build_organization_schema() {
-		$schema = array(
-			'@type' => 'Organization',
-			'@id'   => home_url( '/#organization' ),
-			'name'  => get_bloginfo( 'name' ),
+	private function build_site_entity_schema() {
+		$is_person = 'person' === $this->settings->get_identity_type();
+		$image_url = $this->settings->get_identity_logo_url();
+		$schema    = array(
+			'@type' => $is_person ? 'Person' : 'Organization',
+			'@id'   => $this->get_site_entity_id(),
+			'name'  => $this->settings->get_identity_name(),
 			'url'   => home_url( '/' ),
 		);
 
-		$logo_url = $this->settings->get_social_image_url();
+		if ( $is_person ) {
+			// A person has a photo, not a logo, and a share image is never used in its place.
+			if ( ! empty( $image_url ) ) {
+				$schema['image'] = $image_url;
+			}
+		} else {
+			// An organization without a logo of its own keeps using the default social image.
+			$logo_url = ! empty( $image_url ) ? $image_url : $this->settings->get_social_image_url();
 
-		if ( ! empty( $logo_url ) ) {
-			$schema['logo'] = $logo_url;
+			if ( ! empty( $logo_url ) ) {
+				$schema['logo'] = $logo_url;
+			}
 		}
 
 		$same_as = $this->settings->get_organization_same_as();
@@ -173,7 +193,7 @@ class Lightweight_SEO_Schema_Service {
 			'name'        => get_bloginfo( 'name' ),
 			'description' => get_bloginfo( 'description' ),
 			'publisher'   => array(
-				'@id' => home_url( '/#organization' ),
+				'@id' => $this->get_site_entity_id(),
 			),
 		);
 	}
@@ -206,7 +226,7 @@ class Lightweight_SEO_Schema_Service {
 				'@id' => home_url( '/#website' ),
 			),
 			'publisher'        => array(
-				'@id' => home_url( '/#organization' ),
+				'@id' => $this->get_site_entity_id(),
 			),
 		);
 

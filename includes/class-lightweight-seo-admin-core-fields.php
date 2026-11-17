@@ -79,6 +79,33 @@ class Lightweight_SEO_Admin_Core_Fields {
 	}
 
 	/**
+	 * Render the title separator field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function title_separator_render() {
+		$current = $this->settings->get_title_separator();
+		$names   = array(
+			'–' => __( 'En dash', 'lightweight-seo' ),
+			'—' => __( 'Em dash', 'lightweight-seo' ),
+			'-' => __( 'Hyphen', 'lightweight-seo' ),
+			'|' => __( 'Vertical bar', 'lightweight-seo' ),
+			'·' => __( 'Middle dot', 'lightweight-seo' ),
+			'•' => __( 'Bullet', 'lightweight-seo' ),
+			'»' => __( 'Angle quote', 'lightweight-seo' ),
+			'/' => __( 'Slash', 'lightweight-seo' ),
+		);
+		?>
+		<select id="lightweight_seo_title_separator" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[title_separator]">
+			<?php foreach ( Lightweight_SEO_Settings::TITLE_SEPARATORS as $separator ) : ?>
+				<option value="<?php echo esc_attr( $separator ); ?>" <?php selected( $current, $separator ); ?>><?php echo esc_html( $separator . '  ' . ( $names[ $separator ] ?? '' ) ); ?></option>
+			<?php endforeach; ?>
+		</select>
+		<p class="lwseo-help"><?php esc_html_e( 'Sets what the &#37;sep&#37; variable becomes in every title.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Render the title format field
 	 *
 	 * @since    1.0.0
@@ -386,12 +413,69 @@ class Lightweight_SEO_Admin_Core_Fields {
 	}
 
 	/**
-	 * Explain where the organization logo comes from.
+	 * Render the choice of what the site represents.
 	 *
 	 * @since    1.1.0
 	 */
-	public function schema_section_callback() {
-		echo '<p class="lwseo-help">' . esc_html__( 'The default social image is used as the organization logo when available.', 'lightweight-seo' ) . '</p>';
+	public function identity_type_render() {
+		$current = $this->settings->get_identity_type();
+		?>
+		<select id="lightweight_seo_identity_type" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[identity_type]">
+			<option value="organization" <?php selected( $current, 'organization' ); ?>><?php esc_html_e( 'An organization', 'lightweight-seo' ); ?></option>
+			<option value="person" <?php selected( $current, 'person' ); ?>><?php esc_html_e( 'A person', 'lightweight-seo' ); ?></option>
+		</select>
+		<p class="lwseo-help"><?php esc_html_e( 'Sets whether structured data describes the publisher of this site as an organization or as a person.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the name of the organization or person.
+	 *
+	 * @since    1.1.0
+	 */
+	public function identity_name_render() {
+		$options = $this->settings->get_all();
+		?>
+		<input type="text" id="lightweight_seo_identity_name" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[identity_name]" value="<?php echo esc_attr( $options['identity_name'] ?? '' ); ?>" placeholder="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="regular-text">
+		<p class="lwseo-help"><?php esc_html_e( 'Names the organization or person; leave empty to use the site title.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the logo of the organization or the photo of the person.
+	 *
+	 * @since    1.1.0
+	 */
+	public function identity_logo_render() {
+		$options = $this->settings->get_all();
+
+		Lightweight_SEO_Admin_UI::image_field(
+			array(
+				'url'      => $this->settings->get_identity_logo_url(),
+				'id'       => $options['identity_logo_id'] ?? 0,
+				'url_name' => LIGHTWEIGHT_SEO_OPTION_NAME . '[identity_logo]',
+				'id_name'  => LIGHTWEIGHT_SEO_OPTION_NAME . '[identity_logo_id]',
+				'url_id'   => 'lightweight_seo_identity_logo',
+				'id_id'    => 'lightweight_seo_identity_logo_id',
+				'alt'      => __( 'Logo or photo', 'lightweight-seo' ),
+			)
+		);
+		?>
+		<p class="lwseo-help"><?php esc_html_e( 'Shows the logo of an organization or the photo of a person in structured data; an organization without one uses the default social image.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Render the X handle field.
+	 *
+	 * @since    1.1.0
+	 */
+	public function x_handle_render() {
+		$handle = $this->settings->get_x_handle();
+		?>
+		<input type="text" id="lightweight_seo_x_handle" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[x_handle]" value="<?php echo esc_attr( '' !== $handle ? '@' . $handle : '' ); ?>" placeholder="@example" class="regular-text" autocomplete="off">
+		<p class="lwseo-help"><?php esc_html_e( 'Credits this account when a page is shared on X, through the twitter:site tag.', 'lightweight-seo' ); ?></p>
+		<?php
 	}
 
 	/**
@@ -400,7 +484,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function enable_schema_output_render() {
-		$this->render_choice( 'enable_schema_output', '1', __( 'Output core Organization, WebSite, Article, and Breadcrumb schema', 'lightweight-seo' ), __( 'Disable this if your theme or another plugin already outputs equivalent structured data.', 'lightweight-seo' ) );
+		$this->render_choice( 'enable_schema_output', '1', __( 'Output core Organization or Person, WebSite, Article, and Breadcrumb schema', 'lightweight-seo' ), __( 'Disable this if your theme or another plugin already outputs equivalent structured data.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -412,7 +496,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 		$options = $this->settings->get_all();
 		?>
 		<textarea id="lightweight_seo_organization_same_as" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[organization_same_as]" rows="5" class="large-text code"><?php echo esc_textarea( $options['organization_same_as'] ?? '' ); ?></textarea>
-		<p class="lwseo-help"><?php esc_html_e( 'Add one profile URL per line for your organization, such as social profiles or knowledge sources.', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'Add one profile URL per line for the organization or person, such as social profiles or knowledge sources.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 }

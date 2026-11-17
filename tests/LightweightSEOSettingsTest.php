@@ -344,4 +344,92 @@ final class LightweightSEOSettingsTest extends TestCase {
 
 		$this->assertCount( Lightweight_SEO_Settings::MAX_CONTENT_TYPE_ROWS, $normalized['taxonomies'] );
 	}
+
+	public function test_identity_and_separator_defaults_keep_the_previous_output(): void {
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertSame( LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR, $settings->get_title_separator() );
+		$this->assertSame( LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR, Lightweight_SEO_Settings::TITLE_SEPARATORS[0] );
+		$this->assertSame( 'organization', $settings->get_identity_type() );
+		$this->assertSame( get_bloginfo( 'name' ), $settings->get_identity_name() );
+		$this->assertSame( '', $settings->get_identity_logo_url() );
+		$this->assertSame( '', $settings->get_x_handle() );
+	}
+
+	public function test_title_separator_is_limited_to_the_supported_characters(): void {
+		global $lightweight_seo_test_options;
+
+		$settings = new Lightweight_SEO_Settings();
+
+		foreach ( Lightweight_SEO_Settings::TITLE_SEPARATORS as $separator ) {
+			$this->assertSame( $separator, $settings->normalize_title_separator( $separator ) );
+		}
+
+		$this->assertSame( '–', $settings->normalize_title_separator( '<b>' ) );
+		$this->assertSame( '|', $settings->normalize_title_separator( 'nope', '|' ) );
+		$this->assertSame( '–', $settings->normalize_title_separator( array( '|' ) ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'title_separator' => '|' );
+		$this->assertSame( '|', ( new Lightweight_SEO_Settings() )->get_title_separator() );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'title_separator' => '<script>' );
+		$this->assertSame( '–', ( new Lightweight_SEO_Settings() )->get_title_separator() );
+	}
+
+	public function test_identity_readers_use_the_stored_values(): void {
+		global $lightweight_seo_test_attachment_urls;
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_attachment_urls[31]                    = 'https://example.com/uploads/portrait-current.jpg';
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'identity_type'    => 'person',
+			'identity_name'    => '  Ada Lovelace ',
+			'identity_logo'    => 'https://example.com/uploads/portrait-old.jpg',
+			'identity_logo_id' => 31,
+			'x_handle'         => 'ada_l',
+		);
+
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertSame( 'person', $settings->get_identity_type() );
+		$this->assertSame( 'Ada Lovelace', $settings->get_identity_name() );
+		$this->assertSame( 'https://example.com/uploads/portrait-current.jpg', $settings->get_identity_logo_url() );
+		$this->assertSame( 'ada_l', $settings->get_x_handle() );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'identity_type' => 'robot',
+			'identity_logo' => 'https://example.com/uploads/logo.png',
+			'x_handle'      => 'not a handle',
+		);
+
+		$settings = new Lightweight_SEO_Settings();
+
+		$this->assertSame( 'organization', $settings->get_identity_type() );
+		$this->assertSame( 'https://example.com/uploads/logo.png', $settings->get_identity_logo_url() );
+		$this->assertSame( '', $settings->get_x_handle() );
+	}
+
+	public function test_x_handle_is_read_from_a_handle_or_a_profile_address(): void {
+		$settings = new Lightweight_SEO_Settings();
+
+		foreach ( array(
+			'example'                          => 'example',
+			'@Example_1'                       => 'Example_1',
+			' @example '                       => 'example',
+			'https://x.com/example'            => 'example',
+			'https://x.com/@example/'          => 'example',
+			'http://www.twitter.com/example'   => 'example',
+			'twitter.com/example?lang=en'      => 'example',
+			'https://mobile.twitter.com/a_b#x' => 'a_b',
+			''                                 => '',
+		) as $typed => $handle ) {
+			$this->assertSame( $handle, $settings->normalize_x_handle( $typed ), 'Typed "' . $typed . '".' );
+		}
+
+		foreach ( array( 'two words', 'averyveryverylonghandle', 'https://example.com/example', 'bad-handle', 'https://x.com/example/status/1', '@' ) as $typed ) {
+			$this->assertNull( $settings->normalize_x_handle( $typed ), 'Typed "' . $typed . '".' );
+		}
+
+		$this->assertSame( '', $settings->normalize_x_handle( array( 'example' ) ) );
+	}
 }

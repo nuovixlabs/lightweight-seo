@@ -1,5 +1,6 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-settings.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-schema-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-local-seo-module.php';
 
@@ -8,9 +9,15 @@ use PHPUnit\Framework\TestCase;
 final class LightweightSEOSchemaServiceTest extends TestCase {
 
 	protected function setUp(): void {
+		global $lightweight_seo_test_attachment_urls;
 		global $lightweight_seo_test_authors;
+		global $lightweight_seo_test_home_url;
+		global $lightweight_seo_test_options;
 		global $lightweight_seo_test_query_state;
 
+		$lightweight_seo_test_attachment_urls                  = array();
+		$lightweight_seo_test_home_url                         = 'https://example.com';
+		$lightweight_seo_test_options                          = array();
 		$lightweight_seo_test_query_state['is_home']           = false;
 		$lightweight_seo_test_query_state['is_front_page']     = false;
 		$lightweight_seo_test_query_state['is_singular']       = false;
@@ -47,7 +54,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 			}
 		};
 
-		$settings = new class() {
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function schema_output_enabled() {
 				return true;
 			}
@@ -110,7 +117,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 			}
 		};
 
-		$settings = new class() {
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function schema_output_enabled() {
 				return true;
 			}
@@ -169,7 +176,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 			}
 		};
 
-		$settings = new class() {
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function schema_output_enabled() {
 				return true;
 			}
@@ -220,7 +227,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 			}
 		};
 
-		$settings = new class() {
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function schema_output_enabled() {
 				return true;
 			}
@@ -320,7 +327,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 			}
 		};
 
-		$settings = new class() {
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function schema_output_enabled() {
 				return true;
 			}
@@ -379,7 +386,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 				);
 			}
 		};
-		$settings     = new class() {
+		$settings     = new class() extends Lightweight_SEO_Settings {
 			public function schema_output_enabled() {
 				return true;
 			}
@@ -427,7 +434,7 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 				);
 			}
 		};
-		$settings     = new class() {
+		$settings     = new class() extends Lightweight_SEO_Settings {
 			public function schema_output_enabled() {
 				return true;
 			}
@@ -450,5 +457,167 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 		$this->assertStringContainsString( '"headline":"My Post Title"', $output );
 		$this->assertStringContainsString( '"name":"My Post Title","item":"https://example.com/my-post"', $output );
 		$this->assertStringNotContainsString( 'My Post Title – Test Site', $output );
+	}
+
+	/**
+	 * Print the schema of the homepage, or of a single post, for a set of stored settings.
+	 *
+	 * @param array $options Stored settings that differ from the defaults.
+	 * @param bool  $single  Whether the request is a single post instead of the homepage.
+	 * @return array Graph nodes keyed by their type.
+	 */
+	private function get_graph( array $options, $single = false ) {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $options;
+		$lightweight_seo_test_query_state['is_home']                 = ! $single;
+		$lightweight_seo_test_query_state['is_singular']             = $single;
+		$lightweight_seo_test_query_state['is_single']               = $single;
+		$lightweight_seo_test_query_state['queried_object_id']       = $single ? 42 : 0;
+		$lightweight_seo_test_posts[42]                              = (object) array(
+			'ID'          => 42,
+			'post_type'   => 'post',
+			'post_status' => 'publish',
+		);
+
+		$page_context = new class() {
+			public function get_context() {
+				return array(
+					'document_title' => 'A title',
+					'canonical_url'  => 'https://example.com/a-page',
+				);
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Schema_Service( $page_context, new Lightweight_SEO_Settings() ) )->add_schema();
+		$output = (string) ob_get_clean();
+
+		$this->assertSame( 1, preg_match( '#^<script type="application/ld\+json">(.*)</script>$#s', trim( $output ), $matches ) );
+
+		$nodes = array();
+
+		foreach ( json_decode( $matches[1], true )['@graph'] as $node ) {
+			$nodes[ $node['@type'] ] = $node;
+		}
+
+		return $nodes;
+	}
+
+	public function test_untouched_identity_settings_print_the_same_organization_as_before(): void {
+		$graph = $this->get_graph(
+			array(
+				'social_image'         => 'https://example.com/share.jpg',
+				'organization_same_as' => "https://example.com/x\nhttps://example.com/y",
+			)
+		);
+
+		$this->assertSame(
+			array(
+				'@type'  => 'Organization',
+				'@id'    => 'https://example.com/#organization',
+				'name'   => 'Test Site',
+				'url'    => 'https://example.com/',
+				'logo'   => 'https://example.com/share.jpg',
+				'sameAs' => array( 'https://example.com/x', 'https://example.com/y' ),
+			),
+			$graph['Organization']
+		);
+		$this->assertSame( array( '@id' => 'https://example.com/#organization' ), $graph['WebSite']['publisher'] );
+		$this->assertArrayNotHasKey( 'Person', $graph );
+
+		// With no image at all, the node has no logo, as before.
+		$this->assertArrayNotHasKey( 'logo', $this->get_graph( array() )['Organization'] );
+	}
+
+	public function test_an_organization_uses_its_own_name_and_logo_when_set(): void {
+		global $lightweight_seo_test_attachment_urls;
+
+		$lightweight_seo_test_attachment_urls[31] = 'https://example.com/uploads/logo-current.png';
+
+		$graph = $this->get_graph(
+			array(
+				'identity_name'    => 'Acme Ltd',
+				'identity_logo'    => 'https://example.com/uploads/logo-old.png',
+				'identity_logo_id' => 31,
+				'social_image'     => 'https://example.com/share.jpg',
+			)
+		);
+
+		$this->assertSame( 'Acme Ltd', $graph['Organization']['name'] );
+		$this->assertSame( 'https://example.com/uploads/logo-current.png', $graph['Organization']['logo'] );
+		$this->assertArrayNotHasKey( 'image', $graph['Organization'] );
+		// The site itself keeps its own name.
+		$this->assertSame( 'Test Site', $graph['WebSite']['name'] );
+	}
+
+	public function test_a_person_is_printed_with_a_photo_and_becomes_the_publisher(): void {
+		$options = array(
+			'identity_type'        => 'person',
+			'identity_name'        => 'Ada Lovelace',
+			'identity_logo'        => 'https://example.com/uploads/ada.jpg',
+			'social_image'         => 'https://example.com/share.jpg',
+			'organization_same_as' => 'https://example.com/ada',
+		);
+		$home    = $this->get_graph( $options );
+		$single  = $this->get_graph( $options, true );
+
+		$this->assertSame(
+			array(
+				'@type'  => 'Person',
+				'@id'    => 'https://example.com/#person',
+				'name'   => 'Ada Lovelace',
+				'url'    => 'https://example.com/',
+				'image'  => 'https://example.com/uploads/ada.jpg',
+				'sameAs' => array( 'https://example.com/ada' ),
+			),
+			$home['Person']
+		);
+		$this->assertArrayNotHasKey( 'Organization', $home );
+		$this->assertSame( array( '@id' => 'https://example.com/#person' ), $home['WebSite']['publisher'] );
+		$this->assertSame( array( '@id' => 'https://example.com/#person' ), $single['Article']['publisher'] );
+		$this->assertSame( array( '@id' => 'https://example.com/#website' ), $single['Article']['isPartOf'] );
+	}
+
+	public function test_a_person_never_borrows_the_share_image_or_prints_a_logo(): void {
+		$person = $this->get_graph(
+			array(
+				'identity_type' => 'person',
+				'social_image'  => 'https://example.com/share.jpg',
+			)
+		)['Person'];
+
+		$this->assertSame( 'Test Site', $person['name'] );
+		$this->assertArrayNotHasKey( 'image', $person );
+		$this->assertArrayNotHasKey( 'logo', $person );
+	}
+
+	public function test_a_local_business_is_printed_beside_a_person(): void {
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_home']                 = true;
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'enable_local_business_schema'       => '1',
+			'local_business_name'                => 'Example Studio',
+			'local_business_address_street'      => '1 High Street',
+			'local_business_address_locality'    => 'Hereford',
+			'local_business_address_postal_code' => 'HR1 1AA',
+			'local_business_address_country'     => 'GB',
+		);
+
+		$person = array(
+			'@type' => 'Person',
+			'@id'   => 'https://example.com/#person',
+			'name'  => 'Ada Lovelace',
+		);
+		$graph  = ( new Lightweight_SEO_Local_SEO_Module( new Lightweight_SEO_Settings() ) )->add_local_business( array( $person ), array() );
+
+		$this->assertCount( 2, $graph );
+		$this->assertSame( $person, $graph[0] );
+		$this->assertSame( 'LocalBusiness', $graph[1]['@type'] );
+		$this->assertSame( 'https://example.com/#organization', $graph[1]['@id'] );
 	}
 }

@@ -74,13 +74,13 @@ The consent filter supports a basic blocking integration; Lightweight SEO does n
 
 | Hook | Arguments | Contract |
 |---|---|---|
-| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. Besides the title, description, canonical, robots, and Open Graph keys, the context carries `object_title` (the visible name without the title template), `og_locale`, and `published_time`/`modified_time` for article content. |
+| `lightweight_seo_page_context` | `array $context` | Filters the normalized request context. Do not add secrets or mutable services. Besides the title, description, canonical, robots, and Open Graph keys, the context carries `object_title` (the visible name without the title template), `og_locale`, `twitter_site` (the site's X handle with its `@`, or an empty string), and `published_time`/`modified_time` for article content. |
 | `lightweight_seo_document_title` | `string $title, array $context` | Filters the final plugin document title. |
 | `lightweight_seo_meta_tags` | `array $tags, array $context` | Filters normalized name/property meta-tag definitions before escaping. |
 | `lightweight_seo_before_meta_tags` | `array $tags, array $context` | Fires before meta tags are printed. |
 | `lightweight_seo_after_meta_tags` | `array $tags, array $context` | Fires after meta tags are printed. |
 | `lightweight_seo_link_tags` | `array $links, array $context` | Filters normalized link-tag definitions such as canonical output. |
-| `lightweight_seo_schema_graph` | `array $graph, array $context` | Filters schema graph nodes before JSON encoding. Return arrays only. |
+| `lightweight_seo_schema_graph` | `array $graph, array $context` | Filters schema graph nodes before JSON encoding. Return arrays only. The node for the site's publisher is an `Organization` with the identifier `{home}/#organization`, or a `Person` with `{home}/#person` when the site is set to represent a person. |
 | `lightweight_seo_article_post_types` | `string[] $post_types` | Selects post types eligible for Article schema; Product is excluded by default. |
 | `lightweight_seo_supported_post_types` | `string[] $post_types` | Filters public post types that receive SEO metadata controls. |
 | `lightweight_seo_supported_taxonomies` | `string[] $taxonomies` | Filters public taxonomies that receive archive SEO controls. |

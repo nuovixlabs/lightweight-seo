@@ -863,4 +863,40 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( 'Portfolio – Test Site', $hidden['document_title'] );
 		$this->assertSame( 'max-image-preview:large', $shown['robots'] );
 	}
+
+	public function test_the_chosen_separator_replaces_the_sep_variable_everywhere(): void {
+		global $lightweight_seo_test_query_state;
+
+		$chosen = array( 'title_separator' => '|' );
+
+		$this->assertSame( 'Harbour at dawn – Test Site', $this->get_singular_context( 'post', array(), array( 'title_format' => '%title% %sep% %sitename%' ) )['document_title'] );
+		$this->assertSame( 'Harbour at dawn | Test Site', $this->get_singular_context( 'post', array(), $chosen + array( 'title_format' => '%title% %sep% %sitename%' ) )['document_title'] );
+		// A format that spells out its own character is left as written.
+		$this->assertSame( 'Harbour at dawn – Test Site', $this->get_singular_context( 'post', array(), $chosen )['document_title'] );
+		// A page's own SEO and social titles resolve the variable too.
+		$own = $this->get_singular_context(
+			'post',
+			array(
+				'seo_title'    => '%title% %sep% Own',
+				'social_title' => 'Share %sep% %title%',
+			),
+			$chosen
+		);
+
+		$this->assertSame( 'Harbour at dawn | Own', $own['document_title'] );
+		$this->assertSame( 'Share | Harbour at dawn', $own['og_title'] );
+
+		$lightweight_seo_test_query_state['is_singular'] = false;
+		$lightweight_seo_test_query_state['is_home']     = true;
+
+		$home = ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, $chosen ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context();
+
+		$this->assertSame( 'Test Site | Test Tagline', $home['document_title'] );
+	}
+
+	public function test_the_x_handle_reaches_the_context_with_its_at_sign(): void {
+		$this->assertSame( '', $this->get_singular_context( 'post', array(), array() )['twitter_site'] );
+		$this->assertSame( '@example', $this->get_singular_context( 'post', array(), array( 'x_handle' => 'example' ) )['twitter_site'] );
+		$this->assertSame( '', $this->get_singular_context( 'post', array(), array( 'x_handle' => 'not a handle' ) )['twitter_site'] );
+	}
 }

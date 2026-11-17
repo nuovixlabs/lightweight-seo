@@ -410,6 +410,9 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		$this->assertMatchesRegularExpression( '/<option value="1"\s+selected=\'selected\'>Hide from search results<\/option>/', $own_hide );
 		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-warning" data-check="indexing"[^>]*>.*?<p class="lwseo-status__text">This page is intentionally set to noindex/s', $own_hide );
 
+		// The editor script resolves %sep% from these tokens, so it follows the default separator here.
+		$this->assertStringContainsString( '&quot;%sep%&quot;:&quot;\u2013&quot;', $default_shown );
+
 		// The preview and the title field fall back to the title format of the post type.
 		$this->assertStringContainsString( 'data-title-format="%title% %sep% Journal"', $default_shown );
 		$this->assertStringContainsString( 'data-fallback="A post about visibility – Journal"', $default_shown );

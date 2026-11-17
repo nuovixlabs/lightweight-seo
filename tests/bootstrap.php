@@ -201,6 +201,12 @@ if (!function_exists('do_action')) {
     }
 }
 
+if (!function_exists('__return_null')) {
+    function __return_null() {
+        return null;
+    }
+}
+
 if (!function_exists('_x')) {
     function _x($text, $context, $domain = null) {
         return $text;

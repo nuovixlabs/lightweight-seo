@@ -204,7 +204,7 @@ class Lightweight_SEO_Admin_Page {
 			'appearance' => array(
 				array(
 					'section'     => 'lightweight_seo_general_section',
-					'fields'      => array( 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format' ),
+					'fields'      => array( 'title_separator', 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format' ),
 					'title'       => __( 'Title formats', 'lightweight-seo' ),
 					'description' => __( 'How page titles are built across the site. Any page can override its own title.', 'lightweight-seo' ),
 					'intro'       => true,
@@ -241,9 +241,14 @@ class Lightweight_SEO_Admin_Page {
 			'identity'   => array(
 				array(
 					'section'     => 'lightweight_seo_schema_section',
-					'fields'      => array( 'enable_schema_output', 'organization_same_as' ),
+					'fields'      => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as' ),
+					'title'       => __( 'Site identity', 'lightweight-seo' ),
+					'description' => __( 'Who this site belongs to. Used in structured data and when pages are shared.', 'lightweight-seo' ),
+				),
+				array(
+					'section'     => 'lightweight_seo_schema_section',
+					'fields'      => array( 'enable_schema_output' ),
 					'description' => __( 'JSON-LD schema built from your site identity and SEO context.', 'lightweight-seo' ),
-					'intro'       => true,
 				),
 			),
 			'modules'    => array(
@@ -431,7 +436,7 @@ class Lightweight_SEO_Admin_Page {
 			'%title%'    => (string) get_bloginfo( 'name' ),
 			'%sitename%' => (string) get_bloginfo( 'name' ),
 			'%tagline%'  => (string) get_bloginfo( 'description' ),
-			'%sep%'      => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+			'%sep%'      => $this->settings->get_title_separator(),
 		);
 		$title       = $this->settings->get_home_title_format();
 		$description = (string) ( $options['meta_description'] ?? '' );

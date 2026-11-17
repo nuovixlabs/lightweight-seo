@@ -113,11 +113,7 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$lightweight_seo_test_attachment_urls[27] = 'https://example.com/new-image.jpg';
 
-		$settings = new class() {
-			public function normalize_content_types( $input, $existing, $post_types, $taxonomies ) {
-				return array();
-			}
-
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function get_all() {
 				return array(
 					'title_format'                        => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
@@ -238,11 +234,7 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$lightweight_seo_test_attachment_urls[14] = 'https://example.com/existing-image.jpg';
 
-		$settings = new class() {
-			public function normalize_content_types( $input, $existing, $post_types, $taxonomies ) {
-				return array();
-			}
-
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function get_all() {
 				return array(
 					'title_format'         => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
@@ -282,11 +274,7 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$lightweight_seo_test_attachment_urls[14] = 'https://example.com/uploads/current-image.jpg';
 
-		$settings = new class() {
-			public function normalize_content_types( $input, $existing, $post_types, $taxonomies ) {
-				return array();
-			}
-
+		$settings = new class() extends Lightweight_SEO_Settings {
 			public function get_all() {
 				return array(
 					'title_format'         => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
@@ -647,6 +635,132 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'Previews and headers', $output );
 	}
 
+	public function test_identity_and_separator_fields_are_validated_and_kept_across_tabs(): void {
+		global $lightweight_seo_test_attachment_urls;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_settings_errors;
+
+		$lightweight_seo_test_attachment_urls[31]                    = 'https://example.com/uploads/logo.png';
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = ( new Lightweight_SEO_Settings() )->get_defaults();
+
+		$saved = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'     => 'identity',
+				'identity_type'    => 'person',
+				'identity_name'    => '  <b>Ada</b> Lovelace ',
+				'identity_logo'    => 'https://example.com/uploads/logo.png',
+				'identity_logo_id' => '31',
+				'x_handle'         => 'https://x.com/@Ada_L',
+			)
+		);
+
+		$this->assertSame( 'person', $saved['identity_type'] );
+		$this->assertSame( 'Ada Lovelace', $saved['identity_name'] );
+		$this->assertSame( 'https://example.com/uploads/logo.png', $saved['identity_logo'] );
+		$this->assertSame( 31, $saved['identity_logo_id'] );
+		$this->assertSame( 'Ada_L', $saved['x_handle'] );
+		$this->assertSame( LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR, $saved['title_separator'] );
+		$this->assertSame( array(), $lightweight_seo_test_settings_errors );
+
+		// WordPress sanitizes a second time when it has to create the option row.
+		$this->assertSame( $saved, $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( $saved ) );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $saved;
+
+		// Saving another tab changes the separator and leaves the identity alone.
+		$appearance = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'    => 'appearance',
+				'title_separator' => '|',
+			)
+		);
+
+		$this->assertSame( '|', $appearance['title_separator'] );
+		$this->assertSame( 'person', $appearance['identity_type'] );
+		$this->assertSame( 'Ada Lovelace', $appearance['identity_name'] );
+		$this->assertSame( 31, $appearance['identity_logo_id'] );
+		$this->assertSame( 'Ada_L', $appearance['x_handle'] );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $appearance;
+
+		// Values outside what is supported keep what is stored, and a bad handle says so.
+		$rejected = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'    => 'all',
+				'title_separator' => '<script>',
+				'identity_type'   => 'robot',
+				'x_handle'        => 'not a handle',
+			)
+		);
+
+		$this->assertSame( '|', $rejected['title_separator'] );
+		$this->assertSame( 'organization', $rejected['identity_type'] );
+		$this->assertSame( 'Ada_L', $rejected['x_handle'] );
+		$this->assertSame( 'invalid_x_handle', $lightweight_seo_test_settings_errors[0]['code'] ?? '' );
+
+		// Clearing the fields is a valid save.
+		$cleared = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'     => 'identity',
+				'identity_type'    => 'organization',
+				'identity_name'    => '',
+				'identity_logo'    => '',
+				'identity_logo_id' => '31',
+				'x_handle'         => '',
+			)
+		);
+
+		$this->assertSame( '', $cleared['identity_name'] );
+		$this->assertSame( '', $cleared['identity_logo'] );
+		$this->assertSame( 0, $cleared['identity_logo_id'] );
+		$this->assertSame( '', $cleared['x_handle'] );
+	}
+
+	public function test_identity_and_separator_fields_render_with_their_stored_values(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
+			'title_separator' => '|',
+			'identity_type'   => 'person',
+			'identity_name'   => 'Ada "Countess" Lovelace',
+			'identity_logo'   => 'https://example.com/uploads/ada.jpg',
+			'x_handle'        => 'ada_l',
+		);
+
+		$settings = new Lightweight_SEO_Settings();
+		$this->get_admin_settings( $settings )->register_settings();
+
+		$_GET['tab'] = 'identity';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+		$identity = ob_get_clean();
+
+		$_GET['tab'] = 'appearance';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ), $this->get_post_meta() ) )->display_plugin_admin_page();
+		$appearance = ob_get_clean();
+
+		// Site identity comes first and holds every identity field; structured data keeps its switch.
+		$this->assertLessThan( strpos( $identity, 'Structured data' ), strpos( $identity, 'Site identity' ) );
+		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_identity_type">This site represents</label>', $identity );
+		$this->assertMatchesRegularExpression( '/<option value="person"\s+selected=\'selected\'>A person<\/option>/', $identity );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[identity_name]" value="Ada &quot;Countess&quot; Lovelace" placeholder="Test Site"', $identity );
+		$this->assertStringContainsString( 'id="lightweight_seo_identity_logo" name="lightweight_seo_settings[identity_logo]" value="https://example.com/uploads/ada.jpg"', $identity );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[identity_logo_id]"', $identity );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[x_handle]" value="@ada_l"', $identity );
+		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_organization_same_as">Profiles</label>', $identity );
+		$this->assertStringContainsString( 'lightweight_seo_settings[enable_schema_output]', $identity );
+		$this->assertStringNotContainsString( 'used as the organization logo when available', $identity );
+
+		// The separator leads the title formats, lists every supported character, and marks the stored one.
+		$this->assertLessThan( strpos( $appearance, 'for="lightweight_seo_title_format"' ), strpos( $appearance, 'for="lightweight_seo_title_separator"' ) );
+		$this->assertSame( count( Lightweight_SEO_Settings::TITLE_SEPARATORS ), substr_count( $appearance, '<option value=' ) );
+		$this->assertMatchesRegularExpression( '/<option value="\|"\s+selected=\'selected\'>\|  Vertical bar<\/option>/', $appearance );
+		$this->assertMatchesRegularExpression( '/<option value="–" >–  En dash<\/option>/', $appearance );
+	}
+
 	public function test_tools_save_explicitly_deletes_retained_search_console_data(): void {
 		global $lightweight_seo_test_options;
 
@@ -762,10 +876,10 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertSame(
 			array(
-				'lightweight_seo_general_section'      => array( 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format', 'meta_description', 'social_image' ),
+				'lightweight_seo_general_section'      => array( 'title_separator', 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format', 'meta_description', 'social_image' ),
 				'lightweight_seo_indexation_section'   => array( 'content_types', 'default_max_image_preview', 'enable_media_x_robots_headers' ),
 				'lightweight_seo_sitemap_section'      => array( 'exclude_noindex_from_sitemaps', 'exclude_redirected_from_sitemaps' ),
-				'lightweight_seo_schema_section'       => array( 'enable_schema_output', 'organization_same_as', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
+				'lightweight_seo_schema_section'       => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as', 'enable_schema_output', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
 				'lightweight_seo_redirects_section'    => array( 'enable_auto_redirects', 'redirect_rules', 'generated_redirect_rules', 'redirect_export', 'redirect_health' ),
 				'lightweight_seo_migration_section'    => array( 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
@@ -1332,6 +1446,14 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( '<img src="https://example.com/share.jpg" alt="">', $configured );
 		// A static preview is not a live region.
 		$this->assertStringNotContainsString( 'aria-live', $configured );
+	}
+
+	public function test_overview_preview_uses_the_chosen_title_separator(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'title_separator' => '·' );
+
+		$this->assertStringContainsString( 'data-preview="title">Test Site · Test Tagline</p>', $this->render_overview( new Lightweight_SEO_Settings() ) );
 	}
 
 	public function test_overview_previews_a_static_front_page_from_its_own_seo_fields(): void {

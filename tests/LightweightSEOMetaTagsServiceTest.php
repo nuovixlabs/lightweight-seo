@@ -167,4 +167,44 @@ final class LightweightSEOMetaTagsServiceTest extends TestCase {
 		$this->assertStringContainsString( 'property="article:published_time" content="2024-01-01T12:00:00+00:00"', $output );
 		$this->assertStringContainsString( 'property="article:modified_time" content="2024-01-02T12:00:00+00:00"', $output );
 	}
+
+	public function test_x_handle_is_emitted_as_twitter_site_only_when_set(): void {
+		$with_handle    = new class() {
+			public function get_context() {
+				return array(
+					'og_title'     => 'A page',
+					'twitter_site' => '@example',
+				);
+			}
+		};
+		$without_handle = new class() {
+			public function get_context() {
+				return array( 'og_title' => 'A page' );
+			}
+		};
+		$not_found      = new class() {
+			public function get_context() {
+				return array(
+					'is_404'       => true,
+					'twitter_site' => '@example',
+				);
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Meta_Tags_Service( $with_handle ) )->add_meta_tags();
+		$output = ob_get_clean();
+
+		$this->assertSame( 1, substr_count( $output, 'name="twitter:site" content="@example"' ) );
+		// The site handle sits with the other X tags, after the card type.
+		$this->assertLessThan( strpos( $output, 'twitter:site' ), strpos( $output, 'twitter:card' ) );
+		$this->assertLessThan( strpos( $output, 'twitter:title' ), strpos( $output, 'twitter:site' ) );
+
+		ob_start();
+		( new Lightweight_SEO_Meta_Tags_Service( $without_handle ) )->add_meta_tags();
+		( new Lightweight_SEO_Meta_Tags_Service( $not_found ) )->add_meta_tags();
+		$output = ob_get_clean();
+
+		$this->assertStringNotContainsString( 'twitter:site', $output );
+	}
 }

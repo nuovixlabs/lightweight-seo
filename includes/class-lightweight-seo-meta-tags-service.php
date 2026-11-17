@@ -57,6 +57,7 @@ class Lightweight_SEO_Meta_Tags_Service {
 				'published_time'  => '',
 				'modified_time'   => '',
 				'twitter_card'    => 'summary',
+				'twitter_site'    => '',
 				'is_404'          => false,
 			),
 			$this->page_context->get_context()
@@ -131,6 +132,11 @@ class Lightweight_SEO_Meta_Tags_Service {
 				'attribute' => 'name',
 				'key'       => 'twitter:card',
 				'value'     => $context['twitter_card'],
+			),
+			array(
+				'attribute' => 'name',
+				'key'       => 'twitter:site',
+				'value'     => $context['twitter_site'],
 			),
 			array(
 				'attribute' => 'name',

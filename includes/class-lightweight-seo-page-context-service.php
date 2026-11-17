@@ -107,6 +107,7 @@ class Lightweight_SEO_Page_Context_Service {
 			'published_time'   => '',
 			'modified_time'    => '',
 			'twitter_card'     => 'summary',
+			'twitter_site'     => '' !== $this->settings->get_x_handle() ? '@' . $this->settings->get_x_handle() : '',
 			'is_404'           => is_404(),
 		);
 
@@ -587,7 +588,7 @@ class Lightweight_SEO_Page_Context_Service {
 			'%search%'   => $variables['search'] ?? '',
 			'%sitename%' => get_bloginfo( 'name' ),
 			'%tagline%'  => get_bloginfo( 'description' ),
-			'%sep%'      => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+			'%sep%'      => $this->settings->get_title_separator(),
 		);
 
 		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );

@@ -92,6 +92,21 @@ One existing rule changes once the new choice is used: an attachment page set to
 
 For extensions, `is_indexable()` and the `indexable` and `robots` values of `get_object_context()` now include the content type default.
 
+## Site identity since rc.3
+
+"Schema and identity" opens with a "Site identity" card, and "Search appearance" gains a title separator.
+
+- The site can represent an organization or a person. A person is printed as a `Person` node with the identifier `#person`, and becomes the publisher of the WebSite and Article nodes.
+- The organization or person has its own name, which defaults to the site title, and its own logo or photo.
+- An organization without a logo keeps using the default social image, as before. A person never borrows it: a photo is printed only when one is chosen.
+- An X handle is printed as `twitter:site`. It can be typed as a handle or as a profile address.
+- The title separator sets what `%sep%` becomes: an en dash by default, or one of seven other characters.
+- "Organization profiles" is now "Profiles". Its stored key and format are unchanged.
+
+Nothing changes until a field is changed. Six settings are new in the existing settings option: `identity_type`, `identity_name`, `identity_logo`, `identity_logo_id`, `x_handle`, and `title_separator`. There is no migration.
+
+For extensions, the page context gains `twitter_site`, and the first node of the schema graph may be a `Person` with the identifier `#person` instead of an `Organization` with `#organization`.
+
 ## Experimental AI Discovery
 
 AI Discovery can manage documented crawler policies and publish a curated `/llms.txt` containing selected public summaries. Model-training access defaults off. The feature makes no crawling, training, citation, inclusion, visibility, or ranking guarantee.

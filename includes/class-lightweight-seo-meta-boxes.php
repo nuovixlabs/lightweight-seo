@@ -102,7 +102,7 @@ class Lightweight_SEO_Meta_Boxes {
 			'%title%'    => (string) $post->post_title,
 			'%sitename%' => (string) get_bloginfo( 'name' ),
 			'%tagline%'  => (string) get_bloginfo( 'description' ),
-			'%sep%'      => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+			'%sep%'      => $this->settings->get_title_separator(),
 		);
 		$resolve_tokens        = static function ( $text ) use ( $tokens ) {
 			return Lightweight_SEO_Text::resolve_tokens( $text, $tokens );

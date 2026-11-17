@@ -30,6 +30,9 @@ class Lightweight_SEO_Settings {
 	/** Stored per-item choice that shows an item even when its content type is hidden. */
 	const INDEX_OVERRIDE = 'index';
 
+	/** Characters the %sep% title variable may become. The first is the default. */
+	const TITLE_SEPARATORS = array( '–', '—', '-', '|', '·', '•', '»', '/' );
+
 	/**
 	 * Cached settings for the current request.
 	 *
@@ -48,6 +51,7 @@ class Lightweight_SEO_Settings {
 	public function get_defaults() {
 		return array(
 			'title_format'                       => LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT,
+			'title_separator'                    => LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
 			'home_title_format'                  => '%sitename% %sep% %tagline%',
 			'archive_title_format'               => '%title% %sep% %sitename%',
 			'search_title_format'                => 'Search Results for "%search%" %sep% %sitename%',
@@ -75,6 +79,11 @@ class Lightweight_SEO_Settings {
 			'local_business_longitude'           => '',
 			'local_business_opening_hours'       => '',
 			'local_business_image'               => '',
+			'identity_type'                      => 'organization',
+			'identity_name'                      => '',
+			'identity_logo'                      => '',
+			'identity_logo_id'                   => 0,
+			'x_handle'                           => '',
 			'organization_same_as'               => '',
 			'enable_hreflang_output'             => '0',
 			'enable_hreflang_path_mirroring'     => '0',
@@ -169,6 +178,114 @@ class Lightweight_SEO_Settings {
 	 */
 	public function get_search_title_format() {
 		return wp_specialchars_decode( $this->get( 'search_title_format', 'Search Results for "%search%" %sep% %sitename%' ), ENT_QUOTES );
+	}
+
+	/**
+	 * Get the character that the %sep% title variable becomes.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	public function get_title_separator() {
+		return $this->normalize_title_separator( $this->get( 'title_separator', LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR ) );
+	}
+
+	/**
+	 * Normalize a title separator to one of the supported characters.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed     $value       Submitted or stored separator.
+	 * @param    string    $fallback    Separator used when the value is not supported.
+	 * @return   string
+	 */
+	public function normalize_title_separator( $value, $fallback = LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR ) {
+		return is_string( $value ) && in_array( $value, self::TITLE_SEPARATORS, true ) ? $value : $fallback;
+	}
+
+	/**
+	 * Get what the site represents: an organization or a person.
+	 *
+	 * @since    1.1.0
+	 * @return   string Either organization or person.
+	 */
+	public function get_identity_type() {
+		return $this->normalize_identity_type( $this->get( 'identity_type', 'organization' ) );
+	}
+
+	/**
+	 * Normalize the kind of entity the site represents.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $value    Submitted or stored type.
+	 * @return   string Either organization or person.
+	 */
+	public function normalize_identity_type( $value ) {
+		return 'person' === $value ? 'person' : 'organization';
+	}
+
+	/**
+	 * Get the name of the organization or person, falling back to the site title.
+	 *
+	 * @since    1.1.0
+	 * @return   string
+	 */
+	public function get_identity_name() {
+		$name = trim( (string) $this->get( 'identity_name', '' ) );
+
+		return '' !== $name ? $name : (string) get_bloginfo( 'name' );
+	}
+
+	/**
+	 * Get the logo of the organization or the photo of the person.
+	 *
+	 * @since    1.1.0
+	 * @return   string Image URL, or an empty string when none is chosen.
+	 */
+	public function get_identity_logo_url() {
+		$image_id = absint( $this->get( 'identity_logo_id', 0 ) );
+
+		if ( $image_id ) {
+			$image_url = wp_get_attachment_image_url( $image_id, 'full' );
+
+			if ( ! empty( $image_url ) ) {
+				return $image_url;
+			}
+		}
+
+		return (string) $this->get( 'identity_logo', '' );
+	}
+
+	/**
+	 * Get the site's X handle without its leading @.
+	 *
+	 * @since    1.1.0
+	 * @return   string Handle, or an empty string when none is set.
+	 */
+	public function get_x_handle() {
+		return (string) $this->normalize_x_handle( $this->get( 'x_handle', '' ) );
+	}
+
+	/**
+	 * Reduce a typed X handle or profile address to the bare handle.
+	 *
+	 * @since    1.1.0
+	 * @param    mixed    $value    A handle, with or without @, or an x.com or twitter.com profile address.
+	 * @return   string|null Handle, an empty string for no handle, or null when the value is not a handle.
+	 */
+	public function normalize_x_handle( $value ) {
+		$value = is_scalar( $value ) ? trim( (string) $value ) : '';
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		if ( 1 === preg_match( '#^(?:https?://)?(?:www\.|mobile\.)?(?:x|twitter)\.com/@?([A-Za-z0-9_]+)/?(?:[?\#].*)?$#i', $value, $matches ) ) {
+			$value = $matches[1];
+		}
+
+		$value = ltrim( $value, '@' );
+
+		return 1 === preg_match( '/^[A-Za-z0-9_]{1,15}$/', $value ) ? $value : null;
 	}
 
 	/**
