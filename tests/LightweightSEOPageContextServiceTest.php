@@ -980,6 +980,35 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( 'Test Site – ' . gmdate( 'Y' ), $context['document_title'] );
 	}
 
+	public function test_the_default_homepage_title_has_no_dangling_separator_without_a_tagline(): void {
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_home'] = true;
+
+		$title = function ( $format ) {
+			return ( new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( null, array( 'home_title_format' => $format ) ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() ) )->get_context()['document_title'];
+		};
+
+		// With a tagline the default format prints both, as before.
+		$this->assertSame( 'Test Site – Test Tagline', $title( '%sitename% %sep% %tagline%' ) );
+
+		// WordPress installs with an empty tagline.
+		$GLOBALS['lightweight_seo_test_tagline'] = '';
+
+		$this->assertSame( 'Test Site', $title( '%sitename% %sep% %tagline%' ) );
+		$this->assertSame( 'Test Site', $title( '%tagline% | %sitename%' ) );
+		$this->assertSame( 'Test Site', $title( '%sitename% %tagline%' ) );
+		// Only one separator leaves with it, so the rest of the format keeps its shape.
+		$this->assertSame( 'Test Site – ' . gmdate( 'Y' ), $title( '%sitename% %sep% %tagline% %sep% %year%' ) );
+
+		// A tagline of spaces only counts as empty.
+		$GLOBALS['lightweight_seo_test_tagline'] = '   ';
+
+		$this->assertSame( 'Test Site', $title( '%sitename% %sep% %tagline%' ) );
+
+		unset( $GLOBALS['lightweight_seo_test_tagline'] );
+	}
+
 	public function test_verification_codes_travel_with_the_first_page_of_the_homepage_only(): void {
 		global $lightweight_seo_test_query_state;
 

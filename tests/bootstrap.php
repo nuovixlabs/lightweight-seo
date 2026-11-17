@@ -19,7 +19,7 @@ if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
 }
 
 if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
-    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.4');
+    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.5');
 }
 
 if (!defined('LIGHTWEIGHT_SEO_API_VERSION')) {
@@ -408,7 +408,8 @@ if (!function_exists('get_bloginfo')) {
         }
 
         if ('description' === $show) {
-            return 'Test Tagline';
+            // A test can stand for a site without a tagline, which is how WordPress installs.
+            return $GLOBALS['lightweight_seo_test_tagline'] ?? 'Test Tagline';
         }
 
         if ('charset' === $show) {

@@ -1,8 +1,8 @@
 # Lightweight SEO 1.1 Release Notes
 
-Release candidate: `1.1.0-rc.4`
+Release candidate: `1.1.0-rc.5`
 
-`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package, and `1.1.0-rc.3` added the redesigned administration interface. This candidate adds everything in the sections marked "since rc.3" below: the content types table, site identity, more title variables, the post list column, Inspect a page, a switch for every module, redirect upgrades, settings export and import, deeper structured data, three more importers, abilities, the IndexNow module, and live previews.
+`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package, and `1.1.0-rc.3` added the redesigned administration interface. `1.1.0-rc.4` added everything in the sections marked "since rc.3" below, and this candidate adds the fix under "Since rc.4". Since rc.3: the content types table, site identity, more title variables, the post list column, Inspect a page, a switch for every module, redirect upgrades, settings export and import, deeper structured data, three more importers, abilities, the IndexNow module, and live previews.
 
 ## Highlights
 
@@ -111,7 +111,7 @@ For extensions, the page context gains `twitter_site`, and the first node of the
 
 - "Schema and identity" gains a "Site verification" card for Google Search Console, Bing Webmaster Tools, Pinterest, and Yandex Webmaster. Each code is printed as a meta tag on the homepage only. A field accepts the code or the whole meta tag the service shows. Nothing is requested from any service.
 - Titles and descriptions understand four more variables: `%category%` (a post's first category, or the category of a category archive), `%author%` (a post's author, or the author of an author archive), `%year%` (the current year), and `%page%` ("Page 2" and so on, from the second page of an archive or of a post split into pages).
-- One of these variables that has no value on a page is left out together with the separator beside it, so `%title% %sep% %page% %sep% %sitename%` has no gap on the first page. The four earlier variables behave exactly as before, including an empty tagline.
+- One of these variables that has no value on a page is left out together with the separator beside it, so `%title% %sep% %page% %sep% %sitename%` has no gap on the first page. `%title%`, `%sitename%`, and `%sep%` behave exactly as before; for `%tagline%` see "Since rc.4".
 - "Search appearance" explains every variable under "What the variables mean", and the variable buttons in the settings and in the editor offer the new ones.
 - Import converts more source variables instead of leaving them for review: the current year and the author name from Yoast SEO, Rank Math, and All in One SEO; `%category%` from Rank Math; and the page variable of Yoast SEO and Rank Math, which was dropped before. Theirs reads "Page 2 of 5"; `%page%` reads "Page 2".
 
@@ -225,6 +225,10 @@ Settings `enable_indexnow` and `indexnow_key` and the non-autoloaded option `lig
 - The "Essential setup" card on the Overview gives its title and description the full width on a phone, with the badge and the dismiss link below.
 
 The editor screens now load `lightweight-seo-formats.js` as well, because the editor preview and the settings previews share its variable and shortening rules. No setting and no file is new.
+
+## Since rc.4
+
+- An empty tagline no longer leaves a separator behind. WordPress installs with an empty tagline, and the default homepage title format is `%sitename% %sep% %tagline%`, so such a site printed "Site name –". `%tagline%` now behaves like the other optional variables: when the site has no tagline it is left out together with one separator beside it, and the homepage title is "Site name". A site with a tagline prints exactly what it printed before. The settings previews and the editor preview follow the same rule.
 
 ## Experimental AI Discovery
 

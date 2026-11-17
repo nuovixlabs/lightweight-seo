@@ -650,6 +650,9 @@ class Lightweight_SEO_Page_Context_Service {
 			}
 		} elseif ( '%year%' === $token ) {
 			$value = (string) wp_date( 'Y' );
+		} elseif ( '%tagline%' === $token ) {
+			// WordPress installs with an empty tagline, and the default homepage format ends in it.
+			$value = trim( (string) get_bloginfo( 'description' ) );
 		}
 
 		$this->token_values[ $token ] = $value;

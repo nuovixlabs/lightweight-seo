@@ -28,7 +28,7 @@ final class LightweightSEOTextTest extends TestCase {
 		$this->assertStringEndsWith( '…', $summary );
 	}
 
-	public function test_existing_variables_resolve_exactly_as_before(): void {
+	public function test_the_first_four_variables_resolve_and_an_empty_tagline_leaves_no_separator(): void {
 		$tokens = array(
 			'%title%'    => 'A page',
 			'%sitename%' => 'Site',
@@ -37,8 +37,10 @@ final class LightweightSEOTextTest extends TestCase {
 		);
 
 		$this->assertSame( 'A page – Site', Lightweight_SEO_Text::resolve_tokens( '%title% %sep% %sitename%', $tokens ) );
-		// An empty tagline keeps its separator, as it always has.
-		$this->assertSame( 'Site – ', Lightweight_SEO_Text::resolve_tokens( '%sitename% %sep% %tagline%', $tokens ) );
+		// An empty tagline, the WordPress default, leaves with its separator and no dangling dash.
+		$this->assertSame( 'Site', Lightweight_SEO_Text::resolve_tokens( '%sitename% %sep% %tagline%', $tokens ) );
+		$this->assertSame( 'Site – A page', Lightweight_SEO_Text::resolve_tokens( '%sitename% %sep% %tagline% %sep% %title%', $tokens ) );
+		$this->assertSame( 'Site – Photographs', Lightweight_SEO_Text::resolve_tokens( '%sitename% %sep% %tagline%', array( '%tagline%' => 'Photographs' ) + $tokens ) );
 		$this->assertSame( 'No variables – at all', Lightweight_SEO_Text::resolve_tokens( 'No variables – at all', $tokens ) );
 		$this->assertSame( '%unknown% A page', Lightweight_SEO_Text::resolve_tokens( '%unknown% %title%', $tokens ) );
 	}
