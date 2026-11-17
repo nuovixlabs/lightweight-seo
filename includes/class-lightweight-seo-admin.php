@@ -176,7 +176,6 @@ class Lightweight_SEO_Admin {
 			array(
 				'mediaTitle'  => __( 'Select or Upload Image', 'lightweight-seo' ),
 				'mediaButton' => __( 'Use this image', 'lightweight-seo' ),
-				'previewAlt'  => __( 'Preview', 'lightweight-seo' ),
 			)
 		);
 

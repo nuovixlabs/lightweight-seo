@@ -1,5 +1,6 @@
 <?php
 
+require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-admin-ui.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-redirects-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-compatibility-service.php';
 require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-importer-service.php';
@@ -615,7 +616,7 @@ final class LightweightSEOAdminTest extends TestCase {
 			$this->assertStringContainsString( 'name="' . $action . '_nonce" value="nonce-' . $action . '"', $output );
 		}
 
-		$this->assertStringContainsString( '<select name="import_source" form="lightweight-seo-import-form">', $output );
+		$this->assertStringContainsString( '<select id="lightweight_seo_import_source" name="import_source" form="lightweight-seo-import-form">', $output );
 		$this->assertStringContainsString( 'The next batch starts after 50 scanned posts.', $output );
 		$this->assertStringContainsString( 'Imported yoast batch.', $output );
 
@@ -643,6 +644,71 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( 'lightweight_seo_settings[title_format]', $output );
 		$this->assertStringNotContainsString( 'admin-post.php', $output );
+	}
+
+	public function test_module_cards_collapse_until_the_module_is_enabled(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'redirects' => true );
+
+		$settings = new Lightweight_SEO_Settings();
+		$this->get_admin_settings( $settings )->register_settings();
+		$_GET['tab'] = 'modules';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '<details class="lwseo-card" id="lwseo-module-redirects" open>', $output );
+
+		foreach ( array( 'local-seo', 'hreflang', 'tracking', 'ai' ) as $module ) {
+			$this->assertStringContainsString( '<details class="lwseo-card" id="lwseo-module-' . $module . '">', $output );
+		}
+
+		// Collapsed cards still submit their fields, so saving never drops a hidden setting.
+		$this->assertStringContainsString( 'lightweight_seo_settings[gtm_container_id]', $output );
+	}
+
+	public function test_single_control_fields_are_labelled_and_groups_are_named(): void {
+		$settings = new Lightweight_SEO_Settings();
+		$this->get_admin_settings( $settings )->register_settings();
+		$_GET['tab'] = 'appearance';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		$appearance = ob_get_clean();
+
+		$_GET['tab'] = 'indexation';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) ) )->display_plugin_admin_page();
+		$indexation = ob_get_clean();
+
+		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_title_format">', $appearance );
+		$this->assertStringContainsString( 'id="lightweight_seo_title_format"', $appearance );
+		$this->assertStringContainsString( 'role="group" aria-labelledby="lwseo-label-noindex_search_results"', $indexation );
+		$this->assertStringContainsString( 'id="lwseo-label-noindex_search_results"', $indexation );
+	}
+
+	public function test_saving_is_confirmed_unless_the_plugin_already_reported_something(): void {
+		global $lightweight_seo_test_settings_errors;
+
+		$settings = new Lightweight_SEO_Settings();
+		$page     = new Lightweight_SEO_Admin_Page( 'lightweight-seo', $settings, $this->get_tools_fields( $settings ) );
+
+		$_GET['settings-updated'] = 'true';
+
+		ob_start();
+		$page->display_plugin_admin_page();
+		ob_end_clean();
+
+		$this->assertSame( array( 'settings_updated' ), array_column( $lightweight_seo_test_settings_errors, 'code' ) );
+
+		ob_start();
+		$page->display_plugin_admin_page();
+		ob_end_clean();
+
+		$this->assertCount( 1, $lightweight_seo_test_settings_errors );
 	}
 
 	public function test_admin_connects_each_hook_to_the_class_that_owns_it(): void {

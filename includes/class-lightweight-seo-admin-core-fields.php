@@ -36,13 +36,46 @@ class Lightweight_SEO_Admin_Core_Fields {
 	}
 
 	/**
-	 * Render the general section information
+	 * Print a single-line text setting.
+	 *
+	 * @since    1.2.0
+	 * @param    string    $key        Settings key.
+	 * @param    string    $fallback   Value used when nothing is saved.
+	 * @param    string    $help       Help text.
+	 * @return   void
+	 */
+	private function render_title_format( $key, $fallback, $help ) {
+		$options = $this->settings->get_all();
+		?>
+		<input type="text" id="<?php echo esc_attr( 'lightweight_seo_' . $key ); ?>" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME . '[' . $key . ']' ); ?>" value="<?php echo esc_attr( wp_specialchars_decode( $options[ $key ] ?? $fallback, ENT_QUOTES ) ); ?>" class="regular-text" data-lwseo-tokens>
+		<p class="lwseo-help"><?php echo esc_html( $help ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Print a checkbox setting.
+	 *
+	 * @since    1.2.0
+	 * @param    string    $key        Settings key.
+	 * @param    string    $fallback   Stored value used when nothing is saved.
+	 * @param    string    $label      Checkbox label.
+	 * @param    string    $help       Help text.
+	 * @return   void
+	 */
+	private function render_choice( $key, $fallback, $label, $help ) {
+		$options = $this->settings->get_all();
+		$checked = '1' === (string) ( $options[ $key ] ?? $fallback );
+
+		Lightweight_SEO_Admin_UI::choice( LIGHTWEIGHT_SEO_OPTION_NAME . '[' . $key . ']', $checked, $label, $help );
+	}
+
+	/**
+	 * Render the title variables above the title format fields.
 	 *
 	 * @since    1.0.0
 	 */
 	public function general_section_callback() {
-		echo '<p>' . esc_html__( 'Configure the global SEO settings for your site. These will be used as defaults for all pages unless overridden.', 'lightweight-seo' ) . '</p>';
-		echo '<p>' . esc_html__( 'Available variables for title format: &#37;title&#37;, &#37;sitename&#37;, &#37;tagline&#37;, &#37;sep&#37;', 'lightweight-seo' ) . '</p>';
+		Lightweight_SEO_Admin_UI::tokens( array( '%title%', '%sitename%', '%tagline%', '%sep%' ) );
 	}
 
 	/**
@@ -51,11 +84,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.0.0
 	 */
 	public function title_format_render() {
-		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[title_format]" value="<?php echo esc_attr( wp_specialchars_decode( $options['title_format'] ?? LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT, ENT_QUOTES ) ); ?>" class="regular-text">
-			<p class="description"><?php esc_html_e( 'Format for page titles. Example: &#37;title&#37; – &#37;sitename&#37;', 'lightweight-seo' ); ?></p>
-			<?php
+		$this->render_title_format( 'title_format', LIGHTWEIGHT_SEO_DEFAULT_TITLE_FORMAT, __( 'Used for posts and pages. Example: &#37;title&#37; – &#37;sitename&#37;', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -64,11 +93,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function home_title_format_render() {
-		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[home_title_format]" value="<?php echo esc_attr( wp_specialchars_decode( $options['home_title_format'] ?? '%sitename% %sep% %tagline%', ENT_QUOTES ) ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Format for the homepage title. Example: &#37;sitename&#37; &#37;sep&#37; &#37;tagline&#37;', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_title_format( 'home_title_format', '%sitename% %sep% %tagline%', __( 'Used for the homepage. Example: &#37;sitename&#37; &#37;sep&#37; &#37;tagline&#37;', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -77,11 +102,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function archive_title_format_render() {
-		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[archive_title_format]" value="<?php echo esc_attr( wp_specialchars_decode( $options['archive_title_format'] ?? '%title% %sep% %sitename%', ENT_QUOTES ) ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Format for archive, taxonomy, and author titles. Example: &#37;title&#37; &#37;sep&#37; &#37;sitename&#37;', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_title_format( 'archive_title_format', '%title% %sep% %sitename%', __( 'Used for archive, taxonomy, and author pages. Example: &#37;title&#37; &#37;sep&#37; &#37;sitename&#37;', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -90,11 +111,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function search_title_format_render() {
-		$options = $this->settings->get_all();
-		?>
-		<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[search_title_format]" value="<?php echo esc_attr( wp_specialchars_decode( $options['search_title_format'] ?? 'Search Results for "%search%" %sep% %sitename%', ENT_QUOTES ) ); ?>" class="regular-text">
-		<p class="description"><?php esc_html_e( 'Format for internal search titles. Available variables include &#37;search&#37;, &#37;sitename&#37;, and &#37;sep&#37;.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_title_format( 'search_title_format', 'Search Results for "%search%" %sep% %sitename%', __( 'Used for internal search results. This format also supports &#37;search&#37;.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -105,8 +122,8 @@ class Lightweight_SEO_Admin_Core_Fields {
 	public function meta_description_render() {
 		$options = $this->settings->get_all();
 		?>
-		<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[meta_description]" rows="4" cols="50" class="large-text"><?php echo esc_textarea( $options['meta_description'] ?? '' ); ?></textarea>
-		<p class="description"><?php esc_html_e( 'Used for the homepage. Other pages use their own SEO description, or a short summary of their excerpt or content.', 'lightweight-seo' ); ?></p>
+		<textarea id="lightweight_seo_meta_description" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[meta_description]" rows="3" class="large-text"><?php echo esc_textarea( $options['meta_description'] ?? '' ); ?></textarea>
+		<p class="lwseo-help"><?php esc_html_e( 'Used for the homepage. Other pages use their own SEO description, or a short summary of their excerpt or content.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -116,31 +133,33 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.0.0
 	 */
 	public function social_image_render() {
-		$options   = $this->settings->get_all();
-		$image_url = $this->settings->get_social_image_url();
-		$image_id  = absint( $options['social_image_id'] ?? 0 );
+		$options = $this->settings->get_all();
+
+		Lightweight_SEO_Admin_UI::image_field(
+			array(
+				'url'      => $this->settings->get_social_image_url(),
+				'id'       => $options['social_image_id'] ?? 0,
+				'url_name' => LIGHTWEIGHT_SEO_OPTION_NAME . '[social_image]',
+				'id_name'  => LIGHTWEIGHT_SEO_OPTION_NAME . '[social_image_id]',
+				'url_id'   => 'lightweight_seo_social_image',
+				'id_id'    => 'lightweight_seo_social_image_id',
+				'alt'      => __( 'Default social image', 'lightweight-seo' ),
+			)
+		);
 		?>
-		<div class="lightweight-seo-image-field">
-			<input type="hidden" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[social_image_id]" id="lightweight_seo_social_image_id" value="<?php echo esc_attr( $image_id ); ?>" class="lightweight-seo-image-id">
-			<input type="text" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[social_image]" id="lightweight_seo_social_image" value="<?php echo esc_url( $image_url ); ?>" class="regular-text lightweight-seo-image-url">
-			<button type="button" class="button button-secondary" id="lightweight_seo_upload_image"><?php esc_html_e( 'Upload Image', 'lightweight-seo' ); ?></button>
-			<?php if ( ! empty( $image_url ) ) : ?>
-				<div class="lightweight-seo-image-preview">
-					<img src="<?php echo esc_url( $image_url ); ?>" alt="<?php esc_attr_e( 'Preview', 'lightweight-seo' ); ?>" style="max-width: 200px; margin-top: 10px;">
-				</div>
-			<?php endif; ?>
-		</div>
-		<p class="description"><?php esc_html_e( 'Default image for social media sharing.', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'Shown when a page without its own image is shared. Recommended size: 1200 × 630 pixels.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
 	/**
-	 * Render the indexation section information.
+	 * Warn when WordPress itself discourages indexing, which outranks these controls.
 	 *
 	 * @since    1.1.0
 	 */
 	public function indexation_section_callback() {
-		echo '<p>' . esc_html__( 'Control how your site should be indexed and previewed in search results.', 'lightweight-seo' ) . '</p>';
+		if ( '0' === (string) get_option( 'blog_public', '1' ) ) {
+			Lightweight_SEO_Admin_UI::callout( __( 'WordPress is set to discourage search engines from indexing this site (Settings → Reading). That setting applies before the controls below.', 'lightweight-seo' ), 'warning' );
+		}
 	}
 
 	/**
@@ -149,14 +168,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function noindex_search_results_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[noindex_search_results]" value="1" <?php checked( $options['noindex_search_results'] ?? '1', '1' ); ?>>
-			<?php esc_html_e( 'Add a noindex directive to internal search result pages', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Recommended for most sites to prevent low-value internal search pages from being indexed.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'noindex_search_results', '1', __( 'Add a noindex directive to internal search result pages', 'lightweight-seo' ), __( 'Recommended for most sites to prevent low-value internal search pages from being indexed.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -165,14 +177,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function noindex_attachment_pages_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[noindex_attachment_pages]" value="1" <?php checked( $options['noindex_attachment_pages'] ?? '1', '1' ); ?>>
-			<?php esc_html_e( 'Add a noindex directive to attachment pages by default', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Recommended for most sites unless attachment pages are being used as standalone landing pages.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'noindex_attachment_pages', '1', __( 'Add a noindex directive to attachment pages by default', 'lightweight-seo' ), __( 'Recommended for most sites unless attachment pages are being used as standalone landing pages.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -186,12 +191,12 @@ class Lightweight_SEO_Admin_Core_Fields {
 		$selected_value   = $options['default_max_image_preview'] ?? $current_value;
 		$normalized_value = $this->settings->normalize_max_image_preview( $selected_value, $current_value );
 		?>
-		<select name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[default_max_image_preview]">
+		<select id="lightweight_seo_default_max_image_preview" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[default_max_image_preview]">
 			<option value="large" <?php selected( $normalized_value, 'large' ); ?>><?php esc_html_e( 'Large', 'lightweight-seo' ); ?></option>
 			<option value="standard" <?php selected( $normalized_value, 'standard' ); ?>><?php esc_html_e( 'Standard', 'lightweight-seo' ); ?></option>
 			<option value="none" <?php selected( $normalized_value, 'none' ); ?>><?php esc_html_e( 'None', 'lightweight-seo' ); ?></option>
 		</select>
-		<p class="description"><?php esc_html_e( 'Sets the default max-image-preview robots directive for your content.', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'Sets the default max-image-preview robots directive for your content.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 
@@ -201,24 +206,18 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function enable_media_x_robots_headers_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_media_x_robots_headers]" value="1" <?php checked( $options['enable_media_x_robots_headers'] ?? '1', '1' ); ?>>
-			<?php esc_html_e( 'Send X-Robots-Tag headers for WordPress attachment pages', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Static files served directly by the web server or CDN require server-level header configuration.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'enable_media_x_robots_headers', '1', __( 'Send X-Robots-Tag headers for WordPress attachment pages', 'lightweight-seo' ), __( 'Static files served directly by the web server or CDN require server-level header configuration.', 'lightweight-seo' ) );
 	}
 
 	/**
-	 * Render the sitemap section information.
+	 * Render the address of the core sitemap index.
 	 *
 	 * @since    1.1.0
 	 */
 	public function sitemap_section_callback() {
-		echo '<p>' . esc_html__( 'Lightweight SEO extends WordPress core XML sitemaps instead of replacing them.', 'lightweight-seo' ) . '</p>';
-		echo '<p><code>' . esc_html( home_url( '/wp-sitemap.xml' ) ) . '</code></p>';
+		$sitemap_url = home_url( '/wp-sitemap.xml' );
+
+		echo '<p class="lwseo-help">' . esc_html__( 'Sitemap index:', 'lightweight-seo' ) . ' <a href="' . esc_url( $sitemap_url ) . '" target="_blank" rel="noopener noreferrer"><code>' . esc_html( $sitemap_url ) . '</code><span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'lightweight-seo' ) . '</span></a></p>';
 	}
 
 	/**
@@ -227,14 +226,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function exclude_noindex_from_sitemaps_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[exclude_noindex_from_sitemaps]" value="1" <?php checked( $options['exclude_noindex_from_sitemaps'] ?? '1', '1' ); ?>>
-			<?php esc_html_e( 'Exclude noindexed posts from WordPress core XML sitemaps', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Recommended to keep your sitemap focused on indexable content.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'exclude_noindex_from_sitemaps', '1', __( 'Exclude noindexed posts from WordPress core XML sitemaps', 'lightweight-seo' ), __( 'Recommended to keep your sitemap focused on indexable content.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -243,24 +235,16 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function exclude_redirected_from_sitemaps_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[exclude_redirected_from_sitemaps]" value="1" <?php checked( $options['exclude_redirected_from_sitemaps'] ?? '1', '1' ); ?>>
-			<?php esc_html_e( 'Exclude content whose live paths are redirected elsewhere', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Prevents sitemap entries from pointing at URLs that are currently redirected.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'exclude_redirected_from_sitemaps', '1', __( 'Exclude content whose live paths are redirected elsewhere', 'lightweight-seo' ), __( 'Prevents sitemap entries from pointing at URLs that are currently redirected.', 'lightweight-seo' ) );
 	}
 
 	/**
-	 * Render the schema section information.
+	 * Explain where the organization logo comes from.
 	 *
 	 * @since    1.1.0
 	 */
 	public function schema_section_callback() {
-		echo '<p>' . esc_html__( 'Output lightweight JSON-LD schema using your site identity and SEO context.', 'lightweight-seo' ) . '</p>';
-		echo '<p>' . esc_html__( 'The default social image is used as the organization logo when available.', 'lightweight-seo' ) . '</p>';
+		echo '<p class="lwseo-help">' . esc_html__( 'The default social image is used as the organization logo when available.', 'lightweight-seo' ) . '</p>';
 	}
 
 	/**
@@ -269,14 +253,7 @@ class Lightweight_SEO_Admin_Core_Fields {
 	 * @since    1.1.0
 	 */
 	public function enable_schema_output_render() {
-		$options = $this->settings->get_all();
-		?>
-		<label>
-			<input type="checkbox" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[enable_schema_output]" value="1" <?php checked( $options['enable_schema_output'] ?? '1', '1' ); ?>>
-			<?php esc_html_e( 'Output core Organization, WebSite, Article, and Breadcrumb schema', 'lightweight-seo' ); ?>
-		</label>
-		<p class="description"><?php esc_html_e( 'Disable this if your theme or another plugin already outputs equivalent structured data.', 'lightweight-seo' ); ?></p>
-		<?php
+		$this->render_choice( 'enable_schema_output', '1', __( 'Output core Organization, WebSite, Article, and Breadcrumb schema', 'lightweight-seo' ), __( 'Disable this if your theme or another plugin already outputs equivalent structured data.', 'lightweight-seo' ) );
 	}
 
 	/**
@@ -287,8 +264,8 @@ class Lightweight_SEO_Admin_Core_Fields {
 	public function organization_same_as_render() {
 		$options = $this->settings->get_all();
 		?>
-		<textarea name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[organization_same_as]" rows="5" cols="50" class="large-text"><?php echo esc_textarea( $options['organization_same_as'] ?? '' ); ?></textarea>
-		<p class="description"><?php esc_html_e( 'Add one profile URL per line for your organization, such as social profiles or knowledge sources.', 'lightweight-seo' ); ?></p>
+		<textarea id="lightweight_seo_organization_same_as" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[organization_same_as]" rows="5" class="large-text code"><?php echo esc_textarea( $options['organization_same_as'] ?? '' ); ?></textarea>
+		<p class="lwseo-help"><?php esc_html_e( 'Add one profile URL per line for your organization, such as social profiles or knowledge sources.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 }

@@ -7,6 +7,7 @@ This folder contains the product plan, release documentation, extension contract
 - [Next-Phase Product and Engineering Plan](./next-phase-plan.md)
 - [QA Checklist](./qa-checklist.md)
 - [Developer API](./developer-api.md)
+- [Design System](./design-system.md)
 - [Migration and RC Testing](./migration.md)
 - [1.1 Release Notes](./release-notes-1.1.0.md)
 - [Release Baselines](./release-baselines.md)

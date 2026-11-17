@@ -1,365 +1,836 @@
 /**
- * Lightweight SEO Admin Styles
- * @author Rakesh Mandal
- * @version 1.0.0
- * @since 1.0.0
- * @package Lightweight SEO
- * @subpackage Lightweight SEO Admin Styles
- * @link https://rakeshmandal.com
- * @license MIT
+ * Lightweight SEO design system.
+ *
+ * One stylesheet, no build step, scoped under `.lwseo` so nothing leaks into
+ * the rest of the WordPress admin.
+ *
+ *   1. Tokens      The only place raw values live.
+ *   2. Base        Scope defaults.
+ *   3. Components  Reusable pieces, one block each.
+ *   4. Responsive  Small-screen adjustments.
+ *
+ * Reference and usage rules: docs/design-system.md
+ *
+ * @package Lightweight_SEO
  */
 
-:root {
-  /* Colors */
-  --lwseo-primary: #2271b1;
-  --lwseo-primary-hover: #135e96;
-  --lwseo-text: #1e1e1e;
-  --lwseo-text-light: #646970;
-  --lwseo-border: #c3c4c7;
-  --lwseo-background: #ffffff;
-  --lwseo-background-light: #f0f0f1;
+/* ==========================================================================
+   1. Tokens
+   ========================================================================== */
 
-  /* Spacing */
-  --lwseo-spacing-xs: 4px;
-  --lwseo-spacing-sm: 8px;
-  --lwseo-spacing-md: 16px;
-  --lwseo-spacing-lg: 24px;
+.lwseo {
+	/* Accent follows the admin color scheme the user picked in their profile. */
+	--lwseo-accent: var(--wp-admin-theme-color, #2271b1);
+	--lwseo-accent-strong: var(--wp-admin-theme-color-darker-10, #135e96);
+	--lwseo-accent-soft: #f0f6fc;
 
-  /* Typography */
-  --lwseo-font-size-sm: 13px;
-  --lwseo-font-size-base: 14px;
-  --lwseo-font-size-lg: 16px;
+	/* Neutrals, taken from the WordPress admin gray scale. */
+	--lwseo-text: #1d2327;
+	--lwseo-text-muted: #50575e;
+	--lwseo-surface: #fff;
+	--lwseo-surface-subtle: #f6f7f7;
+	--lwseo-border: #dcdcde;
+	--lwseo-border-subtle: #f0f0f1;
+	--lwseo-border-strong: #a7aaad;
+	--lwseo-canvas: #f0f0f1;
+	--lwseo-neutral-soft: rgba(29, 35, 39, 0.07);
 
-  /* Transitions */
-  --lwseo-transition: all 0.2s ease-in-out;
+	/* Status. Text tones pass 4.5:1 on white and on their own soft tone. */
+	--lwseo-success: #007017;
+	--lwseo-success-icon: #00a32a;
+	--lwseo-success-soft: #edfaef;
+	--lwseo-warning: #8a5d00;
+	--lwseo-warning-icon: #dba617;
+	--lwseo-warning-soft: #fcf9e8;
+
+	/* Search result preview, matching what a search engine renders. */
+	--lwseo-preview-link: #1a0dab;
+	--lwseo-preview-text: #4d5156;
+
+	/* Spacing, on a 4px grid. */
+	--lwseo-space-1: 4px;
+	--lwseo-space-2: 8px;
+	--lwseo-space-3: 12px;
+	--lwseo-space-4: 16px;
+	--lwseo-space-5: 24px;
+	--lwseo-space-6: 32px;
+
+	/* Type. Base matches the WordPress admin so the plugin reads as native. */
+	--lwseo-text-sm: 12px;
+	--lwseo-text-base: 13px;
+	--lwseo-text-md: 14px;
+	--lwseo-text-lg: 20px;
+	--lwseo-leading: 1.5;
+
+	/* Shape and motion. */
+	--lwseo-radius-sm: 4px;
+	--lwseo-radius: 8px;
+	--lwseo-radius-pill: 999px;
+	--lwseo-motion: 150ms cubic-bezier(0.2, 0, 0, 1);
+
+	/* Layout. */
+	--lwseo-measure: 920px;
+	--lwseo-label-width: 220px;
+	--lwseo-control-height: 30px;
 }
 
-/* Meta Box Styles */
-.lightweight-seo-meta-box {
-  background: var(--lwseo-background);
-  border: 1px solid var(--lwseo-border);
-  border-radius: 4px;
-  padding: var(--lwseo-spacing-md);
-  margin: var(--lwseo-spacing-md) 0;
+@supports (color: color-mix(in srgb, red, blue)) {
+	.lwseo {
+		--lwseo-accent-soft: color-mix(in srgb, var(--lwseo-accent) 7%, #fff);
+	}
 }
 
-.lightweight-seo-meta-box .form-table {
-  margin: 0;
+@media (prefers-reduced-motion: reduce) {
+	.lwseo {
+		--lwseo-motion: 0ms;
+	}
 }
 
-.lightweight-seo-meta-box .form-table th {
-  width: 200px;
-  padding: var(--lwseo-spacing-md) var(--lwseo-spacing-md) var(--lwseo-spacing-md) 0;
-  color: var(--lwseo-text);
-  font-weight: 600;
+/* ==========================================================================
+   2. Base
+   ========================================================================== */
+
+.lwseo {
+	color: var(--lwseo-text);
+	font-size: var(--lwseo-text-base);
+	line-height: var(--lwseo-leading);
 }
 
-.lightweight-seo-meta-box .form-table td {
-  padding: var(--lwseo-spacing-md);
+.lwseo *,
+.lwseo *::before,
+.lwseo *::after {
+	box-sizing: border-box;
 }
 
-.lightweight-seo-meta-box input[type="text"],
-.lightweight-seo-meta-box textarea {
-  width: 100%;
-  max-width: 550px;
-  border: 1px solid var(--lwseo-border);
-  border-radius: 4px;
-  padding: var(--lwseo-spacing-sm);
-  transition: var(--lwseo-transition);
+.lwseo code {
+	background: var(--lwseo-surface-subtle);
+	border-radius: var(--lwseo-radius-sm);
+	font-size: var(--lwseo-text-sm);
+	padding: 1px 5px;
 }
 
-.lightweight-seo-meta-box input[type="text"]:focus,
-.lightweight-seo-meta-box textarea:focus {
-  border-color: var(--lwseo-primary);
-  box-shadow: 0 0 0 1px var(--lwseo-primary);
-  outline: none;
+.lwseo a:focus-visible,
+.lwseo button:focus-visible,
+.lwseo summary:focus-visible {
+	box-shadow: none;
+	outline: 2px solid var(--lwseo-accent);
+	outline-offset: 2px;
 }
 
-.lightweight-seo-meta-box .description {
-  font-size: var(--lwseo-font-size-sm);
-  color: var(--lwseo-text-light);
-  margin: var(--lwseo-spacing-xs) 0 0;
-}
-
-/* Tab Navigation */
-.lightweight-seo-tabs {
-  margin-top: var(--lwseo-spacing-md);
-}
-
-.lightweight-seo-tab-nav {
-  border-bottom: 1px solid var(--lwseo-border);
-  margin-bottom: var(--lwseo-spacing-md);
-  display: flex;
-  gap: var(--lwseo-spacing-xs);
-}
-
-.lightweight-seo-tab-nav .nav-tab {
-  background: transparent;
-  border: 1px solid var(--lwseo-border);
-  border-bottom: none;
-  color: var(--lwseo-text);
-  padding: var(--lwseo-spacing-sm) var(--lwseo-spacing-md);
-  cursor: pointer;
-  margin-bottom: -1px;
-  transition: var(--lwseo-transition);
-  text-decoration: none;
-  border-radius: 4px 4px 0 0;
-	font: inherit;
-}
-
-.lightweight-seo-tab-nav .nav-tab:hover {
-  background: var(--lwseo-background-light);
-  color: var(--lwseo-primary);
-}
-
-.lightweight-seo-tab-nav .nav-tab-active {
-  background: var(--lwseo-background);
-  border-bottom: 0px solid var(--lwseo-primary);
-  color: var(--lwseo-primary);
-}
-
-/* Tab Content */
-.lightweight-seo-tab-content .tab-content {
-  display: none;
-}
-
-.lightweight-seo-tab-content .tab-content.active {
-  display: block;
-}
-
-/* Image Field */
-.lightweight-seo-image-field {
-  margin-bottom: var(--lwseo-spacing-md);
-}
-
-.lightweight-seo-image-field input[type="text"] {
-  margin-right: var(--lwseo-spacing-sm);
-  margin-bottom: var(--lwseo-spacing-sm);
-}
-
-.lightweight-seo-image-preview {
-  margin: var(--lwseo-spacing-sm) 0;
-  padding: var(--lwseo-spacing-sm);
-  border: 1px solid var(--lwseo-border);
-  background: var(--lwseo-background-light);
-  border-radius: 4px;
-  max-width: 300px;
-}
-
-.lightweight-seo-image-preview img {
-	display: block;
-	height: auto;
+.lwseo input[type="text"],
+.lwseo input[type="url"],
+.lwseo input[type="search"],
+.lwseo textarea,
+.lwseo select {
 	max-width: 100%;
 }
 
-.lightweight-seo-search-preview,
-.lightweight-seo-social-preview {
-	background: #fff;
-	border: 1px solid var(--lwseo-border);
-	border-radius: 8px;
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-	margin: 0 0 var(--lwseo-spacing-lg);
-	max-width: 620px;
-	overflow: hidden;
-	padding: var(--lwseo-spacing-md);
+.lwseo [hidden] {
+	display: none !important;
 }
 
-.lightweight-seo-preview-url,
-.lightweight-seo-social-site {
-	color: #3c4043;
-	font-size: 13px;
-	margin: 0 0 4px;
+/* ==========================================================================
+   3. Components
+   ========================================================================== */
+
+/* Page: the settings screen shell. -------------------------------------- */
+
+.lwseo-page {
+	max-width: var(--lwseo-measure);
 }
 
-.lightweight-seo-preview-title,
-.lightweight-seo-social-title-preview {
-	color: #1a0dab;
-	font-size: 20px;
+.lwseo-header {
+	align-items: center;
+	display: flex;
+	gap: var(--lwseo-space-3);
+	padding: var(--lwseo-space-3) 0 var(--lwseo-space-4);
+}
+
+.lwseo-header__mark {
+	align-items: center;
+	background: var(--lwseo-accent-soft);
+	border-radius: var(--lwseo-radius);
+	color: var(--lwseo-accent);
+	display: flex;
+	flex: none;
+	height: 36px;
+	justify-content: center;
+	width: 36px;
+}
+
+.lwseo .lwseo-header__title {
+	flex: 1;
+	font-size: var(--lwseo-text-lg);
+	font-weight: 600;
 	line-height: 1.3;
-	margin: 0 0 4px;
-}
-
-.lightweight-seo-preview-description,
-.lightweight-seo-social-description-preview {
-	color: #4d5156;
-	line-height: 1.45;
 	margin: 0;
-}
-
-.lightweight-seo-social-preview {
-	display: grid;
-	grid-template-columns: minmax(120px, 35%) 1fr;
 	padding: 0;
 }
 
-.lightweight-seo-social-preview > div {
-	padding: var(--lwseo-spacing-md);
+/* Tabs: page navigation and in-place panels share one look. ------------- */
+
+.lwseo-tabs {
+	box-shadow: inset 0 -1px 0 var(--lwseo-border);
+	display: flex;
+	gap: var(--lwseo-space-5);
+	margin: 0 0 var(--lwseo-space-5);
+	overflow-x: auto;
+	scrollbar-width: none;
 }
 
-.lightweight-seo-social-preview img {
+.lwseo-tabs::-webkit-scrollbar {
+	display: none;
+}
+
+.lwseo-tabs__tab {
+	appearance: none;
+	background: none;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	color: var(--lwseo-text-muted);
+	cursor: pointer;
+	flex: none;
+	font: inherit;
+	font-weight: 500;
+	padding: var(--lwseo-space-3) 0;
+	text-decoration: none;
+	transition: color var(--lwseo-motion), border-color var(--lwseo-motion);
+	white-space: nowrap;
+}
+
+.lwseo-tabs__tab:hover {
+	border-bottom-color: var(--lwseo-border-strong);
+	color: var(--lwseo-text);
+}
+
+.lwseo-tabs__tab.is-active {
+	border-bottom-color: var(--lwseo-accent);
+	color: var(--lwseo-text);
+}
+
+.lwseo .lwseo-tabs__tab:focus-visible {
+	outline-offset: -2px;
+}
+
+.lwseo-tabs__tab .lwseo-badge {
+	margin-left: var(--lwseo-space-1);
+}
+
+/* Card: the one surface. A <details> card collapses. -------------------- */
+
+.lwseo-card {
+	background: var(--lwseo-surface);
+	border: 1px solid var(--lwseo-border);
+	border-radius: var(--lwseo-radius);
+	margin: 0 0 var(--lwseo-space-4);
+}
+
+.lwseo-card__header {
+	align-items: flex-start;
+	display: flex;
+	gap: var(--lwseo-space-4);
+	justify-content: space-between;
+	padding: var(--lwseo-space-4) var(--lwseo-space-5);
+}
+
+.lwseo .lwseo-card__title {
+	font-size: var(--lwseo-text-md);
+	font-weight: 600;
+	line-height: 1.4;
+	margin: 0;
+	padding: 0;
+}
+
+.lwseo .lwseo-card__description {
+	color: var(--lwseo-text-muted);
+	margin: 2px 0 0;
+}
+
+.lwseo-card__meta {
+	align-items: center;
+	display: flex;
+	flex: none;
+	gap: var(--lwseo-space-2);
+	min-height: 20px;
+}
+
+.lwseo-card__body {
+	border-top: 1px solid var(--lwseo-border);
+	padding: 0 var(--lwseo-space-5);
+}
+
+.lwseo-card__intro {
+	padding-top: var(--lwseo-space-4);
+}
+
+.lwseo-card__intro:empty {
+	display: none;
+}
+
+/* Card content that is not a field row, such as a table. */
+.lwseo-card__section {
+	margin: var(--lwseo-space-4) 0;
+}
+
+summary.lwseo-card__header {
+	border-radius: var(--lwseo-radius);
+	cursor: pointer;
+	list-style: none;
+}
+
+summary.lwseo-card__header::-webkit-details-marker {
+	display: none;
+}
+
+summary.lwseo-card__header:hover .lwseo-card__title {
+	color: var(--lwseo-accent-strong);
+}
+
+.lwseo-card__chevron {
+	color: var(--lwseo-text-muted);
+	transition: transform var(--lwseo-motion);
+}
+
+details[open] > summary .lwseo-card__chevron {
+	transform: rotate(180deg);
+}
+
+/* Field: a labelled row. Stacks when space is tight. -------------------- */
+
+.lwseo-field {
+	display: grid;
+	gap: var(--lwseo-space-2) var(--lwseo-space-5);
+	grid-template-columns: var(--lwseo-label-width) minmax(0, 1fr);
+	padding: var(--lwseo-space-4) 0;
+}
+
+.lwseo-field + .lwseo-field {
+	border-top: 1px solid var(--lwseo-border-subtle);
+}
+
+.lwseo-field__label {
+	font-weight: 600;
+	padding-top: calc((var(--lwseo-control-height) - 1.5em) / 2);
+}
+
+.lwseo-field__control > :first-child {
+	margin-top: 0;
+}
+
+.lwseo-field__control > :last-child {
+	margin-bottom: 0;
+}
+
+.lwseo-field--stacked {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.lwseo-field--stacked .lwseo-field__label {
+	padding-top: 0;
+}
+
+/* Subfields: a compact grid of labelled inputs inside one field. */
+
+.lwseo-subfields {
+	display: grid;
+	gap: var(--lwseo-space-3) var(--lwseo-space-4);
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lwseo-subfield {
+	display: block;
+}
+
+.lwseo-subfield--wide {
+	grid-column: 1 / -1;
+}
+
+.lwseo-subfield__label {
+	color: var(--lwseo-text-muted);
+	display: block;
+	font-size: var(--lwseo-text-sm);
+	font-weight: 500;
+	margin-bottom: var(--lwseo-space-1);
+}
+
+.lwseo .lwseo-subfield input,
+.lwseo .lwseo-subfield select,
+.lwseo .lwseo-subfield textarea {
+	margin: 0;
+	width: 100%;
+}
+
+/* Choice: a checkbox with its label. Help text lines up with the label. */
+
+.lwseo-choice {
+	align-items: flex-start;
+	display: flex;
+	gap: var(--lwseo-space-2);
+	padding-top: calc((var(--lwseo-control-height) - 1.5em) / 2);
+}
+
+.lwseo .lwseo-choice input {
+	flex: none;
+	margin: 2px 0 0;
+}
+
+.lwseo-choice + .lwseo-help {
+	padding-left: calc(1rem + var(--lwseo-space-2));
+}
+
+.lwseo-choices .lwseo-choice + .lwseo-choice {
+	padding-top: var(--lwseo-space-2);
+}
+
+.lwseo .lwseo-help {
+	color: var(--lwseo-text-muted);
+	margin: 6px 0 0;
+	max-width: 68ch;
+}
+
+/* Badge: a short status. The word carries the meaning, color supports it. */
+
+.lwseo-badge {
+	background: var(--lwseo-neutral-soft);
+	border-radius: var(--lwseo-radius-pill);
+	color: var(--lwseo-text-muted);
+	display: inline-block;
+	font-size: var(--lwseo-text-sm);
+	font-weight: 500;
+	line-height: 20px;
+	padding: 0 var(--lwseo-space-2);
+	white-space: nowrap;
+}
+
+.lwseo-badge.is-success {
+	background: var(--lwseo-success-soft);
+	color: var(--lwseo-success);
+}
+
+.lwseo-badge.is-warning {
+	background: var(--lwseo-warning-soft);
+	color: var(--lwseo-warning);
+}
+
+.lwseo-badge.is-info {
+	background: var(--lwseo-accent-soft);
+	color: var(--lwseo-accent-strong);
+}
+
+a.lwseo-badge {
+	text-decoration: none;
+}
+
+a.lwseo-badge:hover {
+	box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.lwseo-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lwseo-space-2);
+}
+
+/* Status list: checklists, health checks and at-a-glance facts. --------- */
+
+.lwseo .lwseo-status-list {
+	margin: 0;
+}
+
+.lwseo .lwseo-status {
+	align-items: start;
+	display: grid;
+	gap: var(--lwseo-space-3);
+	grid-template-columns: 20px minmax(0, 1fr) auto;
+	margin: 0;
+	padding: var(--lwseo-space-3) 0;
+}
+
+.lwseo-status + .lwseo-status {
+	border-top: 1px solid var(--lwseo-border-subtle);
+}
+
+.lwseo-status__icon {
+	color: var(--lwseo-border-strong);
+}
+
+.lwseo-status.is-success .lwseo-status__icon {
+	color: var(--lwseo-success-icon);
+}
+
+.lwseo-status.is-warning .lwseo-status__icon {
+	color: var(--lwseo-warning-icon);
+}
+
+.lwseo-status.is-info .lwseo-status__icon {
+	color: var(--lwseo-accent);
+}
+
+.lwseo-status__title {
+	display: block;
+	font-weight: 600;
+}
+
+.lwseo .lwseo-status__text {
+	color: var(--lwseo-text-muted);
+	margin: 2px 0 0;
+	overflow-wrap: anywhere;
+}
+
+.lwseo-status__action {
+	white-space: nowrap;
+}
+
+/* Callout: one message that needs to stand apart from help text. -------- */
+
+.lwseo-callout {
+	background: var(--lwseo-accent-soft);
+	border-radius: var(--lwseo-radius-sm);
+	display: flex;
+	gap: var(--lwseo-space-3);
+	padding: var(--lwseo-space-3) var(--lwseo-space-4);
+}
+
+.lwseo-callout > .dashicons {
+	color: var(--lwseo-accent);
+	flex: none;
+}
+
+.lwseo-callout.is-warning {
+	background: var(--lwseo-warning-soft);
+}
+
+.lwseo-callout.is-warning > .dashicons {
+	color: var(--lwseo-warning-icon);
+}
+
+.lwseo .lwseo-callout p {
+	margin: 0;
+}
+
+.lwseo .lwseo-callout p + p {
+	margin-top: var(--lwseo-space-1);
+}
+
+.lwseo-callout + .lwseo-callout,
+.lwseo-callout + .lwseo-details,
+.lwseo-tokens + .lwseo-callout {
+	margin-top: var(--lwseo-space-3);
+}
+
+/* Tokens: title variables that insert themselves when clicked. ---------- */
+
+.lwseo-tokens {
+	align-items: center;
+	color: var(--lwseo-text-muted);
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lwseo-space-2);
+}
+
+.lwseo-token {
+	appearance: none;
+	background: var(--lwseo-surface);
+	border: 1px solid var(--lwseo-border);
+	border-radius: var(--lwseo-radius-sm);
+	color: var(--lwseo-text);
+	cursor: pointer;
+	font-family: Consolas, Monaco, monospace;
+	font-size: var(--lwseo-text-sm);
+	line-height: 20px;
+	padding: 0 var(--lwseo-space-2);
+	transition: border-color var(--lwseo-motion), color var(--lwseo-motion);
+}
+
+.lwseo-token:hover {
+	border-color: var(--lwseo-accent);
+	color: var(--lwseo-accent-strong);
+}
+
+/* Table: read-only data. ------------------------------------------------ */
+
+.lwseo-table-wrap {
+	border: 1px solid var(--lwseo-border);
+	border-radius: var(--lwseo-radius-sm);
+	overflow-x: auto;
+}
+
+.lwseo-table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.lwseo-table th,
+.lwseo-table td {
+	padding: var(--lwseo-space-2) var(--lwseo-space-3);
+	text-align: left;
+	vertical-align: top;
+}
+
+.lwseo-table thead th {
+	background: var(--lwseo-surface-subtle);
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	font-weight: 600;
+}
+
+.lwseo-table tbody th {
+	font-weight: 600;
+	width: var(--lwseo-label-width);
+}
+
+.lwseo-table tbody tr + tr > *,
+.lwseo-table thead + tbody > tr:first-child > * {
+	border-top: 1px solid var(--lwseo-border-subtle);
+}
+
+.lwseo-table code {
+	overflow-wrap: anywhere;
+}
+
+.lwseo-table-wrap + textarea,
+.lwseo-table-wrap + .lwseo-help,
+input[type="search"] + .lwseo-table-wrap {
+	margin-top: var(--lwseo-space-2);
+}
+
+/* Log: plain output from a tool run. */
+
+.lwseo .lwseo-log {
+	background: var(--lwseo-surface-subtle);
+	border-radius: var(--lwseo-radius-sm);
+	font-family: Consolas, Monaco, monospace;
+	font-size: var(--lwseo-text-sm);
+	margin: 0;
+	padding: var(--lwseo-space-3) var(--lwseo-space-4);
+	white-space: pre-wrap;
+}
+
+/* Details: progressive disclosure for advanced controls. ---------------- */
+
+.lwseo-details > summary {
+	cursor: pointer;
+	font-weight: 600;
+	padding: var(--lwseo-space-1) 0;
+}
+
+.lwseo-details > summary:hover {
+	color: var(--lwseo-accent-strong);
+}
+
+.lwseo-details__body {
+	padding-top: var(--lwseo-space-2);
+}
+
+.lwseo .lwseo-details__body > p {
+	margin: 0 0 var(--lwseo-space-2);
+}
+
+/* Actions: the save bar stays in reach on long screens. ----------------- */
+
+.lwseo-actions {
+	align-items: center;
+	background: var(--lwseo-canvas);
+	bottom: 0;
+	display: flex;
+	gap: var(--lwseo-space-3);
+	padding: var(--lwseo-space-3) 0;
+	position: sticky;
+	z-index: 2;
+}
+
+.lwseo-buttons {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lwseo-space-2);
+}
+
+/* Image: URL, picker and thumbnail. ------------------------------------- */
+
+.lwseo-image__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lwseo-space-2);
+}
+
+.lwseo .lwseo-image__row input {
+	flex: 1 1 240px;
+	margin: 0;
+	min-width: 0;
+}
+
+.lwseo-image__preview {
+	background: var(--lwseo-surface-subtle);
+	border: 1px solid var(--lwseo-border);
+	border-radius: var(--lwseo-radius-sm);
+	margin-top: var(--lwseo-space-2);
+	max-width: 240px;
+	overflow: hidden;
+}
+
+.lwseo-image__preview img {
+	display: block;
+	height: auto;
+	width: 100%;
+}
+
+/* Preview: how the page appears in search results and when shared. ------ */
+
+.lwseo-preview {
+	background: var(--lwseo-surface);
+	border: 1px solid var(--lwseo-border);
+	border-radius: var(--lwseo-radius);
+	max-width: 620px;
+	overflow: hidden;
+}
+
+.lwseo .lwseo-preview__caption {
+	color: var(--lwseo-text-muted);
+	font-size: var(--lwseo-text-sm);
+	font-weight: 500;
+	margin: 0 0 var(--lwseo-space-2);
+}
+
+.lwseo-preview__body {
+	padding: var(--lwseo-space-4);
+}
+
+.lwseo .lwseo-preview__url,
+.lwseo .lwseo-preview__site {
+	color: var(--lwseo-preview-text);
+	font-size: var(--lwseo-text-sm);
+	margin: 0 0 var(--lwseo-space-1);
+	overflow-wrap: anywhere;
+}
+
+.lwseo .lwseo-preview__title {
+	color: var(--lwseo-preview-link);
+	font-size: 18px;
+	line-height: 1.3;
+	margin: 0 0 var(--lwseo-space-1);
+}
+
+.lwseo .lwseo-preview__description {
+	color: var(--lwseo-preview-text);
+	margin: 0;
+}
+
+.lwseo-preview--social {
+	display: grid;
+	grid-template-columns: minmax(120px, 34%) minmax(0, 1fr);
+}
+
+.lwseo-preview__media {
+	background: var(--lwseo-surface-subtle);
+	min-height: 140px;
+}
+
+.lwseo-preview__media img {
+	display: block;
 	height: 100%;
-	min-height: 160px;
 	object-fit: cover;
 	width: 100%;
 }
 
-.lightweight-seo-social-title-preview {
+.lwseo-preview--social .lwseo-preview__title {
 	color: var(--lwseo-text);
-	font-size: 17px;
+	font-size: var(--lwseo-text-md);
 	font-weight: 600;
 }
 
-.lightweight-seo-advanced {
-	border-top: 1px solid var(--lwseo-border);
-	margin-top: var(--lwseo-spacing-md);
-	padding: var(--lwseo-spacing-md) 0;
+/* Meter: where a length sits against its guidance range. ---------------- */
+
+.lwseo-meter {
+	background: var(--lwseo-border-subtle);
+	border-radius: var(--lwseo-radius-pill);
+	height: 3px;
+	margin-top: var(--lwseo-space-2);
+	overflow: hidden;
 }
 
-.lightweight-seo-advanced summary {
-	cursor: pointer;
-	font-weight: 600;
+.lwseo-meter__bar {
+	background: var(--lwseo-border-strong);
+	display: block;
+	height: 100%;
+	transition: width var(--lwseo-motion), background-color var(--lwseo-motion);
+	width: 0;
 }
 
-.lightweight-seo-checks {
-	display: grid;
-	gap: var(--lwseo-spacing-sm);
-	margin: 0;
-	max-width: 720px;
+.lwseo-meter.is-in-range .lwseo-meter__bar {
+	background: var(--lwseo-success-icon);
 }
 
-.lightweight-seo-checks li {
-	align-items: flex-start;
-	background: #fff;
-	border: 1px solid var(--lwseo-border);
-	border-left-width: 4px;
-	display: flex;
-	gap: var(--lwseo-spacing-sm);
-	margin: 0;
-	padding: 12px;
+/* Meta box: the per-page editor panel. ---------------------------------- */
+
+.lwseo-metabox {
+	max-width: 680px;
+	padding: var(--lwseo-space-1) 0;
 }
 
-.lightweight-seo-checks li.is-success { border-left-color: #00a32a; }
-.lightweight-seo-checks li.is-warning { border-left-color: #dba617; }
-.lightweight-seo-checks p { margin: 3px 0 0; }
-
-/* Settings Page */
-.lightweight-seo-admin-nav {
-	display: flex;
-	flex-wrap: wrap;
-	margin-bottom: var(--lwseo-spacing-lg);
+.lwseo-metabox .lwseo-tabs {
+	margin-bottom: var(--lwseo-space-4);
 }
 
-.lightweight-seo-settings-form,
-.lightweight-seo-setup,
-.lightweight-seo-settings-section {
-	max-width: 960px;
+.lwseo-metabox .lwseo-field {
+	padding: var(--lwseo-space-3) 0;
 }
 
-.lightweight-seo-settings-section,
-.lightweight-seo-setup {
-	background: var(--lwseo-background);
-	border: 1px solid var(--lwseo-border);
-	border-radius: 6px;
-	margin: 0 0 var(--lwseo-spacing-lg);
-	padding: var(--lwseo-spacing-lg);
+.lwseo-metabox .lwseo-field + .lwseo-field {
+	border-top: 0;
 }
 
-.lightweight-seo-settings-section > h2,
-.lightweight-seo-setup h2 {
-	margin-top: 0;
+.lwseo-metabox .lwseo-tokens {
+	margin-top: var(--lwseo-space-2);
 }
 
-.lightweight-seo-section-heading {
-	align-items: flex-start;
-	display: flex;
-	gap: var(--lwseo-spacing-lg);
-	justify-content: space-between;
+.lwseo-metabox .lwseo-details {
+	border-top: 1px solid var(--lwseo-border-subtle);
+	margin-top: var(--lwseo-space-3);
+	padding-top: var(--lwseo-space-3);
 }
 
-.lightweight-seo-section-heading p {
-	margin-bottom: 0;
-}
+/* ==========================================================================
+   4. Responsive
+   ========================================================================== */
 
-.lightweight-seo-setup-list {
-	border-top: 1px solid var(--lwseo-border);
-	margin: var(--lwseo-spacing-lg) 0 0;
-}
-
-.lightweight-seo-setup-list li {
-	align-items: center;
-	border-bottom: 1px solid #e2e4e7;
-	display: grid;
-	gap: var(--lwseo-spacing-sm);
-	grid-template-columns: 24px 1fr auto;
-	margin: 0;
-	padding: 12px 0;
-}
-
-.lightweight-seo-setup-list .is-complete .dashicons {
-	color: #00a32a;
-}
-
-.lightweight-seo-setup-list .is-pending .dashicons {
-	color: #996800;
-}
-
-.toplevel_page_lightweight-seo .form-table {
-  background: var(--lwseo-background);
-  border: 1px solid var(--lwseo-border);
-  border-radius: 4px;
-  padding: var(--lwseo-spacing-md);
-}
-
-.toplevel_page_lightweight-seo .form-table th {
-  width: 250px;
-  padding: var(--lwseo-spacing-md);
-  color: var(--lwseo-text);
-  font-weight: 600;
-}
-
-.toplevel_page_lightweight-seo .form-table td {
-  padding: var(--lwseo-spacing-md);
-}
-
-.toplevel_page_lightweight-seo .submit {
-  padding: var(--lwseo-spacing-md) 0;
-}
-
-.toplevel_page_lightweight-seo .button-primary {
-  background: var(--lwseo-primary);
-  border-color: var(--lwseo-primary);
-  color: white;
-  transition: var(--lwseo-transition);
-}
-
-.toplevel_page_lightweight-seo .button-primary:hover {
-  background: var(--lwseo-primary-hover);
-  border-color: var(--lwseo-primary-hover);
-}
-
-/* Responsive */
 @media screen and (max-width: 782px) {
-	.lightweight-seo-section-heading,
-	.lightweight-seo-social-preview {
+	.lwseo {
+		--lwseo-control-height: 40px;
+	}
+
+	.lwseo-field {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.lwseo-field__label {
+		padding-top: 0;
+	}
+
+	/* WordPress enlarges checkboxes to 25px on small screens. */
+	.lwseo-choice + .lwseo-help {
+		padding-left: calc(1.5625rem + var(--lwseo-space-2));
+	}
+
+	.lwseo-subfields {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.lwseo-card__header,
+	.lwseo-card__body {
+		padding-left: var(--lwseo-space-4);
+		padding-right: var(--lwseo-space-4);
+	}
+
+	.lwseo-preview--social {
 		display: block;
 	}
 
-  .lightweight-seo-meta-box .form-table th,
-  .lightweight-seo-meta-box .form-table td,
-  .toplevel_page_lightweight-seo .form-table th,
-  .toplevel_page_lightweight-seo .form-table td {
-    padding: var(--lwseo-spacing-sm);
-    display: block;
-    width: 100%;
-  }
+	.lwseo .lwseo-status {
+		grid-template-columns: 20px minmax(0, 1fr);
+	}
 
-  .lightweight-seo-tab-nav {
-    flex-wrap: wrap;
-  }
-
-  .lightweight-seo-tab-nav .nav-tab {
-    flex: 1;
-    text-align: center;
-    min-width: 120px;
-  }
+	.lwseo-status__action {
+		grid-column: 2;
+	}
 }
