@@ -14,13 +14,26 @@ if (!defined('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME')) {
     define('LIGHTWEIGHT_SEO_MODULES_OPTION_NAME', 'lightweight_seo_modules');
 }
 
+// The plugin file is the one place the version and the schema version are written, so both are read from it.
+$lightweight_seo_test_plugin_source = (string) file_get_contents(dirname(__DIR__) . '/lightweight-seo.php');
+
 if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
-    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', 4);
+    if (1 !== preg_match("/define\(\s*'LIGHTWEIGHT_SEO_SCHEMA_VERSION',\s*(\d+)\s*\)/", $lightweight_seo_test_plugin_source, $lightweight_seo_test_match)) {
+        throw new RuntimeException('LIGHTWEIGHT_SEO_SCHEMA_VERSION was not found in lightweight-seo.php.');
+    }
+
+    define('LIGHTWEIGHT_SEO_SCHEMA_VERSION', (int) $lightweight_seo_test_match[1]);
 }
 
 if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
-    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.6');
+    if (1 !== preg_match('/^ \* Version:\s*(\S+)/m', $lightweight_seo_test_plugin_source, $lightweight_seo_test_match)) {
+        throw new RuntimeException('The Version header was not found in lightweight-seo.php.');
+    }
+
+    define('LIGHTWEIGHT_SEO_VERSION', $lightweight_seo_test_match[1]);
 }
+
+unset($lightweight_seo_test_plugin_source, $lightweight_seo_test_match);
 
 if (!defined('LIGHTWEIGHT_SEO_API_VERSION')) {
     define('LIGHTWEIGHT_SEO_API_VERSION', '1.0');

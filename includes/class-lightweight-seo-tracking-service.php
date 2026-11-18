@@ -106,7 +106,7 @@ class Lightweight_SEO_Tracking_Service {
 				fbq('track', 'PageView');
 			</script>
 			<noscript>
-				<img height="1" width="1" style="display:none" 
+				<img height="1" width="1" style="display:none"
 					src="https://www.facebook.com/tr?id=<?php echo esc_attr( $configuration['meta'] ); ?>&amp;ev=PageView&amp;noscript=1" alt=""/>
 			</noscript>
 			<?php

@@ -10,3 +10,5 @@ composer.lock export-ignore
 phpcs.xml.dist export-ignore
 phpunit.xml.dist export-ignore
 phpunit.integration.xml.dist export-ignore
+CHANGELOG.md export-ignore
+bin export-ignore

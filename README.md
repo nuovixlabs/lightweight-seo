@@ -70,24 +70,23 @@ Install the development dependencies and run the local gates:
 
 ```bash
 composer install
-composer validate --strict
+composer check
 composer audit
-composer test
-composer phpcs
-node --test tests/js/*.test.js
 ```
 
-`composer phpcs` enforces WordPress core style plus output escaping, nonce, input-sanitization, and text-domain checks on shipped code. Real WordPress tests use `tests/bin/install-wp-tests.sh` and `composer test:integration`. CI covers the compatibility matrix documented in [QA Checklist](docs/qa-checklist.md).
+`composer check` runs Composer validation, a PHP syntax check, PHPCS, the unit tests, the JavaScript tests, a translation template freshness check, and a whitespace check. It needs PHP, Node, and WP-CLI. PHPCS enforces WordPress core style, PHP 7.4 compatibility, and output escaping, nonce, input-sanitization, and text-domain checks on shipped code. Real WordPress tests use `tests/bin/install-wp-tests.sh` and `composer test:integration`. CI covers the compatibility matrix documented in [QA Checklist](docs/qa-checklist.md).
 
-The public extension contract and stable hooks are documented in [Developer API](docs/developer-api.md).
+`bin/dev-site` builds a throwaway WordPress with the plugin active for testing by hand.
+
+Start with [Architecture](docs/architecture.md) for the rules every change keeps and [Recipes](docs/recipes.md) for step-by-step procedures. The public extension contract and stable hooks are documented in [Developer API](docs/developer-api.md). Coding agents read [AGENTS.md](AGENTS.md).
 
 ## Release
 
 The plugin is distributed through GitHub releases. Its `Update URI` header stops WordPress.org from offering a same-named directory plugin as an update; remove or change that header if the plugin is ever published to the directory.
 
-Tags must exactly match the `Version:` header, for example `v1.1.0-rc.2`. The release workflow creates and verifies the ZIP, checks required runtime files, and smoke-activates the packaged plugin in WordPress. A tag with a hyphen, such as a release candidate, is published as a prerelease and does not replace the latest stable release.
+Tags must exactly match the `Version:` header, for example `v1.1.0-rc.2`. `bin/release-prep <version>` prepares a release; see [Cut a release](docs/recipes.md#cut-a-release). The release workflow runs the quality checks, builds the ZIP with `bin/build-zip`, which fails when a plugin file is missing or a development file is included, and smoke-activates the packaged plugin in WordPress. A tag with a hyphen, such as a release candidate, is published as a prerelease and does not replace the latest stable release.
 
-See [Release Notes](docs/release-notes-1.1.0.md) and [Release Baselines](docs/release-baselines.md) for the current candidate.
+See the [Changelog](CHANGELOG.md), [Release Notes](docs/release-notes-1.1.0.md), and [Release Baselines](docs/release-baselines.md).
 
 ## License
 

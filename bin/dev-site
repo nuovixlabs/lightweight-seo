@@ -1,0 +1,279 @@
+#!/usr/bin/env bash
+#
+# A throwaway WordPress for testing this checkout by hand.
+#
+# It lives in .cache/dev-site/ of the checkout (ignored by git), runs on SQLite,
+# and has the plugin linked in and active. Each worktree gets its own.
+
+set -euo pipefail
+
+repo="$(cd "$(dirname "$0")/.." && pwd)"
+state="${LIGHTWEIGHT_SEO_DEV_SITE:-$repo/.cache/dev-site}"
+site="$state/wordpress"
+marker="$state/.lightweight-seo-dev-site"
+slug="lightweight-seo"
+plugin_dir="$site/wp-content/plugins/$slug"
+sqlite_zip="https://downloads.wordpress.org/plugin/sqlite-database-integration.zip"
+
+usage() {
+	cat <<'EOF'
+Usage: bin/dev-site <command>
+
+  up [--wp=<version>] [--port=<port>] [--multisite] [--copy]
+        Build the site: download WordPress (latest unless --wp is given) and the
+        SQLite Database Integration plugin, install, and activate Lightweight SEO.
+        --copy puts a copy of the plugin in place of a link, for uninstall tests.
+        On an existing site, only the plugin is linked or copied again.
+  serve Run the site at http://127.0.0.1:<port>/ until stopped. The port is 8881
+        unless "up" was given another.
+  wp <arguments>
+        Run a WP-CLI command against the site, for example: bin/dev-site wp plugin list
+  info  Show the address, the folder, and where the administrator password is.
+  down  Remove the site.
+
+Never uninstall or delete the plugin while it is linked in: WordPress would
+follow the link and delete the files of this repository. Use "up --copy".
+EOF
+}
+
+die() {
+	echo "$*" >&2
+	exit 1
+}
+
+need() {
+	command -v "$1" >/dev/null 2>&1 || die "$1 is needed for bin/dev-site."
+}
+
+site_exists() {
+	[ -f "$marker" ] && [ -f "$site/wp-config.php" ] && [ -f "$state/installed" ]
+}
+
+require_site() {
+	site_exists || die "There is no dev site for this checkout yet. Run: bin/dev-site up"
+}
+
+site_wp() {
+	wp --path="$site" "$@"
+}
+
+read_state() {
+	cat "$state/$1" 2>/dev/null || true
+}
+
+install_plugin() {
+	local copy="$1"
+
+	# Remove a link as a link. A trailing slash would make rm follow it into the repository.
+	if [ -L "$plugin_dir" ]; then
+		rm "$plugin_dir"
+	elif [ -e "$plugin_dir" ]; then
+		rm -rf "$plugin_dir"
+	fi
+
+	if [ "$copy" -eq 1 ]; then
+		"$repo/bin/build-zip" --worktree "$state/plugin.zip" >/dev/null
+		unzip -q "$state/plugin.zip" -d "$site/wp-content/plugins"
+		rm "$state/plugin.zip"
+		echo "copy" >"$state/plugin-mode"
+	else
+		ln -s "$repo" "$plugin_dir"
+		echo "link" >"$state/plugin-mode"
+	fi
+
+	site_wp plugin activate "$slug" --quiet
+}
+
+cmd_up() {
+	local wp_version="" port="8881" multisite=0 copy=0 arg
+
+	for arg in "$@"; do
+		case "$arg" in
+			--wp=*) wp_version="${arg#--wp=}" ;;
+			--port=*) port="${arg#--port=}" ;;
+			--multisite) multisite=1 ;;
+			--copy) copy=1 ;;
+			*)
+				usage >&2
+				exit 2
+				;;
+		esac
+	done
+
+	[[ "$port" =~ ^[0-9]+$ ]] || die "The port must be a number."
+
+	need wp
+	need php
+	need curl
+	need unzip
+
+	if site_exists; then
+		install_plugin "$copy"
+		echo "The dev site already exists, so only the plugin was put in place again. Run bin/dev-site down first for a new site."
+		echo
+		cmd_info
+		return
+	fi
+
+	# A marker without a finished install is a build that stopped halfway.
+	if [ -f "$marker" ]; then
+		rm -rf "$state"
+	fi
+
+	if [ -e "$state" ] && [ -n "$(ls -A "$state" 2>/dev/null)" ]; then
+		die "$state exists and was not made by bin/dev-site. Remove it, or set LIGHTWEIGHT_SEO_DEV_SITE to another folder."
+	fi
+
+	mkdir -p "$site"
+	: >"$marker"
+	echo "$port" >"$state/port"
+
+	echo "Downloading WordPress ${wp_version:-latest}..."
+
+	if ! site_wp core download ${wp_version:+--version="$wp_version"} --quiet; then
+		echo "The download failed; trying once more..."
+		rm -rf "$site"
+		mkdir -p "$site"
+		site_wp core download ${wp_version:+--version="$wp_version"} --quiet
+	fi
+
+	echo "Adding the SQLite Database Integration plugin..."
+	curl -fsSL --retry 2 "$sqlite_zip" -o "$state/sqlite.zip"
+	unzip -q "$state/sqlite.zip" -d "$site/wp-content/plugins"
+	rm "$state/sqlite.zip"
+
+	local sqlite="$site/wp-content/plugins/sqlite-database-integration"
+
+	[ -f "$sqlite/db.copy" ] || die "The SQLite plugin has no db.copy file; its layout has changed and bin/dev-site needs updating."
+
+	local core_version required
+	core_version="$(site_wp core version)"
+	required="$(sed -n 's/^Requires at least:[[:space:]]*//p' "$sqlite/readme.txt" 2>/dev/null | head -n1 | tr -d '\r')"
+
+	if [ -n "$required" ] && php -r 'exit( version_compare( $argv[1], $argv[2], "<" ) ? 0 : 1 );' "$core_version" "$required"; then
+		rm -rf "$state"
+		die "WordPress $core_version is older than the SQLite plugin supports ($required). Use --wp=$required or newer."
+	fi
+
+	SQLITE_DIR="$sqlite" perl -pe 's/\{SQLITE_IMPLEMENTATION_FOLDER_PATH\}/$ENV{SQLITE_DIR}/g; s/\{SQLITE_PLUGIN\}/sqlite-database-integration\/load.php/g' "$sqlite/db.copy" >"$site/wp-content/db.php"
+
+	# The database values are placeholders: the SQLite drop-in replaces the connection.
+	site_wp config create --dbname=wordpress --dbuser=unused --dbpass=unused --skip-check --quiet --extra-php <<'PHP'
+define( 'WP_ENVIRONMENT_TYPE', 'local' );
+define( 'WP_DEBUG', true );
+define( 'WP_DEBUG_LOG', true );
+define( 'WP_DEBUG_DISPLAY', false );
+PHP
+
+	# The password is random, stays in a file only its owner can read, and never appears in a command line.
+	(
+		umask 077
+		php -r 'echo bin2hex( random_bytes( 12 ) ), "\n";' >"$state/admin-password"
+	)
+
+	site_wp core install \
+		--url="http://127.0.0.1:$port" \
+		--title="Lightweight SEO dev site" \
+		--admin_user=admin \
+		--admin_email=admin@example.com \
+		--skip-email \
+		--quiet \
+		--prompt=admin_password <"$state/admin-password" >/dev/null
+
+	site_wp rewrite structure '/%postname%/' --quiet
+
+	if [ "$multisite" -eq 1 ]; then
+		site_wp core multisite-convert --quiet
+	fi
+
+	: >"$state/installed"
+
+	install_plugin "$copy"
+
+	echo
+	cmd_info
+}
+
+cmd_serve() {
+	require_site
+	need wp
+
+	local port
+	port="$(read_state port)"
+
+	echo "Serving http://127.0.0.1:$port/ until stopped."
+	exec wp server --path="$site" --host=127.0.0.1 --port="$port"
+}
+
+cmd_wp() {
+	require_site
+	need wp
+
+	local joined=" $* "
+
+	if [ -L "$plugin_dir" ] && [[ "$joined" == *" plugin "* ]] && [[ "$joined" =~ \ (uninstall|delete)\  ]] && [[ "$joined" == *" $slug "* || "$joined" == *" --all "* ]]; then
+		die "Refused: the plugin is linked in, and WordPress would delete the files of this repository through the link. Run bin/dev-site up --copy first."
+	fi
+
+	exec wp --path="$site" "$@"
+}
+
+cmd_info() {
+	require_site
+
+	local port mode network=""
+	port="$(read_state port)"
+	mode="$(read_state plugin-mode)"
+
+	if site_wp core is-installed --network 2>/dev/null; then
+		network=", multisite"
+	fi
+
+	echo "Address:    http://127.0.0.1:$port/"
+	echo "Admin:      http://127.0.0.1:$port/wp-admin/ (user: admin, password in $state/admin-password)"
+	echo "WordPress:  $(site_wp core version)$network"
+
+	if [ "$mode" = "copy" ]; then
+		echo "Plugin:     a copy. Run bin/dev-site up --copy again after changing the code."
+	else
+		echo "Plugin:     linked to $repo. Never uninstall or delete it on this site."
+	fi
+
+	echo "Folder:     $site"
+	echo "Debug log:  $site/wp-content/debug.log"
+	echo "Run it:     bin/dev-site serve"
+}
+
+cmd_down() {
+	if [ ! -e "$state" ]; then
+		echo "There is no dev site to remove."
+		return
+	fi
+
+	[ -f "$marker" ] || die "$state was not made by bin/dev-site, so it is left alone."
+
+	if [ -L "$plugin_dir" ]; then
+		rm "$plugin_dir"
+	fi
+
+	rm -rf "$state"
+	echo "Removed $state. Stop bin/dev-site serve if it is still running."
+}
+
+command="${1:-}"
+
+if [ $# -gt 0 ]; then
+	shift
+fi
+
+case "$command" in
+	up) cmd_up "$@" ;;
+	serve) cmd_serve "$@" ;;
+	wp) cmd_wp "$@" ;;
+	info) cmd_info ;;
+	down) cmd_down ;;
+	*)
+		usage >&2
+		exit 2
+		;;
+esac

@@ -1,0 +1,98 @@
+# Changelog
+
+What changed in each release. [Release Notes](docs/release-notes-1.1.0.md) describe the 1.1 line in full, by feature.
+
+Add every change under "Unreleased" in the commit that makes it. `bin/release-prep` moves that section under the new version.
+
+## Unreleased
+
+### Fixed
+
+- The legacy keyword CSV export passes the CSV escape character explicitly. On PHP 8.4 and later it raised a deprecation notice, which a site that displays errors would write into the downloaded file.
+
+## 1.1.0-rc.6 - 2026-11-18
+
+### Fixed
+
+- The setup checklist on the Overview no longer asks for a tagline. Its first step is "Set a site name".
+
+## 1.1.0-rc.5 - 2026-11-18
+
+### Fixed
+
+- An empty tagline no longer leaves a separator behind in a title. `%tagline%` is left out together with one separator beside it, like the other optional variables.
+
+## 1.1.0-rc.4 - 2026-11-17
+
+### Added
+
+- A content types table for search visibility, sitemap listing, title format, and schema type of every post type and taxonomy.
+- A site identity card for an organization or a person, an X handle, and a choice of title separator.
+- Site verification tags for Google Search Console, Bing Webmaster Tools, Pinterest, and Yandex Webmaster.
+- Four title variables: `%category%`, `%author%`, `%year%`, and `%page%`.
+- An SEO column in the post lists, with Quick Edit and Bulk Edit.
+- "Inspect a page" on the Tools tab, with links from the post lists, the editor, and the toolbar.
+- An "Enable module" switch for Redirects and Tracking. The settings schema version is now 4.
+- Redirects: whole sections, "410 Gone", a test box, and CSV import.
+- Settings export and import with undo, and `wp lightweight-seo` commands.
+- Structured data: a page node on every page, a schema type per post type, and breadcrumbs that match the WordPress Breadcrumbs block.
+- Importers for SEOPress, The SEO Framework, and Slim SEO.
+- Abilities to read and fill the SEO fields of posts, terms, and authors on WordPress 6.9 and later.
+- An IndexNow module, off by default.
+- Live title format previews, a desktop and mobile search preview, and command palette entries.
+
+### Changed
+
+- The editor panel follows the page as it is edited, and the setup checklist is dismissed per user.
+- Redirect rules, hreflang mappings, opening hours, and `llms.txt` pages are edited as rows, with "Edit as text" for pasting.
+- A module that is off shows only the controls that turn it on.
+- `get_object_context()` returns titles and descriptions with their variables filled in.
+- A page hidden by an import prints `noindex` only.
+
+### Fixed
+
+- The editor no longer stores the featured image or the site default as a post's own social image.
+- A title imported from The SEO Framework keeps the site name that plugin added.
+
+## 1.1.0-rc.3 - 2026-11-17
+
+### Changed
+
+- The settings screen and the editor panel are rebuilt on one design system. No setting, option key, or saved value changes.
+- Administration CSS class names changed from `lightweight-seo-*` to `lwseo-*`.
+
+## 1.1.0-rc.2 - 2026-11-17
+
+The first 1.1 candidate published as a release package. `1.1.0-rc.1` was never published.
+
+### Added
+
+- A request-aware module registry with Redirects, Hreflang, Tracking, Local SEO, and experimental AI Discovery modules.
+- A versioned, read-only extension API.
+- A setup overview, grouped settings, and deterministic editor checks.
+- Bounded imports from Yoast SEO, Rank Math, and All in One SEO, with preview and rollback.
+- Real WordPress integration tests and a WordPress and PHP matrix in CI.
+
+### Changed
+
+- Canonical and robots output go through WordPress core, with defined behavior for 404, paginated, password-protected, and subdirectory cases.
+- Descriptions derived from content are shortened to a 160-character summary.
+- Safe mode also covers SEOPress, The SEO Framework, and Slim SEO.
+
+### Removed
+
+- Meta-keywords output and editing. Stored values remain exportable.
+- Image, video, and news sitemap providers.
+- Generic Product schema.
+- Search Console synchronization, site-wide internal-link and image-audit reports, and continuous 404 logging.
+
+### Security
+
+- JSON-LD is encoded so that no value can close its script element.
+- Term SEO fields require the `edit_term` capability in addition to the nonce.
+- Import, rollback, and legacy data deletion are separate administrator actions, each with its own nonce.
+- The coding-standard gate enforces output escaping, nonce verification, input sanitization, and the text domain.
+
+## 1.0.3 and earlier
+
+See the [GitHub releases](https://github.com/nuovixlabs/lightweight-seo/releases).

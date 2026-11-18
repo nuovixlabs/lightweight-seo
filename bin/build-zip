@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+#
+# Build the release ZIP the way it is published, and verify it.
+#
+#   bin/build-zip [--worktree] [output.zip]
+#
+#   --worktree   package the files as they are now, uncommitted changes and new
+#                files included, instead of the last commit
+#   output.zip   defaults to .cache/lightweight-seo-v<version>.zip
+#
+# The package must hold every plugin file and nothing else. A development file
+# reaches the ZIP when it is missing from .gitattributes; this script fails then.
+# The release workflow runs this script, so a local build equals the published one.
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+slug="lightweight-seo"
+# What the plugin consists of. Everything else in the repository is development material.
+plugin_paths=(lightweight-seo.php uninstall.php LICENSE admin includes languages)
+allowed_pattern="^${slug}/(lightweight-seo\.php|uninstall\.php|LICENSE|(admin|includes|languages)/.+)$"
+
+worktree=0
+output=""
+
+for arg in "$@"; do
+	case "$arg" in
+		--worktree) worktree=1 ;;
+		-*)
+			echo "Usage: bin/build-zip [--worktree] [output.zip]" >&2
+			exit 2
+			;;
+		*) output="$arg" ;;
+	esac
+done
+
+for tool in git tar zip unzip; do
+	if ! command -v "$tool" >/dev/null 2>&1; then
+		echo "$tool is needed to build the package." >&2
+		exit 2
+	fi
+done
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+if [ "$worktree" -eq 1 ]; then
+	# Snapshot the working tree through a scratch index, so neither the real index nor the stash is touched.
+	cp "$(git rev-parse --git-path index)" "$tmp/index"
+	GIT_INDEX_FILE="$tmp/index" git add -A .
+	tree="$(GIT_INDEX_FILE="$tmp/index" git write-tree)"
+	source_label="working tree"
+else
+	tree="HEAD"
+	source_label="$(git rev-parse --short HEAD)"
+fi
+
+version="$(git show "$tree:lightweight-seo.php" | sed -n 's/^ \* Version: //p' | head -n1 | tr -d '\r')"
+
+if [ -z "$version" ]; then
+	echo "Could not read the plugin version from lightweight-seo.php." >&2
+	exit 1
+fi
+
+if [ -z "$output" ]; then
+	mkdir -p .cache
+	output=".cache/${slug}-v${version}.zip"
+fi
+
+case "$output" in
+	/*) ;;
+	*) output="$PWD/$output" ;;
+esac
+
+mkdir -p "$tmp/package"
+git archive --format=tar --worktree-attributes --prefix="${slug}/" "$tree" | tar -xf - -C "$tmp/package"
+
+rm -f "$output"
+(
+	cd "$tmp/package"
+	zip -qr "$output" "$slug"
+)
+
+unzip -tq "$output" >/dev/null
+unzip -Z1 "$output" | grep -v '/$' | LC_ALL=C sort >"$tmp/manifest"
+
+status=0
+
+# Every plugin file of the source must be in the package.
+while IFS= read -r file; do
+	if ! grep -Fqx "${slug}/${file}" "$tmp/manifest"; then
+		echo "Missing from the package: ${file}" >&2
+		status=1
+	fi
+done < <(git ls-tree -r --name-only "$tree" -- "${plugin_paths[@]}")
+
+# Nothing else may be in it.
+while IFS= read -r entry; do
+	echo "Not a plugin file, add an export-ignore line to .gitattributes: ${entry#"${slug}/"}" >&2
+	status=1
+done < <(grep -E -v "$allowed_pattern" "$tmp/manifest" || true)
+
+if [ "$status" -ne 0 ]; then
+	rm -f "$output"
+	exit 1
+fi
+
+files="$(wc -l <"$tmp/manifest" | tr -d ' ')"
+bytes="$(wc -c <"$output" | tr -d ' ')"
+
+awk -v files="$files" -v bytes="$bytes" -v version="$version" -v source="$source_label" '
+function grouped( number,    tail ) {
+	tail = ""
+	while ( length( number ) > 3 ) {
+		tail   = "," substr( number, length( number ) - 2 ) tail
+		number = substr( number, 1, length( number ) - 3 )
+	}
+	return number tail
+}
+BEGIN {
+	printf "Lightweight SEO %s (%s): %d files, %s bytes (%.1f KiB)\n", version, source, files, grouped( bytes ), bytes / 1024
+}'
+echo "$output"

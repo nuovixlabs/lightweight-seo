@@ -8,12 +8,40 @@
         "yoast/phpunit-polyfills": "^2.0",
         "squizlabs/php_codesniffer": "^3.10",
         "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
-        "wp-coding-standards/wpcs": "^3.1"
+        "wp-coding-standards/wpcs": "^3.1",
+        "phpcompatibility/phpcompatibility-wp": "^3.0@alpha",
+        "phpcompatibility/php-compatibility": "^10.0@alpha",
+        "phpcompatibility/phpcompatibility-paragonie": "^2.0@alpha"
     },
     "scripts": {
+        "check": [
+            "@composer validate --strict",
+            "@lint",
+            "@phpcs",
+            "@test",
+            "@test:js",
+            "@check:pot",
+            "@check:whitespace"
+        ],
+        "lint": "bin/lint-php",
         "phpcs": "phpcs --standard=phpcs.xml.dist",
         "test": "phpunit --configuration phpunit.xml.dist",
-        "test:integration": "phpunit --configuration phpunit.integration.xml.dist"
+        "test:js": "node --test --test-reporter=spec tests/js/*.test.js",
+        "test:integration": "phpunit --configuration phpunit.integration.xml.dist",
+        "make-pot": "bin/make-pot",
+        "check:pot": "bin/make-pot --check",
+        "check:whitespace": "git diff --check 4b825dc642cb6eb9a060e54bf8d69288fbee4904 --"
+    },
+    "scripts-descriptions": {
+        "check": "Run every gate that needs no network. Run it before each commit.",
+        "lint": "Check the syntax of every PHP file.",
+        "phpcs": "Check coding standards, security rules, and PHP 7.4 compatibility.",
+        "test": "Run the unit tests.",
+        "test:js": "Run the JavaScript tests.",
+        "test:integration": "Run the real WordPress tests. Needs tests/bin/install-wp-tests.sh first.",
+        "make-pot": "Regenerate the translation template.",
+        "check:pot": "Fail when the translation template is stale.",
+        "check:whitespace": "Fail on trailing whitespace and conflict markers in tracked files."
     },
     "config": {
         "platform": {
