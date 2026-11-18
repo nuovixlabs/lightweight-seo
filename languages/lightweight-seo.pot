@@ -2,14 +2,14 @@
 # This file is distributed under the MIT.
 msgid ""
 msgstr ""
-"Project-Id-Version: Lightweight SEO 1.1.0-rc.5\n"
+"Project-Id-Version: Lightweight SEO 1.1.0-rc.6\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/lightweight-seo\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-17T19:15:14+00:00\n"
+"POT-Creation-Date: 2026-11-18T13:53:50+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -944,7 +944,7 @@ msgid "Search engines read this address to confirm that the site sends its own p
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:744
-#: includes/class-lightweight-seo-admin-page.php:734
+#: includes/class-lightweight-seo-admin-page.php:733
 msgid "Open"
 msgstr ""
 
@@ -1115,7 +1115,7 @@ msgid "Schema and identity"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:153
-#: includes/class-lightweight-seo-admin-page.php:743
+#: includes/class-lightweight-seo-admin-page.php:742
 msgid "Modules"
 msgstr ""
 
@@ -1320,159 +1320,159 @@ msgstr ""
 msgid "Share preview"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:608
+#: includes/class-lightweight-seo-admin-page.php:606
 msgid "Review"
 msgstr ""
 
+#: includes/class-lightweight-seo-admin-page.php:612
+msgid "Set a site name"
+msgstr ""
+
 #: includes/class-lightweight-seo-admin-page.php:613
-msgid "Set a site name and tagline"
+msgid "Page titles use it."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:614
-msgid "The homepage title format uses both."
-msgstr ""
-
-#: includes/class-lightweight-seo-admin-page.php:616
+#: includes/class-lightweight-seo-admin-page.php:615
 msgid "General settings"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:622
+#: includes/class-lightweight-seo-admin-page.php:621
 msgid "Write a homepage description"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:631
+#: includes/class-lightweight-seo-admin-page.php:630
 msgid "Select a default social image"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:641
+#: includes/class-lightweight-seo-admin-page.php:640
 msgid "Review what search engines may index"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:642
+#: includes/class-lightweight-seo-admin-page.php:641
 msgid "Review optional modules"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:650
+#: includes/class-lightweight-seo-admin-page.php:649
 msgid "Essential setup"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:651
+#: includes/class-lightweight-seo-admin-page.php:650
 msgid "Finish the essentials in any order. This is a checklist, not a required wizard."
 msgstr ""
 
 #. translators: 1: number of completed setup steps, 2: total number of tracked setup steps.
-#: includes/class-lightweight-seo-admin-page.php:657
+#: includes/class-lightweight-seo-admin-page.php:656
 #, php-format
 msgid "%1$d of %2$d ready"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:661
+#: includes/class-lightweight-seo-admin-page.php:660
 msgid "Dismiss checklist"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:668
+#: includes/class-lightweight-seo-admin-page.php:667
 msgid "The essentials are set"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:668
-msgid "Your site identity, homepage description, and default social image are in place."
+#: includes/class-lightweight-seo-admin-page.php:667
+msgid "Your site name, homepage description, and default social image are in place."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:679
+#: includes/class-lightweight-seo-admin-page.php:678
 msgid "Optional"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:701
+#: includes/class-lightweight-seo-admin-page.php:700
 msgid "At a glance"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:702
+#: includes/class-lightweight-seo-admin-page.php:701
 msgid "What Lightweight SEO is doing on this site right now."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:709
-#: includes/class-lightweight-seo-admin-page.php:713
+#: includes/class-lightweight-seo-admin-page.php:708
+#: includes/class-lightweight-seo-admin-page.php:712
 msgid "Search visibility"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:709
+#: includes/class-lightweight-seo-admin-page.php:708
 msgid "Search engines are allowed to index this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:714
+#: includes/class-lightweight-seo-admin-page.php:713
 #: includes/class-lightweight-seo-indexnow-module.php:290
 msgid "WordPress is set to discourage search engines from indexing this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:716
+#: includes/class-lightweight-seo-admin-page.php:715
 msgid "Reading settings"
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-admin-page.php:723
-#: includes/class-lightweight-seo-admin-page.php:726
+#: includes/class-lightweight-seo-admin-page.php:722
+#: includes/class-lightweight-seo-admin-page.php:725
 msgid "SEO output"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:723
+#: includes/class-lightweight-seo-admin-page.php:722
 msgid "Titles, descriptions, canonicals, robots directives, and schema are being written."
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-admin-page.php:726
+#: includes/class-lightweight-seo-admin-page.php:725
 #, php-format
 msgid "Safe mode is on because %s is also active. Overlapping output is paused to avoid duplicates."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:731
+#: includes/class-lightweight-seo-admin-page.php:730
 #: includes/class-lightweight-seo-inspector.php:606
 #: includes/class-lightweight-seo-inspector.php:607
 msgid "XML sitemap"
 msgstr ""
 
 #. translators: 1: module name, 2: module status, either Active or Off.
-#: includes/class-lightweight-seo-admin-page.php:751
+#: includes/class-lightweight-seo-admin-page.php:750
 #, php-format
 msgid "%1$s: %2$s"
 msgstr ""
 
 #. translators: 1: module name, 2: module status, either Active or Off.
-#: includes/class-lightweight-seo-admin-page.php:751
-#: includes/class-lightweight-seo-admin-page.php:854
+#: includes/class-lightweight-seo-admin-page.php:750
+#: includes/class-lightweight-seo-admin-page.php:853
 msgid "Active"
 msgstr ""
 
 #. translators: 1: module name, 2: module status, either Active or Off.
-#: includes/class-lightweight-seo-admin-page.php:751
-#: includes/class-lightweight-seo-admin-page.php:854
+#: includes/class-lightweight-seo-admin-page.php:750
+#: includes/class-lightweight-seo-admin-page.php:853
 msgid "Off"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:788
+#: includes/class-lightweight-seo-admin-page.php:787
 msgid "Unsaved changes"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:912
+#: includes/class-lightweight-seo-admin-page.php:911
 msgid "Plugin version"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:913
+#: includes/class-lightweight-seo-admin-page.php:912
 msgid "API version"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:914
+#: includes/class-lightweight-seo-admin-page.php:913
 msgid "Accessor"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:915
+#: includes/class-lightweight-seo-admin-page.php:914
 msgid "Ready hook"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:921
+#: includes/class-lightweight-seo-admin-page.php:920
 msgid "Developer API"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-page.php:922
+#: includes/class-lightweight-seo-admin-page.php:921
 msgid "Extensions can read normalized SEO facts through the versioned facade without reading private settings or credentials."
 msgstr ""
 

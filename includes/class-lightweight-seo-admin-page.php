@@ -602,16 +602,15 @@ class Lightweight_SEO_Admin_Page {
 
 	/** Render the short, dismissible setup checklist. */
 	private function render_setup_checklist() {
-		$options       = $this->settings->get_all();
-		$needs_tagline = false !== strpos( (string) ( $options['home_title_format'] ?? '%sitename% %sep% %tagline%' ), '%tagline%' );
-		$has_identity  = '' !== trim( (string) get_bloginfo( 'name' ) ) && ( ! $needs_tagline || '' !== trim( (string) get_bloginfo( 'description' ) ) );
-		$review        = __( 'Review', 'lightweight-seo' );
+		$options = $this->settings->get_all();
+		$review  = __( 'Review', 'lightweight-seo' );
 		// Each step reports something that is true of the site right now, so it turns green only when it is done.
 		$tracked = array(
 			array(
-				$has_identity,
-				__( 'Set a site name and tagline', 'lightweight-seo' ),
-				$needs_tagline ? __( 'The homepage title format uses both.', 'lightweight-seo' ) : '',
+				// A tagline is not asked for: a title leaves an empty one out together with its separator.
+				'' !== trim( (string) get_bloginfo( 'name' ) ),
+				__( 'Set a site name', 'lightweight-seo' ),
+				__( 'Page titles use it.', 'lightweight-seo' ),
 				array(
 					'label' => __( 'General settings', 'lightweight-seo' ),
 					'url'   => admin_url( 'options-general.php' ),
@@ -665,7 +664,7 @@ class Lightweight_SEO_Admin_Page {
 				<ul class="lwseo-status-list">
 					<?php
 					if ( $all_done ) {
-						Lightweight_SEO_Admin_UI::status( 'success', __( 'The essentials are set', 'lightweight-seo' ), __( 'Your site identity, homepage description, and default social image are in place.', 'lightweight-seo' ) );
+						Lightweight_SEO_Admin_UI::status( 'success', __( 'The essentials are set', 'lightweight-seo' ), __( 'Your site name, homepage description, and default social image are in place.', 'lightweight-seo' ) );
 					} else {
 						foreach ( $tracked as $item ) {
 							Lightweight_SEO_Admin_UI::status( $item[0] ? 'success' : 'pending', $item[1], $item[0] ? '' : $item[2], $item[3] );

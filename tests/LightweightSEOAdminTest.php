@@ -1969,8 +1969,9 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$fresh = $this->render_overview( new Lightweight_SEO_Settings() );
 
-		// The test site has a name and tagline; nothing else is set on a fresh install.
+		// The test site has a name; nothing else is set on a fresh install.
 		$this->assertStringContainsString( '1 of 3 ready', $fresh );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success">(?:(?!<\/li>).)*Set a site name/s', $fresh );
 		$this->assertStringContainsString( 'Write a homepage description', $fresh );
 		$this->assertStringContainsString( 'Select a default social image', $fresh );
 		$this->assertStringNotContainsString( 'Verify generated output', $fresh );
@@ -1988,6 +1989,34 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'The essentials are set', $configured );
 		$this->assertStringNotContainsString( 'Write a homepage description', $configured );
 		$this->assertStringContainsString( 'Review optional modules', $configured );
+	}
+
+	public function test_setup_checklist_does_not_ask_for_a_tagline(): void {
+		// WordPress installs with an empty tagline, and the default homepage title format ends in it.
+		$GLOBALS['lightweight_seo_test_tagline'] = '';
+
+		try {
+			$without_tagline = $this->render_overview( new Lightweight_SEO_Settings() );
+		} finally {
+			unset( $GLOBALS['lightweight_seo_test_tagline'] );
+		}
+
+		$this->assertStringContainsString( '1 of 3 ready', $without_tagline );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success">(?:(?!<\/li>).)*Set a site name/s', $without_tagline );
+		$this->assertStringNotContainsString( 'tagline', $without_tagline );
+	}
+
+	public function test_setup_checklist_asks_for_a_site_name_when_the_site_has_none(): void {
+		$GLOBALS['lightweight_seo_test_site_name'] = '  ';
+
+		try {
+			$without_name = $this->render_overview( new Lightweight_SEO_Settings() );
+		} finally {
+			unset( $GLOBALS['lightweight_seo_test_site_name'] );
+		}
+
+		$this->assertStringContainsString( '0 of 3 ready', $without_name );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-pending">(?:(?!<\/li>).)*Set a site name(?:(?!<\/li>).)*Page titles use it\.(?:(?!<\/li>).)*General settings/s', $without_name );
 	}
 
 	public function test_setup_checklist_accepts_a_description_written_on_the_static_front_page(): void {

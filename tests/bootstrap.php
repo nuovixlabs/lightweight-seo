@@ -19,7 +19,7 @@ if (!defined('LIGHTWEIGHT_SEO_SCHEMA_VERSION')) {
 }
 
 if (!defined('LIGHTWEIGHT_SEO_VERSION')) {
-    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.5');
+    define('LIGHTWEIGHT_SEO_VERSION', '1.1.0-rc.6');
 }
 
 if (!defined('LIGHTWEIGHT_SEO_API_VERSION')) {
@@ -404,7 +404,7 @@ if (!function_exists('wp_get_environment_type')) {
 if (!function_exists('get_bloginfo')) {
     function get_bloginfo($show = '', $filter = 'raw') {
         if ('name' === $show) {
-            return 'Test Site';
+            return $GLOBALS['lightweight_seo_test_site_name'] ?? 'Test Site';
         }
 
         if ('description' === $show) {
