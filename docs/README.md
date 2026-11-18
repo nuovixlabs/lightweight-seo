@@ -1,27 +1,19 @@
 # Documentation
 
-This folder contains the product plan, release documentation, extension contract, and release-candidate checks.
+## For working on the plugin
 
-## Guides
+- [Architecture](./architecture.md): the product boundary, request flow, modules, data, and the rules every change keeps.
+- [Recipes](./recipes.md): commands, and step-by-step procedures for adding a setting, a module, or an import source, changing stored data, cutting a release, and testing by hand.
+- [Design System](./design-system.md): administration components and copy rules.
+- [Developer API](./developer-api.md): the public facade, stable hooks, abilities, and WP-CLI commands.
 
-- [Next-Phase Product and Engineering Plan](./next-phase-plan.md)
-- [QA Checklist](./qa-checklist.md)
-- [Developer API](./developer-api.md)
-- [Design System](./design-system.md)
-- [Migration and RC Testing](./migration.md)
-- [1.1 Release Notes](./release-notes-1.1.0.md)
-- [Release Baselines](./release-baselines.md)
+## For releasing
 
-## What These Docs Cover
+- [QA Checklist](./qa-checklist.md): what to check by hand on a real WordPress site.
+- [Release Baselines](./release-baselines.md): package size and performance measurements per release.
+- [Changelog](../CHANGELOG.md): what each release changed.
 
-- The agreed product boundary and module architecture
-- The core-to-Insights extension contract
-- Feature retention, removal, and migration decisions
-- Implementation order and release gates
-- What must be validated before shipping the 1.1 release
+## For site owners
 
-## Recommended Reading Order
-
-1. Start with the [Next-Phase Product and Engineering Plan](./next-phase-plan.md) for the approved direction and delivery sequence.
-2. Read [Migration and RC Testing](./migration.md) before upgrading a 1.0.3 site.
-3. Use the [QA Checklist](./qa-checklist.md) on a real WordPress site.
+- [1.1 Release Notes](./release-notes-1.1.0.md): the 1.1 line, by feature.
+- [Migration and RC Testing](./migration.md): upgrading from 1.0.3 and importing from another SEO plugin.

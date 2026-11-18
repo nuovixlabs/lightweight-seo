@@ -1,6 +1,6 @@
 # QA Checklist
 
-Use this checklist for the 1.1 release candidate. Test destructive migration and uninstall cases only on a disposable or backed-up site.
+Use this checklist for a release candidate. Test destructive migration and uninstall cases only on a disposable or backed-up site.
 
 ## Compatibility matrix
 
@@ -15,7 +15,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 
 ## Installation and lifecycle
 
-- Activate a clean install and confirm all five optional modules default off.
+- Activate a clean install and confirm every optional module defaults off.
 - Activate, deactivate, and reactivate repeatedly; confirm no warnings or duplicate hooks.
 - On multisite, test site activation, network activation, and deactivation.
 - Confirm deactivation clears plugin-owned scheduled events without deleting persistent SEO data.
@@ -63,7 +63,7 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 ## Modules
 
 - Toggle every module repeatedly and confirm disabled implementation classes do not load.
-- Module switches: confirm all five cards start with "Enable module". Save redirect rules and a tracking ID with both switches clear; neither module may load, and the rules and the ID must still be there. Save another tab and confirm the switches did not change.
+- Module switches: confirm every module card starts with "Enable module". Save redirect rules and a tracking ID with both switches clear; neither module may load, and the rules and the ID must still be there. Save another tab and confirm the switches did not change.
 - Module switches: upgrade a site that has redirect rules and one that has a valid tracking ID; each module must stay on with its switch ticked. Upgrade a site that has neither; both must stay off.
 - Redirects: test exact rules, malformed destinations, external-host rejection, loops, chains, automatic slug redirects, export, and the documented high-rule boundary.
 - Redirects: change a published slug in the block editor, in Quick Edit, and in the classic editor; each must record a generated redirect.
@@ -172,16 +172,11 @@ Use this checklist for the 1.1 release candidate. Test destructive migration and
 - Compare 100 warm frontend requests with the plugin active and inactive; median regression must not exceed 5% in the reference environment.
 - Record warm peak-memory delta, query delta, option sizes, runtime file count, and ZIP size in `docs/release-baselines.md`.
 - Confirm disabled-module and all-module states remain within the recorded baseline.
-- Build the release ZIP, inspect its manifest, run `unzip -t`, and smoke-activate that exact package in WordPress.
-- Confirm tests, development configuration, and CI files are excluded from the ZIP.
+- Build the release ZIP with `bin/build-zip`, which checks its integrity and that it holds every plugin file and no development file, and smoke-activate that exact package in WordPress.
 
 ## Final gates
 
-- `composer validate --strict`
+- `composer check`: Composer validation, PHP syntax, PHPCS, unit tests, JavaScript tests, translation template freshness, and whitespace
 - `composer audit`
-- `composer test`
-- `composer phpcs`
-- PHP syntax checks
-- real WordPress single-site and multisite integration suites
-- translation template generation without warnings
-- whitespace check
+- real WordPress single-site and multisite integration suites, which CI runs on every push
+- `bin/build-zip`: the package holds only plugin files and every plugin file

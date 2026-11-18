@@ -102,7 +102,7 @@ Redirect rules, hreflang mappings, opening hours, and the `llms.txt` page list a
 
 To add a row editor:
 
-1. Add a format to `lightweight-seo-formats.js` with `parse(line)`, `format(row)`, `check(rows)`, and optionally `inactive(row)`, and cover it in `tests/js/formats.test.js`. The file has no DOM access, so the tests run under Node with `node --test tests/js/*.test.js`.
+1. Add a format to `lightweight-seo-formats.js` with `parse(line)`, `format(row)`, `check(rows)`, and optionally `inactive(row)`, and cover it in `tests/js/formats.test.js`. The file has no DOM access, so the tests run under Node with `composer test:js`.
 2. Print the stored field as usual, give anything that explains its raw format a `data-lwseo-text-for` attribute naming the field, and call `Lightweight_SEO_Admin_UI::rows()` with the format key, the field ID, and the columns.
 3. Give the rule a `--lwseo-rows-columns` value in the stylesheet if three equal columns do not suit it.
 
