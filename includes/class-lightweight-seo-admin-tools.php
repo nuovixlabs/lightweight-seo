@@ -443,17 +443,17 @@ class Lightweight_SEO_Admin_Tools {
 			wp_die( esc_html__( 'The export stream could not be opened.', 'lightweight-seo' ) );
 		}
 
-		fputcsv( $output, array( 'object_type', 'object_id', 'value' ) );
+		fputcsv( $output, array( 'object_type', 'object_id', 'value' ), ',', '"', '\\' );
 
 		if ( ! empty( $settings['meta_keywords'] ) ) {
-			fputcsv( $output, array( 'site', 0, $this->csv_safe_value( $settings['meta_keywords'] ) ) );
+			fputcsv( $output, array( 'site', 0, $this->csv_safe_value( $settings['meta_keywords'] ) ), ',', '"', '\\' );
 		}
 
 		foreach ( $post_ids as $post_id ) {
 			$value = get_post_meta( $post_id, '_lightweight_seo_keywords', true );
 
 			if ( '' !== (string) $value ) {
-				fputcsv( $output, array( 'post', absint( $post_id ), $this->csv_safe_value( $value ) ) );
+				fputcsv( $output, array( 'post', absint( $post_id ), $this->csv_safe_value( $value ) ), ',', '"', '\\' );
 			}
 		}
 
