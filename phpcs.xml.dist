@@ -17,6 +17,10 @@
     <!-- JavaScript tests run under Node and are not PHP. -->
     <exclude-pattern>tests/js/*</exclude-pattern>
 
+    <!-- Shipped code and tests run on PHP 7.4 and later. WordPress polyfills are taken into account. -->
+    <config name="testVersion" value="7.4-"/>
+    <rule ref="PHPCompatibilityWP"/>
+
     <rule ref="WordPress-Core">
         <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar"/>
         <exclude name="WordPress.Files.FileComment.MissingPackageTag"/>

@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# Prepare a release: everything about it that needs no judgement.
+#
+#   bin/release-prep <version>      for example: bin/release-prep 1.1.0-rc.7
+#
+# It sets the version in the plugin header, regenerates the translation template,
+# moves "Unreleased" in CHANGELOG.md under the new version, and builds the ZIP to
+# report its file count and size. It commits, tags, and pushes nothing.
+# See "Cut a release" in docs/recipes.md for the steps around it.
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+version="${1:-}"
+
+if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+	echo "Usage: bin/release-prep <version>   (1.2.0, 1.2.0-rc.1, 1.2.0-beta.2)" >&2
+	exit 2
+fi
+
+current="$(sed -n 's/^ \* Version: //p' lightweight-seo.php | head -n1 | tr -d '\r')"
+
+if [ "$version" = "$current" ]; then
+	echo "The plugin is already at $version." >&2
+	exit 1
+fi
+
+if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+	echo "The tag v$version already exists." >&2
+	exit 1
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+	echo "The working tree has changes. Commit them or set them aside first, so the package holds only the release." >&2
+	exit 1
+fi
+
+if ! grep -q '^## Unreleased$' CHANGELOG.md; then
+	echo 'CHANGELOG.md has no "## Unreleased" section.' >&2
+	exit 1
+fi
+
+unreleased="$(awk '/^## Unreleased$/ { inside = 1; next } /^## / { inside = 0 } inside' CHANGELOG.md | tr -d '[:space:]')"
+
+if [ -z "$unreleased" ]; then
+	echo 'Nothing is listed under "Unreleased" in CHANGELOG.md. A release needs at least one entry.' >&2
+	exit 1
+fi
+
+today="$(date +%Y-%m-%d)"
+
+RELEASE_VERSION="$version" perl -pi -e 's/^( \* Version: ).*$/$1$ENV{RELEASE_VERSION}/' lightweight-seo.php
+RELEASE_VERSION="$version" RELEASE_DATE="$today" perl -pi -e 's/^## Unreleased$/## Unreleased\n\n## $ENV{RELEASE_VERSION} - $ENV{RELEASE_DATE}/' CHANGELOG.md
+
+bin/make-pot
+
+echo
+bin/build-zip --worktree
+
+cat <<EOF
+
+Prepared $version (was $current). Still to do by hand:
+
+  1. Add a "$version" section to docs/release-baselines.md with the numbers above.
+     Measure timing, memory, and queries again if a visitor request can be affected.
+  2. composer check && composer audit
+  3. Work through docs/qa-checklist.md for what this release touches.
+  4. Commit, open a pull request, merge it, then tag the merge commit v$version.
+EOF

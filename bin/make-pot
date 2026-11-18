@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+#
+# Regenerate languages/lightweight-seo.pot from the shipped files.
+#
+#   bin/make-pot           update the template when a string or a reference changed
+#   bin/make-pot --check   change nothing; fail when the template is stale
+#
+# The file is left alone when only its creation date or generator line would change.
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+pot="languages/lightweight-seo.pot"
+check=0
+
+case "${1:-}" in
+	'') ;;
+	--check) check=1 ;;
+	*)
+		echo "Usage: bin/make-pot [--check]" >&2
+		exit 2
+		;;
+esac
+
+if ! command -v wp >/dev/null 2>&1; then
+	echo "WP-CLI (wp) is needed to build the translation template: https://wp-cli.org/#installing" >&2
+	exit 2
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+wp i18n make-pot . "$tmp/new.pot" \
+	--slug=lightweight-seo \
+	--domain=lightweight-seo \
+	--include=lightweight-seo.php,uninstall.php,includes,admin \
+	--quiet
+
+# The two header lines that differ between runs and WP-CLI versions.
+comparable() {
+	grep -v -E '^"(POT-Creation-Date|X-Generator): ' "$1"
+}
+
+if [ -f "$pot" ] && diff -q <(comparable "$pot") <(comparable "$tmp/new.pot") >/dev/null; then
+	echo "Translation template is up to date."
+	exit 0
+fi
+
+if [ "$check" -eq 1 ]; then
+	echo "languages/lightweight-seo.pot is stale. Run: composer make-pot" >&2
+	exit 1
+fi
+
+cp "$tmp/new.pot" "$pot"
+echo "Updated $pot"

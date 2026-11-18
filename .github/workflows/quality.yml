@@ -3,6 +3,8 @@ name: Quality
 on:
   push:
   pull_request:
+  # The release workflow runs these checks before it packages anything.
+  workflow_call:
 
 # Checks only read the repository; no job needs a write-scoped token.
 permissions:
@@ -11,31 +13,32 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest and the newest supported PHP: syntax and unit tests must pass on both.
+        php: ['7.4', '8.3']
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up PHP
+      - name: Set up PHP and WP-CLI
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          tools: composer
+          php-version: ${{ matrix.php }}
+          tools: composer, wp-cli
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: PHP lint
-        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      # Composer validation, PHP syntax, PHPCS, unit tests, JavaScript tests, translation template, whitespace.
+      - name: Local gates
+        run: composer check
 
-      - name: PHPCS
-        run: composer run phpcs
-
-      - name: PHPUnit
-        run: composer run test
-
-      - name: JavaScript unit tests
-        run: node --test tests/js/*.test.js
+      - name: Dependency audit
+        if: matrix.php == '8.3'
+        run: composer audit
 
   wordpress-integration:
     runs-on: ubuntu-latest
