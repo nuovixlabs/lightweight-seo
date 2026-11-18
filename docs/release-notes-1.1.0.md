@@ -1,8 +1,8 @@
 # Lightweight SEO 1.1 Release Notes
 
-Release candidate: `1.1.0-rc.5`
+Release candidate: `1.1.0-rc.6`
 
-`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package, and `1.1.0-rc.3` added the redesigned administration interface. `1.1.0-rc.4` added everything in the sections marked "since rc.3" below, and this candidate adds the fix under "Since rc.4". Since rc.3: the content types table, site identity, more title variables, the post list column, Inspect a page, a switch for every module, redirect upgrades, settings export and import, deeper structured data, three more importers, abilities, the IndexNow module, and live previews.
+`1.1.0-rc.1` was never published. `1.1.0-rc.2` was the first 1.1 candidate available as a release package, and `1.1.0-rc.3` added the redesigned administration interface. `1.1.0-rc.4` added everything in the sections marked "since rc.3" below, `1.1.0-rc.5` added the fix under "Since rc.4", and this candidate adds the fix under "Since rc.5". Since rc.3: the content types table, site identity, more title variables, the post list column, Inspect a page, a switch for every module, redirect upgrades, settings export and import, deeper structured data, three more importers, abilities, the IndexNow module, and live previews.
 
 ## Highlights
 
@@ -231,8 +231,6 @@ The editor screens now load `lightweight-seo-formats.js` as well, because the ed
 - An empty tagline no longer leaves a separator behind. WordPress installs with an empty tagline, and the default homepage title format is `%sitename% %sep% %tagline%`, so such a site printed "Site name –". `%tagline%` now behaves like the other optional variables: when the site has no tagline it is left out together with one separator beside it, and the homepage title is "Site name". A site with a tagline prints exactly what it printed before. The settings previews and the editor preview follow the same rule.
 
 ## Since rc.5
-
-Not yet part of a release package.
 
 - The setup checklist on the Overview no longer asks for a tagline. Its first step is "Set a site name" and counts as done once the site has a name, because a title now leaves an empty tagline out by itself.
 
