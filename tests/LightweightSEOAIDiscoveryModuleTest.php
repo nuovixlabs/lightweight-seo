@@ -472,6 +472,17 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( '/blog', $subdirectory['subdirectory'] );
 		$this->assertSame( array(), $subdirectory['rules'] );
 		$this->assertSame( 'Sitemap: https://example.com/wp-sitemap.xml', $subdirectory['sitemapLine'] );
+		// The site's own sitemap and llms.txt answer under its path; clients look for well-known files at the root.
+		$this->assertSame( 'https://example.com/wp-sitemap.xml', $subdirectory['probes']['sitemapXml'] );
+		$this->assertSame( 'http://example.com:8080/blog/llms.txt', $subdirectory['probes']['llms'] );
+		$this->assertSame( 'http://example.com:8080/.well-known/api-catalog', $subdirectory['probes']['apiCatalog'][0] );
+		$this->assertSame( 'http://example.com:8080/.well-known/mcp.json', $subdirectory['probes']['mcp'][2] );
+		$this->assertFalse( $subdirectory['sitemapFromRobots'] );
+
+		// A root install probes what it did before, and keeps the root robots.txt as a sitemap fallback.
+		$this->assertSame( 'https://example.com/sitemap.xml', $expected['probes']['sitemapXml'] );
+		$this->assertSame( 'https://example.com/llms.txt', $expected['probes']['llms'] );
+		$this->assertArrayNotHasKey( 'sitemapFromRobots', $expected );
 	}
 
 	public function test_content_signal_goes_inside_the_group_for_every_crawler_when_switched_on(): void {
@@ -621,6 +632,61 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		};
 		$this->assertSame( array( 'warning', 'Another robots.txt filter already writes rules for GPTBot, so Lightweight SEO leaves them alone.' ), array( $owner()['state'], $owner()['text'] ) );
 		unset( $lightweight_seo_test_filters['robots_txt'] );
+	}
+
+	public function test_a_subdirectory_install_states_the_root_of_the_host_once_and_checks_its_own_files(): void {
+		global $lightweight_seo_test_home_url;
+
+		$api      = new class() {
+			public function get_sitemap_urls() {
+				return array( 'http://localhost/agalliers-photography/wp-sitemap.xml' );
+			}
+		};
+		$rows     = function () use ( $api ) {
+			$found = array();
+
+			foreach ( ( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), $api, 'admin' ) )->get_readiness_report() as $area ) {
+				foreach ( $area['rows'] as $row ) {
+					$found[ $row['id'] ] = $row;
+				}
+			}
+
+			return $found;
+		};
+		$previous = $lightweight_seo_test_home_url;
+
+		$lightweight_seo_test_home_url = 'http://localhost/agalliers-photography';
+		$folder                        = $rows();
+		$lightweight_seo_test_home_url = $previous;
+		$root                          = $rows();
+
+		$this->assertSame( 'info', $folder['host_root']['state'] );
+		$this->assertSame(
+			array(
+				'WordPress is installed under /agalliers-photography. Crawlers and agents look for robots.txt, llms.txt, and the well-known files at the root of the host, http://localhost/, which WordPress does not answer, so the crawler rules set on this card are not served there.',
+				'Whoever maintains http://localhost/robots.txt can point crawlers to this site’s sitemap with this line: Sitemap: http://localhost/agalliers-photography/wp-sitemap.xml',
+			),
+			$folder['host_root']['text']
+		);
+		$this->assertSame( 'http://localhost/agalliers-photography/wp-sitemap.xml', $folder['sitemapXml']['url'] );
+		$this->assertSame( 'This site’s sitemap address, http://localhost/agalliers-photography/wp-sitemap.xml, does not answer with a valid XML sitemap.', $folder['sitemapXml']['messages']['missing'] );
+		$this->assertArrayNotHasKey( 'listed', $folder['sitemapXml']['messages'] );
+		$this->assertSame( 'http://localhost/agalliers-photography/llms.txt', $folder['llms']['url'] );
+		$this->assertArrayNotHasKey( 'sitemap', $folder, 'The root robots.txt is not this site’s, so its Sitemap line has no row.' );
+		$this->assertSame( array( 'info', 'Not WordPress: the robots.txt crawlers read is at the root of the host, which belongs to the server or another site.' ), array( $folder['robots_owner']['state'], $folder['robots_owner']['text'] ) );
+		$this->assertArrayNotHasKey( 'attributes', $folder['robots_owner'] );
+		$this->assertSame( 'http://localhost/.well-known/api-catalog', $folder['apiCatalog']['url'] );
+
+		// Nothing in the report names /sitemap.xml or /robots.txt as if they were this site's.
+		$this->assertDoesNotMatchRegularExpression( '/Neither \/sitemap\.xml|answers \/robots\.txt instead of WordPress|robots\.txt disallows every crawler/', wp_json_encode( $folder ) );
+
+		// A root install has no such row and keeps what it decided before.
+		$this->assertArrayNotHasKey( 'host_root', $root );
+		$this->assertArrayHasKey( 'sitemap', $root );
+		$this->assertSame( 'https://example.com/sitemap.xml', $root['sitemapXml']['url'] );
+		$this->assertSame( 'Neither /sitemap.xml nor a Sitemap line in robots.txt leads to a sitemap.', $root['sitemapXml']['messages']['missing'] );
+		$this->assertSame( 'https://example.com/llms.txt', $root['llms']['url'] );
+		$this->assertSame( 'rules', $root['robots_owner']['attributes']['data-settled-by'] );
 	}
 
 	private function settings( $search = true, $training = false, $ids = array(), $values = array() ) {

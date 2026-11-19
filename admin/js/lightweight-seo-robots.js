@@ -423,12 +423,15 @@
 	 * answers   {robots, sitemapXml, home, markdown, llms, apiCatalog: [], skills: [], mcp: [], ard: []},
 	 *           each an answer as check() takes it, plus xmlRoot (the root element name, or null when the
 	 *           body is not XML) for sitemapXml and link (the Link header) for home.
-	 * expected  What check() takes, plus llmsEnabled and signalOff.
+	 * expected  What check() takes, plus llmsEnabled, signalOff, and sitemapFromRobots (false on a
+	 *           subdirectory install).
 	 */
 	function readiness(answers, expected) {
 		var settings = expected || {};
 		var robots = answers.robots || {};
-		var sitemaps = answered(robots) ? parse(robots.body).sitemaps : [];
+		// On a subdirectory install the robots.txt at the root of the host is not this site's, so a Sitemap
+		// line in it says nothing about this site's sitemap.
+		var sitemaps = settings.sitemapFromRobots !== false && answered(robots) ? parse(robots.body).sitemaps : [];
 
 		return check(robots, settings).concat([
 			sitemapXmlResult(answers.sitemapXml, sitemaps),

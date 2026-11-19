@@ -1896,10 +1896,28 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$lightweight_seo_test_home_url = $previous_home;
 
-		$this->assertStringContainsString( 'WordPress is installed under /blog, and crawlers read robots.txt only at https://example.com/robots.txt, which WordPress does not answer.', $subdirectory );
+		// One neutral row says the root of the host is not this site's, instead of a warning on each file.
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-info" data-readiness="host_root">.*?Root of the host<\/span><p class="lwseo-status__text">WordPress is installed under \/blog\. Crawlers and agents look for robots\.txt, llms\.txt, and the well-known files at the root of the host, https:\/\/example\.com\/, which WordPress does not answer/s', $subdirectory );
 		$this->assertStringContainsString( '&quot;rules&quot;:[]', $subdirectory );
-		// No rules are expected there, so no row waits for them.
+		// No rules are expected there, so no row waits for them, and the root robots.txt is not this site's.
 		$this->assertStringNotContainsString( 'data-served-check="rules"', $subdirectory );
+		$this->assertStringNotContainsString( 'data-served-check="sitemap"', $subdirectory );
+		$this->assertStringContainsString( '&quot;sitemapFromRobots&quot;:false', $subdirectory );
+		$this->assertStringContainsString( 'Not WordPress: the robots.txt crawlers read is at the root of the host', $subdirectory );
+		// This site's own sitemap and llms.txt are checked under its path; the well-known files stay at the root.
+		$this->assertStringContainsString( '<a class="lwseo-status__action" href="https://example.com/blog/sitemap.xml"', $subdirectory );
+		$this->assertStringContainsString( '<a class="lwseo-status__action" href="https://example.com/blog/llms.txt"', $subdirectory );
+		$this->assertStringContainsString( '<a class="lwseo-status__action" href="https://example.com/.well-known/api-catalog"', $subdirectory );
+		$this->assertStringNotContainsString( 'Neither /sitemap.xml nor', $subdirectory );
+		$this->assertStringNotContainsString( 'robots.txt disallows every crawler', $subdirectory );
+
+		// A root install prints what it printed before.
+		$this->assertStringNotContainsString( 'host_root', $output );
+		$this->assertStringNotContainsString( 'sitemapFromRobots', $output );
+		$this->assertStringContainsString( 'data-served-check="sitemap"', $output );
+		$this->assertStringContainsString( 'data-msg-missing="Neither /sitemap.xml nor a Sitemap line in robots.txt leads to a sitemap."', $output );
+		$this->assertStringContainsString( '<a class="lwseo-status__action" href="https://example.com/sitemap.xml"', $output );
+		$this->assertStringContainsString( '<a class="lwseo-status__action" href="https://example.com/llms.txt"', $output );
 	}
 
 	public function test_robots_reader_loads_on_the_modules_tab_while_ai_discovery_is_on(): void {
