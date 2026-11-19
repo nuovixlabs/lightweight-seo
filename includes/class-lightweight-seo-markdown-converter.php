@@ -210,7 +210,7 @@ class Lightweight_SEO_Markdown_Converter {
 
 		foreach ( $container->childNodes as $child ) {
 			if ( ! $this->is_block( $child ) ) {
-				$inline .= $this->render_inline( $child );
+				$inline = self::join_inline( $inline, $this->render_inline( $child ) );
 				continue;
 			}
 
@@ -474,10 +474,30 @@ class Lightweight_SEO_Markdown_Converter {
 		$text = '';
 
 		foreach ( $element->childNodes as $child ) {
-			$text .= $this->render_inline( $child );
+			$text = self::join_inline( $text, $this->render_inline( $child ) );
 		}
 
 		return $text;
+	}
+
+	/**
+	 * Append a rendered piece to a line.
+	 *
+	 * Text ending in "!" directly before a link would read as an image, so that "!" is escaped.
+	 * Rendered text never starts with a bare "[", because escape_text() escapes it: a piece that
+	 * does is a link, and an image starts with "![" and needs nothing. A "!" at the end of the
+	 * line is never escaped already, because escape_text() doubles every backslash.
+	 *
+	 * @param string $text  The line so far.
+	 * @param string $piece The rendered piece.
+	 * @return string
+	 */
+	private static function join_inline( $text, $piece ) {
+		if ( '[' === substr( $piece, 0, 1 ) && '!' === substr( $text, -1 ) ) {
+			$text = substr( $text, 0, -1 ) . '\\!';
+		}
+
+		return $text . $piece;
 	}
 
 	/**
