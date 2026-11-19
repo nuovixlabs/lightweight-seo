@@ -1,5 +1,11 @@
 # Release Baselines
 
+## Unreleased
+
+Measured when the release is cut. Files added since `1.1.0`, and when each is loaded; none is loaded on a visitor request:
+
+- `admin/js/lightweight-seo-robots.js`: the Modules tab of the settings screen, while AI Discovery is on.
+
 ## 1.1.0-rc.4
 
 Reference measurements for `1.1.0-rc.4` were recorded on 2026-11-17. Every row was measured again.

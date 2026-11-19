@@ -130,6 +130,15 @@ The "Inspect a page" card on the Tools tab shows what the plugin sends for one a
 - **Without the script** a link opens the same report as a page of its own. That page links the admin stylesheet and carries the few rules WordPress would otherwise supply (`lwseo-inspect-page`).
 - **Nothing is fetched by PHP**, and the inspect argument does nothing without the `manage_options` capability and a valid nonce.
 
+## Served-File Checks
+
+The AI Discovery card reports on the `robots.txt` crawlers receive, as the administrator's browser fetches it.
+
+- **The server prints every row and message.** Each row is a hidden `status()` row in the `pending` state, with `data-served-check` naming it and one `data-msg-{key}` per message it can show. The list carries the address in `data-url`, what is expected in `data-expected`, and the screen reader prefixes in `data-prefix-{state}`.
+- **A pure reader decides.** `lightweight-seo-robots.js` has no DOM or network access and returns, per row, a state, a message key, and values for its `%s`. It is tested under Node in `tests/js/robots.test.js`. The admin script fetches the file, signed out, and shows the rows the reader returns.
+- **Without the script** the rows stay hidden, the settings-based checks above them still show, and a link opens the file.
+- **Nothing is fetched by PHP.**
+
 ## Live Editor Checks
 
 The editor panel is printed in its saved state and then follows the page as it is edited.

@@ -147,7 +147,7 @@ It reads normalized SEO facts from core through `lightweight_seo_get_api()` and 
 | Layer | Where | Covers |
 |---|---|---|
 | Unit | `tests/*.php` | Sanitizers, templates, module decisions, graph construction, admin rendering. Runs against the WordPress stubs in `tests/bootstrap.php`, in about a second. |
-| JavaScript | `tests/js/` | Title variable and shortening rules shared by the previews. |
+| JavaScript | `tests/js/` | Title variable and shortening rules shared by the previews, and how a served `robots.txt` is read. |
 | Integration | `tests/integration/` | Real WordPress: hooks, head output, sitemaps, activation, uninstall, importers, WooCommerce. |
 | By hand | [QA Checklist](qa-checklist.md) | Browser behavior, accessibility, other SEO plugins, performance. |
 
