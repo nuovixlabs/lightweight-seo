@@ -796,12 +796,12 @@ class Lightweight_SEO_Admin_Module_Fields {
 
 	/** Render search and user-directed crawler policy. */
 	public function ai_search_crawlers_enabled_render() {
-		$this->render_choice( 'ai_search_crawlers_enabled', '1', __( 'Allow bundled AI search and user-directed crawler tokens', 'lightweight-seo' ), __( 'Lets the documented AI search crawlers and user-requested fetchers in, such as OAI-SearchBot, Claude-SearchBot, PerplexityBot, Meta-WebIndexer, Amzn-SearchBot, DuckAssistBot, MistralAI-Index, and ChatGPT-User. Some user-requested fetchers do not follow robots.txt, and none of this guarantees discovery or citation.', 'lightweight-seo' ) );
+		$this->render_choice( 'ai_search_crawlers_enabled', '1', __( 'Allow bundled AI search and user-directed crawler tokens', 'lightweight-seo' ), __( 'On, Lightweight SEO does not block the documented AI search crawlers and user-requested fetchers, such as OAI-SearchBot, Claude-SearchBot, PerplexityBot, Meta-WebIndexer, Amzn-SearchBot, DuckAssistBot, MistralAI-Index, and ChatGPT-User, so they follow the site’s rules for every crawler; off, it adds a Disallow group for each. Some user-requested fetchers do not follow robots.txt, and none of this guarantees discovery or citation.', 'lightweight-seo' ) );
 	}
 
 	/** Render model-training crawler policy separately from search access. */
 	public function ai_training_crawlers_enabled_render() {
-		$this->render_choice( 'ai_training_crawlers_enabled', '0', __( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ), __( 'Off blocks GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent, Amazonbot, and MistralAI-Training. Meta-ExternalAgent and Amazonbot are then blocked for every use, not only training. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ) );
+		$this->render_choice( 'ai_training_crawlers_enabled', '0', __( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ), __( 'Off, Lightweight SEO adds a Disallow group for GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent, Amazonbot, and MistralAI-Training; on, it does not block them, so they follow the site’s rules for every crawler. Meta-ExternalAgent and Amazonbot are blocked for every use, not only training. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ) );
 	}
 
 	/** Render the Content-Signal line switch. */
@@ -879,7 +879,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 
 		$module   = new Lightweight_SEO_AI_Discovery_Module( $this->settings, function_exists( 'lightweight_seo_get_api' ) ? lightweight_seo_get_api() : null, 'admin', $this->post_meta );
 		$expected = $module->get_served_robots_expectations();
-		$keys     = array( 'rules', 'crawlers', 'sitemapLine', 'contentSignal', 'signalOff', 'llmsEnabled', 'probes' );
+		$keys     = array( 'rules', 'marker', 'crawlers', 'sitemapLine', 'contentSignal', 'signalOff', 'llmsEnabled', 'probes' );
 
 		echo '<div class="lwseo-readiness" data-lwseo-served';
 		echo ' data-url="' . esc_url( $expected['url'] ) . '"';

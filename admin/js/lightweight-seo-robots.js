@@ -163,7 +163,21 @@
 		return {id: 'fetch', state: 'success', key: 'ok', values: [response.url || '']};
 	}
 
-	function rulesResult(parsed, expectedRules) {
+	// The rules a crawler follows: its own group, else the group for every crawler, else none.
+	function rulesFollowedBy(parsed, token) {
+		var own = rulesNaming(parsed, token);
+		var every = own === null ? rulesNaming(parsed, '*') : null;
+
+		return own !== null ? own : (every || []);
+	}
+
+	/**
+	 * Compare the served file with the card. A crawler the card switches off must have a group of
+	 * its own that disallows the whole site. A crawler the card allows gets no group from the plugin
+	 * and follows the rules that apply to it, so it passes while those do not shut it out of the
+	 * whole site. Whether the plugin's part is served at all is told by its marker comment.
+	 */
+	function rulesResult(parsed, body, expectedRules, marker) {
 		var missing = [];
 		var different = [];
 		var tokens = Object.keys(expectedRules);
@@ -172,19 +186,23 @@
 			return null;
 		}
 
-		tokens.forEach(function(token) {
-			var rules = rulesNaming(parsed, token);
+		if (marker && String(body).indexOf(marker) === -1) {
+			return {id: 'rules', state: 'warning', key: 'absent', values: []};
+		}
 
-			if (rules === null) {
+		tokens.forEach(function(token) {
+			var own = rulesNaming(parsed, token);
+
+			if (expectedRules[token]) {
+				if (blocksWholeSite(rulesFollowedBy(parsed, token))) {
+					different.push(token);
+				}
+			} else if (own === null) {
 				missing.push(token);
-			} else if (allows(rules, '/') !== Boolean(expectedRules[token])) {
+			} else if (!blocksWholeSite(own)) {
 				different.push(token);
 			}
 		});
-
-		if (missing.length === tokens.length) {
-			return {id: 'rules', state: 'warning', key: 'absent', values: []};
-		}
 
 		if (missing.length) {
 			return {id: 'rules', state: 'warning', key: 'missing', values: missing};
@@ -382,20 +400,21 @@
 	 * Settle a row the server could only partly decide, from the browser's result for another row.
 	 *
 	 * "Who writes robots.txt" knows only that no file is on disk and no other plugin it can see adds
-	 * rules. The served file decides the rest: the card's rules present passes it, and rules absent,
-	 * missing, or different mean something the server cannot see answers or rewrites the file. Any
-	 * other result, such as a file that could not be fetched, leaves the server's statement as it is.
+	 * rules. The served file decides the rest: the plugin's part being served passes it, even when a
+	 * rule in it differs, and its absence means something the server cannot see answers or rewrites
+	 * the file. Any other result, such as a file that could not be fetched, leaves the statement as it is.
 	 */
 	function settle(result) {
 		if (!result || result.id !== 'rules') {
 			return null;
 		}
 
-		if (result.key === 'present') {
+		// Any answer but "absent" means the file served is WordPress's, with the plugin's part in it.
+		if (['present', 'missing', 'different'].indexOf(result.key) !== -1) {
 			return {state: 'success', key: 'present'};
 		}
 
-		return ['absent', 'missing', 'different'].indexOf(result.key) !== -1 ? {state: 'warning', key: 'absent'} : null;
+		return result.key === 'absent' ? {state: 'warning', key: 'absent'} : null;
 	}
 
 	/**
@@ -427,7 +446,7 @@
 	 * Compare a served answer with what is expected.
 	 *
 	 * response  {fetched, status, contentType, body, url}; fetched is false when the request failed.
-	 * expected  {rules: {token: allowed}, crawlers: [tokens checked for a whole-site block], sitemapLine, contentSignal}
+	 * expected  {rules: {token: allowed}, marker, crawlers: [tokens checked for a whole-site block], sitemapLine, contentSignal}
 	 */
 	function check(response, expected) {
 		var settings = expected || {};
@@ -441,7 +460,7 @@
 		}
 
 		parsed = parse(response.body);
-		results.push(rulesResult(parsed, settings.rules || {}));
+		results.push(rulesResult(parsed, response.body, settings.rules || {}, settings.marker || ''));
 		results.push(blockedResult(parsed, settings.crawlers || []));
 		results.push(sitemapResult(parsed, settings.sitemapLine || ''));
 		results.push(signalsResult(parsed, settings.contentSignal || '', Boolean(settings.signalOff)));

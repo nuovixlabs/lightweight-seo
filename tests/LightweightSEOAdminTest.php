@@ -1876,7 +1876,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		// Settings-based rows and their states.
 		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success" data-readiness="search_visibility"/', $output );
 		// Who writes robots.txt is not passed by the server; the browser settles it from the served file.
-		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-info" data-readiness="robots_owner" data-settled-by="rules" data-msg-present="[^"]+" data-msg-absent="[^"]+but the served file does not hold the rules set here/', $output );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-info" data-readiness="robots_owner" data-settled-by="rules" data-msg-present="[^"]+" data-msg-absent="[^"]+but the served file does not have the part Lightweight SEO adds/', $output );
 		$this->assertStringNotContainsString( 'WordPress writes robots.txt', $output );
 		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-off" data-readiness="training">.*?Off by choice:.*?Disallowed, as chosen on this card\./s', $output );
 		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-off" data-readiness="llms_pages"/', $output );

@@ -8,6 +8,20 @@ These notes describe the 1.2 line by feature, as it is built. [Changelog](../CHA
 
 ## AI Discovery
 
+### Allowed AI crawlers follow the site's general rules
+
+**This changes the `robots.txt` of every site that has AI Discovery on.**
+
+In 1.1, every AI crawler the card allowed got a group of its own holding only `Allow: /`. A crawler that finds a group naming it follows that group and ignores the one for every crawler (`User-agent: *`), as RFC 9309 says. So an allowed AI crawler stopped obeying everything the site said to every crawler: WordPress's own `Disallow: /wp-admin/`, a shop's cart and checkout paths, and anything another plugin or the owner added.
+
+From 1.2:
+
+- **The `Allow: /` groups go away.** An allowed AI crawler gets no group from Lightweight SEO, so it obeys the rules for every crawler, including rules another plugin adds later.
+- **A crawler that is switched off still gets its own group with `Disallow: /`**, as before.
+- **A comment names the allowed crawlers**, under the plugin's own comment, so the file says what the card chose: `# Not blocked here, so they follow the rules for all crawlers: OAI-SearchBot, ChatGPT-User, …`. The plugin's comment is printed whenever the module is on and WordPress answers the file, even when no group is written.
+- **A site whose `*` group disallows everything no longer has AI search crawlers excepted from that.** Before, the `Allow: /` groups let them in anyway. If that is intended, add a group for them with another plugin or a physical file; a crawler another source already names is left alone.
+- The two switches keep their names and stored values. On now means Lightweight SEO does not block those crawlers and they follow the site's general rules; off means it disallows them.
+
 ### More AI crawlers
 
 AI Discovery writes `robots.txt` rules for eleven more crawlers. Each was checked on its vendor's own documentation page on 2026-11-19.
@@ -26,7 +40,7 @@ AI Discovery writes `robots.txt` rules for eleven more crawlers. Each was checke
 | `Amzn-User` | Amazon | Fetching live information a user asked for | AI search and user-directed (on by default) |
 | `MistralAI-User` | Mistral AI | Fetching a page a user asked for | AI search and user-directed (on by default) |
 
-**This changes the `robots.txt` of sites that already use AI Discovery.** After the update, the virtual file holds a group for each new crawler, allowed or disallowed as the switches are set. A physical `robots.txt` file, and a crawler another plugin already names, are left alone as before.
+**This changes the `robots.txt` of sites that already use AI Discovery.** After the update, each new crawler that is switched off has a group that disallows it, and each one that is allowed is named in the comment and follows the rules for every crawler. A physical `robots.txt` file, and a crawler another plugin already names, are left alone as before.
 
 With the defaults, the four training crawlers get `Disallow: /`:
 
@@ -85,7 +99,7 @@ The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' 
 
 - The administrator's browser fetches `/robots.txt` at the root of the host, without its sign-in, the way a crawler does. The server makes no request.
 - **robots.txt** says whether the address answered with a plain text file, and reports a failed fetch, a status other than 200, or a type other than `text/plain`.
-- **AI crawler rules** says whether the rules for the AI crawlers set on the card are in the served file, and names any that are missing or give a different answer. When none are there, another file or setting answers the address instead of WordPress.
+- **AI crawler rules** says whether the served file follows the card: each crawler switched off has a group that disallows the whole site, and no allowed crawler is shut out of the whole site, by its own group if another source wrote one, or else by the group for every crawler. It names any that differ. When the plugin's comment is not in the served file, another file or setting answers the address instead of WordPress.
 - **Whole-site blocks** names any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site. A group that disallows `/` but also has `Allow` lines is reported as disallowing the homepage and every page those lines do not list, since the listed paths can still be fetched.
 - **Sitemap line in robots.txt** lists the `Sitemap:` lines, or gives the exact line to add when WordPress sitemaps are on.
 - **Content signals** lists the `Content-Signal` lines served, and says when the line this card adds is missing.

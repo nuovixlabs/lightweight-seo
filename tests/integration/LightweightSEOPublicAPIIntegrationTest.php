@@ -186,8 +186,40 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$robots = $module->filter_robots_txt( "User-agent: *\nDisallow: /wp-admin/\n", true );
 		$llms   = $module->build_llms_txt();
 
-		$this->assertStringContainsString( "User-agent: OAI-SearchBot\nAllow: /", $robots );
+		// An allowed crawler gets no group of its own, so it keeps following the rules for every crawler.
+		$this->assertStringNotContainsString( 'User-agent: OAI-SearchBot', $robots );
+		$this->assertMatchesRegularExpression( '/^# Not blocked here, so they follow the rules for all crawlers: .*\bOAI-SearchBot\b/m', $robots );
 		$this->assertStringContainsString( "User-agent: GPTBot\nDisallow: /", $robots );
+
+		// The file WordPress serves without Lightweight SEO: what do_robots() starts from, through every other robots_txt filter.
+		$without = (string) apply_filters( 'robots_txt', "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n", true );
+		$with    = $module->filter_robots_txt( $without, true );
+		$marker  = Lightweight_SEO_AI_Discovery_Module::ROBOTS_MARKER;
+
+		$this->assertStringNotContainsString( $marker, $without, 'The module is not hooked in this test, so this is the file without it.' );
+		$this->assertStringContainsString( $marker, $with );
+		// Everything before the plugin's part is the file as it was, whatever another plugin put in it.
+		$this->assertSame( rtrim( $without ), rtrim( substr( $with, 0, (int) strpos( $with, $marker ) ) ) );
+
+		// No allowed crawler has a group of its own, so each obeys the rules for all crawlers.
+		foreach ( array_keys( array_filter( $module->get_crawler_policy() ) ) as $token ) {
+			$this->assertDoesNotMatchRegularExpression( '/^\s*User-agent\s*:\s*' . preg_quote( $token, '/' ) . '\s*$/mi', $with, $token );
+		}
+
+		$this->assertDoesNotMatchRegularExpression( '/^\s*Allow\s*:\s*\/\s*$/mi', $with );
+
+		// With WooCommerce active, its shop rules stay in the group for every crawler, which allowed AI crawlers now obey.
+		if ( class_exists( 'WooCommerce' ) ) {
+			foreach ( array( 'add-to-cart', 'Disallow: /wp-admin/' ) as $rule ) {
+				$at = strpos( $with, $rule );
+
+				$this->assertNotFalse( $at, $rule );
+				$this->assertLessThan( strpos( $with, $marker ), $at, $rule );
+				// The group a rule belongs to is named by the last User-agent line above it.
+				preg_match_all( '/^\s*User-agent\s*:\s*(\S+)/mi', substr( $with, 0, $at ), $agents );
+				$this->assertSame( '*', end( $agents[1] ), $rule );
+			}
+		}
 		$this->assertStringContainsString( 'Public Guide', $llms );
 		$this->assertStringContainsString( 'A concise public summary.', $llms );
 		$this->assertStringNotContainsString( 'Draft Guide', $llms );

@@ -7,6 +7,8 @@ Each token follows one of the two switches on the AI Discovery card:
 - **search** and **user**: "Allow bundled AI search and user-directed crawler tokens", on by default.
 - **training**: "Allow bundled model-training crawler tokens", off by default.
 
+A switch that is off gives each of its tokens a group with `Disallow: /`. A switch that is on gives them no group: they are named in a comment under the plugin's own and follow the rules for every crawler (`User-agent: *`), because a crawler with a group of its own would ignore those rules.
+
 "Follows robots.txt" is what the vendor's page says, not something the plugin can check.
 
 ## Tokens
