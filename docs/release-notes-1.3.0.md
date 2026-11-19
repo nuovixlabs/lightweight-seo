@@ -76,7 +76,7 @@ The converter writes CommonMark with GitHub-flavored tables and strikethrough. I
 | `Cache-Control` | `private, no-store` |
 | `X-LiteSpeed-Cache-Control` | `no-cache` |
 
-`DONOTCACHEPAGE` is defined, there is no `ETag` or `Last-Modified`, and a `HEAD` request gets the headers without a body.
+`DONOTCACHEPAGE` is defined, there is no `ETag` or `Last-Modified`, and a `HEAD` request gets the headers without a body. If output has already started when the answer is due, so that no header can be sent, the HTML page is sent instead.
 
 #### Page caches and CDNs
 

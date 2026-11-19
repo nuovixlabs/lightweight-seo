@@ -348,6 +348,35 @@ final class LightweightSEOMarkdownOnRequestTest extends TestCase {
 		$this->assertFalse( $module->markdown_requested( 'singular', 'text/markdown', 'GET' ) );
 	}
 
+	/**
+	 * Output already started: the HTML page is sent, because the Markdown would go out without its headers.
+	 *
+	 * Without the check the answer is sent and the request ends, which ends this test's process.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_when_headers_are_already_sent_the_html_page_is_sent(): void {
+		$this->switch_on();
+		$this->view_post( 5, '<p>Body.</p>' );
+		$_SERVER['HTTP_ACCEPT'] = 'text/markdown';
+
+		$module = new class( new Lightweight_SEO_Settings(), null, 'admin' ) extends Lightweight_SEO_AI_Discovery_Module {
+			protected function headers_already_sent() {
+				return true;
+			}
+		};
+
+		$this->assertTrue( $module->markdown_requested( 'singular', 'text/markdown', 'GET' ) );
+
+		ob_start();
+		$module->maybe_answer_with_markdown();
+		$output = ob_get_clean();
+
+		$this->assertSame( '', $output );
+		$this->assertFalse( class_exists( 'Lightweight_SEO_Markdown_Response', false ) );
+	}
+
 	/* The answer ------------------------------------------------------------ */
 
 	public function test_headers_of_a_markdown_answer(): void {

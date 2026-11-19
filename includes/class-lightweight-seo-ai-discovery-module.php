@@ -375,6 +375,11 @@ class Lightweight_SEO_AI_Discovery_Module {
 			return;
 		}
 
+		// Without its headers the Markdown would go out as HTML, and without its cache protections.
+		if ( $this->headers_already_sent() ) {
+			return;
+		}
+
 		$this->send_markdown_response( $view, $method );
 		exit;
 	}
@@ -571,6 +576,16 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 */
 	protected function markdown_available() {
 		return class_exists( 'DOMDocument' );
+	}
+
+	/**
+	 * Whether output has started, so no header can be sent any more.
+	 *
+	 * @since 1.3.0
+	 * @return bool
+	 */
+	protected function headers_already_sent() {
+		return headers_sent();
 	}
 
 	/** Build a concise Markdown index from explicitly selected, public pages only. */
