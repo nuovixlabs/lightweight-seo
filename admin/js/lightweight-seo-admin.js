@@ -43,7 +43,7 @@
 
 		/* Status rows filled by a script -------------------------------------- */
 
-		var statusIcons = {success: 'dashicons-yes-alt', warning: 'dashicons-warning', info: 'dashicons-info-outline', pending: 'dashicons-marker'};
+		var statusIcons = {success: 'dashicons-yes-alt', warning: 'dashicons-warning', info: 'dashicons-info-outline', pending: 'dashicons-marker', off: 'dashicons-hidden', na: 'dashicons-minus'};
 
 		// Show a row the server printed hidden, in a state, with one line of text. The list carries
 		// the screen reader prefixes in data-prefix-{state}. Text is set as text, never as markup.
@@ -52,8 +52,8 @@
 			var body = row.find('.lwseo-status__body');
 			var line = body.children('.lwseo-status__text').first();
 
-			row.prop('hidden', false).removeClass('is-success is-warning is-info is-pending').addClass('is-' + state);
-			row.children('.lwseo-status__icon').removeClass('dashicons-yes-alt dashicons-warning dashicons-info-outline dashicons-marker').addClass(statusIcons[state] || statusIcons.info);
+			row.prop('hidden', false).removeClass('is-success is-warning is-info is-pending is-off is-na').addClass('is-' + state);
+			row.children('.lwseo-status__icon').removeClass('dashicons-yes-alt dashicons-warning dashicons-info-outline dashicons-marker dashicons-hidden dashicons-minus').addClass(statusIcons[state] || statusIcons.info);
 			row.find('.lwseo-status__title .screen-reader-text').remove();
 
 			if (prefix) {
@@ -224,43 +224,129 @@
 			}
 		});
 
-		/* Served robots.txt ----------------------------------------------------- */
+		/* AI readiness: served addresses ----------------------------------------- */
 
-		// The administrator's browser fetches the file crawlers read, signed out, and compares it with
-		// what the server expects. The rows and every message are printed by the server; this only
-		// picks the ones that apply. Nothing is saved.
-		$('[data-lwseo-served-robots]').each(function() {
-			var list = $(this);
+		// The administrator's browser fetches each address signed out, the way a crawler or an agent
+		// would, and lightweight-seo-robots.js decides each row. The rows and every message are printed
+		// by the server; this only picks the ones that apply. Nothing is saved.
+		$('[data-lwseo-served]').each(function() {
+			var report = $(this);
 			var robots = window.lightweightSeoRobots;
+			var card = report.closest('details');
 			var expected;
 
-			if (!robots || !window.fetch) {
+			if (!robots || !robots.readiness || !window.fetch) {
 				return;
 			}
 
 			try {
-				expected = JSON.parse(list.attr('data-expected') || '{}');
+				expected = JSON.parse(report.attr('data-expected') || '{}');
 			} catch (error) {
 				expected = {};
 			}
 
+			var probes = expected.probes || {};
 
-			// The fetch row shows its "fetching" text until the answer arrives.
-			list.find('[data-served-check="fetch"]').prop('hidden', false);
+			function get(url, headers) {
+				if (!url) {
+					return Promise.resolve({fetched: false});
+				}
 
-			window.fetch(list.attr('data-url'), {credentials: 'omit', cache: 'no-store', redirect: 'follow'}).then(function(response) {
-				return response.text().then(function(body) {
-					return {fetched: true, status: response.status, contentType: response.headers.get('content-type') || '', body: body, url: response.url};
+				return window.fetch(url, {credentials: 'omit', cache: 'no-store', redirect: 'follow', headers: headers || {}}).then(function(response) {
+					return response.text().then(function(body) {
+						return {
+							fetched: true,
+							status: response.status,
+							contentType: response.headers.get('content-type') || '',
+							link: response.headers.get('link') || '',
+							body: body,
+							url: response.url
+						};
+					});
+				}, function() {
+					return {fetched: false};
 				});
-			}, function() {
-				return {fetched: false};
-			}).then(function(response) {
-				robots.check(response, expected).forEach(function(result) {
-					var row = list.find('[data-served-check="' + result.id + '"]');
+			}
 
-					showStatusRow(list, row, result.state, (row.attr('data-msg-' + result.key) || '').replace('%s', result.values.join(', ')));
+			// The name of the root element, or null when the answer is not well-formed XML.
+			function withXmlRoot(answer) {
+				var root = null;
+
+				if (answer.fetched && answer.status === 200 && window.DOMParser) {
+					var doc = new window.DOMParser().parseFromString(answer.body, 'application/xml');
+
+					root = doc.getElementsByTagName('parsererror').length || !doc.documentElement ? null : doc.documentElement.localName;
+				}
+
+				answer.xmlRoot = root;
+
+				return answer;
+			}
+
+			function all(urls) {
+				return Promise.all((urls || []).map(function(url) {
+					return get(url);
+				}));
+			}
+
+			function run() {
+				Promise.all([
+					get(report.attr('data-url')),
+					get(probes.sitemapXml).then(withXmlRoot),
+					get(probes.linkHeaders),
+					get(probes.markdown, {Accept: 'text/markdown'}),
+					get(probes.llms),
+					all(probes.apiCatalog),
+					all(probes.skills),
+					all(probes.mcp),
+					all(probes.ard)
+				]).then(function(answers) {
+					var decided = {};
+					var results = {};
+
+					robots.readiness({
+						robots: answers[0],
+						sitemapXml: answers[1],
+						home: answers[2],
+						markdown: answers[3],
+						llms: answers[4],
+						apiCatalog: answers[5],
+						skills: answers[6],
+						mcp: answers[7],
+						ard: answers[8]
+					}, expected).forEach(function(result) {
+						var row = report.find('[data-served-check="' + result.id + '"]');
+
+						decided[result.id] = true;
+						results[result.id] = result;
+						showStatusRow(report, row, result.state, (row.attr('data-msg-' + result.key) || '').replace('%s', result.values.join(', ')));
+					});
+
+					// A settings row the browser settles from another row's result, such as who writes robots.txt.
+					report.find('[data-settled-by]').each(function() {
+						var row = $(this);
+						var outcome = robots.settle ? robots.settle(results[row.attr('data-settled-by')]) : null;
+
+						if (outcome) {
+							showStatusRow(report, row, outcome.state, row.attr('data-msg-' + outcome.key) || '');
+						}
+					});
+
+					// Rows read from robots.txt cannot be decided when it could not be read.
+					report.find('[data-served-check]').each(function() {
+						if (!decided[$(this).attr('data-served-check')]) {
+							showStatusRow(report, $(this), 'info', report.attr('data-msg-unchecked') || '');
+						}
+					});
 				});
-			});
+			}
+
+			// A collapsed card waits until it is opened, so a visit to the tab sends no requests it does not show.
+			if (card.length && !card.prop('open')) {
+				card.one('toggle', run);
+			} else {
+				run();
+			}
 		});
 
 		/* Module cards ------------------------------------------------------- */

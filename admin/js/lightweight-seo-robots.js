@@ -1,16 +1,19 @@
 /**
- * Lightweight SEO served robots.txt checks.
+ * Lightweight SEO served-file checks.
  *
  * Reads a robots.txt file the way RFC 9309 describes it and compares it with
- * what the plugin expects to be served. Pure functions with no DOM or network
- * access: the settings screen fetches the file and passes the answer in, and
- * the same file runs under Node for tests/js/robots.test.js.
+ * what the plugin expects to be served, and reads the other addresses the AI
+ * readiness report fetches. Pure functions with no DOM or network access: the
+ * settings screen fetches each address and passes the answers in, and the same
+ * file runs under Node for tests/js/robots.test.js.
  *
  * check(response, expected) returns one result per row of the report:
  *   {id, state, key, values}
- * id      The row: fetch, rules, blocked, sitemap, or signals.
- * state   success, warning, or info, as Lightweight_SEO_Admin_UI::status() uses them.
- * key     Which message of the row applies. The server prints each message.
+ * id      The row: fetch, rules, blocked, sitemap, or signals; readiness() adds sitemapXml,
+ *         linkHeaders, markdown, llms, apiCatalog, skills, mcp, and ard.
+ * state   success, warning, info, or off, as Lightweight_SEO_Admin_UI::status() uses them.
+ * key     Which message of the row applies. The server prints each message. "unchecked"
+ *         means this browser could not fetch the address, which says nothing about the site.
  * values  Text that fills the message's %s, joined by the caller.
  */
 (function(root, factory) {
@@ -225,14 +228,199 @@
 			: {id: 'sitemap', state: 'info', key: 'none', values: []};
 	}
 
-	function signalsResult(parsed, contentSignal) {
+	function signalsResult(parsed, contentSignal, signalOff) {
 		if (parsed.signals.length) {
 			return {id: 'signals', state: 'success', key: 'present', values: parsed.signals};
 		}
 
-		return contentSignal
-			? {id: 'signals', state: 'warning', key: 'missing', values: ['Content-Signal: ' + contentSignal]}
+		if (contentSignal) {
+			return {id: 'signals', state: 'warning', key: 'missing', values: ['Content-Signal: ' + contentSignal]};
+		}
+
+		return signalOff
+			? {id: 'signals', state: 'off', key: 'off', values: []}
 			: {id: 'signals', state: 'info', key: 'none', values: []};
+	}
+
+	/* Other addresses the readiness report fetches ---------------------------- */
+
+	function answered(response) {
+		return Boolean(response && response.fetched && response.status === 200);
+	}
+
+	// A request that failed tells nothing about the site, only that this browser could not ask.
+	function failed(response) {
+		return !response || !response.fetched;
+	}
+
+	function unchecked(id) {
+		return {id: id, state: 'info', key: 'unchecked', values: []};
+	}
+
+	function mediaType(response) {
+		return String((response && response.contentType) || '').split(';')[0].trim().toLowerCase();
+	}
+
+	function json(response) {
+		try {
+			return JSON.parse(response.body);
+		} catch (error) {
+			return null;
+		}
+	}
+
+	// /sitemap.xml, after the redirects the browser followed, or a Sitemap line in robots.txt.
+	function sitemapXmlResult(response, robotsSitemaps) {
+		if (failed(response) && !robotsSitemaps.length) {
+			return unchecked('sitemapXml');
+		}
+
+		if (answered(response) && (response.xmlRoot === 'urlset' || response.xmlRoot === 'sitemapindex')) {
+			return {id: 'sitemapXml', state: 'success', key: 'valid', values: [response.url || '']};
+		}
+
+		return robotsSitemaps.length
+			? {id: 'sitemapXml', state: 'success', key: 'listed', values: robotsSitemaps}
+			: {id: 'sitemapXml', state: 'warning', key: 'missing', values: []};
+	}
+
+	// Relations the reference names as useful to agents.
+	var AGENT_RELATIONS = ['api-catalog', 'service-desc', 'describedby'];
+
+	function linkHeadersResult(response) {
+		if (failed(response)) {
+			return unchecked('linkHeaders');
+		}
+
+		var header = String((response && response.link) || '');
+		var found = [];
+		var pattern = /rel\s*=\s*(?:"([^"]*)"|([^\s;,]+))/gi;
+		var match;
+
+		while ((match = pattern.exec(header))) {
+			(match[1] !== undefined ? match[1] : match[2]).toLowerCase().split(/\s+/).forEach(function(relation) {
+				if (AGENT_RELATIONS.indexOf(relation) !== -1 && found.indexOf(relation) === -1) {
+					found.push(relation);
+				}
+			});
+		}
+
+		return found.length
+			? {id: 'linkHeaders', state: 'success', key: 'found', values: found}
+			: {id: 'linkHeaders', state: 'info', key: 'none', values: []};
+	}
+
+	function markdownResult(response) {
+		if (failed(response)) {
+			return unchecked('markdown');
+		}
+
+		return answered(response) && mediaType(response) === 'text/markdown'
+			? {id: 'markdown', state: 'success', key: 'found', values: []}
+			: {id: 'markdown', state: 'info', key: 'none', values: []};
+	}
+
+	// An llms.txt file is Markdown that opens with a level-one heading.
+	function llmsResult(response, enabled) {
+		if (failed(response)) {
+			return unchecked('llms');
+		}
+
+		var first = answered(response) ? String(response.body).split(/\r\n|\n|\r/).filter(function(line) {
+			return line.trim() !== '';
+		})[0] || '' : '';
+
+		if (/^# \S/.test(first) && mediaType(response).indexOf('text/') === 0) {
+			return {id: 'llms', state: 'success', key: 'found', values: [response.url || '']};
+		}
+
+		return enabled
+			? {id: 'llms', state: 'warning', key: 'missing', values: []}
+			: {id: 'llms', state: 'off', key: 'off', values: []};
+	}
+
+	// What each well-known file must hold to count, following the reference.
+	var WELL_KNOWN = {
+		apiCatalog: function(data, response) {
+			return mediaType(response) === 'application/linkset+json' && Array.isArray(data.linkset) && data.linkset.length > 0;
+		},
+		skills: function(data) {
+			return Array.isArray(data.skills);
+		},
+		mcp: function(data) {
+			var card = Array.isArray(data) ? data[0] || {} : data;
+			var name = card.serverInfo && card.serverInfo.name ? card.serverInfo.name : card.name;
+
+			return typeof name === 'string' && name.trim() !== '';
+		},
+		ard: function(data) {
+			return Boolean(data.specVersion) && Array.isArray(data.entries) && data.entries.length > 0;
+		}
+	};
+
+	// A file this version does not publish: found, or a neutral "not offered", never a warning.
+	function wellKnownResult(id, responses) {
+		var list = responses || [];
+
+		// Several addresses: not checked only when none of them could be asked.
+		if (list.length && list.every(failed)) {
+			return unchecked(id);
+		}
+
+		var found = list.filter(function(response) {
+			var data = answered(response) ? json(response) : null;
+
+			return data !== null && typeof data === 'object' && WELL_KNOWN[id](data, response);
+		})[0];
+
+		return found
+			? {id: id, state: 'success', key: 'found', values: [found.url || '']}
+			: {id: id, state: 'info', key: 'none', values: []};
+	}
+
+	/**
+	 * Settle a row the server could only partly decide, from the browser's result for another row.
+	 *
+	 * "Who writes robots.txt" knows only that no file is on disk and no other plugin it can see adds
+	 * rules. The served file decides the rest: the card's rules present passes it, and rules absent,
+	 * missing, or different mean something the server cannot see answers or rewrites the file. Any
+	 * other result, such as a file that could not be fetched, leaves the server's statement as it is.
+	 */
+	function settle(result) {
+		if (!result || result.id !== 'rules') {
+			return null;
+		}
+
+		if (result.key === 'present') {
+			return {state: 'success', key: 'present'};
+		}
+
+		return ['absent', 'missing', 'different'].indexOf(result.key) !== -1 ? {state: 'warning', key: 'absent'} : null;
+	}
+
+	/**
+	 * Every result of the readiness report that the browser decides.
+	 *
+	 * answers   {robots, sitemapXml, home, markdown, llms, apiCatalog: [], skills: [], mcp: [], ard: []},
+	 *           each an answer as check() takes it, plus xmlRoot (the root element name, or null when the
+	 *           body is not XML) for sitemapXml and link (the Link header) for home.
+	 * expected  What check() takes, plus llmsEnabled and signalOff.
+	 */
+	function readiness(answers, expected) {
+		var settings = expected || {};
+		var robots = answers.robots || {};
+		var sitemaps = answered(robots) ? parse(robots.body).sitemaps : [];
+
+		return check(robots, settings).concat([
+			sitemapXmlResult(answers.sitemapXml, sitemaps),
+			linkHeadersResult(answers.home),
+			markdownResult(answers.markdown),
+			llmsResult(answers.llms, Boolean(settings.llmsEnabled)),
+			wellKnownResult('apiCatalog', answers.apiCatalog),
+			wellKnownResult('skills', answers.skills),
+			wellKnownResult('mcp', answers.mcp),
+			wellKnownResult('ard', answers.ard)
+		]);
 	}
 
 	/**
@@ -256,7 +444,7 @@
 		results.push(rulesResult(parsed, settings.rules || {}));
 		results.push(blockedResult(parsed, settings.crawlers || []));
 		results.push(sitemapResult(parsed, settings.sitemapLine || ''));
-		results.push(signalsResult(parsed, settings.contentSignal || ''));
+		results.push(signalsResult(parsed, settings.contentSignal || '', Boolean(settings.signalOff)));
 
 		return results.filter(Boolean);
 	}
@@ -266,6 +454,8 @@
 		allows: allows,
 		rulesNaming: rulesNaming,
 		blocksWholeSite: blocksWholeSite,
-		check: check
+		check: check,
+		readiness: readiness,
+		settle: settle
 	};
 });

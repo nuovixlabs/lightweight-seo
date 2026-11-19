@@ -53,6 +53,9 @@ class Lightweight_SEO_Admin_UI {
 			'warning' => array( 'dashicons-warning', __( 'Needs attention:', 'lightweight-seo' ) ),
 			'pending' => array( 'dashicons-marker', __( 'To do:', 'lightweight-seo' ) ),
 			'info'    => array( 'dashicons-info-outline', '' ),
+			// The AI readiness report also states a choice the site made, and a check that does not apply to it.
+			'off'     => array( 'dashicons-hidden', __( 'Off by choice:', 'lightweight-seo' ) ),
+			'na'      => array( 'dashicons-minus', __( 'Not applicable:', 'lightweight-seo' ) ),
 		);
 	}
 
@@ -115,7 +118,7 @@ class Lightweight_SEO_Admin_UI {
 	 * Print one row of a status list.
 	 *
 	 * @since    1.1.0
-	 * @param    string    $state         One of success, warning, pending, or info.
+	 * @param    string    $state         One of success, warning, pending, info, off, or na.
 	 * @param    string    $title         What is being reported.
 	 * @param    string|array    $text    Optional. Supporting detail: one line, or several.
 	 * @param    array     $action        Optional. Link with label, url, and new_tab keys.

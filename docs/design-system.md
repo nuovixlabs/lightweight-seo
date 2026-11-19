@@ -49,7 +49,7 @@ Class names use `lwseo-block__element`, with `--modifier` for variants and `is-s
 | Choice | `lwseo-choice` | `choice()` | A checkbox with its label and help text. |
 | Help | `lwseo-help` | | One line of guidance under a control. |
 | Badge | `lwseo-badge` | `badge()` | A one or two word status: `is-success`, `is-warning`, `is-info`, or neutral. |
-| Status list | `lwseo-status-list`, `lwseo-status` | `status()` | Checklists, health checks, and at-a-glance facts. Pass attributes to `status()` when a script updates the row, and several lines of text when a fact needs its source beside it. |
+| Status list | `lwseo-status-list`, `lwseo-status` | `status()` | Checklists, health checks, and at-a-glance facts. Pass attributes to `status()` when a script updates the row, and several lines of text when a fact needs its source beside it. The `off` and `na` states are for the AI readiness report. |
 | Callout | `lwseo-callout` | `callout()` | One message that must stand apart from help text. |
 | Tokens | `lwseo-tokens`, `lwseo-token` | `tokens()` | Title variables that insert themselves into the field being edited. A field that accepts them is sanitized with `Lightweight_SEO_Text::sanitize_template()`, because the WordPress text sanitizer cuts `%ca` out of `%category%`. |
 | Image | `lwseo-image` | `image_field()` | URL input, media picker, and thumbnail. Leave `id_name` out for an image stored as a URL only. |
@@ -83,7 +83,7 @@ Buttons and admin notices are the WordPress ones (`button`, `button-primary`, `b
 - **Sentence case** for every title, label, tab, and button: "Default title format", not "Default Title Format".
 - **One primary button per screen**, and it is Save. Tool actions are secondary buttons. Destructive actions use `button-link-delete` and require a confirmation control.
 - **Badge wording.** A module is `Active` or `Off`. Unfinished features are `Experimental`. Do not invent new status words for the same meaning.
-- **Status states.** `success` for ready, `warning` for something to review, `pending` for a step not yet done, `info` for a neutral fact. A failed check is a `warning` with a message that says what to do.
+- **Status states.** `success` for ready, `warning` for something to review, `pending` for a step not yet done, `info` for a neutral fact, `off` for something switched off by choice, and `na` for a check that does not apply. A failed check is a `warning` with a message that says what to do.
 - **Help text** is one sentence, starts with what the control does, and stays under the control it explains. Longer background goes in a `lwseo-details`.
 - **Callouts are rare.** Use one when ignoring the message would cause a wrong decision. Otherwise use help text.
 - **No raw values.** If a color, size, or duration is not a token, add a token or reuse one.
@@ -131,14 +131,18 @@ The "Inspect a page" card on the Tools tab shows what the plugin sends for one a
 - **Nothing is fetched by PHP**, and the inspect argument does nothing without the `manage_options` capability and a valid nonce.
 - **The Content section is measured in the browser.** Its rows are printed hidden, with every message in `data-msg-{key}`. After placing the report, the script requests the page again, signed out, reads it with `pageFacts()`, and shows the rows. The standalone report says to open it from the Tools tab.
 
-## Served-File Checks
+## AI Readiness Report
 
-The AI Discovery card reports on the `robots.txt` crawlers receive, as the administrator's browser fetches it.
+The AI Discovery card ends with a report grouped by area: Discoverability, Content, Bot governance, Structured data, Capabilities, Authentication, and Agent protocols. The areas and check names follow the agent-readiness reference at `https://isitagentready.com/llms-full.txt`. There is no score, level, or percentage.
 
-- **The server prints every row and message.** Each row is a hidden `status()` row in the `pending` state, with `data-served-check` naming it and one `data-msg-{key}` per message it can show. The list carries the address in `data-url`, what is expected in `data-expected`, and the screen reader prefixes in `data-prefix-{state}`.
-- **A pure reader decides.** `lightweight-seo-robots.js` has no DOM or network access and returns, per row, a state, a message key, and values for its `%s`. It is tested under Node in `tests/js/robots.test.js`. The admin script fetches the file, signed out, and shows the rows the reader returns.
-- **Without the script** the rows stay hidden, the settings-based checks above them still show, and a link opens the file.
-- **Nothing is fetched by PHP.**
+- **Four statuses.** A row is `success` (passed), `warning` (needs attention), `off` (off by choice), or `na` (not applicable), and `info` for a neutral fact such as "Not offered". `off` and `na` are status-list states of their own, with their own icon and screen reader prefix ("Off by choice:", "Not applicable:"), and they recede visually because neither is a problem.
+- **A not-applicable row gives its reason in one sentence**: what the standard is for and what Lightweight SEO does about it, true on any site, shop or not.
+- **A request that failed is "unchecked"**, an `info` row that says this browser could not fetch the address. It never reports the address as missing.
+- **A file this version does not publish** (Markdown, an API catalog, a skills index, a manifest, a server card) is "Found" when another plugin or a CDN serves it, and a neutral "Not offered" otherwise. It is never a warning.
+- **Rows about a served address are decided in the browser.** The server prints them in the `pending` state with an "Open" link to the address, `data-served-check` naming the row, and one `data-msg-{key}` per message. The report's wrapper carries the robots.txt address in `data-url`, the expected values and the addresses to fetch in `data-expected`, and the screen reader prefixes in `data-prefix-{state}`.
+- **A pure reader decides.** `readiness()` in `lightweight-seo-robots.js` takes every answer and returns, per row, a state, a message key, and values for its `%s`. It has no DOM or network access and is tested under Node in `tests/js/robots.test.js` and `tests/js/readiness.test.js`. The admin script fetches each address signed out, once the card is open, and shows what the reader returns.
+- **Without the script** the browser rows keep their pending text and their link, and every settings-based row still shows.
+- **Nothing is fetched by PHP.** Rendering the Modules tab loads the AI Discovery module only while it is on.
 
 ## Live Editor Checks
 

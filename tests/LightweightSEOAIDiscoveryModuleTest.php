@@ -340,7 +340,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		// The readiness checks build the entries on every render of the Modules tab.
 		$module->get_curated_entries();
 		$module->get_curated_entries();
-		$module->get_readiness_checks();
+		$module->get_readiness_report();
 
 		$this->assertSame( 'Test Site – Test Tagline', $module->get_curated_entries()[0]['title'] );
 		$this->assertSame( $hooks_before, count( $lightweight_seo_test_hooks ) );
@@ -439,6 +439,119 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( '', ( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' ) )->get_served_robots_expectations()['contentSignal'] );
 	}
 
+	public function test_readiness_report_states_facts_in_four_statuses_and_names_what_is_missing(): void {
+		$rows = function ( $module ) {
+			$found = array();
+
+			foreach ( $module->get_readiness_report() as $area ) {
+				foreach ( $area['rows'] as $row ) {
+					$found[ $row['id'] ] = $row;
+				}
+			}
+
+			return $found;
+		};
+
+		$plain = $rows( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' ) );
+
+		$this->assertSame( array( 'off', 'Disallowed, as chosen on this card.' ), array( $plain['training']['state'], $plain['training']['text'] ) );
+		$this->assertSame( array( 'warning', array( '0 of 0 selected pages are listed: published, public, indexable, canonical, on this site, and not redirected.', '0 of 0 listed pages have a description.' ) ), array( $plain['llms_pages']['state'], $plain['llms_pages']['text'] ) );
+		$this->assertSame( 'off', $rows( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), array( 'llms' => false ) ), null, 'admin' ) )['llms_pages']['state'] );
+		$this->assertSame( array( 'warning', 'The Organization node is missing: logo, description, profile links. Add them on the “Site identity” card.' ), array( $plain['identity']['state'], $plain['identity']['text'] ) );
+		$this->assertSame( 'browser', $plain['apiCatalog']['state'] );
+		$this->assertSame( 'https://example.com/.well-known/api-catalog', $plain['apiCatalog']['url'] );
+
+		foreach ( array( 'dnsAid', 'webBotAuth', 'openApi', 'webMcp', 'oauth', 'a2a', 'commerce' ) as $id ) {
+			$this->assertSame( 'na', $plain[ $id ]['state'], $id );
+			$this->assertMatchesRegularExpression( '/^[^.]+\.$/', $plain[ $id ]['text'], $id . ' gives one sentence.' );
+			$this->assertStringContainsString( 'Lightweight SEO', $plain[ $id ]['text'], $id . ' says what the plugin does about it.' );
+			$this->assertStringNotContainsString( 'publishes content', $plain[ $id ]['text'], $id . ' claims nothing about what the site runs.' );
+		}
+
+		// A complete identity passes; a person without a photo names the photo, not a logo.
+		$complete = $rows(
+			new Lightweight_SEO_AI_Discovery_Module(
+				$this->settings(
+					true,
+					true,
+					array(),
+					array(
+						'identity_logo'        => 'https://example.com/logo.png',
+						'identity_description' => 'Makes oak furniture.',
+						'same_as'              => array( 'https://example.org/oak' ),
+					)
+				),
+				null,
+				'admin'
+			)
+		);
+
+		$this->assertSame( 'success', $complete['identity']['state'] );
+		$this->assertSame( 'success', $complete['training']['state'] );
+
+		$person = $rows(
+			new Lightweight_SEO_AI_Discovery_Module(
+				$this->settings(
+					true,
+					false,
+					array(),
+					array(
+						'identity_type' => 'person',
+						'social_image'  => 'https://example.com/share.jpg',
+					)
+				),
+				null,
+				'admin'
+			)
+		);
+
+		$this->assertStringStartsWith( 'The Person node is missing: photo, description', $person['identity']['text'] );
+
+		// Switching schema output off is a choice, not a problem.
+		$this->assertSame( 'off', $rows( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), array( 'schema' => false ) ), null, 'admin' ) )['identity']['state'] );
+	}
+
+	public function test_who_writes_robots_txt_states_only_what_the_server_can_know(): void {
+		global $lightweight_seo_test_filters;
+		global $lightweight_seo_test_options;
+
+		$owner = function () {
+			foreach ( ( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' ) )->get_readiness_report() as $area ) {
+				foreach ( $area['rows'] as $row ) {
+					if ( 'robots_owner' === $row['id'] ) {
+						return $row;
+					}
+				}
+			}
+
+			return array();
+		};
+
+		// Nothing in the way: a neutral fact, never "passed", and never that WordPress writes the file.
+		$row = $owner();
+
+		$this->assertSame( 'info', $row['state'] );
+		$this->assertStringStartsWith( 'No robots.txt file is on disk, and no other plugin the server can see adds rules for these crawlers.', $row['text'] );
+		$this->assertStringNotContainsString( 'WordPress writes', $row['text'] );
+		// The browser settles it from the served file.
+		$this->assertSame( 'rules', $row['attributes']['data-settled-by'] );
+		$this->assertStringContainsString( 'the served file holds the rules set here', $row['attributes']['data-msg-present'] );
+		$this->assertStringContainsString( 'but the served file does not hold the rules set here', $row['attributes']['data-msg-absent'] );
+
+		// With no rules to expect, there is nothing for the browser to settle.
+		$lightweight_seo_test_options['blog_public'] = 0;
+		$this->assertArrayNotHasKey( 'attributes', $owner() );
+		$this->assertSame( 'info', $owner()['state'] );
+		$lightweight_seo_test_options['blog_public'] = 1;
+
+		// What the server can see in the way stays a warning.
+		$lightweight_seo_test_filters['robots_txt'] = static function () {
+			return "User-agent: GPTBot\nAllow: /\n";
+		};
+		$this->assertSame( array( 'warning', 'Another robots.txt filter already writes rules for GPTBot, so Lightweight SEO leaves them alone.' ), array( $owner()['state'], $owner()['text'] ) );
+		unset( $lightweight_seo_test_filters['robots_txt'] );
+	}
+
 	private function settings( $search = true, $training = false, $ids = array(), $values = array() ) {
 		return new class( $search, $training, $ids, $values ) {
 			private $search;
@@ -455,6 +568,30 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 
 			public function get( $key, $fallback = null ) {
 				return $this->values[ $key ] ?? $fallback;
+			}
+
+			public function get_identity_type() {
+				return $this->values['identity_type'] ?? 'organization';
+			}
+
+			public function get_identity_name() {
+				return $this->values['identity_name'] ?? 'Test Site';
+			}
+
+			public function get_identity_logo_url() {
+				return $this->values['identity_logo'] ?? '';
+			}
+
+			public function get_identity_description() {
+				return $this->values['identity_description'] ?? '';
+			}
+
+			public function get_organization_same_as() {
+				return $this->values['same_as'] ?? array();
+			}
+
+			public function get_social_image_url() {
+				return $this->values['social_image'] ?? '';
 			}
 
 			public function content_signals_enabled() {
@@ -478,7 +615,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 			}
 
 			public function llms_txt_enabled() {
-				return true;
+				return $this->values['llms'] ?? true;
 			}
 
 			public function get_llms_post_ids() {
@@ -490,7 +627,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 			}
 
 			public function schema_output_enabled() {
-				return true;
+				return $this->values['schema'] ?? true;
 			}
 		};
 	}
