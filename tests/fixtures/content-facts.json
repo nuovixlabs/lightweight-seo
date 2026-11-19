@@ -1,0 +1,27 @@
+[
+	{
+		"name": "block editor images with and without alternative text",
+		"html": "<!-- wp:image --><figure class=\"wp-block-image\"><img src=\"a.jpg\" alt=\"A chair\"/></figure><!-- /wp:image --><!-- wp:image --><figure class=\"wp-block-image\"><img src=\"b.jpg\" alt=\"\"/></figure><!-- /wp:image -->",
+		"expected": {"images": 2, "imagesWithoutAlt": 1, "h1": 0}
+	},
+	{
+		"name": "a missing, a bare, a blank, and a single-quoted attribute",
+		"html": "<img src=a><img alt src=b><img src=c alt=\"   \"><img src='d' alt='A table'><img src=e alt=Lamp>",
+		"expected": {"images": 5, "imagesWithoutAlt": 3, "h1": 0}
+	},
+	{
+		"name": "an attribute that only ends in alt is not alt",
+		"html": "<img src=a data-alt=\"Not this\">",
+		"expected": {"images": 1, "imagesWithoutAlt": 1, "h1": 0}
+	},
+	{
+		"name": "headings, and markup that is never shown",
+		"html": "<h1 class=\"x\">One</h1><h1>Two</h1><h10>Not a heading</h10><h2>Sub</h2><!-- <h1>comment</h1><img src=x> --><script>document.write('<h1>')</script><noscript><img src=y></noscript>",
+		"expected": {"images": 0, "imagesWithoutAlt": 0, "h1": 2}
+	},
+	{
+		"name": "no content",
+		"html": "",
+		"expected": {"images": 0, "imagesWithoutAlt": 0, "h1": 0}
+	}
+]

@@ -325,6 +325,96 @@ final class LightweightSEOMetaBoxesTest extends TestCase {
 		$this->assertMatchesRegularExpression( '/<div class="lwseo-preview__media">\s*<img src="https:\/\/example\.com\/default\.jpg"/', $output );
 	}
 
+	public function test_description_check_says_what_the_page_prints(): void {
+		global $lightweight_seo_test_options;
+
+		$row = function ( $output ) {
+			preg_match( '/<li class="lwseo-status is-(success|warning)" data-check="description"[^>]*>.*?<p class="lwseo-status__text">([^<]*)<\/p>/s', $output, $match );
+
+			return array( $match[1] ?? '', html_entity_decode( $match[2] ?? '', ENT_QUOTES ) );
+		};
+
+		// Nothing written and no text to summarize: the page text lives in the theme or custom fields.
+		$empty = $this->render_content_post( '', '', array() );
+
+		$this->assertSame( array( 'warning', 'No description is printed for this page: nothing is written here, and the page has no excerpt or content text to summarize. Write one, especially when the theme or custom fields hold the page text.' ), $row( $empty ) );
+		$this->assertStringContainsString( 'data-pass-summary="Nothing is written here, so a summary of the excerpt or content is printed."', $empty );
+		$this->assertStringContainsString( 'data-fail-protected="No description is printed while the page is password protected."', $empty );
+
+		$this->assertSame( array( 'success', 'Nothing is written here, so a summary of the excerpt or content is printed.' ), $row( $this->render_content_post( '<p>Hand-made oak chairs.</p>', '', array() ) ) );
+		$this->assertSame( array( 'success', 'The description written here is printed.' ), $row( $this->render_content_post( '<p>Text</p>', '', array( 'seo_description' => 'Our own words.' ) ) ) );
+		$this->assertSame( array( 'warning', 'No description is printed while the page is password protected.' ), $row( $this->render_content_post( '<p>Text</p>', 'secret', array( 'seo_description' => 'Our own words.' ) ) ) );
+
+		// A static front page without its own description prints the homepage meta description.
+		$lightweight_seo_test_options['show_on_front']               = 'page';
+		$lightweight_seo_test_options['page_on_front']               = 78;
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'meta_description' => 'Oak furniture, made to order.' );
+
+		$front = $this->render_content_post( '', '', array() );
+
+		unset( $lightweight_seo_test_options['show_on_front'], $lightweight_seo_test_options['page_on_front'], $lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] );
+
+		$this->assertSame( array( 'success', 'Nothing is written here, so the homepage meta description is printed.' ), $row( $front ) );
+		$this->assertStringContainsString( 'data-site-description="Oak furniture, made to order."', $front );
+		$this->assertStringContainsString( 'data-fallback="Oak furniture, made to order."', $front );
+	}
+
+	public function test_content_checks_count_images_without_alternative_text_and_h1_headings(): void {
+		$output = $this->render_content_post( '<h1>One</h1><img src="a.jpg" alt="A chair"><img src="b.jpg" alt=""><img src="c.jpg"><h1>Two</h1>', '', array() );
+
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-warning" data-check="image_alt"[^>]*>/', $output );
+		$this->assertStringContainsString( 'Images in the content without alternative text: 2 of 3. Describe each image that carries meaning; an image that is only decorative may keep an empty one.', $output );
+		// The template travels with the row, so the script fills in the counts as the page is edited.
+		$this->assertStringContainsString( 'data-fail="Images in the content without alternative text: %1$d of %2$d.', $output );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-warning" data-check="content_headings"[^>]*>/', $output );
+		$this->assertStringContainsString( 'The content has 2 H1 headings.', $output );
+		$this->assertStringContainsString( 'data-content-facts="{&quot;images&quot;:3,&quot;imagesWithoutAlt&quot;:2,&quot;h1&quot;:2}"', $output );
+
+		$plain = $this->render_content_post( '<p>No images.</p><h1>One</h1>', '', array() );
+
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success" data-check="image_alt"[^>]* hidden>/', $plain );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success" data-check="content_headings"/', $plain );
+	}
+
+	/**
+	 * Render the editor panel of page 78 with the given content, password, and stored SEO fields.
+	 */
+	private function render_content_post( $content, $password, $meta ) {
+		global $lightweight_seo_test_posts;
+
+		$post                           = (object) array(
+			'ID'            => 78,
+			'post_type'     => 'page',
+			'post_title'    => 'A page',
+			'post_excerpt'  => '',
+			'post_content'  => $content,
+			'post_password' => $password,
+			'permalink'     => 'https://example.com/a-page/',
+		);
+		$lightweight_seo_test_posts[78] = $post;
+
+		$post_meta = new class( $meta ) {
+			private $meta;
+
+			public function __construct( $meta ) {
+				$this->meta = $meta;
+			}
+
+			public function get_all( $post_id ) {
+				return $this->meta;
+			}
+
+			public function get_social_image_url( $post_id ) {
+				return '';
+			}
+		};
+
+		ob_start();
+		( new Lightweight_SEO_Meta_Boxes( new Lightweight_SEO_Settings(), $post_meta ) )->render_meta_box( $post );
+
+		return (string) ob_get_clean();
+	}
+
 	/**
 	 * Render the editor panel of a post with one stored visibility choice.
 	 *

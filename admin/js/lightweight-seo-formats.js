@@ -400,7 +400,99 @@
 		return cut.replace(/[\s.,;:!?–—\-|·•»\/]+$/, '') + '…';
 	}
 
+	/* Content ------------------------------------------------------------- */
+
+	// Comments and elements whose text is never shown are left out before anything is counted.
+	function withoutHiddenMarkup(html) {
+		return String(html === undefined || html === null ? '' : html)
+			.replace(/<!--[\s\S]*?-->/g, ' ')
+			.replace(/<(script|style|noscript|template|svg)\b[\s\S]*?<\/\1\s*>/gi, ' ');
+	}
+
+	// The alt attribute of one img tag: null when it is missing, its value otherwise.
+	function altOf(tag) {
+		var match = /\salt(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?(?=[\s\/>])/i.exec(tag);
+
+		if (!match) {
+			return null;
+		}
+
+		return match[1] !== undefined ? match[1] : (match[2] !== undefined ? match[2] : (match[3] || ''));
+	}
+
+	/**
+	 * Count what the editor checks in a piece of content: images, images without
+	 * alternative text (no alt attribute, or one that is empty), and H1 headings.
+	 * Lightweight_SEO_Text::content_facts() counts the same way on the server.
+	 */
+	function contentFacts(html) {
+		var source = withoutHiddenMarkup(html);
+		var images = source.match(/<img\b[^>]*>/gi) || [];
+
+		return {
+			images: images.length,
+			imagesWithoutAlt: images.filter(function(tag) {
+				var alt = altOf(tag);
+
+				return alt === null || alt.trim() === '';
+			}).length,
+			h1: (source.match(/<h1\b/gi) || []).length
+		};
+	}
+
+	function decodeEntities(text) {
+		var named = {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' '};
+
+		return text.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, function(entity, name) {
+			var code;
+
+			if (name.charAt(0) === '#') {
+				code = name.charAt(1).toLowerCase() === 'x' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+
+				return code > 0 && code < 0x110000 ? String.fromCodePoint(code) : entity;
+			}
+
+			return Object.prototype.hasOwnProperty.call(named, name.toLowerCase()) ? named[name.toLowerCase()] : entity;
+		});
+	}
+
+	// The part of a page that holds its main content: main, else the first article, else body.
+	function mainRegion(html) {
+		var regions = [['main', /<main\b[^>]*>([\s\S]*)<\/main\s*>/i], ['article', /<article\b[^>]*>([\s\S]*?)<\/article\s*>/i], ['body', /<body\b[^>]*>([\s\S]*)<\/body\s*>/i]];
+		var index;
+		var match;
+
+		for (index = 0; index < regions.length; index++) {
+			match = regions[index][1].exec(html);
+
+			if (match) {
+				return {name: regions[index][0], html: match[1]};
+			}
+		}
+
+		return {name: 'document', html: html};
+	}
+
+	/**
+	 * Measure a page as it was served: characters of text in its main content,
+	 * and H1 headings and images across the whole page.
+	 */
+	function pageFacts(html) {
+		var source = withoutHiddenMarkup(html);
+		var body = /<body\b[^>]*>([\s\S]*)<\/body\s*>/i.exec(source);
+		var region = mainRegion(source);
+		var text = decodeEntities(region.html.replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+		var facts = contentFacts(body ? body[1] : source);
+
+		facts.region = region.name;
+		facts.textLength = Array.from(text).length;
+
+		return facts;
+	}
+
 	return {
+		contentFacts: contentFacts,
+		pageFacts: pageFacts,
 		read: read,
 		write: write,
 		redirects: redirects,

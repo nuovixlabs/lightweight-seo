@@ -122,4 +122,15 @@ final class LightweightSEOTextTest extends TestCase {
 		// It is registered as a meta sanitizer, which WordPress calls with the key and object type too.
 		$this->assertSame( 'In %category%', call_user_func( array( 'Lightweight_SEO_Text', 'sanitize_template' ), 'In %category%', '_lightweight_seo_title', 'post' ) );
 	}
+
+	public function test_content_facts_count_like_the_editor_script(): void {
+		// The same cases run against contentFacts() in tests/js/content.test.js.
+		$cases = json_decode( (string) file_get_contents( __DIR__ . '/fixtures/content-facts.json' ), true );
+
+		$this->assertNotEmpty( $cases );
+
+		foreach ( $cases as $case ) {
+			$this->assertSame( $case['expected'], Lightweight_SEO_Text::content_facts( $case['html'] ), $case['name'] );
+		}
+	}
 }

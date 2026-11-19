@@ -41,6 +41,96 @@
 			};
 		}
 
+		/* Status rows filled by a script -------------------------------------- */
+
+		var statusIcons = {success: 'dashicons-yes-alt', warning: 'dashicons-warning', info: 'dashicons-info-outline', pending: 'dashicons-marker'};
+
+		// Show a row the server printed hidden, in a state, with one line of text. The list carries
+		// the screen reader prefixes in data-prefix-{state}. Text is set as text, never as markup.
+		function showStatusRow(list, row, state, text) {
+			var prefix = list.attr('data-prefix-' + state) || '';
+			var body = row.find('.lwseo-status__body');
+			var line = body.children('.lwseo-status__text').first();
+
+			row.prop('hidden', false).removeClass('is-success is-warning is-info is-pending').addClass('is-' + state);
+			row.children('.lwseo-status__icon').removeClass('dashicons-yes-alt dashicons-warning dashicons-info-outline dashicons-marker').addClass(statusIcons[state] || statusIcons.info);
+			row.find('.lwseo-status__title .screen-reader-text').remove();
+
+			if (prefix) {
+				$('<span>', {'class': 'screen-reader-text', text: prefix + ' '}).prependTo(row.find('.lwseo-status__title'));
+			}
+
+			if (!line.length) {
+				line = $('<p>', {'class': 'lwseo-status__text'}).appendTo(body);
+			}
+
+			line.text(text);
+		}
+
+		// Fill "%s" or "%1$s", "%2$s" in a message the server printed.
+		function fillMessage(message, values) {
+			return values.reduce(function(text, value, index) {
+				return text.split('%' + (index + 1) + '$s').join(String(value));
+			}, String(message || '')).split('%s').join(values.length ? String(values[0]) : '');
+		}
+
+		/* Inspect: content measured in this browser --------------------------- */
+
+		// The page is requested again, signed out, as any visitor would request it, and read with the
+		// same tested functions as the editor. The site does nothing extra for a visitor's request.
+		function measurePageContent(scope) {
+			var formats = window.lightweightSeoFormats;
+
+			if (!formats || !formats.pageFacts || !window.fetch) {
+				return;
+			}
+
+			scope.find('[data-lwseo-page-content]').each(function() {
+				var list = $(this);
+				var note = list.find('[data-content-note]');
+				var row = function(id) {
+					return list.find('[data-content-measure="' + id + '"]');
+				};
+				var number = function(value) {
+					return Number(value).toLocaleString();
+				};
+
+				window.fetch(list.attr('data-url'), {credentials: 'omit', cache: 'no-store'}).then(function(response) {
+					return response.ok ? response.text() : Promise.reject(new Error(String(response.status)));
+				}).then(function(html) {
+					var facts = formats.pageFacts(html);
+					var text = row('text');
+					var headings = row('headings');
+					var images = row('images');
+
+					note.prop('hidden', true);
+
+					if (facts.textLength) {
+						showStatusRow(list, text, 'info', fillMessage(text.attr('data-msg-some'), [number(facts.textLength), facts.region]));
+					} else {
+						showStatusRow(list, text, 'warning', fillMessage(text.attr('data-msg-none'), [facts.region]));
+					}
+
+					if (facts.h1 === 1) {
+						showStatusRow(list, headings, 'success', headings.attr('data-msg-one'));
+					} else {
+						showStatusRow(list, headings, 'warning', facts.h1 ? fillMessage(headings.attr('data-msg-many'), [number(facts.h1)]) : headings.attr('data-msg-none'));
+					}
+
+					if (!facts.images) {
+						showStatusRow(list, images, 'info', images.attr('data-msg-none'));
+					} else if (facts.imagesWithoutAlt) {
+						// A count, not a failure: decorative images may keep an empty alt.
+						showStatusRow(list, images, 'warning', fillMessage(images.attr('data-msg-missing'), [number(facts.imagesWithoutAlt), number(facts.images)]));
+					} else {
+						showStatusRow(list, images, 'success', fillMessage(images.attr('data-msg-all'), [number(facts.images)]));
+					}
+				}).catch(function() {
+					showStatusRow(list, note, 'warning', list.attr('data-msg-failed') || '');
+				});
+			});
+		}
+
 		/* Inspect ------------------------------------------------------------ */
 
 		// The report of a page is produced by that page. The browser asks the address for it with the
@@ -106,6 +196,7 @@
 						status.text('');
 						// The report is markup this plugin printed and escaped; it holds no script.
 						report[0].innerHTML = result.html;
+						measurePageContent(report);
 					} else if (result.redirected) {
 						status.text((box.attr('data-redirected') || '').replace('%s', result.redirected));
 						input.val(result.redirected);
@@ -141,7 +232,6 @@
 		$('[data-lwseo-served-robots]').each(function() {
 			var list = $(this);
 			var robots = window.lightweightSeoRobots;
-			var icons = {success: 'dashicons-yes-alt', warning: 'dashicons-warning', info: 'dashicons-info-outline', pending: 'dashicons-marker'};
 			var expected;
 
 			if (!robots || !window.fetch) {
@@ -154,20 +244,6 @@
 				expected = {};
 			}
 
-			function show(row, state, text) {
-				var prefix = list.attr('data-prefix-' + state) || '';
-
-				row.prop('hidden', false).removeClass('is-success is-warning is-info is-pending').addClass('is-' + state);
-				row.children('.lwseo-status__icon').removeClass('dashicons-yes-alt dashicons-warning dashicons-info-outline dashicons-marker').addClass(icons[state] || icons.info);
-				row.find('.lwseo-status__title .screen-reader-text').remove();
-
-				if (prefix) {
-					$('<span>', {'class': 'screen-reader-text', text: prefix + ' '}).prependTo(row.find('.lwseo-status__title'));
-				}
-
-				// Text is set as text, never as markup.
-				row.find('.lwseo-status__text').text(text);
-			}
 
 			// The fetch row shows its "fetching" text until the answer arrives.
 			list.find('[data-served-check="fetch"]').prop('hidden', false);
@@ -182,7 +258,7 @@
 				robots.check(response, expected).forEach(function(result) {
 					var row = list.find('[data-served-check="' + result.id + '"]');
 
-					show(row, result.state, (row.attr('data-msg-' + result.key) || '').replace('%s', result.values.join(', ')));
+					showStatusRow(list, row, result.state, (row.attr('data-msg-' + result.key) || '').replace('%s', result.values.join(', ')));
 				});
 			});
 		});
@@ -1058,8 +1134,33 @@
 			title: function(state) {
 				return state.title !== '';
 			},
+			// Says which description the page prints: a password removes it, then the one written here,
+			// then, on a static front page, the homepage meta description, then a summary of the content.
 			description: function(state) {
-				return state.description !== '';
+				if (state.protected) {
+					return {passes: false, variant: 'protected'};
+				}
+
+				if (state.ownDescription) {
+					return true;
+				}
+
+				if (state.siteDescription) {
+					return {passes: true, variant: 'site'};
+				}
+
+				return state.description !== '' ? {passes: true, variant: 'summary'} : false;
+			},
+			// A count, not a grade: an image that is only decorative may keep an empty alt.
+			image_alt: function(state) {
+				if (!state.content.images) {
+					return null;
+				}
+
+				return state.content.imagesWithoutAlt ? {passes: false, values: [state.content.imagesWithoutAlt, state.content.images]} : true;
+			},
+			content_headings: function(state) {
+				return state.content.h1 > 1 ? {passes: false, values: [state.content.h1]} : true;
 			},
 			title_length: function(state) {
 				var length = textLength(state.title);
@@ -1110,6 +1211,8 @@
 			// What the editor currently holds. The server's values stand until the editor reports its own.
 			var post = {
 				descriptionFallback: descriptionField.attr('data-fallback') || '',
+				siteDescription: metabox.attr('data-site-description') || '',
+				contentFacts: metabox.data('content-facts') || {images: 0, imagesWithoutAlt: 0, h1: 0},
 				featuredImage: metabox.attr('data-featured-image') || '',
 				featuredWidth: Number(metabox.attr('data-featured-width')) || 0
 			};
@@ -1125,7 +1228,11 @@
 				var ownImage = $.trim(imageField.find('.lwseo-image__url').val());
 				var state = {
 					title: plainText(resolveTokens(title || titleFormat)),
-					description: plainText(description ? resolveTokens(description) : post.descriptionFallback),
+					description: plainText(description ? resolveTokens(description) : (post.siteDescription || post.descriptionFallback)),
+					ownDescription: description !== '',
+					siteDescription: post.siteDescription,
+					protected: metabox.attr('data-protected') === '1',
+					content: post.contentFacts,
 					image: ownImage || post.featuredImage || defaultImage,
 					imageWidth: 0,
 					noindex: $('#lightweight_seo_noindex').val() || '',
@@ -1175,10 +1282,13 @@
 				}
 			}
 
-			// Switch one row between its two outcomes. Text is set as text, never as markup.
+			// Switch one row between its outcomes. Text is set as text, never as markup.
+			// A rule returns true, false, a failure variant, null, or {passes, variant, values}.
 			function renderCheck(row, result) {
-				var passes = result === true;
-				var failure = typeof result === 'string' ? row.attr('data-fail-' + result) : '';
+				var outcome = result !== null && typeof result === 'object' ? result : {passes: result === true, variant: typeof result === 'string' ? result : ''};
+				var passes = outcome.passes === true;
+				var base = passes ? 'data-pass' : 'data-fail';
+				var message = (outcome.variant && row.attr(base + '-' + outcome.variant)) || row.attr(base) || '';
 				var target = row.attr('data-target') || '';
 				var action = row.children('.lwseo-status__action');
 
@@ -1188,10 +1298,18 @@
 					return;
 				}
 
+				(outcome.values || []).forEach(function(value, index) {
+					message = message.split('%' + (index + 1) + '$d').join(String(value));
+
+					if (index === 0) {
+						message = message.split('%d').join(String(value));
+					}
+				});
+
 				row.toggleClass('is-success', passes).toggleClass('is-warning', !passes);
 				row.children('.lwseo-status__icon').toggleClass('dashicons-yes-alt', passes).toggleClass('dashicons-warning', !passes);
 				row.find('.lwseo-status__title .screen-reader-text').text((checkList.attr(passes ? 'data-prefix-success' : 'data-prefix-warning') || '') + ' ');
-				row.find('.lwseo-status__text').text(passes ? row.attr('data-pass') : (failure || row.attr('data-fail')));
+				row.find('.lwseo-status__text').text(message);
 
 				if (passes || !target) {
 					action.remove();
@@ -1255,6 +1373,16 @@
 				}
 			}
 
+			// Content is counted with the same tested function as on the server; a render follows only a change.
+			function setContent(html) {
+				var facts = settingFormats.contentFacts ? settingFormats.contentFacts(html) : post.contentFacts;
+				var current = post.contentFacts;
+
+				if (facts.images !== current.images || facts.imagesWithoutAlt !== current.imagesWithoutAlt || facts.h1 !== current.h1) {
+					setPost({contentFacts: facts});
+				}
+			}
+
 			function setTitle(title) {
 				if (tokens['%title%'] !== title) {
 					tokens['%title%'] = title;
@@ -1276,6 +1404,31 @@
 				setPost({descriptionFallback: summarize(plainText($.trim(this.value) ? this.value : classicContent()))});
 			});
 
+			function readClassicContent() {
+				var content = classicContent();
+
+				setContent(content);
+
+				if (!$.trim($('#excerpt').val() || '')) {
+					setPost({descriptionFallback: summarize(plainText(content))});
+				}
+			}
+
+			function watchClassicEditor(visual) {
+				if (visual && visual.id === 'content') {
+					visual.on('change keyup undo redo SetContent', readClassicContent);
+				}
+			}
+
+			$('#content').on('input', readClassicContent);
+			$(document).on('tinymce-editor-init', function(event, visual) {
+				watchClassicEditor(visual);
+			});
+
+			if (window.tinymce && window.tinymce.get) {
+				watchClassicEditor(window.tinymce.get('content'));
+			}
+
 			// Block editor: read the edited post from its data store, when there is one.
 			var data = window.wp && window.wp.data;
 			var editor = null;
@@ -1290,6 +1443,11 @@
 				var title = editor.getEditedPostAttribute('title');
 				var excerpt = editor.getEditedPostAttribute('excerpt');
 				var featured = editor.getEditedPostAttribute('featured_media');
+				var content = editor.getEditedPostAttribute('content');
+
+				if (typeof content === 'string') {
+					setContent(content);
+				}
 
 				if (typeof title === 'string') {
 					setTitle(title);

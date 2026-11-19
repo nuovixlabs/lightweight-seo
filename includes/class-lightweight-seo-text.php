@@ -166,4 +166,34 @@ final class Lightweight_SEO_Text {
 
 		return trim( preg_replace( '/\s+/', ' ', $value ) );
 	}
+
+	/**
+	 * Count images, images without alternative text, and H1 headings in a piece of content.
+	 *
+	 * An image without alternative text has no alt attribute, or an empty one. Comments and
+	 * elements whose text is never shown are left out. contentFacts() in
+	 * admin/js/lightweight-seo-formats.js counts the same way while the page is edited.
+	 *
+	 * @since 1.2.0
+	 * @param mixed $html Content markup.
+	 * @return array{images:int,imagesWithoutAlt:int,h1:int}
+	 */
+	public static function content_facts( $html ) {
+		$source = preg_replace( array( '/<!--.*?-->/s', '/<(script|style|noscript|template|svg)\b.*?<\/\1\s*>/is' ), ' ', (string) $html );
+		$source = null === $source ? (string) $html : $source;
+		$images = preg_match_all( '/<img\b[^>]*>/i', $source, $tags ) ? $tags[0] : array();
+		$no_alt = 0;
+
+		foreach ( $images as $tag ) {
+			if ( ! preg_match( '/\salt(?:\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s"\'>]+)))?(?=[\s\/>])/i', $tag, $alt ) || '' === trim( implode( '', array_slice( $alt, 1 ) ) ) ) {
+				++$no_alt;
+			}
+		}
+
+		return array(
+			'images'           => count( $images ),
+			'imagesWithoutAlt' => $no_alt,
+			'h1'               => (int) preg_match_all( '/<h1\b/i', $source ),
+		);
+	}
 }
