@@ -44,6 +44,20 @@ On 2026-11-19, in a browser on local WordPress 7.1.5, on the code that is now in
 
 Not checked: a subdirectory install, because the test web server pins the site address to the root of the host; multisite; an administration on another address than the site; a collapsed AI Discovery card waiting to send its requests; the editor checks on a very long post; a real IndexNow submission; and anything in `docs/qa-checklist.md` that 1.2 does not touch.
 
+## 1.2.0-rc.2
+
+`1.2.0-rc.2` fixes two things the AI readiness report said wrongly and adds no file: on a subdirectory install it checks the site's own sitemap and `llms.txt`, and it reads a `Content-Type` header that a host sends twice the way browsers do. Only the package was rechecked: 53 files, 245,104 bytes (239.4 KiB). The timing, memory, and query rows of `1.2.0-rc.1` were not measured again; both changes run in the administration area only, in the report the administrator's browser fills in.
+
+### Checked by hand for this candidate
+
+On 2026-11-19:
+
+- A real subdirectory install, WordPress 7.1.5 under a path of a local web server, in a browser. With `1.2.0-rc.1` the Sitemap and `llms.txt` rows warned that neither was there. With this candidate both pass at the site's own addresses, "Root of the host" names the path and the root and gives the `Sitemap:` line to add, "Who writes robots.txt" says it is not WordPress, and the root `robots.txt` is reported as answering 404, which it does.
+- The same rows on a throwaway WordPress made to give its address as `/sub` of the host. That site still answers `robots.txt` at the root, which a real subdirectory install does not.
+- The reader, run under Node on the headers and body a real host sends for `/robots.txt`, with `Content-Type: text/plain` twice: the "robots.txt" row passes, and the rows about the plugin's part of the file, Googlebot being shut out, and the missing `Sitemap:` line are as they were.
+
+Not checked: the `Content-Type` fix and the Inspect report's header in a browser on a host that repeats headers, and everything listed as not checked for `1.2.0-rc.1` except the subdirectory install.
+
 ## 1.1.0-rc.4
 
 Reference measurements for `1.1.0-rc.4` were recorded on 2026-11-17. Every row was measured again.

@@ -639,7 +639,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 
 		$api      = new class() {
 			public function get_sitemap_urls() {
-				return array( 'http://localhost/agalliers-photography/wp-sitemap.xml' );
+				return array( 'http://localhost/blog/wp-sitemap.xml' );
 			}
 		};
 		$rows     = function () use ( $api ) {
@@ -655,7 +655,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		};
 		$previous = $lightweight_seo_test_home_url;
 
-		$lightweight_seo_test_home_url = 'http://localhost/agalliers-photography';
+		$lightweight_seo_test_home_url = 'http://localhost/blog';
 		$folder                        = $rows();
 		$lightweight_seo_test_home_url = $previous;
 		$root                          = $rows();
@@ -663,15 +663,15 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( 'info', $folder['host_root']['state'] );
 		$this->assertSame(
 			array(
-				'WordPress is installed under /agalliers-photography. Crawlers and agents look for robots.txt, llms.txt, and the well-known files at the root of the host, http://localhost/, which WordPress does not answer, so the crawler rules set on this card are not served there.',
-				'Whoever maintains http://localhost/robots.txt can point crawlers to this site’s sitemap with this line: Sitemap: http://localhost/agalliers-photography/wp-sitemap.xml',
+				'WordPress is installed under /blog. Crawlers and agents look for robots.txt, llms.txt, and the well-known files at the root of the host, http://localhost/, which WordPress does not answer, so the crawler rules set on this card are not served there.',
+				'Whoever maintains http://localhost/robots.txt can point crawlers to this site’s sitemap with this line: Sitemap: http://localhost/blog/wp-sitemap.xml',
 			),
 			$folder['host_root']['text']
 		);
-		$this->assertSame( 'http://localhost/agalliers-photography/wp-sitemap.xml', $folder['sitemapXml']['url'] );
-		$this->assertSame( 'This site’s sitemap address, http://localhost/agalliers-photography/wp-sitemap.xml, does not answer with a valid XML sitemap.', $folder['sitemapXml']['messages']['missing'] );
+		$this->assertSame( 'http://localhost/blog/wp-sitemap.xml', $folder['sitemapXml']['url'] );
+		$this->assertSame( 'This site’s sitemap address, http://localhost/blog/wp-sitemap.xml, does not answer with a valid XML sitemap.', $folder['sitemapXml']['messages']['missing'] );
 		$this->assertArrayNotHasKey( 'listed', $folder['sitemapXml']['messages'] );
-		$this->assertSame( 'http://localhost/agalliers-photography/llms.txt', $folder['llms']['url'] );
+		$this->assertSame( 'http://localhost/blog/llms.txt', $folder['llms']['url'] );
 		$this->assertArrayNotHasKey( 'sitemap', $folder, 'The root robots.txt is not this site’s, so its Sitemap line has no row.' );
 		$this->assertSame( array( 'info', 'Not WordPress: the robots.txt crawlers read is at the root of the host, which belongs to the server or another site.' ), array( $folder['robots_owner']['state'], $folder['robots_owner']['text'] ) );
 		$this->assertArrayNotHasKey( 'attributes', $folder['robots_owner'] );
