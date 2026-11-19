@@ -138,6 +138,30 @@ final class LightweightSEOMarkdownOnRequestTest extends TestCase {
 		$this->assertTrue( class_exists( 'Lightweight_SEO_Markdown_Response', false ) );
 	}
 
+	/**
+	 * Sending loads the files it needs: the class that sends is defined by building the answer.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_an_answer_is_sent_without_its_files_loaded_beforehand(): void {
+		$this->switch_on();
+		$this->view_post( 5, '<p>Sent body.</p>' );
+
+		$module = new Lightweight_SEO_AI_Discovery_Module( new Lightweight_SEO_Settings(), null, 'frontend' );
+		$send   = new ReflectionMethod( $module, 'send_markdown_response' );
+		$send->setAccessible( true );
+
+		$this->assertFalse( class_exists( 'Lightweight_SEO_Markdown_Response', false ) );
+
+		ob_start();
+		$send->invoke( $module, 'singular', 'GET' );
+		$body = ob_get_clean();
+
+		$this->assertStringContainsString( "\n\nSent body.\n", $body );
+		$this->assertTrue( defined( 'DONOTCACHEPAGE' ) );
+	}
+
 	/* Which requests are answered in Markdown ------------------------------ */
 
 	/**

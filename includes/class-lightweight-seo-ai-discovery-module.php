@@ -375,8 +375,24 @@ class Lightweight_SEO_AI_Discovery_Module {
 			return;
 		}
 
-		Lightweight_SEO_Markdown_Response::send( $this->build_markdown_response( $view, $method ) );
+		$this->send_markdown_response( $view, $method );
 		exit;
+	}
+
+	/**
+	 * Build the Markdown answer and send it.
+	 *
+	 * The answer is built first: building it loads the class that sends it.
+	 *
+	 * @since 1.3.0
+	 * @param string $view   From get_markdown_view().
+	 * @param string $method GET or HEAD.
+	 * @return void
+	 */
+	protected function send_markdown_response( $view, $method ) {
+		$response = $this->build_markdown_response( $view, $method );
+
+		Lightweight_SEO_Markdown_Response::send( $response );
 	}
 
 	/**
