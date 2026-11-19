@@ -16,6 +16,7 @@
 
 ## For site owners
 
+- [1.3 Release Notes](./release-notes-1.3.0.md): the 1.3 line, by feature, while it is in development.
 - [1.2 Release Notes](./release-notes-1.2.0.md): the 1.2 line, by feature.
 - [1.1 Release Notes](./release-notes-1.1.0.md): the 1.1 line, by feature.
 - [Migration and RC Testing](./migration.md): upgrading from 1.0.3 and importing from another SEO plugin.

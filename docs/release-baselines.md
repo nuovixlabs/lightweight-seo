@@ -1,5 +1,14 @@
 # Release Baselines
 
+## Unreleased (1.3.0)
+
+Not measured yet; a release candidate records its numbers here. Files added since `1.2.0`, and when each is loaded:
+
+- `includes/class-lightweight-seo-markdown-converter.php`: only while a request is answered in Markdown, which needs AI Discovery and its Markdown on request switch on and a request that prefers `text/markdown`.
+- `includes/class-lightweight-seo-markdown-response.php`: at the same time, and never otherwise.
+
+With the switch on, an ordinary page view loads neither file; it runs one `template_redirect` callback that reads the `Accept` header and adds `Vary: Accept` to a page that can be answered in Markdown.
+
 ## 1.2.0-rc.1
 
 Reference measurements for `1.2.0-rc.1` were recorded on 2026-11-19. Every row was measured again.

@@ -88,6 +88,8 @@ A disabled module:
 
 Rendering the Modules tab must not load a module's implementation either.
 
+A switch inside a module follows the same rule. The AI Discovery module's "Markdown on request" switch adds one late `template_redirect` callback only while it is on; that callback reads the `Accept` header, and the converter (`class-lightweight-seo-markdown-converter.php`) and the document builder (`class-lightweight-seo-markdown-response.php`) are loaded only when a request is answered in Markdown. The answer is built for that request and stored nowhere.
+
 ## Data
 
 The plugin stores:
@@ -146,9 +148,9 @@ It reads normalized SEO facts from core through `lightweight_seo_get_api()` and 
 
 | Layer | Where | Covers |
 |---|---|---|
-| Unit | `tests/*.php` | Sanitizers, templates, module decisions, graph construction, admin rendering. Runs against the WordPress stubs in `tests/bootstrap.php`, in about a second. |
+| Unit | `tests/*.php` | Sanitizers, templates, module decisions, graph construction, admin rendering, and HTML to Markdown conversion against a table of fixtures. Runs against the WordPress stubs in `tests/bootstrap.php`, in about a second. |
 | JavaScript | `tests/js/` | Title variable and shortening rules shared by the previews, how a served `robots.txt` is read, and how content is counted. `tests/fixtures/content-facts.json` holds cases the PHP twin counts the same way. |
-| Integration | `tests/integration/` | Real WordPress: hooks, head output, sitemaps, activation, uninstall, importers, WooCommerce. |
+| Integration | `tests/integration/` | Real WordPress: hooks, head output, sitemaps, activation, uninstall, importers, WooCommerce, and Markdown answers to real queries. |
 | By hand | [QA Checklist](qa-checklist.md) | Browser behavior, accessibility, other SEO plugins, performance. |
 
 The unit suite is fast because WordPress is stubbed. A function the code newly calls needs a stub in `tests/bootstrap.php`, and behavior that depends on real WordPress needs an integration test as well.

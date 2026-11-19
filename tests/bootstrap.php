@@ -945,6 +945,11 @@ if (!function_exists('get_the_title')) {
     function get_the_title($post_id = 0) {
         global $lightweight_seo_test_query_state;
 
+        // Inside a loop, as the Markdown answer of a list of posts runs one.
+        if (0 === $post_id && isset($GLOBALS['lightweight_seo_test_loop_post'])) {
+            return $GLOBALS['lightweight_seo_test_loop_post']->post_title ?? '';
+        }
+
         return $lightweight_seo_test_query_state['title'];
     }
 }
@@ -956,6 +961,10 @@ if (!function_exists('get_permalink')) {
 
         if (is_object($post_id) && isset($post_id->permalink)) {
             return $post_id->permalink;
+        }
+
+        if (0 === $post_id && isset($GLOBALS['lightweight_seo_test_loop_post'])) {
+            return $GLOBALS['lightweight_seo_test_loop_post']->permalink ?? '';
         }
 
         if (isset($lightweight_seo_test_posts[(int) $post_id]) && isset($lightweight_seo_test_posts[(int) $post_id]->permalink)) {
@@ -1350,6 +1359,8 @@ if (!function_exists('get_language_attributes')) {
 
 if (!function_exists('post_password_required')) {
     function post_password_required($post = null) {
+        $post = $post ?? ($GLOBALS['lightweight_seo_test_loop_post'] ?? null);
+
         return '' !== (string) ($post->post_password ?? '');
     }
 }
@@ -1551,7 +1562,7 @@ if (!function_exists('url_to_postid')) {
 
 if (!function_exists('get_post_type_object')) {
     function get_post_type_object($post_type) {
-		if ( ! in_array( $post_type, array( 'post', 'page' ), true ) ) {
+		if ( ! in_array( $post_type, array( 'post', 'page', 'attachment' ), true ) ) {
 			return null;
 		}
 
@@ -1874,5 +1885,89 @@ if (!function_exists('is_admin')) {
         global $lightweight_seo_test_is_admin;
 
         return !empty($lightweight_seo_test_is_admin);
+    }
+}
+
+// Conditionals a Markdown answer checks, read from the query state like the others.
+
+if (!function_exists('is_feed')) {
+    function is_feed() {
+        return !empty($GLOBALS['lightweight_seo_test_query_state']['is_feed']);
+    }
+}
+
+if (!function_exists('is_embed')) {
+    function is_embed() {
+        return !empty($GLOBALS['lightweight_seo_test_query_state']['is_embed']);
+    }
+}
+
+if (!function_exists('is_robots')) {
+    function is_robots() {
+        return !empty($GLOBALS['lightweight_seo_test_query_state']['is_robots']);
+    }
+}
+
+if (!function_exists('is_trackback')) {
+    function is_trackback() {
+        return !empty($GLOBALS['lightweight_seo_test_query_state']['is_trackback']);
+    }
+}
+
+if (!function_exists('is_favicon')) {
+    function is_favicon() {
+        return !empty($GLOBALS['lightweight_seo_test_query_state']['is_favicon']);
+    }
+}
+
+if (!function_exists('is_preview')) {
+    function is_preview() {
+        return !empty($GLOBALS['lightweight_seo_test_query_state']['is_preview']);
+    }
+}
+
+if (!function_exists('is_customize_preview')) {
+    function is_customize_preview() {
+        return !empty($GLOBALS['lightweight_seo_test_query_state']['is_customize_preview']);
+    }
+}
+
+// The main loop: $lightweight_seo_test_loop holds the posts of the main query.
+$lightweight_seo_test_loop = array();
+$lightweight_seo_test_loop_index = 0;
+
+if (!function_exists('have_posts')) {
+    function have_posts() {
+        return $GLOBALS['lightweight_seo_test_loop_index'] < count($GLOBALS['lightweight_seo_test_loop']);
+    }
+}
+
+if (!function_exists('the_post')) {
+    function the_post() {
+        $GLOBALS['lightweight_seo_test_loop_post'] = $GLOBALS['lightweight_seo_test_loop'][$GLOBALS['lightweight_seo_test_loop_index']++];
+    }
+}
+
+if (!function_exists('rewind_posts')) {
+    function rewind_posts() {
+        $GLOBALS['lightweight_seo_test_loop_index'] = 0;
+    }
+}
+
+if (!function_exists('wp_reset_postdata')) {
+    function wp_reset_postdata() {
+        unset($GLOBALS['lightweight_seo_test_loop_post']);
+    }
+}
+
+if (!function_exists('get_the_content')) {
+    function get_the_content() {
+        return $GLOBALS['lightweight_seo_test_loop_post']->post_content ?? '';
+    }
+}
+
+if (!function_exists('get_the_excerpt')) {
+    function get_the_excerpt() {
+        return $GLOBALS['lightweight_seo_test_loop_post']->post_excerpt ?? '';
     }
 }
