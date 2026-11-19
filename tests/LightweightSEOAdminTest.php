@@ -250,6 +250,29 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '0', $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( array( 'settings_tab' => 'modules' ) )['enable_content_signals'] );
 	}
 
+	public function test_markdown_on_request_switch_is_saved_from_the_modules_tab_only(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = ( new Lightweight_SEO_Settings() )->get_defaults();
+
+		$this->assertSame( '0', $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( array( 'settings_tab' => 'modules' ) )['enable_markdown_on_request'] );
+
+		$on = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'               => 'modules',
+				'enable_markdown_on_request' => 'yes',
+			)
+		);
+
+		$this->assertSame( '1', $on['enable_markdown_on_request'] );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $on;
+
+		// Saving another tab keeps it; saving the Modules tab without the box clears it.
+		$this->assertSame( '1', $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( array( 'settings_tab' => 'appearance' ) )['enable_markdown_on_request'] );
+		$this->assertSame( '0', $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( array( 'settings_tab' => 'modules' ) )['enable_markdown_on_request'] );
+	}
+
 	public function test_validate_settings_clears_stale_social_image_id_for_manual_urls(): void {
 		global $lightweight_seo_test_attachment_urls;
 
@@ -1199,7 +1222,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_migration_section'    => array( 'settings_export', 'settings_import', 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'enable_tracking', 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
 				'lightweight_seo_indexnow_section'     => array( 'enable_indexnow', 'indexnow_status' ),
-				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_content_signals', 'enable_llms_txt', 'llms_txt_post_ids', 'ai_readiness' ),
+				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_content_signals', 'enable_llms_txt', 'llms_txt_post_ids', 'enable_markdown_on_request', 'ai_readiness' ),
 			),
 			array_map( 'array_keys', $wp_settings_fields['lightweight-seo'] )
 		);

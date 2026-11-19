@@ -211,7 +211,7 @@ class Lightweight_SEO_Admin_Page {
 		$hreflang_fields  = array( 'enable_hreflang_output', 'hreflang_mappings' );
 		$redirects_fields = array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules' );
 		$indexnow_fields  = array( 'enable_indexnow' );
-		$ai_fields        = array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_content_signals', 'enable_llms_txt', 'llms_txt_post_ids' );
+		$ai_fields        = array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_content_signals', 'enable_llms_txt', 'llms_txt_post_ids', 'enable_markdown_on_request' );
 
 		if ( 'modules' === $tab ) {
 			// Path mirroring is a retained 1.0 behavior, offered only to sites that still hold its data.

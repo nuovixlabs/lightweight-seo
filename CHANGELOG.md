@@ -1,10 +1,18 @@
 # Changelog
 
-What changed in each release. The release notes for [1.2](docs/release-notes-1.2.0.md) and [1.1](docs/release-notes-1.1.0.md) describe each line in full, by feature.
+What changed in each release. The release notes for [1.3](docs/release-notes-1.3.0.md), [1.2](docs/release-notes-1.2.0.md), and [1.1](docs/release-notes-1.1.0.md) describe each line in full, by feature.
 
 Add every change under "Unreleased" in the commit that makes it. `bin/release-prep` moves that section under the new version.
 
 ## Unreleased
+
+### Added
+
+- Markdown on request (experimental): a switch on the AI Discovery card, off by default, stored as `enable_markdown_on_request`. While it is on, a `GET` or `HEAD` request whose `Accept` header prefers `text/markdown` to HTML gets a Markdown version of a published public post or page, a static front page, the latest-posts homepage, or the posts page, instead of the theme's HTML. The document has YAML front matter with the title, description, and image the HTML head prints, the content after the `the_content` filters (or, for a list of posts, linked titles with excerpts), and the schema graph the head prints in a fenced `json` block. The answer carries `Content-Type: text/markdown; charset=UTF-8`, `Vary: Accept`, the canonical address as a `Link` header, the page's robots directives as `X-Robots-Tag` when they restrict anything, `Content-Signal` when the content signals switch is on, and headers that keep it out of shared caches. Browsers and every other request get the HTML as before, with `Vary: Accept` added on the pages that can be answered in Markdown. Nothing is stored. Two filters, `lightweight_seo_markdown_supported` and `lightweight_seo_markdown_document`. The converter and the document builder are new files, loaded only when a Markdown answer is built.
+
+### Changed
+
+- The help text of the `llms.txt` switch no longer says that no full-page Markdown is generated, which the new switch can do. It says that no `llms-full.txt` is generated and that only the Markdown on request switch sends a whole page as Markdown.
 
 ## 1.2.0 - 2026-11-20
 

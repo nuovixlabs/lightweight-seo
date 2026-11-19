@@ -242,6 +242,7 @@ class Lightweight_SEO_Admin_Settings {
 					'enable_content_signals'       => array( __( 'Content signals', 'lightweight-seo' ), $modules ),
 					'enable_llms_txt'              => array( __( 'Curated llms.txt', 'lightweight-seo' ), $modules ),
 					'llms_txt_post_ids'            => array( __( 'Pages to list', 'lightweight-seo' ), $modules ),
+					'enable_markdown_on_request'   => array( __( 'Markdown on request', 'lightweight-seo' ), $modules ),
 					'ai_readiness'                 => array( __( 'AI readiness', 'lightweight-seo' ), $modules ),
 				),
 			),
@@ -424,6 +425,7 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['ai_training_crawlers_enabled']     = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );
 		$sanitized_input['enable_content_signals']           = $checkbox_value( 'enable_content_signals', 'modules' );
 		$sanitized_input['enable_llms_txt']                  = $checkbox_value( 'enable_llms_txt', 'modules' );
+		$sanitized_input['enable_markdown_on_request']       = $checkbox_value( 'enable_markdown_on_request', 'modules' );
 		$sanitized_input['delete_data_on_uninstall']         = $checkbox_value( 'delete_data_on_uninstall', 'tools' );
 		$sanitized_input['default_max_image_preview']        = $this->settings->normalize_max_image_preview(
 			$input['default_max_image_preview'] ?? ( $existing_settings['default_max_image_preview'] ?? 'large' ),

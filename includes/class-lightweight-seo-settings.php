@@ -125,6 +125,7 @@ class Lightweight_SEO_Settings {
 			'enable_content_signals'             => '0',
 			'enable_llms_txt'                    => '0',
 			'llms_txt_post_ids'                  => '',
+			'enable_markdown_on_request'         => '0',
 			'delete_data_on_uninstall'           => '0',
 		);
 	}
@@ -947,6 +948,15 @@ class Lightweight_SEO_Settings {
 	/** Return whether the optional curated llms.txt endpoint is enabled. */
 	public function llms_txt_enabled() {
 		return '1' === (string) $this->get( 'enable_llms_txt', '0' );
+	}
+
+	/**
+	 * Return whether a request that prefers text/markdown is answered with Markdown.
+	 *
+	 * @since 1.3.0
+	 */
+	public function markdown_on_request_enabled() {
+		return '1' === (string) $this->get( 'enable_markdown_on_request', '0' );
 	}
 
 	/** Normalize the bounded list of explicitly curated post IDs. */

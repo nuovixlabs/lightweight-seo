@@ -811,7 +811,16 @@ class Lightweight_SEO_Admin_Module_Fields {
 
 	/** Render the optional curated llms.txt endpoint toggle. */
 	public function enable_llms_txt_render() {
-		$this->render_choice( 'enable_llms_txt', '0', __( 'Publish an experimental /llms.txt Markdown index', 'lightweight-seo' ), __( 'Only selected public page summaries are listed. No llms-full.txt or full-page Markdown copies are generated.', 'lightweight-seo' ) );
+		$this->render_choice( 'enable_llms_txt', '0', __( 'Publish an experimental /llms.txt Markdown index', 'lightweight-seo' ), __( 'Only selected public page summaries are listed, and no llms-full.txt is generated; a whole page is sent as Markdown only by the Markdown on request switch.', 'lightweight-seo' ) );
+	}
+
+	/**
+	 * Render the Markdown on request switch.
+	 *
+	 * @since 1.3.0
+	 */
+	public function enable_markdown_on_request_render() {
+		$this->render_choice( 'enable_markdown_on_request', '0', __( 'Answer a request for Markdown with a Markdown version of the page (experimental)', 'lightweight-seo' ), __( 'Only a client whose Accept header asks for text/markdown gets it, and no setting guarantees that an agent asks for it or uses it; browsers and search engines get the same HTML as before.', 'lightweight-seo' ) );
 	}
 
 	/** Render the bounded list of manually selected post and page IDs. */

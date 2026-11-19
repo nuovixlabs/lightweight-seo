@@ -16,26 +16,48 @@ class Lightweight_SEO_AI_Discovery_Module {
 	/** Comment that opens the plugin's part of the virtual robots.txt, also how the served-file check recognises it. */
 	const ROBOTS_MARKER = '# Lightweight SEO AI Discovery (experimental)';
 
+	/**
+	 * Priority of the Markdown answer on template_redirect.
+	 *
+	 * After WordPress's canonical redirect (10), the plugin's own redirects, the access checks
+	 * membership and maintenance plugins usually make on this hook, and the inspector (99999):
+	 * a visitor who would have been redirected or refused never gets Markdown instead.
+	 *
+	 * @since 1.3.0
+	 */
+	const MARKDOWN_PRIORITY = 100000;
+
+	/** Media types that ask for the HTML page. */
+	const HTML_TYPES = array( 'text/html', 'application/xhtml+xml' );
+
 	private $settings;
 	private $api;
 	private $context;
 	private $post_meta;
+	private $page_context;
 
 	/**
 	 * @param object      $settings  Shared settings service.
 	 * @param object|null $api       Public API facade.
 	 * @param string      $context   Request context.
 	 * @param object|null $post_meta The plugin's shared post meta service. Without it, a static front page is listed as the public API describes it.
+	 * @param object|null $page_context The plugin's shared page context service, which a Markdown answer reads its head values from.
 	 */
-	public function __construct( $settings, $api = null, $context = 'frontend', $post_meta = null ) {
-		$this->settings  = $settings;
-		$this->api       = $api;
-		$this->context   = $context;
-		$this->post_meta = $post_meta;
+	public function __construct( $settings, $api = null, $context = 'frontend', $post_meta = null, $page_context = null ) {
+		$this->settings     = $settings;
+		$this->api          = $api;
+		$this->context      = $context;
+		$this->post_meta    = $post_meta;
+		$this->page_context = $page_context;
 
 		if ( 'frontend' === $context ) {
 			add_filter( 'robots_txt', array( $this, 'filter_robots_txt' ), 20, 2 );
 			add_action( 'template_redirect', array( $this, 'maybe_render_llms_txt' ), 0 );
+
+			// With the switch off, a page view pays for nothing; with it on, for one check of the Accept header.
+			if ( $this->markdown_switch_on() ) {
+				add_action( 'template_redirect', array( $this, 'maybe_answer_with_markdown' ), self::MARKDOWN_PRIORITY );
+			}
 		}
 	}
 
@@ -324,6 +346,215 @@ class Lightweight_SEO_AI_Discovery_Module {
 		header( 'X-Content-Type-Options: nosniff' );
 		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Plain text is normalized in build_llms_txt().
 		exit;
+	}
+
+	/**
+	 * Answer a request that prefers Markdown with a Markdown version of the page, and exit.
+	 *
+	 * Every other request for a page that can be answered in Markdown gets its HTML as before,
+	 * with Accept added to Vary, so a cache that honors Vary keeps the two apart.
+	 *
+	 * @since 1.3.0
+	 * @return void
+	 */
+	public function maybe_answer_with_markdown() {
+		$view = $this->get_markdown_view();
+
+		if ( '' === $view ) {
+			return;
+		}
+
+		$accept = isset( $_SERVER['HTTP_ACCEPT'] ) ? (string) wp_unslash( $_SERVER['HTTP_ACCEPT'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only parsed for media types and quality values; never printed or stored.
+		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : 'GET';
+
+		if ( ! $this->markdown_requested( $view, $accept, $method ) ) {
+			if ( ! headers_sent() && self::needs_vary_accept( headers_list() ) ) {
+				header( 'Vary: Accept', false );
+			}
+
+			return;
+		}
+
+		Lightweight_SEO_Markdown_Response::send( $this->build_markdown_response( $view, $method ) );
+		exit;
+	}
+
+	/**
+	 * Whether this request is answered in Markdown, for a page that can be.
+	 *
+	 * @since 1.3.0
+	 * @param string $view   From get_markdown_view().
+	 * @param string $accept The Accept header.
+	 * @param string $method The request method, upper case.
+	 * @return bool
+	 */
+	public function markdown_requested( $view, $accept, $method ) {
+		if ( '' === $view || ! in_array( $method, array( 'GET', 'HEAD' ), true ) || ! self::prefers_markdown( $accept ) || ! $this->markdown_available() ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether a page is answered in Markdown when the request asks for it.
+		 *
+		 * Return false to send the HTML page instead, as a membership or paywall plugin may
+		 * for content a visitor has not unlocked.
+		 *
+		 * @since 1.3.0
+		 * @param bool         $supported Whether to answer in Markdown. Default true.
+		 * @param WP_Post|null $post      The post or page shown, the posts page, or null for the latest-posts homepage.
+		 */
+		return (bool) apply_filters( 'lightweight_seo_markdown_supported', true, $this->get_markdown_post( $view ) );
+	}
+
+	/**
+	 * Build the Markdown answer for this request: status, headers, and body.
+	 *
+	 * Loads the converter and the response builder, which an ordinary page view never does.
+	 *
+	 * @since 1.3.0
+	 * @param string $view   From get_markdown_view().
+	 * @param string $method GET or HEAD. A HEAD answer has headers and no body.
+	 * @return array { @type int $status, @type array $headers Each name, value, and whether it replaces one sent before. @type string $body }
+	 */
+	public function build_markdown_response( $view, $method = 'GET' ) {
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-markdown-converter.php';
+		require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-markdown-response.php';
+
+		$signal = method_exists( $this->settings, 'content_signals_enabled' ) && $this->settings->content_signals_enabled() ? $this->get_content_signal() : '';
+
+		return ( new Lightweight_SEO_Markdown_Response( $this->settings, $this->page_context ) )->build( $view, $this->get_markdown_post( $view ), $method, $signal );
+	}
+
+	/**
+	 * Name the kind of page this request shows, when it can be answered in Markdown.
+	 *
+	 * Only a published, public post, page, or other viewable post type (not an attachment, not
+	 * password protected, not a preview), a static front page, the latest-posts homepage, and
+	 * the posts page are. Archives, search, 404, feeds, embeds, REST, robots.txt, the favicon,
+	 * sitemaps, llms.txt, trackbacks, and the customizer are left alone.
+	 *
+	 * @since 1.3.0
+	 * @return string singular, home, posts, or an empty string.
+	 */
+	public function get_markdown_view() {
+		$excluded = is_admin() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || is_feed() || is_embed() || is_robots() || is_trackback()
+			|| ( function_exists( 'is_favicon' ) && is_favicon() ) || is_404() || is_search() || is_archive() || is_preview()
+			|| ( function_exists( 'is_customize_preview' ) && is_customize_preview() )
+			|| '' !== (string) get_query_var( 'sitemap' ) || '' !== (string) get_query_var( 'sitemap-stylesheet' ) || $this->is_llms_txt_request();
+
+		if ( $excluded ) {
+			return '';
+		}
+
+		if ( is_singular() ) {
+			$post = $this->get_markdown_post( 'singular' );
+
+			return $this->post_is_public( $post ) && 'attachment' !== (string) ( $post->post_type ?? '' ) ? 'singular' : '';
+		}
+
+		if ( ! is_home() ) {
+			return '';
+		}
+
+		if ( is_front_page() ) {
+			return 'home';
+		}
+
+		return $this->post_is_public( $this->get_markdown_post( 'posts' ) ) ? 'posts' : '';
+	}
+
+	/**
+	 * Whether an Accept header prefers Markdown to HTML.
+	 *
+	 * text/markdown must be named with a quality above 0, and no text/html or
+	 * application/xhtml+xml entry may have a higher one. A wildcard such as * / * alone never
+	 * selects Markdown, and neither does a missing header. An entry whose quality cannot be
+	 * read never helps Markdown win: it counts as 0 for text/markdown and as 1 for HTML.
+	 *
+	 * @since 1.3.0
+	 * @param string $accept The Accept header.
+	 * @return bool
+	 */
+	public static function prefers_markdown( $accept ) {
+		$markdown = 0.0;
+		$html     = 0.0;
+
+		foreach ( explode( ',', (string) $accept ) as $range ) {
+			$parameters = explode( ';', $range );
+			$type       = strtolower( (string) preg_replace( '/\s+/', '', (string) array_shift( $parameters ) ) );
+
+			if ( 'text/markdown' !== $type && ! in_array( $type, self::HTML_TYPES, true ) ) {
+				continue;
+			}
+
+			$quality = 1.0;
+
+			foreach ( $parameters as $parameter ) {
+				$pair = explode( '=', $parameter, 2 );
+
+				if ( 'q' === strtolower( trim( $pair[0] ) ) ) {
+					$value   = trim( $pair[1] ?? '', " \t\"" );
+					$quality = 1 === preg_match( '/^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/', $value ) ? (float) $value : null;
+					break;
+				}
+			}
+
+			if ( 'text/markdown' === $type ) {
+				$markdown = max( $markdown, null === $quality ? 0.0 : $quality );
+			} else {
+				$html = max( $html, null === $quality ? 1.0 : $quality );
+			}
+		}
+
+		return $markdown > 0 && $markdown >= $html;
+	}
+
+	/**
+	 * Whether a Vary: Accept line still has to be added to the headers already set.
+	 *
+	 * @since 1.3.0
+	 * @param string[] $headers Header lines, as headers_list() returns them.
+	 * @return bool
+	 */
+	public static function needs_vary_accept( $headers ) {
+		foreach ( (array) $headers as $line ) {
+			$parts = explode( ':', (string) $line, 2 );
+
+			if ( 'vary' === strtolower( trim( $parts[0] ) ) && isset( $parts[1] ) && 1 === preg_match( '/(?:^|,)\s*(?:accept|\*)\s*(?:,|$)/i', $parts[1] ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/** The post a Markdown answer is about: the one shown, the posts page, or none for the latest-posts homepage. */
+	private function get_markdown_post( $view ) {
+		$post_id = 0;
+
+		if ( 'singular' === $view ) {
+			$post_id = absint( get_queried_object_id() );
+		} elseif ( 'posts' === $view ) {
+			$post_id = absint( get_option( 'page_for_posts', 0 ) );
+		}
+
+		// get_post( 0 ) returns whatever post is global at the time, which is not the one meant.
+		return $post_id ? get_post( $post_id ) : null;
+	}
+
+	/** Whether the Markdown on request switch is on. */
+	private function markdown_switch_on() {
+		return method_exists( $this->settings, 'markdown_on_request_enabled' ) && $this->settings->markdown_on_request_enabled();
+	}
+
+	/**
+	 * Whether this server can build Markdown. The converter needs the DOM extension.
+	 *
+	 * @since 1.3.0
+	 * @return bool
+	 */
+	protected function markdown_available() {
+		return class_exists( 'DOMDocument' );
 	}
 
 	/** Build a concise Markdown index from explicitly selected, public pages only. */
