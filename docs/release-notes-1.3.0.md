@@ -29,7 +29,14 @@ All of these must hold:
 - The server has PHP's DOM extension, which the converter needs. Without it, HTML is sent as before.
 - No plugin refuses it through the `lightweight_seo_markdown_supported` filter.
 
-The answer is decided after every redirect and access check that usually runs before a page is shown: WordPress's canonical redirect, the plugin's own redirects, and the checks membership and maintenance plugins make on `template_redirect`. A visitor who would have been redirected or refused never gets Markdown instead.
+The answer is decided late, on `template_redirect` at priority 100000: after WordPress's canonical redirect, the plugin's own redirects, and any redirect or access check another plugin makes on `template_redirect` before that priority. A visitor that such a check redirects or refuses gets the same answer when asking for Markdown.
+
+Some limits happen where the answer cannot see them, and the Markdown answer does not respect them:
+
+- a plugin that hides a page by swapping its template through `template_include`, as many maintenance, coming-soon, and membership plugins do;
+- a check made on a later hook, or later on `template_redirect`.
+
+On such a site, a browser gets the maintenance page or the sign-in prompt, while a request for Markdown gets the page's real content. Before turning the switch on with such a plugin active, request a page while signed out, for example with `curl -H "Accept: text/markdown" https://example.com/a-post/`. If the content comes back, return `false` from the `lightweight_seo_markdown_supported` filter for the requests the plugin limits (see [For developers](#for-developers)). Limits applied through the `the_content` filter need nothing: the Markdown is rendered through that filter too.
 
 For every page that can be answered in Markdown, the HTML answer gains `Vary: Accept`, added to any `Vary` header already there, so a cache that honors `Vary` keeps the two apart.
 
@@ -88,7 +95,7 @@ The reverse can still happen: a cache in front of WordPress may answer a request
 
 Two filters, documented in [Developer API](developer-api.md#module-hooks):
 
-- `lightweight_seo_markdown_supported`: return `false` to send the HTML page instead, as a membership or paywall plugin may for content a visitor has not unlocked. It receives the post shown, the posts page, or `null` for the latest-posts homepage.
+- `lightweight_seo_markdown_supported`: return `false` to send the HTML page instead, as a membership or paywall plugin may for content a visitor has not unlocked, or a maintenance plugin that swaps the template while maintenance is on. It receives the post shown, the posts page, or `null` for the latest-posts homepage.
 - `lightweight_seo_markdown_document`: filters the finished document, with the same post.
 
 A membership plugin that limits content through the `the_content` filter limits the Markdown the same way, because the content is rendered through that filter.
