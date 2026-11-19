@@ -36,6 +36,27 @@ With the defaults, the four training crawlers get `Disallow: /`:
 
 `CCBot` was left out because Common Crawl documents no AI purpose for it, and `Claude-Agent` because Anthropic describes no `robots.txt` control for it. Some user-requested fetchers, such as `ChatGPT-User`, `Perplexity-User`, `Meta-ExternalFetcher`, and `Amzn-User`, say they may not follow `robots.txt`. [AI Crawlers](ai-crawlers.md) lists every token with its source.
 
+### Content signals
+
+A new switch on the AI Discovery card, **State how this site's content may be used for search, AI answers, and AI training**, is off by default. While it is on, and WordPress answers `robots.txt` (no physical file, and the site is not hidden from search engines), the virtual file gains one line inside the group for every crawler:
+
+```text
+User-agent: *
+# Content signals, as defined at https://contentsignals.org/
+Content-Signal: ai-train=no, search=yes, ai-input=yes
+Disallow: /wp-admin/
+```
+
+- `search` is always `yes`.
+- `ai-input`, using pages for AI answers, follows "Allow bundled AI search and user-directed crawler tokens".
+- `ai-train`, training AI models, follows "Allow bundled model-training crawler tokens".
+
+The placement follows contentsignals.org and Cloudflare's managed `robots.txt`: the line goes inside the `User-agent: *` group, under its User-agent lines and before its rules. When the file has no such group, one is added with `Allow: /`, which allows what was allowed anyway. A file that already holds a `Content-Signal` line, from another plugin or the theme, is left alone.
+
+Cloudflare's own file adds a long comment above the line, with the policy's definitions and a reservation of rights under EU copyright law. Cloudflare's documentation does not require it, so the plugin prints only a one-line comment that names where the signals are defined. A site that wants the full text can add it with the `robots_txt` filter.
+
+A content signal states a preference. Crawlers may ignore it, as they may ignore any `robots.txt` rule. The served-file check below reports whether a `Content-Signal` line is served.
+
 ### The served robots.txt
 
 The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' rules. A file answered by the web server, a CDN, or a host's own setting went unnoticed, even when it replaced everything WordPress writes. The AI Discovery card now reads the file crawlers actually get:
@@ -45,6 +66,7 @@ The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' 
 - **Crawler rules from this card** says whether the rules for the AI crawlers set on the card are in the served file, and names any that are missing or give a different answer. When none are there, another file or setting answers the address instead of WordPress.
 - **Whole-site blocks** names any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site. A group that disallows `/` but also has `Allow` lines is reported as disallowing the homepage and every page those lines do not list, since the listed paths can still be fetched.
 - **Sitemap line** lists the `Sitemap:` lines, or gives the exact line to add when WordPress sitemaps are on.
+- **Content signals** lists the `Content-Signal` lines served, and says when the line this card adds is missing.
 - WordPress answers `robots.txt` only when it is installed at the root of the host. On a subdirectory install the card says so, and that the rules set on the card are not served there.
 - Without JavaScript, the card keeps the checks of 1.1 and links to the served file.
 
@@ -59,4 +81,4 @@ The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' 
 
 ## Upgrading from 1.1
 
-Nothing changes until a new field is filled in or a new switch is turned on. One setting is new in the existing settings option: `identity_description`, empty by default. There is no migration.
+Nothing changes until a new field is filled in or a new switch is turned on. Two settings are new in the existing settings option: `identity_description`, empty by default, and `enable_content_signals`, off by default. There is no migration.

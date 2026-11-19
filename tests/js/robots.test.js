@@ -122,7 +122,7 @@ test('some plugin rules missing, or served with the opposite answer, are named',
 test('no plugin rules are expected, so no row is reported for them', () => {
 	const ids = check(served('User-agent: *\nDisallow: /\n'), {rules: {}, crawlers: CRAWLERS, sitemapLine: ''}).map((result) => result.id);
 
-	assert.deepEqual(ids, ['fetch', 'blocked', 'sitemap']);
+	assert.deepEqual(ids, ['fetch', 'blocked', 'sitemap', 'signals']);
 });
 
 test('a whole-site block is reported for each named group, not for crawlers that only fall under *', () => {
@@ -144,8 +144,19 @@ test('a failed fetch, another status, or another content type is reported first'
 
 	assert.deepEqual(html[0], {id: 'fetch', state: 'warning', key: 'type', values: ['text/html']});
 	// The file is still read, because crawlers read it whatever its type.
-	assert.equal(html.length, 3);
+	assert.equal(html.length, 4);
 	assert.deepEqual(check(served('', {contentType: ''}), {})[0].values, ['-']);
+});
+
+test('a served Content-Signal line is reported, and a missing one only when this card adds one', () => {
+	const body = 'User-agent: *\n# Content signals, as defined at https://contentsignals.org/\nContent-Signal: ai-train=no, search=yes, ai-input=yes\nDisallow: /wp-admin/\n';
+	const parsed = parse(body);
+
+	// The line sits inside the group without splitting it or becoming a rule.
+	assert.deepEqual(parsed.groups, [{agents: ['*'], rules: [{allow: false, path: '/wp-admin/'}]}]);
+	assert.deepEqual(byId(check(served(body), {contentSignal: 'ai-train=no, search=yes, ai-input=yes'})).signals, {id: 'signals', state: 'success', key: 'present', values: ['ai-train=no, search=yes, ai-input=yes']});
+	assert.deepEqual(byId(check(served('User-agent: *\nAllow: /\n'), {contentSignal: 'ai-train=no, search=yes, ai-input=yes'})).signals, {id: 'signals', state: 'warning', key: 'missing', values: ['Content-Signal: ai-train=no, search=yes, ai-input=yes']});
+	assert.deepEqual(byId(check(served('User-agent: *\nAllow: /\n'), {})).signals, {id: 'signals', state: 'info', key: 'none', values: []});
 });
 
 test('a group that shuts the site except for its Allow lines is not reported as shutting every page', () => {

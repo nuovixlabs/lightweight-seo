@@ -26,7 +26,7 @@ Six optional modules are lazy-loaded only in their declared request contexts:
 - Tracking: GTM-first output with direct GA4 or Meta Pixel alternatives
 - Local SEO: validated LocalBusiness schema fields
 - IndexNow: tells participating search engines when a page is published, changed, or removed. This is the one module that sends a request to another service (`api.indexnow.org`), and only from a public production site
-- AI Discovery (experimental): crawler policies, a curated `/llms.txt`, local readiness checks, and a check of the `robots.txt` that is actually served, run in the administrator's browser
+- AI Discovery (experimental): crawler policies, a curated `/llms.txt`, an optional `Content-Signal` line, local readiness checks, and a check of the `robots.txt` that is actually served, run in the administrator's browser
 
 AI Discovery does not guarantee crawling, training, citation, inclusion, visibility, or ranking.
 

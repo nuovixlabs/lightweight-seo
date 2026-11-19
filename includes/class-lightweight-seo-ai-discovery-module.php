@@ -151,6 +151,8 @@ class Lightweight_SEO_AI_Discovery_Module {
 			return $output;
 		}
 
+		$output = $this->add_content_signal( (string) $output );
+
 		$search_allowed   = $this->settings->ai_search_crawlers_enabled();
 		$training_allowed = $this->settings->ai_training_crawlers_enabled();
 		$append           = array();
@@ -171,6 +173,65 @@ class Lightweight_SEO_AI_Discovery_Module {
 		}
 
 		return rtrim( (string) $output ) . "\n\n# Lightweight SEO AI Discovery (experimental)\n" . implode( "\n", $append );
+	}
+
+	/**
+	 * Return the content signals this site states, in the order of the Content Signals reference.
+	 *
+	 * Search is always allowed here; ai-input follows the AI search switch and ai-train the training switch.
+	 *
+	 * @since 1.2.0
+	 * @return string Such as "ai-train=no, search=yes, ai-input=yes".
+	 */
+	public function get_content_signal() {
+		return sprintf(
+			'ai-train=%1$s, search=yes, ai-input=%2$s',
+			$this->settings->ai_training_crawlers_enabled() ? 'yes' : 'no',
+			$this->settings->ai_search_crawlers_enabled() ? 'yes' : 'no'
+		);
+	}
+
+	/**
+	 * Put one Content-Signal line in the group for every crawler, under its User-agent lines.
+	 *
+	 * contentsignals.org and Cloudflare's managed robots.txt place the line inside the
+	 * "User-agent: *" group, directly under the User-agent line and before its rules. Lines
+	 * that share that group's User-agent lines are kept together, so no rule changes group.
+	 * A file that already states a content signal is left alone.
+	 */
+	private function add_content_signal( $output ) {
+		if ( ! method_exists( $this->settings, 'content_signals_enabled' ) || ! $this->settings->content_signals_enabled() || 1 === preg_match( '/^\s*Content-Signal\s*:/mi', $output ) ) {
+			return $output;
+		}
+
+		$signal = array(
+			'# Content signals, as defined at https://contentsignals.org/',
+			'Content-Signal: ' . $this->get_content_signal(),
+		);
+		$lines  = preg_split( '/\r\n|\n|\r/', $output );
+		$star   = null;
+
+		foreach ( $lines as $index => $line ) {
+			if ( 1 === preg_match( '/^\s*User-agent\s*:\s*\*\s*(?:#.*)?$/i', $line ) ) {
+				$star = $index;
+				break;
+			}
+		}
+
+		if ( null === $star ) {
+			// No group for every crawler yet: add one that allows what was allowed anyway.
+			return ( '' === trim( $output ) ? '' : rtrim( $output ) . "\n\n" ) . "User-agent: *\n" . implode( "\n", $signal ) . "\nAllow: /\n";
+		}
+
+		$last_agent = $star;
+
+		while ( isset( $lines[ $last_agent + 1 ] ) && 1 === preg_match( '/^\s*User-agent\s*:/i', $lines[ $last_agent + 1 ] ) ) {
+			++$last_agent;
+		}
+
+		array_splice( $lines, $last_agent + 1, 0, $signal );
+
+		return implode( "\n", $lines );
 	}
 
 	/** Return physical-file and pre-existing crawler-policy conflicts. */
@@ -311,6 +372,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 *     @type array  $rules        Whether each crawler token the plugin adds is allowed, keyed by token.
 	 *     @type array  $crawlers     Tokens checked for a group that disallows the whole site.
 	 *     @type string $sitemapLine  The Sitemap line WordPress would print, or an empty string.
+	 *     @type string $contentSignal The content signals this card adds, or an empty string when it adds none.
 	 * }
 	 */
 	public function get_served_robots_expectations() {
@@ -321,12 +383,17 @@ class Lightweight_SEO_AI_Discovery_Module {
 		$subdirectory = untrailingslashit( (string) wp_parse_url( $home, PHP_URL_PATH ) );
 		$public       = (bool) get_option( 'blog_public', 1 );
 		$rules        = array();
+		$signal       = '';
 		$sitemap_urls = $public && $this->api && method_exists( $this->api, 'get_sitemap_urls' ) ? (array) $this->api->get_sitemap_urls() : array();
 
 		if ( '' === $subdirectory && $public && ! $this->physical_robots_exists() ) {
 			$taken            = $this->get_conflicts()['robots_tokens'];
 			$search_allowed   = (bool) $this->settings->ai_search_crawlers_enabled();
 			$training_allowed = (bool) $this->settings->ai_training_crawlers_enabled();
+
+			if ( method_exists( $this->settings, 'content_signals_enabled' ) && $this->settings->content_signals_enabled() ) {
+				$signal = $this->get_content_signal();
+			}
 
 			foreach ( $this->get_crawler_registry() as $token => $definition ) {
 				// A token another filter already defines is left to it, so its rule is not the plugin's to check.
@@ -337,11 +404,12 @@ class Lightweight_SEO_AI_Discovery_Module {
 		}
 
 		return array(
-			'url'          => ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' ) . '/robots.txt',
-			'subdirectory' => $subdirectory,
-			'rules'        => $rules,
-			'crawlers'     => array( 'Googlebot', 'Bingbot', '*' ),
-			'sitemapLine'  => empty( $sitemap_urls ) ? '' : 'Sitemap: ' . reset( $sitemap_urls ),
+			'url'           => ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' ) . '/robots.txt',
+			'subdirectory'  => $subdirectory,
+			'rules'         => $rules,
+			'crawlers'      => array( 'Googlebot', 'Bingbot', '*' ),
+			'sitemapLine'   => empty( $sitemap_urls ) ? '' : 'Sitemap: ' . reset( $sitemap_urls ),
+			'contentSignal' => $signal,
 		);
 	}
 

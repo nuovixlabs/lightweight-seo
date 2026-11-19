@@ -8,7 +8,7 @@
  *
  * check(response, expected) returns one result per row of the report:
  *   {id, state, key, values}
- * id      The row: fetch, rules, blocked, or sitemap.
+ * id      The row: fetch, rules, blocked, sitemap, or signals.
  * state   success, warning, or info, as Lightweight_SEO_Admin_UI::status() uses them.
  * key     Which message of the row applies. The server prints each message.
  * values  Text that fills the message's %s, joined by the caller.
@@ -225,11 +225,21 @@
 			: {id: 'sitemap', state: 'info', key: 'none', values: []};
 	}
 
+	function signalsResult(parsed, contentSignal) {
+		if (parsed.signals.length) {
+			return {id: 'signals', state: 'success', key: 'present', values: parsed.signals};
+		}
+
+		return contentSignal
+			? {id: 'signals', state: 'warning', key: 'missing', values: ['Content-Signal: ' + contentSignal]}
+			: {id: 'signals', state: 'info', key: 'none', values: []};
+	}
+
 	/**
 	 * Compare a served answer with what is expected.
 	 *
 	 * response  {fetched, status, contentType, body, url}; fetched is false when the request failed.
-	 * expected  {rules: {token: allowed}, crawlers: [tokens checked for a whole-site block], sitemapLine}
+	 * expected  {rules: {token: allowed}, crawlers: [tokens checked for a whole-site block], sitemapLine, contentSignal}
 	 */
 	function check(response, expected) {
 		var settings = expected || {};
@@ -246,6 +256,7 @@
 		results.push(rulesResult(parsed, settings.rules || {}));
 		results.push(blockedResult(parsed, settings.crawlers || []));
 		results.push(sitemapResult(parsed, settings.sitemapLine || ''));
+		results.push(signalsResult(parsed, settings.contentSignal || ''));
 
 		return results.filter(Boolean);
 	}

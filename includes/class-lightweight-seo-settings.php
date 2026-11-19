@@ -122,6 +122,7 @@ class Lightweight_SEO_Settings {
 			'enable_ai_discovery'                => '0',
 			'ai_search_crawlers_enabled'         => '1',
 			'ai_training_crawlers_enabled'       => '0',
+			'enable_content_signals'             => '0',
 			'enable_llms_txt'                    => '0',
 			'llms_txt_post_ids'                  => '',
 			'delete_data_on_uninstall'           => '0',
@@ -936,6 +937,11 @@ class Lightweight_SEO_Settings {
 	/** Return whether model-training crawler tokens are allowed. */
 	public function ai_training_crawlers_enabled() {
 		return '1' === (string) $this->get( 'ai_training_crawlers_enabled', '0' );
+	}
+
+	/** Return whether a Content-Signal line is added to the virtual robots.txt. */
+	public function content_signals_enabled() {
+		return '1' === (string) $this->get( 'enable_content_signals', '0' );
 	}
 
 	/** Return whether the optional curated llms.txt endpoint is enabled. */

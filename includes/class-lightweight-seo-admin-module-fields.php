@@ -804,6 +804,11 @@ class Lightweight_SEO_Admin_Module_Fields {
 		$this->render_choice( 'ai_training_crawlers_enabled', '0', __( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ), __( 'Off blocks GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent, Amazonbot, and MistralAI-Training. Meta-ExternalAgent and Amazonbot are then blocked for every use, not only training. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ) );
 	}
 
+	/** Render the Content-Signal line switch. */
+	public function enable_content_signals_render() {
+		$this->render_choice( 'enable_content_signals', '0', __( 'State how this site’s content may be used for search, AI answers, and AI training', 'lightweight-seo' ), __( 'Adds one Content-Signal line to the virtual robots.txt: search=yes, ai-input following the AI search switch above, and ai-train following the model-training switch. It states a preference; crawlers may ignore it.', 'lightweight-seo' ) );
+	}
+
 	/** Render the optional curated llms.txt endpoint toggle. */
 	public function enable_llms_txt_render() {
 		$this->render_choice( 'enable_llms_txt', '0', __( 'Publish an experimental /llms.txt Markdown index', 'lightweight-seo' ), __( 'Only selected public page summaries are listed. No llms-full.txt or full-page Markdown copies are generated.', 'lightweight-seo' ) );
@@ -935,11 +940,21 @@ class Lightweight_SEO_Admin_Module_Fields {
 					'none'    => __( 'No Sitemap line is served, and WordPress sitemaps are off.', 'lightweight-seo' ),
 				),
 			),
+			'signals' => array(
+				__( 'Content signals', 'lightweight-seo' ),
+				array(
+					/* translators: %s: the content signals served, such as "ai-train=no, search=yes, ai-input=yes". */
+					'present' => __( 'Served: %s.', 'lightweight-seo' ),
+					/* translators: %s: the expected Content-Signal line. */
+					'missing' => __( 'No Content-Signal line is served, although this card adds one. Expected: %s', 'lightweight-seo' ),
+					'none'    => __( 'No Content-Signal line is served.', 'lightweight-seo' ),
+				),
+			),
 		);
 
 		echo '<ul class="lwseo-status-list" data-lwseo-served-robots';
 		echo ' data-url="' . esc_url( $url ) . '"';
-		echo ' data-expected="' . esc_attr( (string) wp_json_encode( array_intersect_key( $expected, array_flip( array( 'rules', 'crawlers', 'sitemapLine' ) ) ) ) ) . '"';
+		echo ' data-expected="' . esc_attr( (string) wp_json_encode( array_intersect_key( $expected, array_flip( array( 'rules', 'crawlers', 'sitemapLine', 'contentSignal' ) ) ) ) ) . '"';
 
 		foreach ( array( 'success', 'warning', 'info' ) as $state ) {
 			echo ' data-prefix-' . esc_attr( $state ) . '="' . esc_attr( Lightweight_SEO_Admin_UI::status_prefix( $state ) ) . '"';
