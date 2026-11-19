@@ -16,11 +16,19 @@ class Lightweight_SEO_AI_Discovery_Module {
 	private $settings;
 	private $api;
 	private $context;
+	private $post_meta;
 
-	public function __construct( $settings, $api = null, $context = 'frontend' ) {
-		$this->settings = $settings;
-		$this->api      = $api;
-		$this->context  = $context;
+	/**
+	 * @param object      $settings  Shared settings service.
+	 * @param object|null $api       Public API facade.
+	 * @param string      $context   Request context.
+	 * @param object|null $post_meta The plugin's shared post meta service. Without it, a static front page is listed as the public API describes it.
+	 */
+	public function __construct( $settings, $api = null, $context = 'frontend', $post_meta = null ) {
+		$this->settings  = $settings;
+		$this->api       = $api;
+		$this->context   = $context;
+		$this->post_meta = $post_meta;
 
 		if ( 'frontend' === $context ) {
 			add_filter( 'robots_txt', array( $this, 'filter_robots_txt' ), 20, 2 );
@@ -220,7 +228,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 				continue;
 			}
 
-			if ( $this->is_static_front_page( $post_id ) ) {
+			if ( $this->post_meta && $this->is_static_front_page( $post_id ) ) {
 				$context = $this->get_front_page_context( $post_id, $context );
 			}
 
@@ -303,7 +311,8 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 * SEO title, and the homepage meta description unless the page has its own description.
 	 */
 	private function get_front_page_context( $post_id, $context ) {
-		$meta = class_exists( 'Lightweight_SEO_Post_Meta' ) ? ( new Lightweight_SEO_Post_Meta() )->get_all( $post_id ) : array();
+		// The shared service is passed in: constructing another one would register its hooks again.
+		$meta = (array) $this->post_meta->get_all( $post_id );
 
 		if ( empty( $meta['seo_title'] ) && method_exists( $this->settings, 'get_home_title_format' ) ) {
 			$context['title'] = Lightweight_SEO_Text::resolve_tokens( $this->settings->get_home_title_format(), $this->get_front_page_tokens( $post_id ) );
