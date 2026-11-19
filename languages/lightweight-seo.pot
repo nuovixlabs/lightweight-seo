@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T09:04:51+00:00\n"
+"POT-Creation-Date: 2026-11-19T09:14:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -1171,7 +1171,7 @@ msgid "Lightweight SEO extends the WordPress core sitemap instead of replacing i
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:277
-#: includes/class-lightweight-seo-ai-discovery-module.php:267
+#: includes/class-lightweight-seo-ai-discovery-module.php:276
 msgid "Site identity"
 msgstr ""
 
@@ -2178,81 +2178,77 @@ msgstr ""
 msgid "Use this image"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:177
+#: includes/class-lightweight-seo-ai-discovery-module.php:178
 msgid "Website"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:179
-msgid "Experimental community proposal. Google Search ignores llms.txt for visibility and rankings; publication does not guarantee crawling, citation, training, or inclusion."
-msgstr ""
-
-#: includes/class-lightweight-seo-ai-discovery-module.php:184
+#: includes/class-lightweight-seo-ai-discovery-module.php:189
 msgid "Authoritative pages"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:246
+#: includes/class-lightweight-seo-ai-discovery-module.php:255
 msgid "Site crawlability"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:247
+#: includes/class-lightweight-seo-ai-discovery-module.php:256
 msgid "WordPress search visibility is public."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:247
+#: includes/class-lightweight-seo-ai-discovery-module.php:256
 msgid "WordPress asks search engines not to index this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:251
+#: includes/class-lightweight-seo-ai-discovery-module.php:260
 msgid "Crawler policy ownership"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:252
+#: includes/class-lightweight-seo-ai-discovery-module.php:261
 msgid "A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:252
+#: includes/class-lightweight-seo-ai-discovery-module.php:261
 msgid "Another robots.txt filter already defines one or more bundled crawler tokens."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:252
+#: includes/class-lightweight-seo-ai-discovery-module.php:261
 msgid "WordPress can safely append the configured virtual crawler policies."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:256
+#: includes/class-lightweight-seo-ai-discovery-module.php:265
 msgid "Curated public pages"
 msgstr ""
 
 #. translators: 1: Number of valid curated pages. 2: Number of selected pages.
-#: includes/class-lightweight-seo-ai-discovery-module.php:258
+#: includes/class-lightweight-seo-ai-discovery-module.php:267
 #, php-format
 msgid "%1$d of %2$d selected pages are published, public, indexable, canonical, local, and not redirected."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:262
+#: includes/class-lightweight-seo-ai-discovery-module.php:271
 msgid "Page snippets"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:263
+#: includes/class-lightweight-seo-ai-discovery-module.php:272
 msgid "Each curated page should have a visible, normalized description."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:268
+#: includes/class-lightweight-seo-ai-discovery-module.php:277
 msgid "A site name and visible structured-data graph provide the identity signals checked here."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:272
+#: includes/class-lightweight-seo-ai-discovery-module.php:281
 msgid "llms.txt endpoint"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:273
+#: includes/class-lightweight-seo-ai-discovery-module.php:282
 msgid "A physical llms.txt file takes precedence; Lightweight SEO will not replace it."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:273
+#: includes/class-lightweight-seo-ai-discovery-module.php:282
 msgid "Another rewrite rule or integration claims the llms.txt endpoint; Lightweight SEO will not replace it."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:273
+#: includes/class-lightweight-seo-ai-discovery-module.php:282
 msgid "No physical or routed llms.txt conflict was detected."
 msgstr ""
 

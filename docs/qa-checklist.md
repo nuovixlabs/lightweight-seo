@@ -163,6 +163,7 @@ Use this checklist for a release candidate. Test destructive migration and unins
 - Test redirect scheme, host, chain, loop, and malformed-rule validation.
 - Confirm credentials/tokens never appear in public APIs, frontend markup, diagnostics, JavaScript data, or logs.
 - Confirm `/llms.txt` includes only selected public, indexable, local, canonical, non-redirected posts/pages and never full content.
+- `/llms.txt` opens with the site name and, under it, the homepage meta description, or the tagline when there is none, or no summary line when both are empty. List the static front page and confirm its line shows the homepage's `<title>` and meta description, as on the homepage itself.
 - Confirm core makes no external request and stores no new 404 or analytics history.
 - Abilities (WordPress 6.9 or later): run each `lightweight-seo/…` ability for a post, a term, and an author as an administrator, as a user who cannot edit that item, and signed out. Only the first may read or write. Confirm an unknown field, an unknown visibility value, and an address that is not `http` or `https` save nothing, and that the REST routes answer 401 without a sign-in.
 - Abilities: on WordPress older than 6.9, confirm the plugin loads without errors and `includes/class-lightweight-seo-abilities.php` is never loaded.

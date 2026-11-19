@@ -6,6 +6,11 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+### Fixed
+
+- `/llms.txt` opens with a summary of the site, as the format expects: the homepage meta description, else the tagline, and no summary line when neither is set. The notice that Google Search ignores `llms.txt` stays on the AI Discovery card and is no longer printed in the file.
+- A static front page listed in `/llms.txt` uses the title and description the homepage prints: its own SEO title or the homepage title format, and its own description or the homepage meta description. It was listed by the page's name, often with no description.
+
 ### Documentation
 
 - The product boundary in `docs/architecture.md` now covers AI readiness: the plugin checks whether AI crawlers and agents can reach and read the site, and publishes agent-discovery output only for things the site really offers. There is no AI readiness score or level.

@@ -172,12 +172,17 @@ class Lightweight_SEO_AI_Discovery_Module {
 	/** Build a concise Markdown index from explicitly selected, public pages only. */
 	public function build_llms_txt() {
 		$site_name = $this->normalize_markdown_text( get_bloginfo( 'name' ) );
+		$summary   = $this->get_site_summary();
 		$entries   = $this->get_curated_entries();
 		$lines     = array(
 			'# ' . ( '' !== $site_name ? $site_name : __( 'Website', 'lightweight-seo' ) ),
-			'',
-			'> ' . __( 'Experimental community proposal. Google Search ignores llms.txt for visibility and rankings; publication does not guarantee crawling, citation, training, or inclusion.', 'lightweight-seo' ),
 		);
+
+		// The format reserves the blockquote for a short summary of the site. The disclaimer is on the settings card.
+		if ( '' !== $summary ) {
+			$lines[] = '';
+			$lines[] = '> ' . $summary;
+		}
 
 		if ( ! empty( $entries ) ) {
 			$lines[] = '';
@@ -213,6 +218,10 @@ class Lightweight_SEO_AI_Discovery_Module {
 
 			if ( empty( $context['indexable'] ) || ! $this->url_is_local_and_valid( $url ) || $this->url_is_redirected( $url ) ) {
 				continue;
+			}
+
+			if ( $this->is_static_front_page( $post_id ) ) {
+				$context = $this->get_front_page_context( $post_id, $context );
 			}
 
 			$title       = $this->normalize_markdown_text( $context['title'] ?? get_the_title( $post_id ) );
@@ -272,6 +281,56 @@ class Lightweight_SEO_AI_Discovery_Module {
 				'label'   => __( 'llms.txt endpoint', 'lightweight-seo' ),
 				'details' => $conflicts['physical_llms'] ? __( 'A physical llms.txt file takes precedence; Lightweight SEO will not replace it.', 'lightweight-seo' ) : ( $conflicts['llms_endpoint'] ? __( 'Another rewrite rule or integration claims the llms.txt endpoint; Lightweight SEO will not replace it.', 'lightweight-seo' ) : __( 'No physical or routed llms.txt conflict was detected.', 'lightweight-seo' ) ),
 			),
+		);
+	}
+
+	/** Return the homepage meta description, else the tagline, as one line of Markdown text. */
+	private function get_site_summary() {
+		$summary = $this->normalize_markdown_text( method_exists( $this->settings, 'get' ) ? $this->settings->get( 'meta_description', '' ) : '' );
+
+		return '' !== $summary ? $summary : $this->normalize_markdown_text( get_bloginfo( 'description' ) );
+	}
+
+	private function is_static_front_page( $post_id ) {
+		return 'page' === get_option( 'show_on_front' ) && absint( get_option( 'page_on_front', 0 ) ) === (int) $post_id;
+	}
+
+	/**
+	 * Give a static front page the title and description the homepage prints.
+	 *
+	 * The public API describes a page by its own title and content, which is right for every
+	 * other page. The homepage prints the homepage title format unless the page has its own
+	 * SEO title, and the homepage meta description unless the page has its own description.
+	 */
+	private function get_front_page_context( $post_id, $context ) {
+		$meta = class_exists( 'Lightweight_SEO_Post_Meta' ) ? ( new Lightweight_SEO_Post_Meta() )->get_all( $post_id ) : array();
+
+		if ( empty( $meta['seo_title'] ) && method_exists( $this->settings, 'get_home_title_format' ) ) {
+			$context['title'] = Lightweight_SEO_Text::resolve_tokens( $this->settings->get_home_title_format(), $this->get_front_page_tokens( $post_id ) );
+		}
+
+		$site_description = method_exists( $this->settings, 'get' ) ? trim( (string) $this->settings->get( 'meta_description', '' ) ) : '';
+
+		if ( empty( $meta['seo_description'] ) && '' !== $site_description ) {
+			$context['description'] = $site_description;
+		}
+
+		return $context;
+	}
+
+	/** Title variables as the homepage fills them on its first page. */
+	private function get_front_page_tokens( $post_id ) {
+		$categories = get_the_category( $post_id );
+
+		return array(
+			'%title%'    => (string) get_the_title( $post_id ),
+			'%sitename%' => (string) get_bloginfo( 'name' ),
+			'%tagline%'  => trim( (string) get_bloginfo( 'description' ) ),
+			'%sep%'      => method_exists( $this->settings, 'get_title_separator' ) ? $this->settings->get_title_separator() : LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR,
+			'%category%' => ! empty( $categories[0]->name ) ? (string) $categories[0]->name : '',
+			'%author%'   => (string) get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', $post_id ) ),
+			'%year%'     => (string) wp_date( 'Y' ),
+			'%page%'     => '',
 		);
 	}
 
