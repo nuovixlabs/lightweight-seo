@@ -6,14 +6,15 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+### Added
+
+- Content signals: a switch on the AI Discovery card, off by default, stored as `enable_content_signals`. While it is on and WordPress answers `robots.txt`, one `Content-Signal:` line is added inside the `User-agent: *` group: `search=yes`, `ai-input` following the AI search switch, and `ai-train` following the model-training switch. A file that already holds a `Content-Signal` line is left alone. The served-file check reports whether a `Content-Signal` line is served.
+- A description for the organization or person on the "Site identity" card. When it is written, the Organization or Person node of the schema prints it as `description`; empty by default, which prints nothing, as before. Stored as `identity_description` in the settings option.
+
 ### Changed
 
 - AI Discovery writes rules for five more crawlers, each checked on its vendor's own page: `Applebot-Extended`, `Meta-ExternalAgent`, and `Amazonbot` follow "Allow bundled model-training crawler tokens" (off by default), and `DuckAssistBot` and `MistralAI-User` follow "Allow bundled AI search and user-directed crawler tokens" (on by default). A site that already has AI Discovery on serves the new groups in its virtual `robots.txt` after updating, following the switches as they are set. `CCBot` was considered and left out: Common Crawl documents no AI purpose for it. `docs/ai-crawlers.md` records each token's source and the date it was checked.
 - The AI Discovery card checks the `robots.txt` that is actually served. The administrator's browser fetches it, signed out, and reports whether the card's crawler rules are in it, any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site, whether a `Sitemap:` line is present (with the exact line to add when WordPress sitemaps are on), and a failed fetch, a status other than 200, or a type other than `text/plain`. The server requests nothing. Without JavaScript, a link opens the file. On a subdirectory install, the card says that WordPress does not answer the `robots.txt` crawlers read. The reader, `admin/js/lightweight-seo-robots.js`, loads only on the Modules tab while AI Discovery is on.
-
-### Added
-
-- A description for the organization or person on the "Site identity" card. When it is written, the Organization or Person node of the schema prints it as `description`; empty by default, which prints nothing, as before. Stored as `identity_description` in the settings option.
 
 ### Fixed
 

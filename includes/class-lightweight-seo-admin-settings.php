@@ -239,6 +239,7 @@ class Lightweight_SEO_Admin_Settings {
 					'enable_ai_discovery'          => array( __( 'Enable module', 'lightweight-seo' ), $modules ),
 					'ai_search_crawlers_enabled'   => array( __( 'AI search visibility', 'lightweight-seo' ), $modules ),
 					'ai_training_crawlers_enabled' => array( __( 'Model training access', 'lightweight-seo' ), $modules ),
+					'enable_content_signals'       => array( __( 'Content signals', 'lightweight-seo' ), $modules ),
 					'enable_llms_txt'              => array( __( 'Curated llms.txt', 'lightweight-seo' ), $modules ),
 					'llms_txt_post_ids'            => array( __( 'Pages to list', 'lightweight-seo' ), $modules ),
 					'ai_readiness'                 => array( __( 'Readiness checks', 'lightweight-seo' ), $modules ),
@@ -421,6 +422,7 @@ class Lightweight_SEO_Admin_Settings {
 		$sanitized_input['enable_indexnow']                  = $checkbox_value( 'enable_indexnow', 'modules' );
 		$sanitized_input['ai_search_crawlers_enabled']       = $checkbox_value( 'ai_search_crawlers_enabled', 'modules' );
 		$sanitized_input['ai_training_crawlers_enabled']     = $checkbox_value( 'ai_training_crawlers_enabled', 'modules' );
+		$sanitized_input['enable_content_signals']           = $checkbox_value( 'enable_content_signals', 'modules' );
 		$sanitized_input['enable_llms_txt']                  = $checkbox_value( 'enable_llms_txt', 'modules' );
 		$sanitized_input['delete_data_on_uninstall']         = $checkbox_value( 'delete_data_on_uninstall', 'tools' );
 		$sanitized_input['default_max_image_preview']        = $this->settings->normalize_max_image_preview(

@@ -514,6 +514,8 @@ final class LightweightSEOSettingsTest extends TestCase {
 		$this->assertSame( 'organization', $settings->get_identity_type() );
 		$this->assertSame( get_bloginfo( 'name' ), $settings->get_identity_name() );
 		$this->assertSame( '', $settings->get_identity_description() );
+		$this->assertSame( '0', $settings->get_defaults()['enable_content_signals'] );
+		$this->assertFalse( $settings->content_signals_enabled() );
 		$this->assertSame( '', $settings->get_defaults()['identity_description'] );
 		$this->assertSame( '', $settings->get_identity_logo_url() );
 		$this->assertSame( '', $settings->get_x_handle() );

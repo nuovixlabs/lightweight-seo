@@ -229,6 +229,27 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertNotEmpty( $lightweight_seo_test_settings_errors );
 	}
 
+	public function test_content_signals_switch_is_saved_from_the_modules_tab_only(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = ( new Lightweight_SEO_Settings() )->get_defaults();
+
+		$on = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
+			array(
+				'settings_tab'           => 'modules',
+				'enable_content_signals' => '1',
+			)
+		);
+
+		$this->assertSame( '1', $on['enable_content_signals'] );
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = $on;
+
+		// Saving another tab keeps it; saving the Modules tab without the box clears it.
+		$this->assertSame( '1', $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( array( 'settings_tab' => 'appearance' ) )['enable_content_signals'] );
+		$this->assertSame( '0', $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings( array( 'settings_tab' => 'modules' ) )['enable_content_signals'] );
+	}
+
 	public function test_validate_settings_clears_stale_social_image_id_for_manual_urls(): void {
 		global $lightweight_seo_test_attachment_urls;
 
@@ -1178,7 +1199,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_migration_section'    => array( 'settings_export', 'settings_import', 'import_source', 'import_actions', 'import_report', 'legacy_data_transition', 'delete_data_on_uninstall' ),
 				'lightweight_seo_tracking_section'     => array( 'enable_tracking', 'gtm_container_id', 'ga4_measurement_id', 'facebook_pixel_id', 'tracking_excluded_roles', 'tracking_excluded_environments' ),
 				'lightweight_seo_indexnow_section'     => array( 'enable_indexnow', 'indexnow_status' ),
-				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_llms_txt', 'llms_txt_post_ids', 'ai_readiness' ),
+				'lightweight_seo_ai_discovery_section' => array( 'enable_ai_discovery', 'ai_search_crawlers_enabled', 'ai_training_crawlers_enabled', 'enable_content_signals', 'enable_llms_txt', 'llms_txt_post_ids', 'ai_readiness' ),
 			),
 			array_map( 'array_keys', $wp_settings_fields['lightweight-seo'] )
 		);
@@ -1829,13 +1850,15 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'data-prefix-warning="Needs attention:"', $output );
 
 		// Every row is printed hidden with all of its messages, so the script only chooses.
-		foreach ( array( 'fetch', 'rules', 'blocked', 'sitemap' ) as $row ) {
+		foreach ( array( 'fetch', 'rules', 'blocked', 'sitemap', 'signals' ) as $row ) {
 			$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-pending" hidden data-served-check="' . $row . '"/', $output );
 		}
 
 		$this->assertStringContainsString( 'data-msg-absent="None of the rules set here are in the served file.', $output );
 		$this->assertStringContainsString( 'data-msg-missing="No Sitemap line is served. Add this line to the file: %s"', $output );
 		$this->assertStringContainsString( 'data-msg-type="The file is served as %s. Crawlers expect text/plain;', $output );
+		$this->assertStringContainsString( '&quot;contentSignal&quot;:&quot;&quot;', $output );
+		$this->assertStringContainsString( 'data-msg-missing="No Content-Signal line is served, although this card adds one. Expected: %s"', $output );
 
 		// Without the script, the link opens the file crawlers read.
 		$this->assertStringContainsString( '<a href="https://example.com/robots.txt" target="_blank" rel="noopener noreferrer">Open the served robots.txt', $output );

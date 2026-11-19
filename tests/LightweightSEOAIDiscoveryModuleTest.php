@@ -395,6 +395,42 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( 'Sitemap: https://example.com/wp-sitemap.xml', $subdirectory['sitemapLine'] );
 	}
 
+	public function test_content_signal_goes_inside_the_group_for_every_crawler_when_switched_on(): void {
+		$wordpress = "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://example.com/wp-sitemap.xml\n";
+		$on        = array( 'enable_content_signals' => '1' );
+
+		// Off by default: the file is as before.
+		$this->assertStringNotContainsString( 'Content-Signal', ( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' ) )->filter_robots_txt( $wordpress, true ) );
+
+		$output = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), $on ), null, 'admin' ) )->filter_robots_txt( $wordpress, true );
+
+		$this->assertStringStartsWith( "User-agent: *\n# Content signals, as defined at https://contentsignals.org/\nContent-Signal: ai-train=no, search=yes, ai-input=yes\nDisallow: /wp-admin/\n", $output );
+		$this->assertSame( 1, substr_count( $output, 'Content-Signal:' ) );
+		$this->assertStringContainsString( "User-agent: GPTBot\nDisallow: /", $output );
+
+		// The values follow the two crawler switches.
+		$this->assertStringContainsString( 'Content-Signal: ai-train=yes, search=yes, ai-input=no', ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( false, true, array(), $on ), null, 'admin' ) )->filter_robots_txt( $wordpress, true ) );
+
+		// User-agent lines that share the group stay together, so no rule changes group.
+		$shared = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), $on ), null, 'admin' ) )->filter_robots_txt( "User-agent: *\nUser-agent: ExampleBot\nDisallow: /private/\n", true );
+
+		$this->assertStringStartsWith( "User-agent: *\nUser-agent: ExampleBot\n# Content signals", $shared );
+
+		// Without a group for every crawler, one is added that allows what was allowed anyway.
+		$added = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), $on ), null, 'admin' ) )->filter_robots_txt( "User-agent: ExampleBot\nDisallow: /\n", true );
+
+		$this->assertStringStartsWith( "User-agent: ExampleBot\nDisallow: /\n\nUser-agent: *\n# Content signals, as defined at https://contentsignals.org/\nContent-Signal: ai-train=no, search=yes, ai-input=yes\nAllow: /\n", $added );
+
+		// A file that already states a signal is left alone, and a site that asks not to be indexed gets none.
+		$existing = "User-agent: *\ncontent-signal: search=yes\nAllow: /\n";
+		$module   = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), $on ), null, 'admin' );
+
+		$this->assertSame( 1, substr_count( strtolower( $module->filter_robots_txt( $existing, true ) ), 'content-signal:' ) );
+		$this->assertSame( $wordpress, $module->filter_robots_txt( $wordpress, false ) );
+		$this->assertSame( 'ai-train=no, search=yes, ai-input=yes', $module->get_served_robots_expectations()['contentSignal'] );
+		$this->assertSame( '', ( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' ) )->get_served_robots_expectations()['contentSignal'] );
+	}
+
 	private function settings( $search = true, $training = false, $ids = array(), $values = array() ) {
 		return new class( $search, $training, $ids, $values ) {
 			private $search;
@@ -411,6 +447,10 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 
 			public function get( $key, $fallback = null ) {
 				return $this->values[ $key ] ?? $fallback;
+			}
+
+			public function content_signals_enabled() {
+				return '1' === (string) ( $this->values['enable_content_signals'] ?? '0' );
 			}
 
 			public function get_home_title_format() {
