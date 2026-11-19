@@ -1890,6 +1890,9 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'data-msg-partly="These groups disallow the homepage and every page their Allow lines do not list: %s."', $output );
 		$this->assertStringContainsString( 'data-msg-missing="No Sitemap line is served. Add this line to the file: %s"', $output );
 		$this->assertStringContainsString( 'data-msg-off="The content signals switch on this card is off, and no Content-Signal line is served."', $output );
+		// The browser is told whether the Markdown on request switch is on, which decides what HTML on the homepage means.
+		$this->assertStringContainsString( '&quot;markdownEnabled&quot;:false', $output );
+		$this->assertMatchesRegularExpression( '/data-readiness="markdown" data-served-check="markdown" data-msg-found="[^"]+" data-msg-missing="[^"]+%s[^"]+" data-msg-off="The Markdown on request switch on this card is off/', $output );
 		// Every row about an address can say it was not checked, which is not a finding about the site.
 		$this->assertSame( 13, substr_count( $output, 'data-msg-unchecked="Not checked: this browser could not fetch the address.' ) );
 		$this->assertStringContainsString( 'WordPress has none, its REST API signs in with application passwords', $output );

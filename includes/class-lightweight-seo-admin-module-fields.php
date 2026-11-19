@@ -888,7 +888,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 
 		$module   = new Lightweight_SEO_AI_Discovery_Module( $this->settings, function_exists( 'lightweight_seo_get_api' ) ? lightweight_seo_get_api() : null, 'admin', $this->post_meta );
 		$expected = $module->get_served_robots_expectations();
-		$keys     = array( 'rules', 'marker', 'crawlers', 'sitemapLine', 'sitemapFromRobots', 'contentSignal', 'signalOff', 'llmsEnabled', 'probes' );
+		$keys     = array( 'rules', 'marker', 'crawlers', 'sitemapLine', 'sitemapFromRobots', 'contentSignal', 'signalOff', 'llmsEnabled', 'markdownEnabled', 'probes' );
 
 		echo '<div class="lwseo-readiness" data-lwseo-served';
 		echo ' data-url="' . esc_url( $expected['url'] ) . '"';

@@ -104,6 +104,22 @@ A membership plugin that limits content through the `the_content` filter limits 
 
 With the switch off, nothing is loaded and no hook is added. With it on, an ordinary page view runs one late check of the `Accept` header. The converter and the document builder, two new files, are loaded only when a Markdown answer is built.
 
+### The readiness report
+
+The "Markdown on request" row of the AI readiness report, which said "Not offered" in 1.2, now follows the switch. The administrator's browser still requests the homepage with `Accept: text/markdown`, signed out, and reads the `Content-Type` of the answer.
+
+| Switch | The homepage answers | Row |
+|---|---|---|
+| On | `text/markdown` | Passed |
+| On | anything else | Needs attention: it names the type that came back (and the status, when it is not 200), and says what may cause it |
+| Off | `text/markdown` | Passed: something else, such as a CDN, serves Markdown |
+| Off | anything else | Off by choice |
+| Either | the request failed | Not checked |
+
+The usual reason for HTML while the switch is on is a page cache or CDN in front of WordPress that answered with the HTML it stored, without asking WordPress; the row says so as a possibility, because the server cannot see a cache from inside. A plugin that refuses Markdown through `lightweight_seo_markdown_supported`, or a private or password-protected front page, also leaves the homepage in HTML.
+
+With the switch on and no PHP DOM extension on the server, the row says that Markdown cannot be built there. Only the server knows that, so it is decided without the browser.
+
 ## Upgrading from 1.2
 
 Nothing changes until the new switch is turned on. One setting is new in the existing settings option: `enable_markdown_on_request`, off by default. There is no migration.

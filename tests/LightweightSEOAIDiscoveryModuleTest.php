@@ -593,6 +593,65 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( 'off', $rows( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), array( 'schema' => false ) ), null, 'admin' ) )['identity']['state'] );
 	}
 
+	public function test_markdown_on_request_row_is_decided_by_the_browser_unless_the_server_cannot_build_markdown(): void {
+		$row = static function ( $module ) {
+			foreach ( $module->get_readiness_report() as $area ) {
+				foreach ( $area['rows'] as $row ) {
+					if ( 'markdown' === $row['id'] ) {
+						return $row;
+					}
+				}
+			}
+
+			return null;
+		};
+		$on  = array( 'enable_markdown_on_request' => '1' );
+
+		// Switch off: the browser decides, and HTML is the answer chosen.
+		$off_module = new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' );
+		$off        = $row( $off_module );
+
+		$this->assertSame( 'browser', $off['state'] );
+		$this->assertSame( 'https://example.com/', $off['url'] );
+		$this->assertSame( array( 'found', 'missing', 'off', 'unchecked' ), array_keys( $off['messages'] ) );
+		$this->assertFalse( $off_module->get_served_robots_expectations()['markdownEnabled'] );
+		$this->assertStringContainsString( 'switch on this card is off', $off['messages']['off'] );
+		// What was observed and what may cause it, never what is the cause.
+		$this->assertStringContainsString( 'answered a request for text/markdown with %s', $off['messages']['missing'] );
+		$this->assertStringContainsString( 'may have answered with the HTML it stored', $off['messages']['missing'] );
+		$this->assertStringNotContainsString( 'Not offered', implode( ' ', $off['messages'] ) );
+
+		// Switch on: still the browser's to decide, which it is told.
+		$on_module = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), $on ), null, 'admin' );
+
+		$this->assertSame( 'browser', $row( $on_module )['state'] );
+		$this->assertTrue( $on_module->get_served_robots_expectations()['markdownEnabled'] );
+
+		// Switch on without the DOM extension: only the server knows, so it says so.
+		$without_dom = new class( $this->settings( true, false, array(), $on ), null, 'admin' ) extends Lightweight_SEO_AI_Discovery_Module {
+			protected function markdown_available() {
+				return false;
+			}
+		};
+		$warning     = $row( $without_dom );
+
+		$this->assertSame( 'warning', $warning['state'] );
+		$this->assertStringContainsString( 'no DOM extension', $warning['text'] );
+		$this->assertArrayNotHasKey( 'messages', $warning );
+
+		// The DOM extension matters only while the switch is on.
+		$this->assertSame(
+			'browser',
+			$row(
+				new class( $this->settings(), null, 'admin' ) extends Lightweight_SEO_AI_Discovery_Module {
+					protected function markdown_available() {
+						return false;
+					}
+				}
+			)['state']
+		);
+	}
+
 	public function test_who_writes_robots_txt_states_only_what_the_server_can_know(): void {
 		global $lightweight_seo_test_filters;
 		global $lightweight_seo_test_options;
@@ -753,6 +812,10 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 
 			public function llms_txt_enabled() {
 				return $this->values['llms'] ?? true;
+			}
+
+			public function markdown_on_request_enabled() {
+				return '1' === (string) ( $this->values['enable_markdown_on_request'] ?? '0' );
 			}
 
 			public function get_llms_post_ids() {

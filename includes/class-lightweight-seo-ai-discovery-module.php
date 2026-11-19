@@ -678,6 +678,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 *     @type string $contentSignal The content signals this card adds, or an empty string when it adds none.
 	 *     @type bool   $signalOff    Whether the content signals switch is off.
 	 *     @type bool   $llmsEnabled  Whether the llms.txt switch is on.
+	 *     @type bool   $markdownEnabled Whether the Markdown on request switch is on. Since 1.3.0.
 	 *     @type array  $probes       Addresses the readiness report fetches, keyed by result ID. On a
 	 *                                subdirectory install the sitemap and llms.txt are this site's own.
 	 *     @type bool   $sitemapFromRobots Only on a subdirectory install: false, because the robots.txt at
@@ -708,19 +709,20 @@ class Lightweight_SEO_AI_Discovery_Module {
 
 		$origin   = ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' );
 		$expected = array(
-			'url'           => $origin . '/robots.txt',
-			'subdirectory'  => $subdirectory,
-			'rules'         => $rules,
+			'url'             => $origin . '/robots.txt',
+			'subdirectory'    => $subdirectory,
+			'rules'           => $rules,
 			// The comment that opens the plugin's part of the file, which shows the file served is WordPress's with it.
-			'marker'        => empty( $rules ) ? '' : self::ROBOTS_MARKER,
-			'crawlers'      => array( 'Googlebot', 'Bingbot', '*' ),
-			'sitemapLine'   => empty( $sitemap_urls ) ? '' : 'Sitemap: ' . reset( $sitemap_urls ),
-			'contentSignal' => $signal,
+			'marker'          => empty( $rules ) ? '' : self::ROBOTS_MARKER,
+			'crawlers'        => array( 'Googlebot', 'Bingbot', '*' ),
+			'sitemapLine'     => empty( $sitemap_urls ) ? '' : 'Sitemap: ' . reset( $sitemap_urls ),
+			'contentSignal'   => $signal,
 			// Off by choice only when the switch is off; a line from elsewhere still counts as served.
-			'signalOff'     => ! ( method_exists( $this->settings, 'content_signals_enabled' ) && $this->settings->content_signals_enabled() ),
-			'llmsEnabled'   => (bool) $this->settings->llms_txt_enabled(),
+			'signalOff'       => ! ( method_exists( $this->settings, 'content_signals_enabled' ) && $this->settings->content_signals_enabled() ),
+			'llmsEnabled'     => (bool) $this->settings->llms_txt_enabled(),
+			'markdownEnabled' => $this->markdown_switch_on(),
 			// Agents look for these at the root of the host, as crawlers do for robots.txt.
-			'probes'        => array(
+			'probes'          => array(
 				'sitemapXml'  => $origin . '/sitemap.xml',
 				'linkHeaders' => home_url( '/' ),
 				'markdown'    => home_url( '/' ),
@@ -851,15 +853,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 				'rows'  => array_values(
 					array_filter(
 						array(
-							$this->browser_row(
-								'markdown',
-								__( 'Markdown on request', 'lightweight-seo' ),
-								$expected['probes']['markdown'],
-								array(
-									'found' => __( 'The homepage answers a request for text/markdown with Markdown.', 'lightweight-seo' ),
-									'none'  => __( 'Not offered. The homepage answers a request for text/markdown with HTML; this version of Lightweight SEO does not provide Markdown.', 'lightweight-seo' ),
-								)
-							),
+							$this->get_markdown_row( $expected['probes']['markdown'] ),
 							$this->browser_row(
 								'llms',
 								__( 'llms.txt', 'lightweight-seo' ),
@@ -1012,6 +1006,42 @@ class Lightweight_SEO_AI_Discovery_Module {
 			'text'     => __( 'Checked by this browser, which fetches the address the way a crawler would.', 'lightweight-seo' ),
 			'url'      => $url,
 			'messages' => $messages,
+		);
+	}
+
+	/**
+	 * Describe whether the homepage answers a request for Markdown.
+	 *
+	 * The browser decides it, except when the switch is on and this server cannot build Markdown,
+	 * which only the server knows. Whatever answers, the message says what was observed and what
+	 * may cause it, because a cache or CDN in front of WordPress is invisible from here.
+	 *
+	 * @since 1.3.0
+	 * @param string $url The homepage.
+	 * @return array
+	 */
+	private function get_markdown_row( $url ) {
+		$label = __( 'Markdown on request', 'lightweight-seo' );
+
+		if ( $this->markdown_switch_on() && ! $this->markdown_available() ) {
+			return array(
+				'id'    => 'markdown',
+				'state' => 'warning',
+				'label' => $label,
+				'text'  => __( 'The Markdown on request switch on this card is on, but this server’s PHP has no DOM extension, which the Markdown version is built with, so every page is sent as HTML. Ask the host to enable the PHP DOM extension.', 'lightweight-seo' ),
+			);
+		}
+
+		return $this->browser_row(
+			'markdown',
+			$label,
+			$url,
+			array(
+				'found'   => __( 'The homepage answers a request for text/markdown with Markdown.', 'lightweight-seo' ),
+				/* translators: %s: what the homepage answered with, such as text/html, or a status code and a media type. */
+				'missing' => __( 'The Markdown on request switch on this card is on, but the homepage answered a request for text/markdown with %s. A page cache or CDN in front of WordPress may have answered with the HTML it stored; a plugin can also refuse Markdown for a page, and a private or password-protected front page is never answered in Markdown.', 'lightweight-seo' ),
+				'off'     => __( 'The Markdown on request switch on this card is off, and the homepage does not answer a request for text/markdown with Markdown.', 'lightweight-seo' ),
+			)
 		);
 	}
 
