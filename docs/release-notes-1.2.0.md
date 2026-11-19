@@ -103,7 +103,10 @@ The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' 
 - **Whole-site blocks** names any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site. A group that disallows `/` but also has `Allow` lines is reported as disallowing the homepage and every page those lines do not list, since the listed paths can still be fetched.
 - **Sitemap line in robots.txt** lists the `Sitemap:` lines, or gives the exact line to add when WordPress sitemaps are on.
 - **Content signals** lists the `Content-Signal` lines served, and says when the line this card adds is missing.
-- WordPress answers `robots.txt` only when it is installed at the root of the host. On a subdirectory install the card says so, and that the rules set on the card are not served there.
+- WordPress answers `robots.txt` only when it is installed at the root of the host. On a subdirectory install, such as `https://example.com/blog/`, the report adapts:
+  - One neutral **Root of the host** row says that crawlers and agents look for `robots.txt`, `llms.txt`, and the well-known files at the root of the host, which WordPress does not answer there. So the crawler rules set on the card are not served. The row gives the `Sitemap:` line for whoever maintains the root `robots.txt`.
+  - **Sitemap** checks the site's own sitemap, such as `https://example.com/blog/wp-sitemap.xml`. **llms.txt** checks the address the plugin answers, such as `https://example.com/blog/llms.txt`. A `Sitemap:` line in the root `robots.txt` is not taken as this site's, and the "Sitemap line in robots.txt" row is left out.
+  - **Who writes robots.txt** says it is not WordPress. The API catalog, skills index, manifest, and server card are still checked at the root of the host, where clients look for them.
 - Without JavaScript, these rows say they are checked in the browser and link to the served file.
 
 ### llms.txt

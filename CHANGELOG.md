@@ -6,6 +6,10 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+### Fixed
+
+- On a subdirectory install, the AI readiness report no longer warns that the sitemap and `llms.txt` are missing. It checked them at the root of the host, which is not the site's. The Sitemap row now checks the site's own sitemap, and the `llms.txt` row the address the plugin answers. One neutral "Root of the host" row, which replaces "robots.txt location", says that crawlers and agents look for `robots.txt`, `llms.txt`, and the well-known files at the root of the host, which WordPress does not answer there, and gives the `Sitemap:` line for whoever maintains the root `robots.txt`. The well-known files are still checked at the root. "Who writes robots.txt" and "Search visibility" no longer describe the root `robots.txt` as WordPress's, and the "Sitemap line in robots.txt" row is left out there. A root install prints and decides exactly what it did before.
+
 ## 1.2.0-rc.1 - 2026-11-19
 
 ### Added

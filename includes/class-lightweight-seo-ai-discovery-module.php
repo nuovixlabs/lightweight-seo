@@ -416,7 +416,10 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 *     @type string $contentSignal The content signals this card adds, or an empty string when it adds none.
 	 *     @type bool   $signalOff    Whether the content signals switch is off.
 	 *     @type bool   $llmsEnabled  Whether the llms.txt switch is on.
-	 *     @type array  $probes       Addresses the readiness report fetches, keyed by result ID.
+	 *     @type array  $probes       Addresses the readiness report fetches, keyed by result ID. On a
+	 *                                subdirectory install the sitemap and llms.txt are this site's own.
+	 *     @type bool   $sitemapFromRobots Only on a subdirectory install: false, because the robots.txt at
+	 *                                the root of the host is not this site's.
 	 * }
 	 */
 	public function get_served_robots_expectations() {
@@ -441,9 +444,8 @@ class Lightweight_SEO_AI_Discovery_Module {
 			$rules = array_diff_key( $this->get_crawler_policy(), array_flip( $taken ) );
 		}
 
-		$origin = ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' );
-
-		return array(
+		$origin   = ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' );
+		$expected = array(
 			'url'           => $origin . '/robots.txt',
 			'subdirectory'  => $subdirectory,
 			'rules'         => $rules,
@@ -467,6 +469,16 @@ class Lightweight_SEO_AI_Discovery_Module {
 				'ard'         => array( $origin . '/.well-known/ard.json', $origin . '/.well-known/ai-catalog.json' ),
 			),
 		);
+
+		if ( '' !== $subdirectory ) {
+			// The root of the host is not this site's. Its own sitemap and llms.txt answer under its path,
+			// and a Sitemap line in the root robots.txt may belong to another site, so it is no fallback.
+			$expected['probes']['sitemapXml'] = empty( $sitemap_urls ) ? home_url( '/sitemap.xml' ) : (string) reset( $sitemap_urls );
+			$expected['probes']['llms']       = home_url( '/llms.txt' );
+			$expected['sitemapFromRobots']    = false;
+		}
+
+		return $expected;
 	}
 
 	/**
@@ -487,6 +499,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 		$conflicts = $this->get_conflicts();
 		$expected  = $this->get_served_robots_expectations();
 		$public    = (bool) get_option( 'blog_public', 1 );
+		$in_folder = '' !== $expected['subdirectory'];
 		$na        = static function ( $id, $label, $reason ) {
 			return array(
 				'id'    => $id,
@@ -506,7 +519,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 								'id'    => 'search_visibility',
 								'state' => $public ? 'success' : 'warning',
 								'label' => __( 'Search visibility', 'lightweight-seo' ),
-								'text'  => $public ? __( 'WordPress lets search engines and crawlers index this site.', 'lightweight-seo' ) : __( 'WordPress asks search engines not to index this site, and robots.txt disallows every crawler. Change it under Settings → Reading if that is not intended.', 'lightweight-seo' ),
+								'text'  => $public ? __( 'WordPress lets search engines and crawlers index this site.', 'lightweight-seo' ) : ( $in_folder ? __( 'WordPress asks search engines not to index this site. Change it under Settings → Reading if that is not intended.', 'lightweight-seo' ) : __( 'WordPress asks search engines not to index this site, and robots.txt disallows every crawler. Change it under Settings → Reading if that is not intended.', 'lightweight-seo' ) ),
 							),
 							$this->browser_row(
 								'fetch',
@@ -522,22 +535,20 @@ class Lightweight_SEO_AI_Discovery_Module {
 									'type'   => __( 'The file is served as %s. Crawlers expect text/plain; check the server or plugin that answers this address.', 'lightweight-seo' ),
 								)
 							),
-							'' !== $expected['subdirectory'] ? array(
-								'id'    => 'subdirectory',
-								'state' => 'info',
-								'label' => __( 'robots.txt location', 'lightweight-seo' ),
-								'text'  => sprintf(
-									/* translators: 1: path WordPress is installed under, such as /blog. 2: address of the robots.txt file. */
-									__( 'WordPress is installed under %1$s, and crawlers read robots.txt only at %2$s, which WordPress does not answer. The rules set on this card are not served; copy them into that file to apply them.', 'lightweight-seo' ),
-									$expected['subdirectory'],
-									$expected['url']
-								),
-							) : null,
+							$in_folder ? $this->get_host_root_row( $expected ) : null,
 							$this->browser_row(
 								'sitemapXml',
 								__( 'Sitemap', 'lightweight-seo' ),
 								$expected['probes']['sitemapXml'],
-								array(
+								$in_folder ? array(
+									/* translators: %s: address the sitemap was found at, after redirects. */
+									'valid'   => __( '%s answers with a valid XML sitemap.', 'lightweight-seo' ),
+									'missing' => sprintf(
+										/* translators: %s: address of this site's sitemap. */
+										__( 'This site’s sitemap address, %s, does not answer with a valid XML sitemap.', 'lightweight-seo' ),
+										$expected['probes']['sitemapXml']
+									),
+								) : array(
 									/* translators: %s: address the sitemap was found at, after redirects. */
 									'valid'   => __( '%s answers with a valid XML sitemap.', 'lightweight-seo' ),
 									/* translators: %s: sitemap addresses listed in robots.txt. */
@@ -545,7 +556,8 @@ class Lightweight_SEO_AI_Discovery_Module {
 									'missing' => __( 'Neither /sitemap.xml nor a Sitemap line in robots.txt leads to a sitemap.', 'lightweight-seo' ),
 								)
 							),
-							$this->browser_row(
+							// The robots.txt at the root of the host is not this site's; the row above gives its Sitemap line.
+							$in_folder ? null : $this->browser_row(
 								'sitemap',
 								__( 'Sitemap line in robots.txt', 'lightweight-seo' ),
 								$expected['url'],
@@ -613,7 +625,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 				'rows'  => array_values(
 					array_filter(
 						array(
-							$this->get_robots_owner_row( $conflicts, ! empty( $expected['rules'] ) ),
+							$this->get_robots_owner_row( $conflicts, ! empty( $expected['rules'] ), $in_folder ),
 							array(
 								'id'    => 'training',
 								'state' => $this->settings->ai_training_crawlers_enabled() ? 'success' : 'off',
@@ -751,6 +763,44 @@ class Lightweight_SEO_AI_Discovery_Module {
 	}
 
 	/**
+	 * State once that the root of the host, where crawlers and agents look, is not this site's.
+	 *
+	 * On a subdirectory install WordPress does not answer robots.txt, llms.txt, or the well-known
+	 * files at the root of the host. That is a fact about the install, not a problem with each file,
+	 * so it is stated here once, with the Sitemap line for whoever maintains the root robots.txt.
+	 *
+	 * @param array $expected From get_served_robots_expectations().
+	 * @return array
+	 */
+	private function get_host_root_row( $expected ) {
+		$root  = substr( $expected['url'], 0, -strlen( 'robots.txt' ) );
+		$lines = array(
+			sprintf(
+				/* translators: 1: path WordPress is installed under, such as /blog. 2: address of the root of the host, such as https://example.com/. */
+				__( 'WordPress is installed under %1$s. Crawlers and agents look for robots.txt, llms.txt, and the well-known files at the root of the host, %2$s, which WordPress does not answer, so the crawler rules set on this card are not served there.', 'lightweight-seo' ),
+				$expected['subdirectory'],
+				$root
+			),
+		);
+
+		if ( '' !== $expected['sitemapLine'] ) {
+			$lines[] = sprintf(
+				/* translators: 1: address of the root robots.txt. 2: the line to add, such as "Sitemap: https://example.com/blog/wp-sitemap.xml". */
+				__( 'Whoever maintains %1$s can point crawlers to this site’s sitemap with this line: %2$s', 'lightweight-seo' ),
+				$expected['url'],
+				$expected['sitemapLine']
+			);
+		}
+
+		return array(
+			'id'    => 'host_root',
+			'state' => 'info',
+			'label' => __( 'Root of the host', 'lightweight-seo' ),
+			'text'  => $lines,
+		);
+	}
+
+	/**
 	 * Say who writes robots.txt, as far as the server can know.
 	 *
 	 * The server sees a file on disk and other robots_txt filters it can run. It cannot see a
@@ -761,13 +811,21 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 *
 	 * @param array $conflicts       From get_conflicts().
 	 * @param bool  $rules_expected  Whether the served file should hold the card's rules.
+	 * @param bool  $in_folder       Whether WordPress is installed under a path of the host.
 	 * @return array
 	 */
-	private function get_robots_owner_row( $conflicts, $rules_expected ) {
+	private function get_robots_owner_row( $conflicts, $rules_expected, $in_folder = false ) {
 		$row = array(
 			'id'    => 'robots_owner',
 			'label' => __( 'Who writes robots.txt', 'lightweight-seo' ),
 		);
+
+		if ( $in_folder ) {
+			return $row + array(
+				'state' => 'info',
+				'text'  => __( 'Not WordPress: the robots.txt crawlers read is at the root of the host, which belongs to the server or another site.', 'lightweight-seo' ),
+			);
+		}
 
 		if ( $conflicts['physical_robots'] ) {
 			return $row + array(

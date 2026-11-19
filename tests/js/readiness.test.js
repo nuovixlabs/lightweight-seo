@@ -178,3 +178,27 @@ test('"Who writes robots.txt" is settled by whether the served file holds the ca
 	assert.equal(settle(undefined), null);
 	assert.equal(settle({id: 'blocked', state: 'warning', key: 'blocked', values: ['*']}), null);
 });
+
+test('on a subdirectory install, the sitemap is this site\'s own and the root robots.txt is no fallback', () => {
+	const site = ROOT + '/blog';
+	const subdirectory = {sitemapFromRobots: false, llmsEnabled: true};
+	// The root of the host belongs to the server or another site, which lists its own sitemap.
+	const rootRobots = answer('User-agent: *\nAllow: /\n\nSitemap: ' + ROOT + '/other-site-sitemap.xml\n', {url: ROOT + '/robots.txt'});
+
+	const own = byId(readiness(plainSite({
+		robots: rootRobots,
+		sitemapXml: answer('<?xml version="1.0"?><sitemapindex/>', {contentType: 'application/xml', url: site + '/wp-sitemap.xml', xmlRoot: 'sitemapindex'}),
+		llms: answer('# Example\n', {url: site + '/llms.txt'}),
+	}), subdirectory));
+
+	assert.deepEqual(own.sitemapXml, {id: 'sitemapXml', state: 'success', key: 'valid', values: [site + '/wp-sitemap.xml']});
+	assert.deepEqual(own.llms, {id: 'llms', state: 'success', key: 'found', values: [site + '/llms.txt']});
+
+	const broken = byId(readiness(plainSite({robots: rootRobots, sitemapXml: notFound(site + '/wp-sitemap.xml')}), subdirectory));
+
+	assert.deepEqual(broken.sitemapXml, {id: 'sitemapXml', state: 'warning', key: 'missing', values: []});
+	assert.equal(byId(readiness(plainSite({robots: rootRobots, sitemapXml: {fetched: false}}), subdirectory)).sitemapXml.key, 'unchecked');
+
+	// A root install still falls back on its own robots.txt.
+	assert.equal(byId(readiness(plainSite({robots: rootRobots, sitemapXml: notFound()}), {})).sitemapXml.key, 'listed');
+});
