@@ -28,6 +28,7 @@ Use this checklist for a release candidate. Test destructive migration and unins
 - Confirm page two of a term and author archive carries a self-referencing canonical.
 - On a subdirectory install, confirm canonical, `og:url`, and redirect targets contain the install path exactly once.
 - Confirm a long post without an excerpt emits a short description summary, not the full content.
+- Give a post without an excerpt the content `<p>Part one.</p><!--nextpage--><h2>Part two</h2><ul><li>Item</li></ul>` and confirm the description reads "Part one. Part two Item", with a space at each boundary.
 - Confirm Open Graph and X/Twitter fallbacks and social image validation.
 - Confirm schema JSON parses and uses Organization or Person, WebSite, one page node (WebPage, CollectionPage, SearchResultsPage, or ProfilePage), BreadcrumbList, and one Article, BlogPosting, or NewsArticle node only.
 - Schema: on a post, a page with a parent, a custom post type item, a category with a parent, an author archive, a day archive, a search, the posts page, and the front page, confirm the page node type, that the article node and the breadcrumb point at `…#webpage` and `…#breadcrumb`, and that the front page has no breadcrumb.

@@ -140,6 +140,10 @@ Text a script adds after the page loads is not counted, and the counts state num
 
 - The "Site identity" card on **SEO → Schema and identity** has a "Description" field. A sentence or two about who the organization or person is is printed as `description` on the Organization or Person node of the structured data. Google lists it as a recommended property of an organization. Left empty, nothing is printed, as in 1.1.
 
+## Descriptions taken from content
+
+When a page has no description of its own, its summary of the excerpt or content keeps a space between paragraphs, headings, list items, and the pages that `<!--nextpage-->` divides. In 1.1, `<p>Part one.</p><!--nextpage--><p>Part two.</p>` printed "Part one.Part two.". It now prints "Part one. Part two.", in the meta description, Open Graph, X, and schema output alike. Inline markup such as `<strong>` within a word still adds no space.
+
 ## Upgrading from 1.1
 
 Nothing changes until a new field is filled in or a new switch is turned on. Two settings are new in the existing settings option: `identity_description`, empty by default, and `enable_content_signals`, off by default. There is no migration.

@@ -341,7 +341,7 @@ class Lightweight_SEO_Page_Context_Service {
 	 * @return   string
 	 */
 	private function summarize_text( $value ) {
-		return Lightweight_SEO_Text::summarize( $this->normalize_text( $value ) );
+		return Lightweight_SEO_Text::summarize( $this->normalize_text( Lightweight_SEO_Text::separate_blocks( $value ) ) );
 	}
 
 	/**

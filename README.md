@@ -56,7 +56,7 @@ The SEO panel on supported posts and pages provides:
 - social title, description, and image overrides
 - deterministic checks explaining missing or conflicting inputs, including which description is printed, images in the content without alternative text, and more than one H1 heading
 
-When no description is written, a 160-character summary of the excerpt or content is used. Legacy focus-keyword values are preserved for export but are not edited or emitted.
+When no description is written, a 160-character summary of the excerpt or content is used, with a space between its paragraphs, headings, list items, and pages. Legacy focus-keyword values are preserved for export but are not edited or emitted.
 
 Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`. A source ending in `/*` covers everything under it, a target ending in `/*` keeps the rest of the address, and `/old-path 410` answers that the page is gone.
 

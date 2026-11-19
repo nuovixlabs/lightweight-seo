@@ -110,22 +110,28 @@ final class LightweightSEOAPITest extends TestCase {
 		);
 
 		$lightweight_seo_test_posts = array(
-			7 => (object) array(
+			7  => (object) array(
 				'post_status'  => 'draft',
 				'post_content' => 'Unpublished body.',
 				'permalink'    => 'https://example.com/?p=7',
 			),
-			8 => (object) array(
+			8  => (object) array(
 				'post_status'   => 'publish',
 				'post_password' => 'secret',
 				'post_content'  => 'Protected body.',
 				'permalink'     => 'https://example.com/protected/',
 			),
-			9 => (object) array(
+			9  => (object) array(
 				'post_status'  => 'publish',
 				'post_excerpt' => '',
 				'post_content' => str_repeat( 'Public body text. ', 60 ),
 				'permalink'    => 'https://example.com/public/',
+			),
+			10 => (object) array(
+				'post_status'  => 'publish',
+				'post_excerpt' => '',
+				'post_content' => '<p>Part one.</p><!--nextpage--><p>Part two.</p>',
+				'permalink'    => 'https://example.com/paged/',
 			),
 		);
 
@@ -140,6 +146,7 @@ final class LightweightSEOAPITest extends TestCase {
 		$this->assertTrue( $public['indexable'] );
 		$this->assertStringEndsWith( '…', $public['description'] );
 		$this->assertLessThanOrEqual( 161, Lightweight_SEO_Text::length( $public['description'] ) );
+		$this->assertSame( 'Part one. Part two.', $api->get_object_context( 'post', 10 )['description'] );
 	}
 
 	public function test_object_context_fills_the_variables_of_a_title_and_description(): void {
