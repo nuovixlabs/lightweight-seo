@@ -36,44 +36,68 @@ class Lightweight_SEO_AI_Discovery_Module {
 		}
 	}
 
-	/** Return the filtered, validated crawler-policy registry. */
+	/**
+	 * Return the filtered, validated crawler-policy registry.
+	 *
+	 * Each token, its purpose, and its source page are recorded in docs/ai-crawlers.md.
+	 */
 	public function get_crawler_registry() {
 		$registry = array(
-			'OAI-SearchBot'    => array(
+			'OAI-SearchBot'      => array(
 				'vendor'  => 'OpenAI',
 				'purpose' => 'search',
 			),
-			'ChatGPT-User'     => array(
+			'ChatGPT-User'       => array(
 				'vendor'  => 'OpenAI',
 				'purpose' => 'user',
 			),
-			'GPTBot'           => array(
+			'GPTBot'             => array(
 				'vendor'  => 'OpenAI',
 				'purpose' => 'training',
 			),
-			'Claude-SearchBot' => array(
+			'Claude-SearchBot'   => array(
 				'vendor'  => 'Anthropic',
 				'purpose' => 'search',
 			),
-			'Claude-User'      => array(
+			'Claude-User'        => array(
 				'vendor'  => 'Anthropic',
 				'purpose' => 'user',
 			),
-			'ClaudeBot'        => array(
+			'ClaudeBot'          => array(
 				'vendor'  => 'Anthropic',
 				'purpose' => 'training',
 			),
-			'PerplexityBot'    => array(
+			'PerplexityBot'      => array(
 				'vendor'  => 'Perplexity',
 				'purpose' => 'search',
 			),
-			'Perplexity-User'  => array(
+			'Perplexity-User'    => array(
 				'vendor'  => 'Perplexity',
 				'purpose' => 'user',
 			),
-			'Google-Extended'  => array(
+			'Google-Extended'    => array(
 				'vendor'  => 'Google',
 				'purpose' => 'training',
+			),
+			'Applebot-Extended'  => array(
+				'vendor'  => 'Apple',
+				'purpose' => 'training',
+			),
+			'Meta-ExternalAgent' => array(
+				'vendor'  => 'Meta',
+				'purpose' => 'training',
+			),
+			'Amazonbot'          => array(
+				'vendor'  => 'Amazon',
+				'purpose' => 'training',
+			),
+			'DuckAssistBot'      => array(
+				'vendor'  => 'DuckDuckGo',
+				'purpose' => 'search',
+			),
+			'MistralAI-User'     => array(
+				'vendor'  => 'Mistral AI',
+				'purpose' => 'user',
 			),
 		);
 		$registry = (array) apply_filters( 'lightweight_seo_ai_crawler_registry', $registry );

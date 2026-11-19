@@ -125,6 +125,69 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertStringNotContainsString( 'Noindex', $output );
 	}
 
+	public function test_registry_holds_the_documented_tokens_and_their_purposes(): void {
+		$registry = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' ) )->get_crawler_registry();
+
+		$this->assertSame(
+			array(
+				'OAI-SearchBot'      => 'search',
+				'ChatGPT-User'       => 'user',
+				'GPTBot'             => 'training',
+				'Claude-SearchBot'   => 'search',
+				'Claude-User'        => 'user',
+				'ClaudeBot'          => 'training',
+				'PerplexityBot'      => 'search',
+				'Perplexity-User'    => 'user',
+				'Google-Extended'    => 'training',
+				'Applebot-Extended'  => 'training',
+				'Meta-ExternalAgent' => 'training',
+				'Amazonbot'          => 'training',
+				'DuckAssistBot'      => 'search',
+				'MistralAI-User'     => 'user',
+			),
+			array_map(
+				static function ( $definition ) {
+					return $definition['purpose'];
+				},
+				$registry
+			)
+		);
+
+		// docs/ai-crawlers.md records the source of every token, so a refresh starts from there.
+		$doc = (string) file_get_contents( dirname( __DIR__ ) . '/docs/ai-crawlers.md' );
+
+		preg_match( '/## Tokens\n(.*?)\n## /s', $doc, $section );
+		preg_match_all( '/^\| `([^`]+)` \| ([^|]+) \| (\w+) \|.*\| (https:\/\/\S+) \|$/m', $section[1] ?? '', $rows, PREG_SET_ORDER );
+
+		$documented = array();
+
+		foreach ( $rows as $row ) {
+			$documented[ $row[1] ] = array(
+				'vendor'  => trim( $row[2] ),
+				'purpose' => $row[3],
+			);
+		}
+
+		$this->assertSame( $registry, $documented );
+	}
+
+	public function test_new_tokens_follow_the_switch_of_their_purpose(): void {
+		$closed = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false ), null, 'admin' ) )->filter_robots_txt( '', true );
+		$open   = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( false, true ), null, 'admin' ) )->filter_robots_txt( '', true );
+
+		foreach ( array( 'Applebot-Extended', 'Meta-ExternalAgent', 'Amazonbot' ) as $training ) {
+			$this->assertStringContainsString( "User-agent: {$training}\nDisallow: /", $closed );
+			$this->assertStringContainsString( "User-agent: {$training}\nAllow: /", $open );
+		}
+
+		foreach ( array( 'DuckAssistBot', 'MistralAI-User' ) as $search ) {
+			$this->assertStringContainsString( "User-agent: {$search}\nAllow: /", $closed );
+			$this->assertStringContainsString( "User-agent: {$search}\nDisallow: /", $open );
+		}
+
+		$this->assertStringNotContainsString( 'CCBot', $closed );
+	}
+
 	public function test_registry_rejects_invalid_extension_definitions(): void {
 		global $lightweight_seo_test_filters;
 

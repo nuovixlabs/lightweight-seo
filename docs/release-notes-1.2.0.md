@@ -8,6 +8,22 @@ These notes describe the 1.2 line by feature, as it is built. [Changelog](../CHA
 
 ## AI Discovery
 
+### More AI crawlers
+
+AI Discovery writes `robots.txt` rules for five more crawlers. Each was checked on its vendor's own documentation page on 2026-11-19.
+
+| Crawler | Vendor | Follows the switch |
+|---|---|---|
+| `Applebot-Extended` | Apple | Allow bundled model-training crawler tokens (off by default) |
+| `Meta-ExternalAgent` | Meta | Allow bundled model-training crawler tokens (off by default) |
+| `Amazonbot` | Amazon | Allow bundled model-training crawler tokens (off by default) |
+| `DuckAssistBot` | DuckDuckGo | Allow bundled AI search and user-directed crawler tokens (on by default) |
+| `MistralAI-User` | Mistral AI | Allow bundled AI search and user-directed crawler tokens (on by default) |
+
+**This changes the `robots.txt` of sites that already use AI Discovery.** After the update, the virtual file holds a group for each new crawler, allowed or disallowed as the switches are set. With the defaults, Apple, Meta, and Amazon are asked not to use the site for model training, and DuckDuckGo's and Mistral AI's assistants may fetch it. A physical `robots.txt` file, and a crawler another plugin already names, are left alone as before.
+
+`Applebot-Extended`, like `Google-Extended`, does not crawl; it tells Apple whether pages its search crawler fetched may train its models, and does not affect Apple's search results. `CCBot` was left out because Common Crawl documents no AI purpose for it. Some user-requested fetchers, such as `ChatGPT-User` and `Perplexity-User`, say they may not follow `robots.txt`. [AI Crawlers](ai-crawlers.md) lists every token with its source.
+
 ### The served robots.txt
 
 The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' rules. A file answered by the web server, a CDN, or a host's own setting went unnoticed, even when it replaced everything WordPress writes. The AI Discovery card now reads the file crawlers actually get:

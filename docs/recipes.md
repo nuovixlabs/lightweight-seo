@@ -91,6 +91,10 @@ A new setting with a safe default needs none of this. Use a migration only when 
 - A file under `admin/` or `includes/` ships automatically. A new top-level file or folder that is not part of the plugin needs an `export-ignore` line in `.gitattributes`; `bin/build-zip` fails when anything unexpected reaches the ZIP.
 - List a new shipped file in `docs/release-baselines.md` with when it is loaded.
 
+## Refresh the AI crawler list
+
+Follow "Refreshing the list" in [AI Crawlers](ai-crawlers.md). The unit tests fail while `get_crawler_registry()` and the table there disagree.
+
 ## Call a WordPress function the plugin has not used before
 
 1. Check the WordPress version that introduced it. Anything newer than 6.0 needs a `function_exists()` guard and a sensible result without it.

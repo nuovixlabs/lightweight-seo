@@ -6,6 +6,7 @@
 - [Recipes](./recipes.md): commands, and step-by-step procedures for adding a setting, a module, or an import source, changing stored data, cutting a release, and testing by hand.
 - [Design System](./design-system.md): administration components and copy rules.
 - [Developer API](./developer-api.md): the public facade, stable hooks, abilities, and WP-CLI commands.
+- [AI Crawlers](./ai-crawlers.md): the crawler tokens AI Discovery writes, the page each is documented on, and how to refresh the list.
 
 ## For releasing
 
