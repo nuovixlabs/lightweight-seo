@@ -8,7 +8,7 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ### Changed
 
-- The AI Discovery card checks the `robots.txt` that is actually served. The administrator's browser fetches it, signed out, and reports whether the card's crawler rules are in it, any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site, whether a `Sitemap:` line is present (with the exact line to add when WordPress sitemaps are on), and a failed fetch, a status other than 200, or a type other than `text/plain`. The server requests nothing. Without JavaScript, a link opens the file. On a subdirectory install, the card says that WordPress does not answer the `robots.txt` crawlers read. The reader, `admin/js/lightweight-seo-robots.js`, loads only on the Modules tab while AI Discovery is on.
+- The AI Discovery card checks the `robots.txt` that is actually served. The administrator's browser fetches it, signed out, and reports whether the card's crawler rules are in it, any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site (or everything but the paths its `Allow` lines list), whether a `Sitemap:` line is present (with the exact line to add when WordPress sitemaps are on), and a failed fetch, a status other than 200, or a type other than `text/plain`. The server requests nothing. Without JavaScript, a link opens the file. On a subdirectory install, the card says that WordPress does not answer the `robots.txt` crawlers read. The reader, `admin/js/lightweight-seo-robots.js`, loads only on the Modules tab while AI Discovery is on.
 
 ### Added
 

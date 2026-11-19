@@ -201,9 +201,18 @@
 			return rules !== null && blocksWholeSite(rules);
 		});
 
-		return blocked.length
-			? {id: 'blocked', state: 'warning', key: 'blocked', values: blocked}
-			: {id: 'blocked', state: 'success', key: 'open', values: crawlers};
+		// A group that also has an Allow line still lets those paths through, so it is not a block of every page.
+		var withAllowLines = blocked.filter(function(token) {
+			return rulesNaming(parsed, token).some(function(rule) {
+				return rule.allow;
+			});
+		});
+
+		if (!blocked.length) {
+			return {id: 'blocked', state: 'success', key: 'open', values: crawlers};
+		}
+
+		return {id: 'blocked', state: 'warning', key: withAllowLines.length ? 'partly' : 'blocked', values: blocked};
 	}
 
 	function sitemapResult(parsed, sitemapLine) {

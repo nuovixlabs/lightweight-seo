@@ -921,6 +921,8 @@ class Lightweight_SEO_Admin_Module_Fields {
 					'open'    => __( 'No group for %s disallows the whole site.', 'lightweight-seo' ),
 					/* translators: %s: list of crawler names, where * means every crawler. */
 					'blocked' => __( 'These groups disallow the whole site: %s. The crawlers they name may not fetch any page.', 'lightweight-seo' ),
+					/* translators: %s: list of crawler names, where * means every crawler. */
+					'partly'  => __( 'These groups disallow the homepage and every page their Allow lines do not list: %s.', 'lightweight-seo' ),
 				),
 			),
 			'sitemap' => array(

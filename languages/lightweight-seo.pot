@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T09:31:56+00:00\n"
+"POT-Creation-Date: 2026-11-19T09:45:36+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -366,7 +366,7 @@ msgid "Sitemap index:"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:547
-#: includes/class-lightweight-seo-admin-module-fields.php:978
+#: includes/class-lightweight-seo-admin-module-fields.php:980
 #: includes/class-lightweight-seo-admin-tools-fields.php:335
 #: includes/class-lightweight-seo-admin-ui.php:167
 msgid "(opens in a new tab)"
@@ -1080,7 +1080,7 @@ msgid "The file is served as %s. Crawlers expect text/plain; check the server or
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:906
-#: includes/class-lightweight-seo-admin-module-fields.php:951
+#: includes/class-lightweight-seo-admin-module-fields.php:953
 msgid "Crawler rules from this card"
 msgstr ""
 
@@ -1122,37 +1122,43 @@ msgstr ""
 msgid "These groups disallow the whole site: %s. The crawlers they name may not fetch any page."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-module-fields.php:927
+#. translators: %s: list of crawler names, where * means every crawler.
+#: includes/class-lightweight-seo-admin-module-fields.php:925
+#, php-format
+msgid "These groups disallow the homepage and every page their Allow lines do not list: %s."
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-module-fields.php:929
 msgid "Sitemap line"
 msgstr ""
 
 #. translators: %s: list of sitemap addresses.
-#: includes/class-lightweight-seo-admin-module-fields.php:930
+#: includes/class-lightweight-seo-admin-module-fields.php:932
 #, php-format
 msgid "Points crawlers to %s."
 msgstr ""
 
 #. translators: %s: the exact line to add, such as "Sitemap: https://example.com/wp-sitemap.xml".
-#: includes/class-lightweight-seo-admin-module-fields.php:932
+#: includes/class-lightweight-seo-admin-module-fields.php:934
 #, php-format
 msgid "No Sitemap line is served. Add this line to the file: %s"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-module-fields.php:933
+#: includes/class-lightweight-seo-admin-module-fields.php:935
 msgid "No Sitemap line is served, and WordPress sitemaps are off."
 msgstr ""
 
 #. translators: 1: path WordPress is installed under, such as /blog. 2: address of the robots.txt file.
-#: includes/class-lightweight-seo-admin-module-fields.php:954
+#: includes/class-lightweight-seo-admin-module-fields.php:956
 #, php-format
 msgid "WordPress is installed under %1$s, and crawlers read robots.txt only at %2$s, which WordPress does not answer. The rules set here are not served; copy them into that file to apply them."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-module-fields.php:977
+#: includes/class-lightweight-seo-admin-module-fields.php:979
 msgid "This browser fetches the served file the way a crawler would and fills in the rows about it; the server requests nothing."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-module-fields.php:978
+#: includes/class-lightweight-seo-admin-module-fields.php:980
 msgid "Open the served robots.txt"
 msgstr ""
 
