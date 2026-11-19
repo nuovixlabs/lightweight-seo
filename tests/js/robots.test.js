@@ -158,3 +158,15 @@ test('a served Content-Signal line is reported, and a missing one only when this
 	assert.deepEqual(byId(check(served('User-agent: *\nAllow: /\n'), {contentSignal: 'ai-train=no, search=yes, ai-input=yes'})).signals, {id: 'signals', state: 'warning', key: 'missing', values: ['Content-Signal: ai-train=no, search=yes, ai-input=yes']});
 	assert.deepEqual(byId(check(served('User-agent: *\nAllow: /\n'), {})).signals, {id: 'signals', state: 'info', key: 'none', values: []});
 });
+
+test('a group that shuts the site except for its Allow lines is not reported as shutting every page', () => {
+	const partly = byId(check(served('User-agent: *\nDisallow: /\nAllow: /blog/\n'), {rules: {}, crawlers: CRAWLERS}));
+
+	assert.deepEqual(partly.blocked, {id: 'blocked', state: 'warning', key: 'partly', values: ['*']});
+	assert.equal(allows(rulesNaming(parse('User-agent: *\nDisallow: /\nAllow: /blog/\n'), '*'), '/blog/post'), true);
+
+	// When one group lists an allowed path, the wording that holds for every listed group is used.
+	const mixed = byId(check(served('User-agent: Googlebot\nDisallow: /\n\nUser-agent: *\nDisallow: /\nAllow: /blog/\n'), {rules: {}, crawlers: CRAWLERS}));
+
+	assert.deepEqual(mixed.blocked, {id: 'blocked', state: 'warning', key: 'partly', values: ['Googlebot', '*']});
+});

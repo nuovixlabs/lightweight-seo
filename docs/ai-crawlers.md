@@ -25,10 +25,16 @@ All checked on 2026-11-19.
 | `Perplexity-User` | Perplexity | user | Generally not: user-requested | https://docs.perplexity.ai/guides/bots |
 | `Google-Extended` | Google | training | A control token only: Google crawls with its usual crawlers and reads this group to decide use for Gemini training and grounding. No effect on Google Search. | https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers |
 | `Applebot-Extended` | Apple | training | A control token only: it does not crawl; it decides whether pages Applebot fetched train Apple's foundation models. No effect on Apple search results. | https://support.apple.com/en-us/119829 |
-| `Meta-ExternalAgent` | Meta | training | Yes; can be disallowed. Meta also uses it to improve products by indexing content. | https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/ |
-| `Amazonbot` | Amazon | training | Yes. Improves Amazon products and services and may train Amazon AI models. | https://developer.amazon.com/amazonbot |
+| `Meta-ExternalAgent` | Meta | training | Yes; can be disallowed. Meta also uses it to improve products by indexing content directly, so a `Disallow` stops that too. | https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/ |
+| `Meta-WebIndexer` | Meta | search | Not said to bypass it. Improves Meta AI search and lets Meta AI cite and link to pages. | https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/ |
+| `Meta-ExternalFetcher` | Meta | user | May bypass it, because it fetches links a user asked for | https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/ |
+| `Amazonbot` | Amazon | training | Yes. Improves Amazon products and services and may train Amazon AI models, so a `Disallow` stops both. | https://developer.amazon.com/amazonbot |
+| `Amzn-SearchBot` | Amazon | search | Yes. Search and answers, such as Alexa; not used for generative AI training. | https://developer.amazon.com/amazonbot |
+| `Amzn-User` | Amazon | user | "May not follow all robots.txt directives", because a user starts it | https://developer.amazon.com/amazonbot |
 | `DuckAssistBot` | DuckDuckGo | search | Yes; a disallow takes effect after 72 hours. Not used to train AI models. | https://duckduckgo.com/duckduckgo-help-pages/results/duckassistbot |
 | `MistralAI-User` | Mistral AI | user | Not stated; the token "governs which sites these user requests can be made to" | https://docs.mistral.ai/robots |
+| `MistralAI-Index` | Mistral AI | search | Not stated; indexing for Mistral search only, not used for training | https://docs.mistral.ai/robots |
+| `MistralAI-Training` | Mistral AI | training | Not stated outright; the page tells webmasters to disallow it in robots.txt | https://docs.mistral.ai/robots |
 
 ## Documented, not added
 
@@ -37,10 +43,7 @@ Found on the same pages, or proposed, and left out of the list for now.
 | Token | Vendor | Why it is not in the list |
 |---|---|---|
 | `CCBot` | Common Crawl | Follows robots.txt, but https://commoncrawl.org/ccbot and https://commoncrawl.org/faq describe an open web archive for research and name no AI search, user, or training purpose, so neither switch describes it. |
-| `Amzn-SearchBot`, `Amzn-User` | Amazon | Not on the list of candidates for 1.2. Search and user-requested; documented on https://developer.amazon.com/amazonbot. |
-| `MistralAI-Index`, `MistralAI-Training` | Mistral AI | Not on the list of candidates for 1.2. Search indexing and training; documented on https://docs.mistral.ai/robots. |
-| `Meta-WebIndexer`, `Meta-ExternalFetcher` | Meta | Not on the list of candidates for 1.2. Meta AI search and user-requested fetches; documented on https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/. |
-| `Claude-Agent` | Anthropic | Browses on a user's behalf; its robots.txt behavior is on a separate page that was not read. |
+| `Claude-Agent` | Anthropic | A browser Anthropic hosts that completes tasks at a user's direction. https://support.claude.com/en/articles/18234133-how-do-anthropic-hosted-browsers-identify-themselves-when-they-browse-the-web-on-a-user-s-behalf (read on 2026-11-19) does not say it reads robots.txt; it tells sites to allow or block it, and to verify it against the IP list Anthropic publishes. A `robots.txt` rule would promise a control the vendor does not describe. |
 | `OAI-AdsBot` | OpenAI | Reviews ad landing pages, not an AI search, user, or training crawler. |
 
 ## Refreshing the list

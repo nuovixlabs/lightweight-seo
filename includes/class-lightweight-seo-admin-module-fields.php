@@ -796,12 +796,12 @@ class Lightweight_SEO_Admin_Module_Fields {
 
 	/** Render search and user-directed crawler policy. */
 	public function ai_search_crawlers_enabled_render() {
-		$this->render_choice( 'ai_search_crawlers_enabled', '1', __( 'Allow bundled AI search and user-directed crawler tokens', 'lightweight-seo' ), __( 'Lets the documented AI search crawlers and user-requested fetchers in, such as OAI-SearchBot, Claude-SearchBot, PerplexityBot, DuckAssistBot, and MistralAI-User. Some user-requested fetchers do not follow robots.txt, and none of this guarantees discovery or citation.', 'lightweight-seo' ) );
+		$this->render_choice( 'ai_search_crawlers_enabled', '1', __( 'Allow bundled AI search and user-directed crawler tokens', 'lightweight-seo' ), __( 'Lets the documented AI search crawlers and user-requested fetchers in, such as OAI-SearchBot, Claude-SearchBot, PerplexityBot, Meta-WebIndexer, Amzn-SearchBot, DuckAssistBot, MistralAI-Index, and ChatGPT-User. Some user-requested fetchers do not follow robots.txt, and none of this guarantees discovery or citation.', 'lightweight-seo' ) );
 	}
 
 	/** Render model-training crawler policy separately from search access. */
 	public function ai_training_crawlers_enabled_render() {
-		$this->render_choice( 'ai_training_crawlers_enabled', '0', __( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ), __( 'Off blocks GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent, and Amazonbot. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ) );
+		$this->render_choice( 'ai_training_crawlers_enabled', '0', __( 'Allow bundled model-training crawler tokens', 'lightweight-seo' ), __( 'Off blocks GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent, Amazonbot, and MistralAI-Training. Meta-ExternalAgent and Amazonbot are then blocked for every use, not only training. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking.', 'lightweight-seo' ) );
 	}
 
 	/** Render the Content-Signal line switch. */
@@ -926,6 +926,8 @@ class Lightweight_SEO_Admin_Module_Fields {
 					'open'    => __( 'No group for %s disallows the whole site.', 'lightweight-seo' ),
 					/* translators: %s: list of crawler names, where * means every crawler. */
 					'blocked' => __( 'These groups disallow the whole site: %s. The crawlers they name may not fetch any page.', 'lightweight-seo' ),
+					/* translators: %s: list of crawler names, where * means every crawler. */
+					'partly'  => __( 'These groups disallow the homepage and every page their Allow lines do not list: %s.', 'lightweight-seo' ),
 				),
 			),
 			'sitemap' => array(

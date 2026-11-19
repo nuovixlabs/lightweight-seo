@@ -1855,6 +1855,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		}
 
 		$this->assertStringContainsString( 'data-msg-absent="None of the rules set here are in the served file.', $output );
+		$this->assertStringContainsString( 'data-msg-partly="These groups disallow the homepage and every page their Allow lines do not list: %s."', $output );
 		$this->assertStringContainsString( 'data-msg-missing="No Sitemap line is served. Add this line to the file: %s"', $output );
 		$this->assertStringContainsString( 'data-msg-type="The file is served as %s. Crawlers expect text/plain;', $output );
 		$this->assertStringContainsString( '&quot;contentSignal&quot;:&quot;&quot;', $output );
