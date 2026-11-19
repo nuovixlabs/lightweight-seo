@@ -58,6 +58,40 @@ On 2026-11-19:
 
 Not checked: the `Content-Type` fix and the Inspect report's header in a browser on a host that repeats headers, and everything listed as not checked for `1.2.0-rc.1` except the subdirectory install.
 
+## 1.2.0
+
+`1.2.0` is the first stable release of the 1.2 line. Since `1.2.0-rc.2` it changes one behavior, in three shipped files, and adds no file: a description summarized from the content keeps a space between its blocks. That summary can run on a visitor request, so every row was measured again on 2026-11-20.
+
+| Metric | Baseline |
+|---|---:|
+| Runtime package files | 53 |
+| Release ZIP size | 245,497 bytes (239.7 KiB) |
+| Warm peak-memory delta, all modules disabled | +373,468 bytes |
+| Warm query delta, all modules disabled | +1 (24 vs 23) |
+| 100-request median response-time regression, all modules disabled | +2.04% (81.394 ms vs 79.766 ms) |
+| All-modules median response-time regression | +2.91% (82.084 ms vs 79.766 ms) |
+| All-modules peak-memory delta | +385,660 bytes |
+| All-modules query delta | +2 (25 vs 23) |
+| Autoloaded core settings size | 2,522 bytes |
+| Autoloaded module-state size | 116 bytes |
+
+The environment, the all-modules settings, and the method are those of `1.2.0-rc.1`: a clean local WordPress 7.1.5 with Twenty Twenty-Five 1.5, PHP 8.3.31 with the built-in web server, SQLite Database Integration 3.1.3, and loopback HTTP. Each response time is the median of 100 sequential warm homepage requests after 10 warm-ups, taken four times, twice in each order of the three cases, and averaged. The four passes of each case lay within 0.22 ms of each other. Query counts are from 20 instrumented warm requests in each of the first two passes and were identical. Peak memory is the average of those two passes; with the plugin inactive it differed by 2,728 bytes between them. The settings size is the stored option after one save through the settings screen of a new site; no setting was added since `1.2.0-rc.1`.
+
+Every case ran one query fewer on this site than on the `1.2.0-rc.1` site (23, 24, and 25 against 24, 25, and 26). The deltas are the same, and the cause was not looked for.
+
+The homepage that is measured lists posts, so it does not summarize a post's content. The step this release adds to that summary, `Lightweight_SEO_Text::separate_blocks()`, was timed on its own under PHP 8.3.31: 36 microseconds for 6 KB of block-editor content, 137 microseconds for 24 KB, and 1.4 milliseconds for 238 KB. It runs only on a page whose description is taken from its content.
+
+### Checked by hand for this release
+
+On 2026-11-19 and 2026-11-20:
+
+- The description fix, on local WordPress 7.1.5, on the code that is in this release: three posts whose blocks touch without whitespace. A paragraph, `<!--nextpage-->`, a heading, and a list give "Part one. Part two Item List"; a table, a word with bold letters inside it, and a line break give "Name Value a 1 Bold word next line"; and two sentences with only the comment between them give "Part one. Part two.". The meta description, `og:description`, and the schema description agree on each page, and `debug.log` has no notice.
+- A repeated `Content-Type` header in a browser. On a real host whose CDN answers `/robots.txt` itself and sends the header twice, with `1.2.0-rc.2` installed, the "robots.txt" row of the AI readiness report passes where `1.2.0-rc.1` warned about `text/plain, text/plain`, and the rows about the plugin's part of the file, Googlebot being shut out, and the missing `Sitemap:` line stay. The same on a throwaway WordPress made to send the header twice. The `1.2.0-rc.2` section lists this as not checked; it was checked after that section was written.
+- The file WordPress and the plugin write on that real host, read at `/?robots=1` because the host answers `/robots.txt`. With model-training crawlers switched off and content signals on, it holds WordPress's own rules, the `Sitemap:` line, one `Content-Signal` line under `User-agent: *`, the marker comment, a `Disallow: /` group for each of the seven training crawlers, and the other 13 crawlers named as following the rules for all crawlers. The reader behind the report, run under Node on that file, passes every row.
+- `/llms.txt` on that host: plain text, the homepage description as its summary, and the selected pages with their descriptions.
+
+Not checked: the AI readiness report in a browser on a real host where WordPress itself answers `/robots.txt`, which was seen only on a throwaway site; the Inspect report's header on a host that repeats headers; and everything listed as not checked for `1.2.0-rc.1` except the subdirectory install.
+
 ## 1.1.0-rc.4
 
 Reference measurements for `1.1.0-rc.4` were recorded on 2026-11-17. Every row was measured again.
