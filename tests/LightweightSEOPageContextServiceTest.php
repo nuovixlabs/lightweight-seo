@@ -553,6 +553,26 @@ final class LightweightSEOPageContextServiceTest extends TestCase {
 		$this->assertSame( $context['description'], $context['og_description'] );
 	}
 
+	public function test_content_fallback_description_puts_a_space_between_paragraphs_and_pages(): void {
+		global $lightweight_seo_test_posts;
+		global $lightweight_seo_test_query_state;
+
+		$lightweight_seo_test_query_state['is_singular']       = true;
+		$lightweight_seo_test_query_state['queried_object_id'] = 42;
+		$lightweight_seo_test_posts[42]                        = (object) array(
+			'ID'           => 42,
+			'post_type'    => 'post',
+			'post_excerpt' => '',
+			'post_content' => '<p>Part one.</p><!--nextpage--><h2>Part two</h2><ul><li>Item</li><li>List</li></ul>',
+		);
+
+		$service = new Lightweight_SEO_Page_Context_Service( $this->get_settings_stub( false ), $this->get_post_meta_stub(), $this->get_archive_meta_stub() );
+		$context = $service->get_context();
+
+		$this->assertSame( 'Part one. Part two Item List', $context['description'] );
+		$this->assertSame( $context['description'], $context['og_description'] );
+	}
+
 	public function test_editor_written_description_is_never_shortened(): void {
 		global $lightweight_seo_test_query_state;
 

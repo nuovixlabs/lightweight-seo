@@ -28,6 +28,21 @@ final class LightweightSEOTextTest extends TestCase {
 		$this->assertStringEndsWith( '…', $summary );
 	}
 
+	public function test_plain_text_puts_a_space_between_blocks_but_not_inside_words(): void {
+		$this->assertSame( 'Part one. Part two.', Lightweight_SEO_Text::plain( '<p>Part one.</p><!--nextpage--><p>Part two.</p>' ) );
+		// A comment alone, with no block tag beside it, still leaves a space.
+		$this->assertSame( 'Part one. Part two.', Lightweight_SEO_Text::plain( 'Part one.<!--nextpage-->Part two.' ) );
+		$this->assertSame( 'First. Second.', Lightweight_SEO_Text::plain( '<p>First.</p><p>Second.</p>' ) );
+		$this->assertSame( 'Heading Body.', Lightweight_SEO_Text::plain( '<h2>Heading</h2><p>Body.</p>' ) );
+		$this->assertSame( 'One Two Three', Lightweight_SEO_Text::plain( '<ul><li>One</li><li>Two</li></ul><blockquote>Three</blockquote>' ) );
+		$this->assertSame( 'Line one Line two', Lightweight_SEO_Text::plain( 'Line one<br>Line two' ) );
+		$this->assertSame( 'A Block', Lightweight_SEO_Text::plain( '<!-- wp:paragraph --><p>A</p><!-- /wp:paragraph --><!-- wp:heading --><h2 class="wp-block-heading">Block</h2><!-- /wp:heading -->' ) );
+		// Inline markup joins letters of one word, so it must not split them.
+		$this->assertSame( 'Bold word and a link.', Lightweight_SEO_Text::plain( '<p><strong>B</strong>old wo<em>rd</em> and <a href="#">a link</a>.</p>' ) );
+		// Tags whose names start like a block tag are left alone.
+		$this->assertSame( 'Keep together', Lightweight_SEO_Text::plain( 'Ke<b>ep</b> to<link rel="x">gether' ) );
+	}
+
 	public function test_the_first_four_variables_resolve_and_an_empty_tagline_leaves_no_separator(): void {
 		$tokens = array(
 			'%title%'    => 'A page',

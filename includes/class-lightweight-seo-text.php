@@ -25,6 +25,12 @@ final class Lightweight_SEO_Text {
 	 */
 	const OPTIONAL_TOKENS = array( '%page%', '%category%', '%author%', '%year%', '%tagline%' );
 
+	/**
+	 * Elements that start a new line of text, so removing their tags must leave a space behind.
+	 * Inline elements such as strong, em, and a are left out: they can sit inside a word.
+	 */
+	const BLOCK_TAGS = 'address|article|aside|blockquote|br|caption|dd|details|div|dl|dt|figcaption|figure|footer|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|summary|table|td|th|tr|ul';
+
 	/** What counts as a separator beside an empty variable: %sep%, or one of the characters it can become. */
 	const SEPARATOR_PATTERN = '(?:%sep%|[–—\\-|·•»\/])';
 
@@ -162,9 +168,29 @@ final class Lightweight_SEO_Text {
 	 * @return string
 	 */
 	public static function plain( $value ) {
-		$value = wp_strip_all_tags( strip_shortcodes( (string) $value ), true );
+		$value = wp_strip_all_tags( self::separate_blocks( strip_shortcodes( (string) $value ) ), true );
 
 		return trim( preg_replace( '/\s+/', ' ', $value ) );
+	}
+
+	/**
+	 * Put a space at each block boundary and comment, such as <!--nextpage-->, before tags are stripped.
+	 *
+	 * Without it, adjacent paragraphs, headings, and list items run together: "Part one.Part two."
+	 *
+	 * @since 1.2.0
+	 * @param mixed $html Content markup.
+	 * @return string
+	 */
+	public static function separate_blocks( $html ) {
+		$html      = (string) $html;
+		$separated = preg_replace(
+			array( '/<!--.*?-->/s', '/<\/?(?:' . self::BLOCK_TAGS . ')\b[^>]*>/i' ),
+			array( ' ', ' $0 ' ),
+			$html
+		);
+
+		return null === $separated ? $html : $separated;
 	}
 
 	/**
