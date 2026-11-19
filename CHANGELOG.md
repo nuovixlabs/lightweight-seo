@@ -6,6 +6,8 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+## 1.3.0-rc.1 - 2026-11-20
+
 ### Added
 
 - Markdown on request (experimental): a switch on the AI Discovery card, off by default, stored as `enable_markdown_on_request`. While it is on, a `GET` or `HEAD` request whose `Accept` header prefers `text/markdown` to HTML gets a Markdown version of a published public post or page, a static front page, the latest-posts homepage, or the posts page, instead of the theme's HTML. The document has YAML front matter with the title, description, and image the HTML head prints, the content after the `the_content` filters (or, for a list of posts, linked titles with excerpts), and the schema graph the head prints in a fenced `json` block. The answer carries `Content-Type: text/markdown; charset=UTF-8`, `Vary: Accept`, the canonical address as a `Link` header, the page's robots directives as `X-Robots-Tag` when they restrict anything, `Content-Signal` when the content signals switch is on, and headers that keep it out of shared caches. Browsers and every other request get the HTML as before, with `Vary: Accept` added on the pages that can be answered in Markdown. Nothing is stored. The answer is decided after the redirects and access checks made on `template_redirect`; a plugin that hides a page by swapping its template, as many maintenance and coming-soon plugins do, is not seen, so test with it before turning the switch on. Two filters, `lightweight_seo_markdown_supported` and `lightweight_seo_markdown_document`. The converter and the document builder are new files, loaded only when a Markdown answer is built.
