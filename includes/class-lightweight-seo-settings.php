@@ -92,6 +92,7 @@ class Lightweight_SEO_Settings {
 			'local_business_image'               => '',
 			'identity_type'                      => 'organization',
 			'identity_name'                      => '',
+			'identity_description'               => '',
 			'identity_logo'                      => '',
 			'identity_logo_id'                   => 0,
 			'x_handle'                           => '',
@@ -252,6 +253,16 @@ class Lightweight_SEO_Settings {
 		$name = trim( (string) $this->get( 'identity_name', '' ) );
 
 		return '' !== $name ? $name : (string) get_bloginfo( 'name' );
+	}
+
+	/**
+	 * Get the description of the organization or person.
+	 *
+	 * @since    1.2.0
+	 * @return   string One line of text, or an empty string when none is written.
+	 */
+	public function get_identity_description() {
+		return trim( (string) preg_replace( '/\s+/u', ' ', (string) $this->get( 'identity_description', '' ) ) );
 	}
 
 	/**

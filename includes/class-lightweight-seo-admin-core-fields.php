@@ -595,6 +595,19 @@ class Lightweight_SEO_Admin_Core_Fields {
 	}
 
 	/**
+	 * Render the description of the organization or person.
+	 *
+	 * @since    1.2.0
+	 */
+	public function identity_description_render() {
+		$options = $this->settings->get_all();
+		?>
+		<textarea id="lightweight_seo_identity_description" name="<?php echo esc_attr( LIGHTWEIGHT_SEO_OPTION_NAME ); ?>[identity_description]" rows="2" class="large-text"><?php echo esc_textarea( $options['identity_description'] ?? '' ); ?></textarea>
+		<p class="lwseo-help"><?php esc_html_e( 'Says in a sentence or two who the organization or person is. It is added to structured data as the description; leave empty to add none.', 'lightweight-seo' ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Render the logo of the organization or the photo of the person.
 	 *
 	 * @since    1.1.0

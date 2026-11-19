@@ -273,7 +273,7 @@ class Lightweight_SEO_Admin_Page {
 			'identity'   => array(
 				array(
 					'section'     => 'lightweight_seo_schema_section',
-					'fields'      => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as' ),
+					'fields'      => array( 'identity_type', 'identity_name', 'identity_description', 'identity_logo', 'x_handle', 'organization_same_as' ),
 					'title'       => __( 'Site identity', 'lightweight-seo' ),
 					'description' => __( 'Who this site belongs to. Used in structured data and when pages are shared.', 'lightweight-seo' ),
 				),
