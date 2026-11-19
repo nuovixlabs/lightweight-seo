@@ -1,10 +1,48 @@
 # Release Baselines
 
-## Unreleased
+## 1.2.0-rc.1
 
-Measured when the release is cut. Files added since `1.1.0`, and when each is loaded; none is loaded on a visitor request:
+Reference measurements for `1.2.0-rc.1` were recorded on 2026-11-19. Every row was measured again.
+
+| Metric | Baseline |
+|---|---:|
+| Runtime package files | 53 |
+| Release ZIP size | 243,439 bytes (237.7 KiB) |
+| Warm peak-memory delta, all modules disabled | +375,720 bytes |
+| Warm query delta, all modules disabled | +1 (25 vs 24) |
+| 100-request median response-time regression, all modules disabled | +3.21% (81.899 ms vs 79.351 ms) |
+| All-modules median response-time regression | +3.25% (81.930 ms vs 79.351 ms) |
+| All-modules peak-memory delta | +387,884 bytes |
+| All-modules query delta | +2 (26 vs 24) |
+| Autoloaded core settings size | 2,522 bytes |
+| Autoloaded module-state size | 116 bytes |
+
+Reference environment: a clean local WordPress 7.1.5 with Twenty Twenty-Five and no other active plugin, PHP 8.3.31 with the built-in web server that `bin/dev-site serve` starts, SQLite through the SQLite Database Integration plugin 3.1.3, loopback HTTP, no persistent object cache. `1.1.0-rc.4` was measured on WordPress 7.1.4 with Twenty Twenty-Two, which this WordPress download does not bundle, so compare the deltas and percentages between the two tables, not the absolute times or query counts.
+
+Each response-time result is the median of 100 sequential warm homepage requests after 10 warm-ups. It was taken four times, twice in each order of the three cases, and averaged; `1.1.0-rc.4` was taken twice. The two extra passes were added because the first pass gave 84.691 ms for all modules disabled, while the other three gave 80.942, 80.966, and 80.997 ms. With the first two passes alone, as before, the regressions are +4.19% with all modules disabled and +3.48% with all modules on. Query counts are from 20 instrumented warm requests in each of the first two passes and were identical. Peak memory is the average of those two passes; it differed by about 1,200 bytes between them with what the settings option held.
+
+The all-modules case enables all six built-in modules, each with valid settings: three redirect rules, one hreflang mapping, a GTM container with no excluded environment so its tag is printed, a complete local business, AI Discovery with an `llms.txt` page, and an IndexNow key. The site runs on `127.0.0.1`, so IndexNow sends nothing, and the benchmark fetches no third-party script. The settings size is the stored option after one save through the settings screen of a new site; two settings are new since `1.1.0`.
+
+The package grew from 52 to 53 files since `1.1.0`. The file added is not loaded on a visitor request:
 
 - `admin/js/lightweight-seo-robots.js`: the Modules tab of the settings screen, while AI Discovery is on.
+
+### Checked by hand for this candidate
+
+On 2026-11-19, in a browser on local WordPress 7.1.5, on the code that is now in this candidate:
+
+- The AI readiness report: every row fills in from 13 requests the browser sends, and with the module off the page holds neither the report nor `lightweight-seo-robots.js`. With `robots.txt` answered the way a host answered it on a real site (only `User-agent: Googlebot` / `Disallow: /` and `User-agent: *` / `Allow: /`), the report says the part Lightweight SEO adds is absent, names Googlebot as blocked, gives the `Sitemap:` line to add, and marks "Who writes robots.txt" as needing attention. With a physical `robots.txt`, it says the file takes precedence. With general rules that disallow everything, it names the 13 allowed AI crawlers as shut out of the whole site.
+- `/robots.txt` in all four combinations of the two crawler switches: a group with `Disallow: /` for each crawler switched off, no group and no `Allow: /` line for an allowed one, WordPress's rules for all crawlers unchanged, and the marker comment in every case.
+- The content signals switch, saved through the settings screen: one `Content-Signal` line under `User-agent: *`, above its rules.
+- `/llms.txt`: the tagline as its summary, and the static front page listed with exactly the homepage's `<title>`.
+- The description on the "Site identity" card, saved through the settings screen and printed on the Organization node.
+- The editor checks in the block editor and, through a post type without REST support, in the classic editor: the counts of images without alternative text and of H1 headings, both following an edit, and "No description is printed for this page" on an empty post.
+- The Content section of the Inspect report, on a post with three H1 headings on the page and one of two images without alternative text.
+- With scripts switched off, in a sandboxed frame: the report prints every row with its link, and the rows the browser decides stay unresolved.
+- A request sent the way the report sends its requests, without credentials, receives the signed-out page.
+- No notice from the plugin in `debug.log`, no error from the plugin's scripts in the console, and no plugin asset on a visitor page.
+
+Not checked: a subdirectory install, because the test web server pins the site address to the root of the host; multisite; an administration on another address than the site; a collapsed AI Discovery card waiting to send its requests; the editor checks on a very long post; a real IndexNow submission; and anything in `docs/qa-checklist.md` that 1.2 does not touch.
 
 ## 1.1.0-rc.4
 
