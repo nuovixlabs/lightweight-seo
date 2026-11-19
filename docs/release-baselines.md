@@ -1,13 +1,49 @@
 # Release Baselines
 
-## Unreleased (1.3.0)
+## 1.3.0-rc.1
 
-Not measured yet; a release candidate records its numbers here. Files added since `1.2.0`, and when each is loaded:
+Reference measurements for `1.3.0-rc.1`, the first candidate of the 1.3 line, were recorded on 2026-11-20. It adds Markdown on request. Every row was measured again.
+
+| Metric | Baseline |
+|---|---:|
+| Runtime package files | 55 |
+| Release ZIP size | 262,951 bytes (256.8 KiB) |
+| Warm peak-memory delta, all modules disabled | +373,320 bytes |
+| Warm query delta, all modules disabled | +1 (24 vs 23) |
+| 100-request median response-time regression, all modules disabled | +2.09% (81.468 ms vs 79.800 ms) |
+| All-modules median response-time regression | +2.73% (81.982 ms vs 79.800 ms) |
+| All-modules peak-memory delta | +386,508 bytes |
+| All-modules query delta | +2 (25 vs 23) |
+| Autoloaded core settings size | 2,564 bytes |
+| Autoloaded module-state size | 116 bytes |
+
+The environment and the method are those of `1.2.0`: a clean local WordPress 7.1.5 with Twenty Twenty-Five 1.5, PHP 8.3.31 with the built-in web server, SQLite Database Integration 3.1.3, and loopback HTTP. Each response time is the median of 100 sequential warm homepage requests after 10 warm-ups, taken four times, twice in each order of the three cases, and averaged. The four passes of each case lay within 0.61 ms of each other; the widest spread was with all modules disabled, where one pass gave 81.863 ms and the other three 81.259 to 81.419 ms. Query counts are from 20 instrumented warm requests in each of the first two passes and were identical. Peak memory is the average of those two passes. The settings size is the stored option after one save through the settings screen of a new site; one setting is new since `1.2.0`.
+
+The all-modules case is the one of `1.2.0-rc.1` with the Markdown on request switch on as well, so its page view includes the one late `template_redirect` callback and the `Vary: Accept` header.
+
+A Markdown answer of the same homepage, measured the same way with all modules on, took 30.386 ms against 82.041 ms for the HTML page in the same two runs, because the theme is not rendered. All 200 answers were `text/markdown`.
+
+The package grew from 53 to 55 files since `1.2.0`. Neither added file is loaded on an ordinary page view:
 
 - `includes/class-lightweight-seo-markdown-converter.php`: only while a request is answered in Markdown, which needs AI Discovery and its Markdown on request switch on and a request that prefers `text/markdown`.
 - `includes/class-lightweight-seo-markdown-response.php`: at the same time, and never otherwise.
 
-With the switch on, an ordinary page view loads neither file; it runs one `template_redirect` callback that reads the `Accept` header and adds `Vary: Accept` to a page that can be answered in Markdown.
+With the switch off, a page view registers no new hook. With it on, an ordinary page view loads neither file; it runs one `template_redirect` callback that reads the `Accept` header and adds `Vary: Accept` to a page that can be answered in Markdown.
+
+### Checked by hand for this candidate
+
+On 2026-11-19 and 2026-11-20, on local WordPress 7.1.5. The requests were made before the last four changes of this candidate (a link after an exclamation mark, headers already sent, the notes on the template swap, and tests); the check of a plugin that hides a page was made on the candidate itself.
+
+- Which requests get Markdown, with `curl`: the latest-posts homepage, a post, a page, page 2 of a post split with `<!--nextpage-->`, a static front page, the posts page and its second page, a `HEAD` request (headers and no body), and an `Accept` header that ranks `text/markdown` above HTML.
+- Which stay as they were: a browser's `Accept` header, `*/*`, HTML ranked first, `q=0`, a `POST` request, a post's comment feed, an embed, a category, a tag, a date archive, a search, a missing address, the feed, `/robots.txt`, the REST API, the sitemap, `/llms.txt`, the sign-in page, a draft, a private post, a password-protected post, an attachment page, and a preview. An address without its trailing slash is redirected first. No answer held text of the draft, the private post, or the protected post.
+- The headers: every header in the table of the release notes, `Vary: Accept` on the HTML of a page that can be answered in Markdown and on no other, `Content-Signal` with its switch on and absent with it off, and `X-Robots-Tag` with `noindex` on a page hidden from search and on a site that discourages search engines. With the Markdown switch off there is no `Vary: Accept`, the HTML is sent, and neither new file is loaded.
+- The document against the page: the front matter's title, description, and image and the `json` block equal the page's `<title>`, meta description, `og:image`, and JSON-LD, compared by script on a post whose title holds a colon, an ampersand, and quotes. The content of a post with a nested list, a table with a pipe in a cell, a code block holding a backtick fence, a quote, text that looks like markup, a `javascript:` link, a script, non-Latin text, and emoji was read back by an independent CommonMark parser with the structure intended, and without the script or the `javascript:` link. The one difference was a link directly after an exclamation mark, which read as an image; that was fixed afterwards and checked on the converter alone.
+- Safe mode beside another SEO plugin: the front matter holds only the title, with no `json` block and no canonical `Link` header.
+- A plugin that hides a page, in three ways. One that swaps the template through `template_include`: the browser gets the maintenance page and a request for Markdown gets the post, the limit the release notes state. The same plugin returning `false` from `lightweight_seo_markdown_supported`: both get the maintenance page. One that stops the request on `template_redirect` at priority 10: both get its page.
+- In a browser: the switch with its help text, saved off and on through the settings screen, and the "Markdown on request" row of the AI readiness report in its four states (passed with the switch on, off by choice, passed when something else serves Markdown with the switch off, and needs attention naming `text/html` when HTML comes back with the switch on).
+- No notice from the plugin in `debug.log`.
+
+Not checked: Markdown on request behind a real page cache or CDN, which the QA checklist asks for by hand; a server without PHP's DOM extension, outside the unit tests; the content of a real site with a real theme; an outside agent-readiness scanner's Markdown check; and everything listed as not checked for `1.2.0`.
 
 ## 1.2.0-rc.1
 
