@@ -43,61 +43,85 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 */
 	public function get_crawler_registry() {
 		$registry = array(
-			'OAI-SearchBot'      => array(
+			'OAI-SearchBot'        => array(
 				'vendor'  => 'OpenAI',
 				'purpose' => 'search',
 			),
-			'ChatGPT-User'       => array(
+			'ChatGPT-User'         => array(
 				'vendor'  => 'OpenAI',
 				'purpose' => 'user',
 			),
-			'GPTBot'             => array(
+			'GPTBot'               => array(
 				'vendor'  => 'OpenAI',
 				'purpose' => 'training',
 			),
-			'Claude-SearchBot'   => array(
+			'Claude-SearchBot'     => array(
 				'vendor'  => 'Anthropic',
 				'purpose' => 'search',
 			),
-			'Claude-User'        => array(
+			'Claude-User'          => array(
 				'vendor'  => 'Anthropic',
 				'purpose' => 'user',
 			),
-			'ClaudeBot'          => array(
+			'ClaudeBot'            => array(
 				'vendor'  => 'Anthropic',
 				'purpose' => 'training',
 			),
-			'PerplexityBot'      => array(
+			'PerplexityBot'        => array(
 				'vendor'  => 'Perplexity',
 				'purpose' => 'search',
 			),
-			'Perplexity-User'    => array(
+			'Perplexity-User'      => array(
 				'vendor'  => 'Perplexity',
 				'purpose' => 'user',
 			),
-			'Google-Extended'    => array(
+			'Google-Extended'      => array(
 				'vendor'  => 'Google',
 				'purpose' => 'training',
 			),
-			'Applebot-Extended'  => array(
+			'Applebot-Extended'    => array(
 				'vendor'  => 'Apple',
 				'purpose' => 'training',
 			),
-			'Meta-ExternalAgent' => array(
+			'Meta-ExternalAgent'   => array(
 				'vendor'  => 'Meta',
 				'purpose' => 'training',
 			),
-			'Amazonbot'          => array(
+			'Meta-WebIndexer'      => array(
+				'vendor'  => 'Meta',
+				'purpose' => 'search',
+			),
+			'Meta-ExternalFetcher' => array(
+				'vendor'  => 'Meta',
+				'purpose' => 'user',
+			),
+			'Amazonbot'            => array(
 				'vendor'  => 'Amazon',
 				'purpose' => 'training',
 			),
-			'DuckAssistBot'      => array(
+			'Amzn-SearchBot'       => array(
+				'vendor'  => 'Amazon',
+				'purpose' => 'search',
+			),
+			'Amzn-User'            => array(
+				'vendor'  => 'Amazon',
+				'purpose' => 'user',
+			),
+			'DuckAssistBot'        => array(
 				'vendor'  => 'DuckDuckGo',
 				'purpose' => 'search',
 			),
-			'MistralAI-User'     => array(
+			'MistralAI-User'       => array(
 				'vendor'  => 'Mistral AI',
 				'purpose' => 'user',
+			),
+			'MistralAI-Index'      => array(
+				'vendor'  => 'Mistral AI',
+				'purpose' => 'search',
+			),
+			'MistralAI-Training'   => array(
+				'vendor'  => 'Mistral AI',
+				'purpose' => 'training',
 			),
 		);
 		$registry = (array) apply_filters( 'lightweight_seo_ai_crawler_registry', $registry );

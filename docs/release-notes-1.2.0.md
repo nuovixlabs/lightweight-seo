@@ -10,19 +10,31 @@ These notes describe the 1.2 line by feature, as it is built. [Changelog](../CHA
 
 ### More AI crawlers
 
-AI Discovery writes `robots.txt` rules for five more crawlers. Each was checked on its vendor's own documentation page on 2026-11-19.
+AI Discovery writes `robots.txt` rules for eleven more crawlers. Each was checked on its vendor's own documentation page on 2026-11-19.
 
-| Crawler | Vendor | Follows the switch |
-|---|---|---|
-| `Applebot-Extended` | Apple | Allow bundled model-training crawler tokens (off by default) |
-| `Meta-ExternalAgent` | Meta | Allow bundled model-training crawler tokens (off by default) |
-| `Amazonbot` | Amazon | Allow bundled model-training crawler tokens (off by default) |
-| `DuckAssistBot` | DuckDuckGo | Allow bundled AI search and user-directed crawler tokens (on by default) |
-| `MistralAI-User` | Mistral AI | Allow bundled AI search and user-directed crawler tokens (on by default) |
+| Crawler | Vendor | What the vendor uses it for | Follows the switch |
+|---|---|---|---|
+| `Applebot-Extended` | Apple | Training Apple's foundation models | Model training (off by default) |
+| `Meta-ExternalAgent` | Meta | Training AI models, and improving products by indexing content | Model training (off by default) |
+| `Amazonbot` | Amazon | Improving Amazon products and services, and possibly training Amazon AI models | Model training (off by default) |
+| `MistralAI-Training` | Mistral AI | Training Mistral's models | Model training (off by default) |
+| `Meta-WebIndexer` | Meta | Meta AI search | AI search and user-directed (on by default) |
+| `Amzn-SearchBot` | Amazon | Search and answers, such as Alexa | AI search and user-directed (on by default) |
+| `DuckAssistBot` | DuckDuckGo | AI-assisted answers in DuckDuckGo Search | AI search and user-directed (on by default) |
+| `MistralAI-Index` | Mistral AI | Mistral search | AI search and user-directed (on by default) |
+| `Meta-ExternalFetcher` | Meta | Fetching a link a user asked for | AI search and user-directed (on by default) |
+| `Amzn-User` | Amazon | Fetching live information a user asked for | AI search and user-directed (on by default) |
+| `MistralAI-User` | Mistral AI | Fetching a page a user asked for | AI search and user-directed (on by default) |
 
-**This changes the `robots.txt` of sites that already use AI Discovery.** After the update, the virtual file holds a group for each new crawler, allowed or disallowed as the switches are set. With the defaults, Apple, Meta, and Amazon are asked not to use the site for model training, and DuckDuckGo's and Mistral AI's assistants may fetch it. A physical `robots.txt` file, and a crawler another plugin already names, are left alone as before.
+**This changes the `robots.txt` of sites that already use AI Discovery.** After the update, the virtual file holds a group for each new crawler, allowed or disallowed as the switches are set. A physical `robots.txt` file, and a crawler another plugin already names, are left alone as before.
 
-`Applebot-Extended`, like `Google-Extended`, does not crawl; it tells Apple whether pages its search crawler fetched may train its models, and does not affect Apple's search results. `CCBot` was left out because Common Crawl documents no AI purpose for it. Some user-requested fetchers, such as `ChatGPT-User` and `Perplexity-User`, say they may not follow `robots.txt`. [AI Crawlers](ai-crawlers.md) lists every token with its source.
+With the defaults, the four training crawlers get `Disallow: /`:
+
+- `Applebot-Extended` and `Google-Extended` do not crawl. They only tell Apple and Google whether pages their search crawlers fetched may be used for their models, so search results are not affected.
+- `MistralAI-Training` crawls for training only.
+- `Meta-ExternalAgent` and `Amazonbot` are crawlers that their vendors use for more than training. A `Disallow: /` stops them altogether, including Meta's product indexing and Amazon's product and service improvements. Meta's and Amazon's search crawlers are separate tokens, `Meta-WebIndexer` and `Amzn-SearchBot`, and follow the AI search switch, which is on by default.
+
+`CCBot` was left out because Common Crawl documents no AI purpose for it, and `Claude-Agent` because Anthropic describes no `robots.txt` control for it. Some user-requested fetchers, such as `ChatGPT-User`, `Perplexity-User`, `Meta-ExternalFetcher`, and `Amzn-User`, say they may not follow `robots.txt`. [AI Crawlers](ai-crawlers.md) lists every token with its source.
 
 ### The served robots.txt
 

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T09:46:22+00:00\n"
+"POT-Creation-Date: 2026-11-19T09:47:36+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -992,7 +992,7 @@ msgid "Allow bundled AI search and user-directed crawler tokens"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:799
-msgid "Lets the documented AI search crawlers and user-requested fetchers in, such as OAI-SearchBot, Claude-SearchBot, PerplexityBot, DuckAssistBot, and MistralAI-User. Some user-requested fetchers do not follow robots.txt, and none of this guarantees discovery or citation."
+msgid "Lets the documented AI search crawlers and user-requested fetchers in, such as OAI-SearchBot, Claude-SearchBot, PerplexityBot, Meta-WebIndexer, Amzn-SearchBot, DuckAssistBot, MistralAI-Index, and ChatGPT-User. Some user-requested fetchers do not follow robots.txt, and none of this guarantees discovery or citation."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:804
@@ -1000,7 +1000,7 @@ msgid "Allow bundled model-training crawler tokens"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:804
-msgid "Off blocks GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent, and Amazonbot. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking."
+msgid "Off blocks GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, Meta-ExternalAgent, Amazonbot, and MistralAI-Training. Meta-ExternalAgent and Amazonbot are then blocked for every use, not only training. Google-Extended also controls some Gemini grounding uses, but does not affect Google Search inclusion or ranking."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:809
@@ -1289,7 +1289,7 @@ msgid "Lightweight SEO extends the WordPress core sitemap instead of replacing i
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:277
-#: includes/class-lightweight-seo-ai-discovery-module.php:355
+#: includes/class-lightweight-seo-ai-discovery-module.php:379
 msgid "Site identity"
 msgstr ""
 
@@ -2302,77 +2302,77 @@ msgstr ""
 msgid "Use this image"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:210
+#: includes/class-lightweight-seo-ai-discovery-module.php:234
 msgid "Website"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:221
+#: includes/class-lightweight-seo-ai-discovery-module.php:245
 msgid "Authoritative pages"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:334
+#: includes/class-lightweight-seo-ai-discovery-module.php:358
 msgid "Site crawlability"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:335
+#: includes/class-lightweight-seo-ai-discovery-module.php:359
 msgid "WordPress search visibility is public."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:335
+#: includes/class-lightweight-seo-ai-discovery-module.php:359
 msgid "WordPress asks search engines not to index this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:339
+#: includes/class-lightweight-seo-ai-discovery-module.php:363
 msgid "Crawler policy ownership"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:340
+#: includes/class-lightweight-seo-ai-discovery-module.php:364
 msgid "A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:340
+#: includes/class-lightweight-seo-ai-discovery-module.php:364
 msgid "Another robots.txt filter already defines one or more bundled crawler tokens."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:340
+#: includes/class-lightweight-seo-ai-discovery-module.php:364
 msgid "WordPress can safely append the configured virtual crawler policies."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:344
+#: includes/class-lightweight-seo-ai-discovery-module.php:368
 msgid "Curated public pages"
 msgstr ""
 
 #. translators: 1: Number of valid curated pages. 2: Number of selected pages.
-#: includes/class-lightweight-seo-ai-discovery-module.php:346
+#: includes/class-lightweight-seo-ai-discovery-module.php:370
 #, php-format
 msgid "%1$d of %2$d selected pages are published, public, indexable, canonical, local, and not redirected."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:350
+#: includes/class-lightweight-seo-ai-discovery-module.php:374
 msgid "Page snippets"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:351
+#: includes/class-lightweight-seo-ai-discovery-module.php:375
 msgid "Each curated page should have a visible, normalized description."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:356
+#: includes/class-lightweight-seo-ai-discovery-module.php:380
 msgid "A site name and visible structured-data graph provide the identity signals checked here."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:360
+#: includes/class-lightweight-seo-ai-discovery-module.php:384
 msgid "llms.txt endpoint"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:361
+#: includes/class-lightweight-seo-ai-discovery-module.php:385
 msgid "A physical llms.txt file takes precedence; Lightweight SEO will not replace it."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:361
+#: includes/class-lightweight-seo-ai-discovery-module.php:385
 msgid "Another rewrite rule or integration claims the llms.txt endpoint; Lightweight SEO will not replace it."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:361
+#: includes/class-lightweight-seo-ai-discovery-module.php:385
 msgid "No physical or routed llms.txt conflict was detected."
 msgstr ""
 

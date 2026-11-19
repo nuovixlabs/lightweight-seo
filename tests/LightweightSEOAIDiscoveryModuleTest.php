@@ -130,20 +130,26 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 
 		$this->assertSame(
 			array(
-				'OAI-SearchBot'      => 'search',
-				'ChatGPT-User'       => 'user',
-				'GPTBot'             => 'training',
-				'Claude-SearchBot'   => 'search',
-				'Claude-User'        => 'user',
-				'ClaudeBot'          => 'training',
-				'PerplexityBot'      => 'search',
-				'Perplexity-User'    => 'user',
-				'Google-Extended'    => 'training',
-				'Applebot-Extended'  => 'training',
-				'Meta-ExternalAgent' => 'training',
-				'Amazonbot'          => 'training',
-				'DuckAssistBot'      => 'search',
-				'MistralAI-User'     => 'user',
+				'OAI-SearchBot'        => 'search',
+				'ChatGPT-User'         => 'user',
+				'GPTBot'               => 'training',
+				'Claude-SearchBot'     => 'search',
+				'Claude-User'          => 'user',
+				'ClaudeBot'            => 'training',
+				'PerplexityBot'        => 'search',
+				'Perplexity-User'      => 'user',
+				'Google-Extended'      => 'training',
+				'Applebot-Extended'    => 'training',
+				'Meta-ExternalAgent'   => 'training',
+				'Meta-WebIndexer'      => 'search',
+				'Meta-ExternalFetcher' => 'user',
+				'Amazonbot'            => 'training',
+				'Amzn-SearchBot'       => 'search',
+				'Amzn-User'            => 'user',
+				'DuckAssistBot'        => 'search',
+				'MistralAI-User'       => 'user',
+				'MistralAI-Index'      => 'search',
+				'MistralAI-Training'   => 'training',
 			),
 			array_map(
 				static function ( $definition ) {
@@ -175,17 +181,19 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$closed = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false ), null, 'admin' ) )->filter_robots_txt( '', true );
 		$open   = ( new Lightweight_SEO_AI_Discovery_Module( $this->settings( false, true ), null, 'admin' ) )->filter_robots_txt( '', true );
 
-		foreach ( array( 'Applebot-Extended', 'Meta-ExternalAgent', 'Amazonbot' ) as $training ) {
+		foreach ( array( 'Applebot-Extended', 'Meta-ExternalAgent', 'Amazonbot', 'MistralAI-Training' ) as $training ) {
 			$this->assertStringContainsString( "User-agent: {$training}\nDisallow: /", $closed );
 			$this->assertStringContainsString( "User-agent: {$training}\nAllow: /", $open );
 		}
 
-		foreach ( array( 'DuckAssistBot', 'MistralAI-User' ) as $search ) {
+		foreach ( array( 'DuckAssistBot', 'MistralAI-User', 'MistralAI-Index', 'Meta-WebIndexer', 'Meta-ExternalFetcher', 'Amzn-SearchBot', 'Amzn-User' ) as $search ) {
 			$this->assertStringContainsString( "User-agent: {$search}\nAllow: /", $closed );
 			$this->assertStringContainsString( "User-agent: {$search}\nDisallow: /", $open );
 		}
 
 		$this->assertStringNotContainsString( 'CCBot', $closed );
+		$this->assertStringNotContainsString( 'OAI-AdsBot', $closed );
+		$this->assertStringNotContainsString( 'Claude-Agent', $closed );
 	}
 
 	public function test_registry_rejects_invalid_extension_definitions(): void {
