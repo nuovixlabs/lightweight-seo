@@ -145,8 +145,63 @@
 		return !allows(rules, '/') && !allows(rules, PROBE_PATH);
 	}
 
+	// Characters a type or subtype may hold: an HTTP token.
+	var TOKEN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+
+	// Split a header value on commas outside quoted strings, as "get, decode, and split" in the Fetch standard does.
+	function splitHeader(value) {
+		var values = [];
+		var current = '';
+		var quoted = false;
+		var index;
+		var character;
+
+		for (index = 0; index < value.length; index++) {
+			character = value.charAt(index);
+
+			if (quoted && character === '\\') {
+				current += character + value.charAt(index + 1);
+				index++;
+			} else if (character === '"') {
+				quoted = !quoted;
+				current += character;
+			} else if (character === ',' && !quoted) {
+				values.push(current.trim());
+				current = '';
+			} else {
+				current += character;
+			}
+		}
+
+		values.push(current.trim());
+
+		return values;
+	}
+
+	/**
+	 * The media type a browser takes from a Content-Type value, lower-cased and without parameters.
+	 *
+	 * A header sent twice reaches the page joined by ", ", such as "text/plain, text/plain". The
+	 * "extract a MIME type" steps of the Fetch standard decide it: each value is parsed, one that does
+	 * not parse or is "*\/*" is skipped, and the last one that parses counts. An empty string means none did.
+	 */
+	function mediaTypeOf(contentType) {
+		return splitHeader(String(contentType || '')).reduce(function(found, value) {
+			var essence = value.split(';')[0].trim();
+			var slash = essence.indexOf('/');
+			var type = essence.slice(0, slash);
+			var subtype = essence.slice(slash + 1);
+
+			if (slash < 1 || !TOKEN.test(type) || !TOKEN.test(subtype) || essence === '*/*') {
+				return found;
+			}
+
+			return essence.toLowerCase();
+		}, '');
+	}
+
 	function fetchResult(response) {
-		var type = String(response.contentType || '').split(';')[0].trim().toLowerCase();
+		var type = mediaTypeOf(response.contentType);
 
 		if (!response.fetched) {
 			return {id: 'fetch', state: 'warning', key: 'failed', values: []};
@@ -276,7 +331,7 @@
 	}
 
 	function mediaType(response) {
-		return String((response && response.contentType) || '').split(';')[0].trim().toLowerCase();
+		return mediaTypeOf(response && response.contentType);
 	}
 
 	function json(response) {
@@ -477,6 +532,7 @@
 		rulesNaming: rulesNaming,
 		blocksWholeSite: blocksWholeSite,
 		check: check,
+		mediaTypeOf: mediaTypeOf,
 		readiness: readiness,
 		settle: settle
 	};

@@ -7,6 +7,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const robots = require('../../admin/js/lightweight-seo-robots.js');
+const robotsReader = robots;
 
 const {parse, allows, rulesNaming, blocksWholeSite, check} = robots;
 
@@ -192,4 +193,30 @@ test('a group that shuts the site except for its Allow lines is not reported as 
 	const mixed = byId(check(served('User-agent: Googlebot\nDisallow: /\n\nUser-agent: *\nDisallow: /\nAllow: /blog/\n'), {rules: {}, crawlers: CRAWLERS}));
 
 	assert.deepEqual(mixed.blocked, {id: 'blocked', state: 'warning', key: 'partly', values: ['Googlebot', '*']});
+});
+
+test('a Content-Type header sent twice is read the way the browser reads it, not as one joined string', () => {
+	const robots = (contentType) => byId(check(served('User-agent: *\nAllow: /\n', {contentType: contentType}), {crawlers: CRAWLERS})).fetch;
+
+	// The header twice, as a real host sent it: the browser joins the two with ", ".
+	assert.deepEqual(robots('text/plain, text/plain'), {id: 'fetch', state: 'success', key: 'ok', values: ['https://example.com/robots.txt']});
+	// Parameters and case do not matter.
+	assert.equal(robots('text/plain; charset=utf-8, Text/Plain').key, 'ok');
+	assert.equal(robots('TEXT/PLAIN; charset=UTF-8').key, 'ok');
+	// Two different types: the last that parses counts, and it is the one reported.
+	assert.equal(robots('text/html; charset=UTF-8, text/plain').key, 'ok');
+	assert.deepEqual(robots('text/plain, text/html; charset=UTF-8'), {id: 'fetch', state: 'warning', key: 'type', values: ['text/html']});
+	// A value that does not parse, or */*, is skipped.
+	assert.equal(robots('text/plain, not a type').key, 'ok');
+	assert.equal(robots('text/plain, */*').key, 'ok');
+	assert.deepEqual(robots('nonsense'), {id: 'fetch', state: 'warning', key: 'type', values: ['-']});
+});
+
+test('mediaTypeOf follows the extract-a-MIME-type steps of the Fetch standard', () => {
+	assert.equal(robotsReader.mediaTypeOf('text/plain, text/plain'), 'text/plain');
+	assert.equal(robotsReader.mediaTypeOf('text/plain; charset="a, b", text/html'), 'text/html');
+	assert.equal(robotsReader.mediaTypeOf('text/html; charset="a, b"'), 'text/html');
+	assert.equal(robotsReader.mediaTypeOf('text/ plain'), '');
+	assert.equal(robotsReader.mediaTypeOf(''), '');
+	assert.equal(robotsReader.mediaTypeOf(undefined), '');
 });
