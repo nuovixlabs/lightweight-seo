@@ -1,10 +1,15 @@
 # Changelog
 
-What changed in each release. [Release Notes](docs/release-notes-1.1.0.md) describe the 1.1 line in full, by feature.
+What changed in each release. The release notes for [1.2](docs/release-notes-1.2.0.md) and [1.1](docs/release-notes-1.1.0.md) describe each line in full, by feature.
 
 Add every change under "Unreleased" in the commit that makes it. `bin/release-prep` moves that section under the new version.
 
 ## Unreleased
+
+### Documentation
+
+- The product boundary in `docs/architecture.md` now covers AI readiness: the plugin checks whether AI crawlers and agents can reach and read the site, and publishes agent-discovery output only for things the site really offers. There is no AI readiness score or level.
+- `docs/release-notes-1.2.0.md` describes the 1.2 line as it is built, and the agent rules point at it.
 
 ## 1.1.0 - 2026-11-19
 
