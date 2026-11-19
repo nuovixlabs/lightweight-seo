@@ -44,7 +44,8 @@ test('a plain WordPress site: valid sitemap, and every file it does not publish 
 	assert.deepEqual(results.sitemapXml, {id: 'sitemapXml', state: 'success', key: 'valid', values: [ROOT + '/wp-sitemap.xml']});
 	// WordPress's own REST link is not one of the relations agents look for.
 	assert.deepEqual(results.linkHeaders, {id: 'linkHeaders', state: 'info', key: 'none', values: []});
-	assert.deepEqual(results.markdown, {id: 'markdown', state: 'info', key: 'none', values: []});
+	// The Markdown on request switch is off, so HTML is the answer chosen.
+	assert.deepEqual(results.markdown, {id: 'markdown', state: 'off', key: 'off', values: []});
 	assert.deepEqual(results.llms, {id: 'llms', state: 'off', key: 'off', values: []});
 	assert.deepEqual(results.signals, {id: 'signals', state: 'off', key: 'off', values: []});
 
@@ -215,6 +216,32 @@ test('a repeated Content-Type header does not hide Markdown, llms.txt, or an API
 	assert.deepEqual(results.apiCatalog.values, [ROOT + '/.well-known/api-catalog']);
 
 	// The type that counts is the last one, so HTML after Markdown is HTML.
-	assert.equal(byId(readiness(plainSite({markdown: answer('<html>', {contentType: 'text/markdown, text/html'})}), {})).markdown.key, 'none');
+	assert.equal(byId(readiness(plainSite({markdown: answer('<html>', {contentType: 'text/markdown, text/html'})}), {})).markdown.key, 'off');
 	assert.equal(byId(readiness(plainSite({markdown: answer('# Home', {contentType: 'text/html, text/markdown'})}), {})).markdown.key, 'found');
+});
+
+test('Markdown on request: passes when Markdown is served, needs attention only while the switch is on', () => {
+	const markdown = answer('---\ntitle: Home\n---\n\n# Home\n', {contentType: 'text/markdown; charset=UTF-8'});
+	const html = answer('<!doctype html><title>Home</title>', {contentType: 'text/html; charset=UTF-8'});
+	const on = {markdownEnabled: true};
+	const off = {markdownEnabled: false};
+
+	// Switch on, Markdown served: passed.
+	assert.deepEqual(byId(readiness(plainSite({markdown: markdown}), on)).markdown, {id: 'markdown', state: 'success', key: 'found', values: []});
+	// Switch off, Markdown served by something else: found, as before.
+	assert.deepEqual(byId(readiness(plainSite({markdown: markdown}), off)).markdown, {id: 'markdown', state: 'success', key: 'found', values: []});
+	// Switch on, HTML served, as a page cache that stored the HTML answers: the type that came back is named.
+	assert.deepEqual(byId(readiness(plainSite({markdown: html}), on)).markdown, {id: 'markdown', state: 'warning', key: 'missing', values: ['text/html']});
+	// Switch off, HTML served: off by choice.
+	assert.deepEqual(byId(readiness(plainSite({markdown: html}), off)).markdown, {id: 'markdown', state: 'off', key: 'off', values: []});
+	// A failed request says nothing about the site, whatever the switch.
+	assert.deepEqual(byId(readiness(plainSite({markdown: {fetched: false}}), on)).markdown, {id: 'markdown', state: 'info', key: 'unchecked', values: []});
+	// Markdown with another status is not an answer, and the status is named with the type.
+	assert.deepEqual(
+		byId(readiness(plainSite({markdown: answer('# Gone', {status: 410, contentType: 'text/markdown'})}), on)).markdown,
+		{id: 'markdown', state: 'warning', key: 'missing', values: ['HTTP 410', 'text/markdown']}
+	);
+	// No type at all is shown as a dash, and a host that repeats the header is read the way browsers read it.
+	assert.deepEqual(byId(readiness(plainSite({markdown: answer('x', {contentType: ''})}), on)).markdown.values, ['-']);
+	assert.equal(byId(readiness(plainSite({markdown: answer('# Home', {contentType: 'text/markdown, text/markdown'})}), on)).markdown.key, 'found');
 });

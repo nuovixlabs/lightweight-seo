@@ -12,6 +12,7 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ### Changed
 
+- The "Markdown on request" row of the AI readiness report follows the new switch. With the switch on, it passes when the homepage answers a request for `text/markdown` with Markdown, and needs attention when it answers with something else, naming what came back and what may cause it: a page cache or CDN in front of WordPress that answered with the HTML it stored, a plugin that refuses Markdown for the page, or a private or password-protected front page. With the switch off, Markdown served by something else is still "Found", and HTML is off by choice instead of "Not offered". With the switch on and no PHP DOM extension, the row says the server cannot build Markdown. A request this browser could not send is still "Not checked".
 - The help text of the `llms.txt` switch no longer says that no full-page Markdown is generated, which the new switch can do. It says that no `llms-full.txt` is generated and that only the Markdown on request switch sends a whole page as Markdown.
 
 ## 1.2.0 - 2026-11-20

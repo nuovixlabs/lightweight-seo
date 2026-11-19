@@ -383,14 +383,29 @@
 			: {id: 'linkHeaders', state: 'info', key: 'none', values: []};
 	}
 
-	function markdownResult(response) {
+	/**
+	 * The homepage asked for with Accept: text/markdown. Markdown passes whoever serves it. Anything
+	 * else needs attention only while the card's switch is on; with it off, that is the choice made.
+	 * A status other than 200 is named with the type, so the message says what came back.
+	 */
+	function markdownResult(response, enabled) {
+		var type;
+
 		if (failed(response)) {
 			return unchecked('markdown');
 		}
 
-		return answered(response) && mediaType(response) === 'text/markdown'
-			? {id: 'markdown', state: 'success', key: 'found', values: []}
-			: {id: 'markdown', state: 'info', key: 'none', values: []};
+		type = mediaType(response);
+
+		if (answered(response) && type === 'text/markdown') {
+			return {id: 'markdown', state: 'success', key: 'found', values: []};
+		}
+
+		if (!enabled) {
+			return {id: 'markdown', state: 'off', key: 'off', values: []};
+		}
+
+		return {id: 'markdown', state: 'warning', key: 'missing', values: (response.status === 200 ? [] : ['HTTP ' + response.status]).concat([type || '-'])};
 	}
 
 	// An llms.txt file is Markdown that opens with a level-one heading.
@@ -478,7 +493,7 @@
 	 * answers   {robots, sitemapXml, home, markdown, llms, apiCatalog: [], skills: [], mcp: [], ard: []},
 	 *           each an answer as check() takes it, plus xmlRoot (the root element name, or null when the
 	 *           body is not XML) for sitemapXml and link (the Link header) for home.
-	 * expected  What check() takes, plus llmsEnabled, signalOff, and sitemapFromRobots (false on a
+	 * expected  What check() takes, plus llmsEnabled, markdownEnabled, signalOff, and sitemapFromRobots (false on a
 	 *           subdirectory install).
 	 */
 	function readiness(answers, expected) {
@@ -491,7 +506,7 @@
 		return check(robots, settings).concat([
 			sitemapXmlResult(answers.sitemapXml, sitemaps),
 			linkHeadersResult(answers.home),
-			markdownResult(answers.markdown),
+			markdownResult(answers.markdown, Boolean(settings.markdownEnabled)),
 			llmsResult(answers.llms, Boolean(settings.llmsEnabled)),
 			wellKnownResult('apiCatalog', answers.apiCatalog),
 			wellKnownResult('skills', answers.skills),
