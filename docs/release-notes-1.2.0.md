@@ -36,6 +36,26 @@ With the defaults, the four training crawlers get `Disallow: /`:
 
 `CCBot` was left out because Common Crawl documents no AI purpose for it, and `Claude-Agent` because Anthropic describes no `robots.txt` control for it. Some user-requested fetchers, such as `ChatGPT-User`, `Perplexity-User`, `Meta-ExternalFetcher`, and `Amzn-User`, say they may not follow `robots.txt`. [AI Crawlers](ai-crawlers.md) lists every token with its source.
 
+### AI readiness report
+
+The six readiness rows of 1.1 are replaced by a report grouped by the areas agent-readiness scanners look at. It adopts every check of the reference at isitagentready.com, and it does not copy that scanner's levels or score: each row states one fact, as **passed**, **needs attention**, **off by choice**, or **not applicable**.
+
+| Area | Rows |
+|---|---|
+| Discoverability | Search visibility; the served `robots.txt`; Sitemap (`/sitemap.xml` after redirects, or a Sitemap line); Sitemap line in `robots.txt`; Link headers; DNS records for agents |
+| Content | Markdown on request; the served `llms.txt`; pages listed in `llms.txt`; who answers `llms.txt`, when something else does |
+| Bot governance | Who writes `robots.txt`; model-training crawlers; AI crawler rules; whole-site blocks; content signals; Web Bot Auth key directory |
+| Structured data | The Organization or Person node: name, logo or photo, description, profile links, naming what is missing |
+| Capabilities | API catalog; agent skills index; agent resource discovery manifest; MCP server card; OpenAPI; WebMCP |
+| Authentication | OAuth metadata and `auth.md` |
+| Agent protocols | A2A agent card; commerce protocols |
+
+- **Served addresses are checked in your browser.** Once the card is open, the browser fetches `/robots.txt`, `/sitemap.xml`, the homepage, the homepage again asking for `text/markdown`, `/llms.txt`, and the well-known addresses below, without your sign-in, the way a crawler or an agent would. The server makes no request.
+- **Files this version does not publish are not problems.** Markdown versions of pages, an API catalog (`/.well-known/api-catalog`), an agent skills index (`/.well-known/agent-skills/index.json`), an agent resource manifest (`/.well-known/ard.json` or `/.well-known/ai-catalog.json`), and an MCP server card (`/.well-known/mcp/server-card.json` and two older addresses) show "Found" when another plugin or a CDN serves one, and a neutral "Not offered" otherwise.
+- **Checks that do not apply say why.** Web Bot Auth, OAuth metadata and `auth.md`, A2A agent cards, OpenAPI, WebMCP, DNS records for agents, and commerce protocols describe services a site that publishes content does not run. Each row gives the reason in one sentence.
+- **Choices are not failures.** Disallowing model-training crawlers, leaving `llms.txt` or content signals off, and switching core schema output off are shown as off by choice.
+- Without JavaScript, the rows about served addresses say they are checked in the browser and link to each address.
+
 ### Content signals
 
 A new switch on the AI Discovery card, **State how this site's content may be used for search, AI answers, and AI training**, is off by default. While it is on, and WordPress answers `robots.txt` (no physical file, and the site is not hidden from search engines), the virtual file gains one line inside the group for every crawler:
@@ -62,13 +82,13 @@ A content signal states a preference. Crawlers may ignore it, as they may ignore
 The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' rules. A file answered by the web server, a CDN, or a host's own setting went unnoticed, even when it replaced everything WordPress writes. The AI Discovery card now reads the file crawlers actually get:
 
 - The administrator's browser fetches `/robots.txt` at the root of the host, without its sign-in, the way a crawler does. The server makes no request.
-- **Served robots.txt** says whether the address answered with a plain text file, and reports a failed fetch, a status other than 200, or a type other than `text/plain`.
-- **Crawler rules from this card** says whether the rules for the AI crawlers set on the card are in the served file, and names any that are missing or give a different answer. When none are there, another file or setting answers the address instead of WordPress.
+- **robots.txt** says whether the address answered with a plain text file, and reports a failed fetch, a status other than 200, or a type other than `text/plain`.
+- **AI crawler rules** says whether the rules for the AI crawlers set on the card are in the served file, and names any that are missing or give a different answer. When none are there, another file or setting answers the address instead of WordPress.
 - **Whole-site blocks** names any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site. A group that disallows `/` but also has `Allow` lines is reported as disallowing the homepage and every page those lines do not list, since the listed paths can still be fetched.
-- **Sitemap line** lists the `Sitemap:` lines, or gives the exact line to add when WordPress sitemaps are on.
+- **Sitemap line in robots.txt** lists the `Sitemap:` lines, or gives the exact line to add when WordPress sitemaps are on.
 - **Content signals** lists the `Content-Signal` lines served, and says when the line this card adds is missing.
 - WordPress answers `robots.txt` only when it is installed at the root of the host. On a subdirectory install the card says so, and that the rules set on the card are not served there.
-- Without JavaScript, the card keeps the checks of 1.1 and links to the served file.
+- Without JavaScript, these rows say they are checked in the browser and link to the served file.
 
 ### llms.txt
 

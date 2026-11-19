@@ -242,7 +242,7 @@ class Lightweight_SEO_Admin_Settings {
 					'enable_content_signals'       => array( __( 'Content signals', 'lightweight-seo' ), $modules ),
 					'enable_llms_txt'              => array( __( 'Curated llms.txt', 'lightweight-seo' ), $modules ),
 					'llms_txt_post_ids'            => array( __( 'Pages to list', 'lightweight-seo' ), $modules ),
-					'ai_readiness'                 => array( __( 'Readiness checks', 'lightweight-seo' ), $modules ),
+					'ai_readiness'                 => array( __( 'AI readiness', 'lightweight-seo' ), $modules ),
 				),
 			),
 		);

@@ -1831,7 +1831,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( array(), $lightweight_seo_test_settings_errors );
 	}
 
-	public function test_ai_card_prints_the_served_robots_rows_for_the_browser_and_a_link_without_it(): void {
+	public function test_ai_card_prints_the_readiness_report_grouped_by_area(): void {
 		global $lightweight_seo_test_home_url;
 		global $lightweight_seo_test_options;
 
@@ -1844,26 +1844,40 @@ final class LightweightSEOAdminTest extends TestCase {
 		( new Lightweight_SEO_Admin_Module_Fields( new Lightweight_SEO_Settings() ) )->ai_readiness_render();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( '<ul class="lwseo-status-list" data-lwseo-served-robots data-url="https://example.com/robots.txt"', $output );
+		// Seven areas, in the order of the reference, and no score anywhere.
+		preg_match_all( '/<h4 class="lwseo-readiness__area">([^<]+)<\/h4>/', $output, $areas );
+		$this->assertSame( array( 'Discoverability', 'Content', 'Bot governance', 'Structured data', 'Capabilities', 'Authentication', 'Agent protocols' ), $areas[1] );
+		$this->assertDoesNotMatchRegularExpression( '/\d+\s*%|\bscore\b(?! there)|\blevel\b/i', wp_strip_all_tags( str_replace( 'There is no score', '', $output ) ) );
+
+		$this->assertStringContainsString( '<div class="lwseo-readiness" data-lwseo-served data-url="https://example.com/robots.txt"', $output );
 		$this->assertStringContainsString( '&quot;OAI-SearchBot&quot;:true', $output );
 		$this->assertStringContainsString( '&quot;GPTBot&quot;:false', $output );
-		$this->assertStringContainsString( 'data-prefix-warning="Needs attention:"', $output );
+		$this->assertStringContainsString( '&quot;mcp&quot;:[&quot;https:\/\/example.com\/.well-known\/mcp\/server-card.json&quot;', $output );
+		$this->assertStringContainsString( 'data-prefix-off="Off by choice:"', $output );
+		$this->assertStringContainsString( 'data-prefix-na="Not applicable:"', $output );
 
-		// Every row is printed hidden with all of its messages, so the script only chooses.
-		foreach ( array( 'fetch', 'rules', 'blocked', 'sitemap', 'signals' ) as $row ) {
-			$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-pending" hidden data-served-check="' . $row . '"/', $output );
+		// Rows about a served address are pending until the browser decides them, and link to the address.
+		foreach ( array( 'fetch', 'sitemapXml', 'sitemap', 'linkHeaders', 'markdown', 'llms', 'rules', 'blocked', 'signals', 'apiCatalog', 'skills', 'mcp', 'ard' ) as $row ) {
+			$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-pending" data-readiness="' . $row . '" data-served-check="' . $row . '"/', $output, $row );
 		}
 
-		$this->assertStringContainsString( 'data-msg-absent="None of the rules set here are in the served file.', $output );
+		$this->assertStringNotContainsString( ' hidden ', $output );
+		$this->assertStringContainsString( '<a class="lwseo-status__action" href="https://example.com/.well-known/api-catalog" target="_blank" rel="noopener noreferrer">Open', $output );
+		$this->assertStringContainsString( 'data-msg-none="Not offered. This version of Lightweight SEO does not publish it, and nothing else answers the address with one."', $output );
 		$this->assertStringContainsString( 'data-msg-partly="These groups disallow the homepage and every page their Allow lines do not list: %s."', $output );
 		$this->assertStringContainsString( 'data-msg-missing="No Sitemap line is served. Add this line to the file: %s"', $output );
-		$this->assertStringContainsString( 'data-msg-type="The file is served as %s. Crawlers expect text/plain;', $output );
-		$this->assertStringContainsString( '&quot;contentSignal&quot;:&quot;&quot;', $output );
-		$this->assertStringContainsString( 'data-msg-missing="No Content-Signal line is served, although this card adds one. Expected: %s"', $output );
+		$this->assertStringContainsString( 'data-msg-off="The content signals switch on this card is off, and no Content-Signal line is served."', $output );
 
-		// Without the script, the link opens the file crawlers read.
-		$this->assertStringContainsString( '<a href="https://example.com/robots.txt" target="_blank" rel="noopener noreferrer">Open the served robots.txt', $output );
-		$this->assertStringNotContainsString( 'WordPress is installed under', $output );
+		// Settings-based rows and their states.
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success" data-readiness="search_visibility"/', $output );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-off" data-readiness="training">.*?Off by choice:.*?Disallowed, as chosen on this card\./s', $output );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-off" data-readiness="llms_pages"/', $output );
+		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-warning" data-readiness="identity">.*?The Organization node is missing: logo, description, profile links\./s', $output );
+
+		// Every check that does not apply to a content site says why, in one sentence.
+		foreach ( array( 'dnsAid', 'webBotAuth', 'openApi', 'webMcp', 'oauth', 'a2a', 'commerce' ) as $row ) {
+			$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-na" data-readiness="' . $row . '">.*?<p class="lwseo-status__text">[^<]+\.<\/p>/s', $output, $row );
+		}
 
 		$previous_home                 = $lightweight_seo_test_home_url;
 		$lightweight_seo_test_home_url = 'https://example.com/blog';
@@ -1876,6 +1890,8 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$this->assertStringContainsString( 'WordPress is installed under /blog, and crawlers read robots.txt only at https://example.com/robots.txt, which WordPress does not answer.', $subdirectory );
 		$this->assertStringContainsString( '&quot;rules&quot;:[]', $subdirectory );
+		// No rules are expected there, so no row waits for them.
+		$this->assertStringNotContainsString( 'data-served-check="rules"', $subdirectory );
 	}
 
 	public function test_robots_reader_loads_on_the_modules_tab_while_ai_discovery_is_on(): void {

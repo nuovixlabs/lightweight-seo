@@ -493,6 +493,25 @@ a.lwseo-badge:hover {
 	color: var(--lwseo-accent);
 }
 
+/* Off by choice and not applicable are facts, not problems: their rows recede. */
+.lwseo-status.is-off .lwseo-status__icon,
+.lwseo-status.is-na .lwseo-status__icon {
+	color: var(--lwseo-border-strong);
+}
+
+.lwseo-status.is-na .lwseo-status__text {
+	color: var(--lwseo-text-muted);
+}
+
+.lwseo .lwseo-readiness__area {
+	font-size: var(--lwseo-text-md);
+	margin: var(--lwseo-space-4) 0 var(--lwseo-space-2);
+}
+
+.lwseo .lwseo-readiness__area:first-child {
+	margin-top: 0;
+}
+
 .lwseo-status__title {
 	display: block;
 	font-weight: 600;

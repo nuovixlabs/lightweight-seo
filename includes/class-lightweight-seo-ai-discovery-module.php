@@ -373,6 +373,9 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 *     @type array  $crawlers     Tokens checked for a group that disallows the whole site.
 	 *     @type string $sitemapLine  The Sitemap line WordPress would print, or an empty string.
 	 *     @type string $contentSignal The content signals this card adds, or an empty string when it adds none.
+	 *     @type bool   $signalOff    Whether the content signals switch is off.
+	 *     @type bool   $llmsEnabled  Whether the llms.txt switch is on.
+	 *     @type array  $probes       Addresses the readiness report fetches, keyed by result ID.
 	 * }
 	 */
 	public function get_served_robots_expectations() {
@@ -403,55 +406,397 @@ class Lightweight_SEO_AI_Discovery_Module {
 			}
 		}
 
+		$origin = ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' );
+
 		return array(
-			'url'           => ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' ) . '/robots.txt',
+			'url'           => $origin . '/robots.txt',
 			'subdirectory'  => $subdirectory,
 			'rules'         => $rules,
 			'crawlers'      => array( 'Googlebot', 'Bingbot', '*' ),
 			'sitemapLine'   => empty( $sitemap_urls ) ? '' : 'Sitemap: ' . reset( $sitemap_urls ),
 			'contentSignal' => $signal,
+			// Off by choice only when the switch is off; a line from elsewhere still counts as served.
+			'signalOff'     => ! ( method_exists( $this->settings, 'content_signals_enabled' ) && $this->settings->content_signals_enabled() ),
+			'llmsEnabled'   => (bool) $this->settings->llms_txt_enabled(),
+			// Agents look for these at the root of the host, as crawlers do for robots.txt.
+			'probes'        => array(
+				'sitemapXml'  => $origin . '/sitemap.xml',
+				'linkHeaders' => home_url( '/' ),
+				'markdown'    => home_url( '/' ),
+				'llms'        => $origin . '/llms.txt',
+				'apiCatalog'  => array( $origin . '/.well-known/api-catalog' ),
+				'skills'      => array( $origin . '/.well-known/agent-skills/index.json', $origin . '/.well-known/skills/index.json' ),
+				'mcp'         => array( $origin . '/.well-known/mcp/server-card.json', $origin . '/.well-known/mcp/server-cards.json', $origin . '/.well-known/mcp.json' ),
+				'ard'         => array( $origin . '/.well-known/ard.json', $origin . '/.well-known/ai-catalog.json' ),
+			),
 		);
 	}
 
-	/** Return factual, deterministic readiness checks with no ranking claims. */
-	public function get_readiness_checks() {
-		$conflicts     = $this->get_conflicts();
-		$selected_ids  = $this->settings->get_llms_post_ids();
-		$entries       = $this->get_curated_entries();
-		$search_public = (bool) get_option( 'blog_public', 1 );
+	/**
+	 * Return the AI readiness report: rows grouped by area, each stating one fact.
+	 *
+	 * A row is in one of four states: success (passed), warning (needs attention), off (off by
+	 * choice), or na (not applicable), or info for a neutral fact. A row whose state is browser
+	 * is decided by the administrator's browser, which fetches the served address; it carries
+	 * every message it can show, keyed by what lightweight-seo-robots.js returns. PHP requests
+	 * nothing. The areas and check names follow https://isitagentready.com/llms-full.txt; there
+	 * is no score, level, or percentage.
+	 *
+	 * @since 1.2.0
+	 * @return array[] Areas, each with title and rows. A row has id, state, label, text, and for
+	 *                 browser rows url and messages.
+	 */
+	public function get_readiness_report() {
+		$conflicts = $this->get_conflicts();
+		$expected  = $this->get_served_robots_expectations();
+		$public    = (bool) get_option( 'blog_public', 1 );
+		$na        = static function ( $id, $label, $reason ) {
+			return array(
+				'id'    => $id,
+				'state' => 'na',
+				'label' => $label,
+				'text'  => $reason,
+			);
+		};
 
 		return array(
 			array(
-				'status'  => $search_public ? 'pass' : 'fail',
-				'label'   => __( 'Site crawlability', 'lightweight-seo' ),
-				'details' => $search_public ? __( 'WordPress search visibility is public.', 'lightweight-seo' ) : __( 'WordPress asks search engines not to index this site.', 'lightweight-seo' ),
+				'title' => __( 'Discoverability', 'lightweight-seo' ),
+				'rows'  => array_values(
+					array_filter(
+						array(
+							array(
+								'id'    => 'search_visibility',
+								'state' => $public ? 'success' : 'warning',
+								'label' => __( 'Search visibility', 'lightweight-seo' ),
+								'text'  => $public ? __( 'WordPress lets search engines and crawlers index this site.', 'lightweight-seo' ) : __( 'WordPress asks search engines not to index this site, and robots.txt disallows every crawler. Change it under Settings → Reading if that is not intended.', 'lightweight-seo' ),
+							),
+							$this->browser_row(
+								'fetch',
+								__( 'robots.txt', 'lightweight-seo' ),
+								$expected['url'],
+								array(
+									/* translators: %s: address of the robots.txt file. */
+									'ok'     => __( '%s answers with a plain text file.', 'lightweight-seo' ),
+									'failed' => __( 'This browser could not fetch the file. Open it to see what crawlers receive.', 'lightweight-seo' ),
+									/* translators: %s: HTTP status code, such as 404. */
+									'status' => __( 'The address answers with status %s instead of 200, so crawlers find no rules there.', 'lightweight-seo' ),
+									/* translators: %s: media type the file is served as, such as text/html. */
+									'type'   => __( 'The file is served as %s. Crawlers expect text/plain; check the server or plugin that answers this address.', 'lightweight-seo' ),
+								)
+							),
+							'' !== $expected['subdirectory'] ? array(
+								'id'    => 'subdirectory',
+								'state' => 'info',
+								'label' => __( 'robots.txt location', 'lightweight-seo' ),
+								'text'  => sprintf(
+									/* translators: 1: path WordPress is installed under, such as /blog. 2: address of the robots.txt file. */
+									__( 'WordPress is installed under %1$s, and crawlers read robots.txt only at %2$s, which WordPress does not answer. The rules set on this card are not served; copy them into that file to apply them.', 'lightweight-seo' ),
+									$expected['subdirectory'],
+									$expected['url']
+								),
+							) : null,
+							$this->browser_row(
+								'sitemapXml',
+								__( 'Sitemap', 'lightweight-seo' ),
+								$expected['probes']['sitemapXml'],
+								array(
+									/* translators: %s: address the sitemap was found at, after redirects. */
+									'valid'   => __( '%s answers with a valid XML sitemap.', 'lightweight-seo' ),
+									/* translators: %s: sitemap addresses listed in robots.txt. */
+									'listed'  => __( '/sitemap.xml is not a valid XML sitemap, but robots.txt points crawlers to %s.', 'lightweight-seo' ),
+									'missing' => __( 'Neither /sitemap.xml nor a Sitemap line in robots.txt leads to a sitemap.', 'lightweight-seo' ),
+								)
+							),
+							$this->browser_row(
+								'sitemap',
+								__( 'Sitemap line in robots.txt', 'lightweight-seo' ),
+								$expected['url'],
+								array(
+									/* translators: %s: list of sitemap addresses. */
+									'present' => __( 'Points crawlers to %s.', 'lightweight-seo' ),
+									/* translators: %s: the exact line to add, such as "Sitemap: https://example.com/wp-sitemap.xml". */
+									'missing' => __( 'No Sitemap line is served. Add this line to the file: %s', 'lightweight-seo' ),
+									'none'    => __( 'No Sitemap line is served, and WordPress sitemaps are off.', 'lightweight-seo' ),
+								)
+							),
+							$this->browser_row(
+								'linkHeaders',
+								__( 'Link headers', 'lightweight-seo' ),
+								$expected['probes']['linkHeaders'],
+								array(
+									/* translators: %s: link relations found, such as api-catalog. */
+									'found' => __( 'The homepage sends Link headers for agents: %s.', 'lightweight-seo' ),
+									'none'  => __( 'Not offered. The homepage sends no Link header that points agents to an API description or catalog; this version of Lightweight SEO adds none.', 'lightweight-seo' ),
+								)
+							),
+							$na( 'dnsAid', __( 'DNS records for agents', 'lightweight-seo' ), __( 'Agent DNS records announce agent services a site runs, and a site that publishes content through WordPress runs none.', 'lightweight-seo' ) ),
+						)
+					)
+				),
 			),
 			array(
-				'status'  => $conflicts['physical_robots'] || ! empty( $conflicts['robots_tokens'] ) ? 'warn' : 'pass',
-				'label'   => __( 'Crawler policy ownership', 'lightweight-seo' ),
-				'details' => $conflicts['physical_robots'] ? __( 'A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it.', 'lightweight-seo' ) : ( ! empty( $conflicts['robots_tokens'] ) ? __( 'Another robots.txt filter already defines one or more bundled crawler tokens.', 'lightweight-seo' ) : __( 'WordPress can safely append the configured virtual crawler policies.', 'lightweight-seo' ) ),
+				'title' => __( 'Content', 'lightweight-seo' ),
+				'rows'  => array_values(
+					array_filter(
+						array(
+							$this->browser_row(
+								'markdown',
+								__( 'Markdown on request', 'lightweight-seo' ),
+								$expected['probes']['markdown'],
+								array(
+									'found' => __( 'The homepage answers a request for text/markdown with Markdown.', 'lightweight-seo' ),
+									'none'  => __( 'Not offered. The homepage answers a request for text/markdown with HTML; this version of Lightweight SEO does not provide Markdown.', 'lightweight-seo' ),
+								)
+							),
+							$this->browser_row(
+								'llms',
+								__( 'llms.txt', 'lightweight-seo' ),
+								$expected['probes']['llms'],
+								array(
+									/* translators: %s: address of the llms.txt file. */
+									'found'   => __( '%s answers with a Markdown index that starts with a heading.', 'lightweight-seo' ),
+									'missing' => __( 'The llms.txt switch on this card is on, but the address does not answer with a Markdown index. Check the conflicts below and any cache in front of the site.', 'lightweight-seo' ),
+									'off'     => __( 'The llms.txt switch on this card is off, and nothing else answers the address.', 'lightweight-seo' ),
+								)
+							),
+							$this->get_llms_pages_row(),
+							$conflicts['physical_llms'] || $conflicts['llms_endpoint'] ? array(
+								'id'    => 'llms_owner',
+								'state' => 'warning',
+								'label' => __( 'Who answers llms.txt', 'lightweight-seo' ),
+								'text'  => $conflicts['physical_llms'] ? __( 'A physical llms.txt file takes precedence; Lightweight SEO will not replace it.', 'lightweight-seo' ) : __( 'Another rewrite rule or integration claims the llms.txt address; Lightweight SEO will not replace it.', 'lightweight-seo' ),
+							) : null,
+						)
+					)
+				),
 			),
 			array(
-				'status'  => count( $entries ) === count( $selected_ids ) && ! empty( $entries ) ? 'pass' : ( empty( $selected_ids ) ? 'warn' : 'fail' ),
-				'label'   => __( 'Curated public pages', 'lightweight-seo' ),
-				/* translators: 1: Number of valid curated pages. 2: Number of selected pages. */
-				'details' => sprintf( __( '%1$d of %2$d selected pages are published, public, indexable, canonical, local, and not redirected.', 'lightweight-seo' ), count( $entries ), count( $selected_ids ) ),
+				'title' => __( 'Bot governance', 'lightweight-seo' ),
+				'rows'  => array_values(
+					array_filter(
+						array(
+							array(
+								'id'    => 'robots_owner',
+								'state' => $conflicts['physical_robots'] || ! empty( $conflicts['robots_tokens'] ) ? 'warning' : 'success',
+								'label' => __( 'Who writes robots.txt', 'lightweight-seo' ),
+								/* translators: %s: list of crawler names. */
+								'text'  => $conflicts['physical_robots'] ? __( 'A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it.', 'lightweight-seo' ) : ( ! empty( $conflicts['robots_tokens'] ) ? sprintf( __( 'Another robots.txt filter already writes rules for %s, so Lightweight SEO leaves them alone.', 'lightweight-seo' ), implode( ', ', $conflicts['robots_tokens'] ) ) : __( 'WordPress writes robots.txt, and Lightweight SEO adds the rules set on this card.', 'lightweight-seo' ) ),
+							),
+							array(
+								'id'    => 'training',
+								'state' => $this->settings->ai_training_crawlers_enabled() ? 'success' : 'off',
+								'label' => __( 'Model-training crawlers', 'lightweight-seo' ),
+								'text'  => $this->settings->ai_training_crawlers_enabled() ? __( 'Allowed, as chosen on this card.', 'lightweight-seo' ) : __( 'Disallowed, as chosen on this card.', 'lightweight-seo' ),
+							),
+							empty( $expected['rules'] ) ? null : $this->browser_row(
+								'rules',
+								__( 'AI crawler rules', 'lightweight-seo' ),
+								$expected['url'],
+								array(
+									/* translators: %s: number of crawler rules. */
+									'present'   => __( 'All %s rules set here are in the served file.', 'lightweight-seo' ),
+									'absent'    => __( 'None of the rules set here are in the served file. Another file, plugin, or server setting answers /robots.txt instead of WordPress.', 'lightweight-seo' ),
+									/* translators: %s: list of crawler names. */
+									'missing'   => __( 'The served file has no rules for: %s.', 'lightweight-seo' ),
+									/* translators: %s: list of crawler names. */
+									'different' => __( 'The served file gives a different answer than this card for: %s.', 'lightweight-seo' ),
+								)
+							),
+							$this->browser_row(
+								'blocked',
+								__( 'Whole-site blocks', 'lightweight-seo' ),
+								$expected['url'],
+								array(
+									/* translators: %s: list of crawler names, where * means every crawler. */
+									'open'    => __( 'No group for %s disallows the whole site.', 'lightweight-seo' ),
+									/* translators: %s: list of crawler names, where * means every crawler. */
+									'blocked' => __( 'These groups disallow the whole site: %s. The crawlers they name may not fetch any page.', 'lightweight-seo' ),
+									/* translators: %s: list of crawler names, where * means every crawler. */
+									'partly'  => __( 'These groups disallow the homepage and every page their Allow lines do not list: %s.', 'lightweight-seo' ),
+								)
+							),
+							$this->browser_row(
+								'signals',
+								__( 'Content signals', 'lightweight-seo' ),
+								$expected['url'],
+								array(
+									/* translators: %s: the content signals served, such as "ai-train=no, search=yes, ai-input=yes". */
+									'present' => __( 'Served: %s.', 'lightweight-seo' ),
+									/* translators: %s: the expected Content-Signal line. */
+									'missing' => __( 'No Content-Signal line is served, although this card adds one. Expected: %s', 'lightweight-seo' ),
+									'none'    => __( 'No Content-Signal line is served.', 'lightweight-seo' ),
+									'off'     => __( 'The content signals switch on this card is off, and no Content-Signal line is served.', 'lightweight-seo' ),
+								)
+							),
+							$na( 'webBotAuth', __( 'Web Bot Auth key directory', 'lightweight-seo' ), __( 'Web Bot Auth publishes the keys a bot signs its requests with, and a site that publishes content runs no bot of its own.', 'lightweight-seo' ) ),
+						)
+					)
+				),
 			),
 			array(
-				'status'  => ! empty( $entries ) && count( array_filter( wp_list_pluck( $entries, 'description' ) ) ) === count( $entries ) ? 'pass' : 'warn',
-				'label'   => __( 'Page snippets', 'lightweight-seo' ),
-				'details' => __( 'Each curated page should have a visible, normalized description.', 'lightweight-seo' ),
+				'title' => __( 'Structured data', 'lightweight-seo' ),
+				'rows'  => array( $this->get_identity_row() ),
 			),
 			array(
-				'status'  => '' !== trim( get_bloginfo( 'name' ) ) && $this->settings->schema_output_enabled() ? 'pass' : 'warn',
-				'label'   => __( 'Site identity', 'lightweight-seo' ),
-				'details' => __( 'A site name and visible structured-data graph provide the identity signals checked here.', 'lightweight-seo' ),
+				'title' => __( 'Capabilities', 'lightweight-seo' ),
+				'rows'  => array(
+					$this->browser_row(
+						'apiCatalog',
+						__( 'API catalog', 'lightweight-seo' ),
+						$expected['probes']['apiCatalog'][0],
+						$this->found_messages()
+					),
+					$this->browser_row(
+						'skills',
+						__( 'Agent skills index', 'lightweight-seo' ),
+						$expected['probes']['skills'][0],
+						$this->found_messages()
+					),
+					$this->browser_row(
+						'mcp',
+						__( 'MCP server card', 'lightweight-seo' ),
+						$expected['probes']['mcp'][0],
+						$this->found_messages()
+					),
+					$this->browser_row(
+						'ard',
+						__( 'Agent resource discovery manifest', 'lightweight-seo' ),
+						$expected['probes']['ard'][0],
+						$this->found_messages()
+					),
+					$na( 'openApi', __( 'OpenAPI description', 'lightweight-seo' ), __( 'An OpenAPI document describes an API built for agents, and this site offers none beyond the WordPress REST API, which describes itself at /wp-json/.', 'lightweight-seo' ) ),
+					$na( 'webMcp', __( 'WebMCP', 'lightweight-seo' ), __( 'WebMCP exposes actions on a page as tools for an agent in the browser, and pages that publish content have no such actions to expose.', 'lightweight-seo' ) ),
+				),
 			),
 			array(
-				'status'  => $conflicts['physical_llms'] || $conflicts['llms_endpoint'] ? 'warn' : 'pass',
-				'label'   => __( 'llms.txt endpoint', 'lightweight-seo' ),
-				'details' => $conflicts['physical_llms'] ? __( 'A physical llms.txt file takes precedence; Lightweight SEO will not replace it.', 'lightweight-seo' ) : ( $conflicts['llms_endpoint'] ? __( 'Another rewrite rule or integration claims the llms.txt endpoint; Lightweight SEO will not replace it.', 'lightweight-seo' ) : __( 'No physical or routed llms.txt conflict was detected.', 'lightweight-seo' ) ),
+				'title' => __( 'Authentication', 'lightweight-seo' ),
+				'rows'  => array(
+					$na( 'oauth', __( 'OAuth metadata and auth.md', 'lightweight-seo' ), __( 'These describe how an agent signs in to an API, and this site offers no API that asks an agent to sign in.', 'lightweight-seo' ) ),
+				),
 			),
+			array(
+				'title' => __( 'Agent protocols', 'lightweight-seo' ),
+				'rows'  => array(
+					$na( 'a2a', __( 'A2A agent card', 'lightweight-seo' ), __( 'An agent card describes an AI agent the site runs, and a site that publishes content runs none.', 'lightweight-seo' ) ),
+					$na( 'commerce', __( 'Commerce protocols', 'lightweight-seo' ), __( 'Agent payment and checkout protocols belong to a shop; Lightweight SEO prints no product or payment data and provides none.', 'lightweight-seo' ) ),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Describe a row the administrator's browser decides by fetching an address.
+	 *
+	 * @param string $id       Result ID from lightweight-seo-robots.js.
+	 * @param string $label    Row title.
+	 * @param string $url      Address that is fetched, linked from the row.
+	 * @param array  $messages Message for each result key.
+	 * @return array
+	 */
+	private function browser_row( $id, $label, $url, $messages ) {
+		return array(
+			'id'       => $id,
+			'state'    => 'browser',
+			'label'    => $label,
+			'text'     => __( 'Checked by this browser, which fetches the address the way a crawler would.', 'lightweight-seo' ),
+			'url'      => $url,
+			'messages' => $messages,
+		);
+	}
+
+	/** Messages of a file this version does not publish, which another plugin or a CDN may. */
+	private function found_messages() {
+		return array(
+			/* translators: %s: address the file was found at. */
+			'found' => __( 'Found at %s.', 'lightweight-seo' ),
+			'none'  => __( 'Not offered. This version of Lightweight SEO does not publish it, and nothing else answers the address with one.', 'lightweight-seo' ),
+		);
+	}
+
+	/** Describe the pages chosen for llms.txt. */
+	private function get_llms_pages_row() {
+		$row = array(
+			'id'    => 'llms_pages',
+			'label' => __( 'Pages listed in llms.txt', 'lightweight-seo' ),
+		);
+
+		if ( ! $this->settings->llms_txt_enabled() ) {
+			return $row + array(
+				'state' => 'off',
+				'text'  => __( 'The llms.txt switch on this card is off.', 'lightweight-seo' ),
+			);
+		}
+
+		$selected  = count( $this->settings->get_llms_post_ids() );
+		$entries   = $this->get_curated_entries();
+		$described = count( array_filter( wp_list_pluck( $entries, 'description' ) ) );
+
+		return $row + array(
+			'state' => $selected && count( $entries ) === $selected && count( $entries ) === $described ? 'success' : 'warning',
+			'text'  => array(
+				/* translators: 1: number of pages listed. 2: number of pages selected. */
+				sprintf( __( '%1$d of %2$d selected pages are listed: published, public, indexable, canonical, on this site, and not redirected.', 'lightweight-seo' ), count( $entries ), $selected ),
+				/* translators: 1: number of listed pages with a description. 2: number of listed pages. */
+				sprintf( __( '%1$d of %2$d listed pages have a description.', 'lightweight-seo' ), $described, count( $entries ) ),
+			),
+		);
+	}
+
+	/** Say what the Organization or Person node holds, and name what it lacks. */
+	private function get_identity_row() {
+		$row = array(
+			'id'    => 'identity',
+			'label' => __( 'Organization or person', 'lightweight-seo' ),
+		);
+
+		if ( class_exists( 'Lightweight_SEO_Compatibility_Service' ) && ! ( new Lightweight_SEO_Compatibility_Service() )->feature_output_allowed( 'schema' ) ) {
+			return $row + array(
+				'state' => 'na',
+				'text'  => __( 'Another SEO plugin prints the structured data, so Lightweight SEO prints none to check.', 'lightweight-seo' ),
+			);
+		}
+
+		if ( ! $this->settings->schema_output_enabled() ) {
+			return $row + array(
+				'state' => 'off',
+				'text'  => __( 'Core schema output is switched off on the “Schema and identity” tab.', 'lightweight-seo' ),
+			);
+		}
+
+		$is_person = 'person' === $this->settings->get_identity_type();
+		$image     = $this->settings->get_identity_logo_url();
+		$missing   = array();
+
+		if ( ! $is_person && '' === (string) $image ) {
+			$image = $this->settings->get_social_image_url();
+		}
+
+		if ( '' === trim( (string) $this->settings->get_identity_name() ) ) {
+			$missing[] = __( 'name', 'lightweight-seo' );
+		}
+
+		if ( '' === (string) $image ) {
+			$missing[] = $is_person ? __( 'photo', 'lightweight-seo' ) : __( 'logo', 'lightweight-seo' );
+		}
+
+		if ( '' === (string) $this->settings->get_identity_description() ) {
+			$missing[] = __( 'description', 'lightweight-seo' );
+		}
+
+		if ( empty( $this->settings->get_organization_same_as() ) ) {
+			$missing[] = __( 'profile links', 'lightweight-seo' );
+		}
+
+		$node = $is_person ? 'Person' : 'Organization';
+
+		return $row + array(
+			'state' => empty( $missing ) ? 'success' : 'warning',
+			'text'  => empty( $missing )
+				/* translators: %s: schema type, Organization or Person. */
+				? sprintf( __( 'The %s node has a name, an image, a description, and profile links.', 'lightweight-seo' ), $node )
+				/* translators: 1: schema type, Organization or Person. 2: list of missing properties, such as "logo, description". */
+				: sprintf( __( 'The %1$s node is missing: %2$s. Add them on the “Site identity” card.', 'lightweight-seo' ), $node, implode( ', ', $missing ) ),
 		);
 	}
 
