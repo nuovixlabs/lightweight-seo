@@ -511,6 +511,47 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( 'off', $rows( new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array(), array( 'schema' => false ) ), null, 'admin' ) )['identity']['state'] );
 	}
 
+	public function test_who_writes_robots_txt_states_only_what_the_server_can_know(): void {
+		global $lightweight_seo_test_filters;
+		global $lightweight_seo_test_options;
+
+		$owner = function () {
+			foreach ( ( new Lightweight_SEO_AI_Discovery_Module( $this->settings(), null, 'admin' ) )->get_readiness_report() as $area ) {
+				foreach ( $area['rows'] as $row ) {
+					if ( 'robots_owner' === $row['id'] ) {
+						return $row;
+					}
+				}
+			}
+
+			return array();
+		};
+
+		// Nothing in the way: a neutral fact, never "passed", and never that WordPress writes the file.
+		$row = $owner();
+
+		$this->assertSame( 'info', $row['state'] );
+		$this->assertStringStartsWith( 'No robots.txt file is on disk, and no other plugin the server can see adds rules for these crawlers.', $row['text'] );
+		$this->assertStringNotContainsString( 'WordPress writes', $row['text'] );
+		// The browser settles it from the served file.
+		$this->assertSame( 'rules', $row['attributes']['data-settled-by'] );
+		$this->assertStringContainsString( 'the served file holds the rules set here', $row['attributes']['data-msg-present'] );
+		$this->assertStringContainsString( 'but the served file does not hold the rules set here', $row['attributes']['data-msg-absent'] );
+
+		// With no rules to expect, there is nothing for the browser to settle.
+		$lightweight_seo_test_options['blog_public'] = 0;
+		$this->assertArrayNotHasKey( 'attributes', $owner() );
+		$this->assertSame( 'info', $owner()['state'] );
+		$lightweight_seo_test_options['blog_public'] = 1;
+
+		// What the server can see in the way stays a warning.
+		$lightweight_seo_test_filters['robots_txt'] = static function () {
+			return "User-agent: GPTBot\nAllow: /\n";
+		};
+		$this->assertSame( array( 'warning', 'Another robots.txt filter already writes rules for GPTBot, so Lightweight SEO leaves them alone.' ), array( $owner()['state'], $owner()['text'] ) );
+		unset( $lightweight_seo_test_filters['robots_txt'] );
+	}
+
 	private function settings( $search = true, $training = false, $ids = array(), $values = array() ) {
 		return new class( $search, $training, $ids, $values ) {
 			private $search;

@@ -897,7 +897,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 
 			foreach ( $area['rows'] as $row ) {
 				if ( 'browser' !== $row['state'] ) {
-					Lightweight_SEO_Admin_UI::status( $row['state'], $row['label'], $row['text'], array(), array( 'data-readiness' => $row['id'] ) );
+					Lightweight_SEO_Admin_UI::status( $row['state'], $row['label'], $row['text'], array(), array( 'data-readiness' => $row['id'] ) + (array) ( $row['attributes'] ?? array() ) );
 					continue;
 				}
 

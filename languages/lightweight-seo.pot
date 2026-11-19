@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T10:09:34+00:00\n"
+"POT-Creation-Date: 2026-11-19T10:56:39+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -1038,7 +1038,7 @@ msgid "Search posts and pages to add"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:854
-#: includes/class-lightweight-seo-ai-discovery-module.php:726
+#: includes/class-lightweight-seo-ai-discovery-module.php:770
 msgid "Pages listed in llms.txt"
 msgstr ""
 
@@ -1553,7 +1553,7 @@ msgid "Redirected pages"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:153
-#: includes/class-lightweight-seo-ai-discovery-module.php:638
+#: includes/class-lightweight-seo-ai-discovery-module.php:632
 #: includes/class-lightweight-seo-inspector.php:623
 msgid "Structured data"
 msgstr ""
@@ -1702,7 +1702,7 @@ msgid "Model training access"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:242
-#: includes/class-lightweight-seo-ai-discovery-module.php:621
+#: includes/class-lightweight-seo-ai-discovery-module.php:615
 msgid "Content signals"
 msgstr ""
 
@@ -2390,257 +2390,263 @@ msgstr ""
 msgid "Bot governance"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:582
-msgid "Who writes robots.txt"
-msgstr ""
-
-#. translators: %s: list of crawler names.
-#: includes/class-lightweight-seo-ai-discovery-module.php:584
-msgid "A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it."
-msgstr ""
-
-#. translators: %s: list of crawler names.
-#: includes/class-lightweight-seo-ai-discovery-module.php:584
-#, php-format
-msgid "Another robots.txt filter already writes rules for %s, so Lightweight SEO leaves them alone."
-msgstr ""
-
-#. translators: %s: list of crawler names.
-#: includes/class-lightweight-seo-ai-discovery-module.php:584
-msgid "WordPress writes robots.txt, and Lightweight SEO adds the rules set on this card."
-msgstr ""
-
-#: includes/class-lightweight-seo-ai-discovery-module.php:589
+#: includes/class-lightweight-seo-ai-discovery-module.php:583
 msgid "Model-training crawlers"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:590
+#: includes/class-lightweight-seo-ai-discovery-module.php:584
 msgid "Allowed, as chosen on this card."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:590
+#: includes/class-lightweight-seo-ai-discovery-module.php:584
 msgid "Disallowed, as chosen on this card."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:594
+#: includes/class-lightweight-seo-ai-discovery-module.php:588
 msgid "AI crawler rules"
 msgstr ""
 
 #. translators: %s: number of crawler rules.
-#: includes/class-lightweight-seo-ai-discovery-module.php:598
+#: includes/class-lightweight-seo-ai-discovery-module.php:592
 #, php-format
 msgid "All %s rules set here are in the served file."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:599
+#: includes/class-lightweight-seo-ai-discovery-module.php:593
 msgid "None of the rules set here are in the served file. Another file, plugin, or server setting answers /robots.txt instead of WordPress."
 msgstr ""
 
 #. translators: %s: list of crawler names.
-#: includes/class-lightweight-seo-ai-discovery-module.php:601
+#: includes/class-lightweight-seo-ai-discovery-module.php:595
 #, php-format
 msgid "The served file has no rules for: %s."
 msgstr ""
 
 #. translators: %s: list of crawler names.
-#: includes/class-lightweight-seo-ai-discovery-module.php:603
+#: includes/class-lightweight-seo-ai-discovery-module.php:597
 #, php-format
 msgid "The served file gives a different answer than this card for: %s."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:608
+#: includes/class-lightweight-seo-ai-discovery-module.php:602
 msgid "Whole-site blocks"
 msgstr ""
 
 #. translators: %s: list of crawler names, where * means every crawler.
-#: includes/class-lightweight-seo-ai-discovery-module.php:612
+#: includes/class-lightweight-seo-ai-discovery-module.php:606
 #, php-format
 msgid "No group for %s disallows the whole site."
 msgstr ""
 
 #. translators: %s: list of crawler names, where * means every crawler.
-#: includes/class-lightweight-seo-ai-discovery-module.php:614
+#: includes/class-lightweight-seo-ai-discovery-module.php:608
 #, php-format
 msgid "These groups disallow the whole site: %s. The crawlers they name may not fetch any page."
 msgstr ""
 
 #. translators: %s: list of crawler names, where * means every crawler.
-#: includes/class-lightweight-seo-ai-discovery-module.php:616
+#: includes/class-lightweight-seo-ai-discovery-module.php:610
 #, php-format
 msgid "These groups disallow the homepage and every page their Allow lines do not list: %s."
 msgstr ""
 
 #. translators: %s: the content signals served, such as "ai-train=no, search=yes, ai-input=yes".
-#: includes/class-lightweight-seo-ai-discovery-module.php:625
+#: includes/class-lightweight-seo-ai-discovery-module.php:619
 #, php-format
 msgid "Served: %s."
 msgstr ""
 
 #. translators: %s: the expected Content-Signal line.
-#: includes/class-lightweight-seo-ai-discovery-module.php:627
+#: includes/class-lightweight-seo-ai-discovery-module.php:621
 #, php-format
 msgid "No Content-Signal line is served, although this card adds one. Expected: %s"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:628
+#: includes/class-lightweight-seo-ai-discovery-module.php:622
 msgid "No Content-Signal line is served."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:629
+#: includes/class-lightweight-seo-ai-discovery-module.php:623
 msgid "The content signals switch on this card is off, and no Content-Signal line is served."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:632
+#: includes/class-lightweight-seo-ai-discovery-module.php:626
 msgid "Web Bot Auth key directory"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:632
+#: includes/class-lightweight-seo-ai-discovery-module.php:626
 msgid "A Web Bot Auth key directory publishes the keys an operator’s own bots sign their requests with; Lightweight SEO runs no bot and publishes no keys."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:642
+#: includes/class-lightweight-seo-ai-discovery-module.php:636
 msgid "Capabilities"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:646
+#: includes/class-lightweight-seo-ai-discovery-module.php:640
 msgid "API catalog"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:652
+#: includes/class-lightweight-seo-ai-discovery-module.php:646
 msgid "Agent skills index"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:658
+#: includes/class-lightweight-seo-ai-discovery-module.php:652
 msgid "MCP server card"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:664
+#: includes/class-lightweight-seo-ai-discovery-module.php:658
 msgid "Agent resource discovery manifest"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:668
+#: includes/class-lightweight-seo-ai-discovery-module.php:662
 msgid "OpenAPI description"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:668
+#: includes/class-lightweight-seo-ai-discovery-module.php:662
 msgid "An OpenAPI document describes an API for the plugin or service that provides it; Lightweight SEO adds no API, and the WordPress REST API describes itself at /wp-json/."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:669
+#: includes/class-lightweight-seo-ai-discovery-module.php:663
 msgid "WebMCP"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:669
+#: includes/class-lightweight-seo-ai-discovery-module.php:663
 msgid "WebMCP lets a page offer its actions as tools to an agent in the browser, which the code behind those actions registers; Lightweight SEO registers none."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:673
+#: includes/class-lightweight-seo-ai-discovery-module.php:667
 msgid "Authentication"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:675
+#: includes/class-lightweight-seo-ai-discovery-module.php:669
 msgid "OAuth metadata and auth.md"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:675
+#: includes/class-lightweight-seo-ai-discovery-module.php:669
 msgid "They describe an OAuth server an agent can sign in with; WordPress has none, its REST API signs in with application passwords, and Lightweight SEO adds no sign-in."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:679
+#: includes/class-lightweight-seo-ai-discovery-module.php:673
 msgid "Agent protocols"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:681
+#: includes/class-lightweight-seo-ai-discovery-module.php:675
 msgid "A2A agent card"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:681
+#: includes/class-lightweight-seo-ai-discovery-module.php:675
 msgid "An A2A agent card describes an AI agent that answers at the site, for whichever plugin or service runs it; Lightweight SEO runs no agent."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:682
+#: includes/class-lightweight-seo-ai-discovery-module.php:676
 msgid "Commerce protocols"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:682
+#: includes/class-lightweight-seo-ai-discovery-module.php:676
 msgid "Agent payment and checkout protocols are provided by the shop or payment plugin that handles the sale; Lightweight SEO handles no products or payments."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:700
+#: includes/class-lightweight-seo-ai-discovery-module.php:694
 msgid "Not checked: this browser could not fetch the address. That happens when the administration runs on another address than the site, such as www or http, or when something blocks the request. Open it to see the answer."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:707
+#: includes/class-lightweight-seo-ai-discovery-module.php:701
 msgid "Checked by this browser, which fetches the address the way a crawler would."
 msgstr ""
 
 #. translators: %s: address the file was found at.
-#: includes/class-lightweight-seo-ai-discovery-module.php:717
+#: includes/class-lightweight-seo-ai-discovery-module.php:711
 #, php-format
 msgid "Found at %s."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:718
+#: includes/class-lightweight-seo-ai-discovery-module.php:712
 msgid "Not offered. This version of Lightweight SEO does not publish it, and nothing else answers the address with one."
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:732
+msgid "Who writes robots.txt"
+msgstr ""
+
+#: includes/class-lightweight-seo-ai-discovery-module.php:738
+msgid "A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it."
+msgstr ""
+
+#. translators: %s: list of crawler names.
+#: includes/class-lightweight-seo-ai-discovery-module.php:746
+#, php-format
+msgid "Another robots.txt filter already writes rules for %s, so Lightweight SEO leaves them alone."
+msgstr ""
+
+#: includes/class-lightweight-seo-ai-discovery-module.php:752
+msgid "No robots.txt file is on disk, and no other plugin the server can see adds rules for these crawlers. Whether the served file holds the rules set here is checked in this browser."
+msgstr ""
+
+#: includes/class-lightweight-seo-ai-discovery-module.php:758
+msgid "No robots.txt file is on disk, no other plugin the server can see adds rules for these crawlers, and the served file holds the rules set here."
+msgstr ""
+
+#: includes/class-lightweight-seo-ai-discovery-module.php:759
+msgid "No robots.txt file is on disk and no other plugin the server can see adds rules for these crawlers, but the served file does not hold the rules set here. Something else answers or rewrites /robots.txt: a filter that runs later, a cache, a CDN, or a server setting."
+msgstr ""
+
+#: includes/class-lightweight-seo-ai-discovery-module.php:776
 msgid "The llms.txt switch on this card is off."
 msgstr ""
 
 #. translators: 1: number of pages listed. 2: number of pages selected.
-#: includes/class-lightweight-seo-ai-discovery-module.php:744
+#: includes/class-lightweight-seo-ai-discovery-module.php:788
 #, php-format
 msgid "%1$d of %2$d selected pages are listed: published, public, indexable, canonical, on this site, and not redirected."
 msgstr ""
 
 #. translators: 1: number of listed pages with a description. 2: number of listed pages.
-#: includes/class-lightweight-seo-ai-discovery-module.php:746
+#: includes/class-lightweight-seo-ai-discovery-module.php:790
 #, php-format
 msgid "%1$d of %2$d listed pages have a description."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:755
+#: includes/class-lightweight-seo-ai-discovery-module.php:799
 msgid "Organization or person"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:761
+#: includes/class-lightweight-seo-ai-discovery-module.php:805
 msgid "Another SEO plugin prints the structured data, so Lightweight SEO prints none to check."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:768
+#: includes/class-lightweight-seo-ai-discovery-module.php:812
 #: includes/class-lightweight-seo-inspector.php:636
 msgid "Core schema output is switched off on the “Schema and identity” tab."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:781
+#: includes/class-lightweight-seo-ai-discovery-module.php:825
 msgid "name"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:785
+#: includes/class-lightweight-seo-ai-discovery-module.php:829
 msgid "photo"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:785
+#: includes/class-lightweight-seo-ai-discovery-module.php:829
 msgid "logo"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:789
+#: includes/class-lightweight-seo-ai-discovery-module.php:833
 msgid "description"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:793
+#: includes/class-lightweight-seo-ai-discovery-module.php:837
 msgid "profile links"
 msgstr ""
 
 #. translators: %s: schema type, Organization or Person.
-#: includes/class-lightweight-seo-ai-discovery-module.php:802
+#: includes/class-lightweight-seo-ai-discovery-module.php:846
 #, php-format
 msgid "The %s node has a name, an image, a description, and profile links."
 msgstr ""
 
 #. translators: 1: schema type, Organization or Person. 2: list of missing properties, such as "logo, description".
-#: includes/class-lightweight-seo-ai-discovery-module.php:804
+#: includes/class-lightweight-seo-ai-discovery-module.php:848
 #, php-format
 msgid "The %1$s node is missing: %2$s. Add them on the “Site identity” card."
 msgstr ""

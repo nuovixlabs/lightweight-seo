@@ -576,13 +576,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 				'rows'  => array_values(
 					array_filter(
 						array(
-							array(
-								'id'    => 'robots_owner',
-								'state' => $conflicts['physical_robots'] || ! empty( $conflicts['robots_tokens'] ) ? 'warning' : 'success',
-								'label' => __( 'Who writes robots.txt', 'lightweight-seo' ),
-								/* translators: %s: list of crawler names. */
-								'text'  => $conflicts['physical_robots'] ? __( 'A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it.', 'lightweight-seo' ) : ( ! empty( $conflicts['robots_tokens'] ) ? sprintf( __( 'Another robots.txt filter already writes rules for %s, so Lightweight SEO leaves them alone.', 'lightweight-seo' ), implode( ', ', $conflicts['robots_tokens'] ) ) : __( 'WordPress writes robots.txt, and Lightweight SEO adds the rules set on this card.', 'lightweight-seo' ) ),
-							),
+							$this->get_robots_owner_row( $conflicts, ! empty( $expected['rules'] ) ),
 							array(
 								'id'    => 'training',
 								'state' => $this->settings->ai_training_crawlers_enabled() ? 'success' : 'off',
@@ -717,6 +711,56 @@ class Lightweight_SEO_AI_Discovery_Module {
 			'found' => __( 'Found at %s.', 'lightweight-seo' ),
 			'none'  => __( 'Not offered. This version of Lightweight SEO does not publish it, and nothing else answers the address with one.', 'lightweight-seo' ),
 		);
+	}
+
+	/**
+	 * Say who writes robots.txt, as far as the server can know.
+	 *
+	 * The server sees a file on disk and other robots_txt filters it can run. It cannot see a
+	 * filter that runs later, a cache, a CDN, or a server rule that answers /robots.txt instead
+	 * of WordPress. So with nothing in the way, the row states only that, as a neutral fact,
+	 * and the browser settles it from the "rules" row: passed when the served file holds the
+	 * rules set here, needs attention when it does not.
+	 *
+	 * @param array $conflicts       From get_conflicts().
+	 * @param bool  $rules_expected  Whether the served file should hold the card's rules.
+	 * @return array
+	 */
+	private function get_robots_owner_row( $conflicts, $rules_expected ) {
+		$row = array(
+			'id'    => 'robots_owner',
+			'label' => __( 'Who writes robots.txt', 'lightweight-seo' ),
+		);
+
+		if ( $conflicts['physical_robots'] ) {
+			return $row + array(
+				'state' => 'warning',
+				'text'  => __( 'A physical robots.txt file takes precedence; Lightweight SEO will not overwrite it.', 'lightweight-seo' ),
+			);
+		}
+
+		if ( ! empty( $conflicts['robots_tokens'] ) ) {
+			return $row + array(
+				'state' => 'warning',
+				/* translators: %s: list of crawler names. */
+				'text'  => sprintf( __( 'Another robots.txt filter already writes rules for %s, so Lightweight SEO leaves them alone.', 'lightweight-seo' ), implode( ', ', $conflicts['robots_tokens'] ) ),
+			);
+		}
+
+		$row += array(
+			'state' => 'info',
+			'text'  => __( 'No robots.txt file is on disk, and no other plugin the server can see adds rules for these crawlers. Whether the served file holds the rules set here is checked in this browser.', 'lightweight-seo' ),
+		);
+
+		if ( $rules_expected ) {
+			$row['attributes'] = array(
+				'data-settled-by'  => 'rules',
+				'data-msg-present' => __( 'No robots.txt file is on disk, no other plugin the server can see adds rules for these crawlers, and the served file holds the rules set here.', 'lightweight-seo' ),
+				'data-msg-absent'  => __( 'No robots.txt file is on disk and no other plugin the server can see adds rules for these crawlers, but the served file does not hold the rules set here. Something else answers or rewrites /robots.txt: a filter that runs later, a cache, a CDN, or a server setting.', 'lightweight-seo' ),
+			);
+		}
+
+		return $row;
 	}
 
 	/** Describe the pages chosen for llms.txt. */

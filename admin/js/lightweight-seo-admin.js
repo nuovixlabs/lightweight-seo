@@ -302,6 +302,7 @@
 					all(probes.ard)
 				]).then(function(answers) {
 					var decided = {};
+					var results = {};
 
 					robots.readiness({
 						robots: answers[0],
@@ -317,7 +318,18 @@
 						var row = report.find('[data-served-check="' + result.id + '"]');
 
 						decided[result.id] = true;
+						results[result.id] = result;
 						showStatusRow(report, row, result.state, (row.attr('data-msg-' + result.key) || '').replace('%s', result.values.join(', ')));
+					});
+
+					// A settings row the browser settles from another row's result, such as who writes robots.txt.
+					report.find('[data-settled-by]').each(function() {
+						var row = $(this);
+						var outcome = robots.settle ? robots.settle(results[row.attr('data-settled-by')]) : null;
+
+						if (outcome) {
+							showStatusRow(report, row, outcome.state, row.attr('data-msg-' + outcome.key) || '');
+						}
 					});
 
 					// Rows read from robots.txt cannot be decided when it could not be read.

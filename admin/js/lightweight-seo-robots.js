@@ -379,6 +379,26 @@
 	}
 
 	/**
+	 * Settle a row the server could only partly decide, from the browser's result for another row.
+	 *
+	 * "Who writes robots.txt" knows only that no file is on disk and no other plugin it can see adds
+	 * rules. The served file decides the rest: the card's rules present passes it, and rules absent,
+	 * missing, or different mean something the server cannot see answers or rewrites the file. Any
+	 * other result, such as a file that could not be fetched, leaves the server's statement as it is.
+	 */
+	function settle(result) {
+		if (!result || result.id !== 'rules') {
+			return null;
+		}
+
+		if (result.key === 'present') {
+			return {state: 'success', key: 'present'};
+		}
+
+		return ['absent', 'missing', 'different'].indexOf(result.key) !== -1 ? {state: 'warning', key: 'absent'} : null;
+	}
+
+	/**
 	 * Every result of the readiness report that the browser decides.
 	 *
 	 * answers   {robots, sitemapXml, home, markdown, llms, apiCatalog: [], skills: [], mcp: [], ard: []},
@@ -435,6 +455,7 @@
 		rulesNaming: rulesNaming,
 		blocksWholeSite: blocksWholeSite,
 		check: check,
-		readiness: readiness
+		readiness: readiness,
+		settle: settle
 	};
 });

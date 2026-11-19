@@ -7,7 +7,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {readiness} = require('../../admin/js/lightweight-seo-robots.js');
+const {readiness, settle} = require('../../admin/js/lightweight-seo-robots.js');
 
 const ROOT = 'https://example.com';
 
@@ -159,4 +159,21 @@ test('a row is checked when any of its requests went through', () => {
 	assert.equal(results.ard.key, 'unchecked');
 	assert.equal(results.linkHeaders.key, 'none');
 	assert.equal(results.apiCatalog.key, 'none');
+});
+
+test('"Who writes robots.txt" is settled by whether the served file holds the card\'s rules', () => {
+	const expected = {rules: {'OAI-SearchBot': true, GPTBot: false}, crawlers: ['Googlebot', 'Bingbot', '*']};
+	// What the real site's host served instead of the file WordPress writes.
+	const host = answer('User-agent: Googlebot\nDisallow: /\n\nUser-agent: *\nAllow: /\n', {url: ROOT + '/robots.txt'});
+	const wordpress = answer('User-agent: *\nDisallow: /wp-admin/\n\nUser-agent: OAI-SearchBot\nAllow: /\n\nUser-agent: GPTBot\nDisallow: /\n', {url: ROOT + '/robots.txt'});
+
+	assert.deepEqual(settle(byId(readiness(plainSite({robots: host}), expected)).rules), {state: 'warning', key: 'absent'});
+	assert.deepEqual(settle(byId(readiness(plainSite({robots: wordpress}), expected)).rules), {state: 'success', key: 'present'});
+	assert.deepEqual(settle({id: 'rules', state: 'warning', key: 'missing', values: ['GPTBot']}), {state: 'warning', key: 'absent'});
+	assert.deepEqual(settle({id: 'rules', state: 'warning', key: 'different', values: ['GPTBot']}), {state: 'warning', key: 'absent'});
+
+	// Without a rules result, as when robots.txt could not be fetched, the server's statement stands.
+	assert.equal(byId(readiness(plainSite({robots: {fetched: false}}), expected)).rules, undefined);
+	assert.equal(settle(undefined), null);
+	assert.equal(settle({id: 'blocked', state: 'warning', key: 'blocked', values: ['*']}), null);
 });
