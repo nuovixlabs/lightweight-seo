@@ -6,6 +6,10 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+## 1.2.0 - 2026-11-20
+
+The first stable release of the 1.2 line. It holds everything listed under the release candidates below, and this fix.
+
 ### Fixed
 
 - A description summarized from the content keeps a space between paragraphs, headings, list items, and the pages that `<!--nextpage-->` divides. A post whose content was `<p>Part one.</p><!--nextpage--><p>Part two.</p>` printed "Part one.Part two."; it now prints "Part one. Part two.". The same applies to the term and author descriptions summarized there, to the description that the PHP API and abilities report, and to the summaries in the editor's preview and on the "Description and sharing" card. Inline markup such as `<strong>` inside a word still leaves no space.

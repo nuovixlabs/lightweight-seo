@@ -1,6 +1,6 @@
 # Lightweight SEO 1.2 Release Notes
 
-These notes describe the 1.2 line by feature, as it is built. [Changelog](../CHANGELOG.md) lists each change. The 1.1 line is described in [1.1 Release Notes](release-notes-1.1.0.md).
+These notes describe the 1.2 line by feature. [Changelog](../CHANGELOG.md) lists what each release candidate added. The 1.1 line is described in [1.1 Release Notes](release-notes-1.1.0.md).
 
 ## Highlights
 
