@@ -6,6 +6,10 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+## 1.1.0 - 2026-11-19
+
+The first stable release of the 1.1 line. It holds everything listed under the release candidates below, and this fix.
+
 ### Fixed
 
 - The legacy keyword CSV export passes the CSV escape character explicitly. On PHP 8.4 and later it raised a deprecation notice, which a site that displays errors would write into the downloaded file.

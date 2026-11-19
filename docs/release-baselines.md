@@ -55,6 +55,20 @@ Not checked: a real IndexNow submission, which needs a public site.
 
 `1.1.0-rc.6` changes what the setup checklist on the Overview asks for (a site name, no longer a tagline) and adds no file. Only the package was rechecked: 52 files, 219,068 bytes (213.9 KiB). The timing, memory, and query rows of `1.1.0-rc.4` were not measured again; the change touches the administration area only.
 
+## 1.1.0
+
+`1.1.0` is the first stable release of the 1.1 line. Since `1.1.0-rc.6` it changes two shipped files and adds none: the legacy keyword CSV export passes the CSV escape character explicitly, and one trailing space left the Meta Pixel `noscript` markup. Only the package was rechecked: 52 files, 219,068 bytes (213.9 KiB), the same size as `1.1.0-rc.6` by coincidence; the package was opened to confirm it carries the `1.1.0` header. The timing, memory, and query rows of `1.1.0-rc.4` were not measured again; the export runs in the administration area only, and the removed space adds no query and no file to a request.
+
+### Checked by hand for this release
+
+On 2026-11-19:
+
+- The three `fputcsv()` calls of the export, with the arguments the plugin passes, on PHP 8.3.31 and PHP 8.5.7: no notice on either, and the same bytes as the call without the escape argument, which raises three deprecation notices on PHP 8.5.7.
+- No other CSV call in the shipped code leaves the escape argument out.
+- The unit suite on PHP 8.2, 8.3, and 8.5, and a syntax check of the shipped files on PHP 8.5.
+
+Not checked: the export downloaded from a real site in a browser, and anything in `docs/qa-checklist.md` that the two changes do not touch. That list was last worked through for `1.1.0-rc.4`.
+
 ## 1.1.0-rc.1
 
 Reference measurements for `1.1.0-rc.1` were recorded on 2026-08-24.
