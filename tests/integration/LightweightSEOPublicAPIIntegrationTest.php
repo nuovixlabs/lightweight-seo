@@ -186,8 +186,16 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$robots = $module->filter_robots_txt( "User-agent: *\nDisallow: /wp-admin/\n", true );
 		$llms   = $module->build_llms_txt();
 
-		$this->assertStringContainsString( "User-agent: OAI-SearchBot\nAllow: /", $robots );
+		// An allowed crawler gets no group of its own, so it keeps following the rules for every crawler.
+		$this->assertStringNotContainsString( 'User-agent: OAI-SearchBot', $robots );
+		$this->assertMatchesRegularExpression( '/^# Not blocked here, so they follow the rules for every crawler \(User-agent: \*\): .*\bOAI-SearchBot\b/m', $robots );
 		$this->assertStringContainsString( "User-agent: GPTBot\nDisallow: /", $robots );
+
+		// What WordPress itself serves keeps its own rule for every crawler, which allowed AI crawlers now obey.
+		$served = apply_filters( 'robots_txt', "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n", true );
+
+		$this->assertStringStartsWith( "User-agent: *\nDisallow: /wp-admin/\n", $module->filter_robots_txt( $served, true ) );
+		$this->assertStringNotContainsString( "\nAllow: /\n", $module->filter_robots_txt( $served, true ) );
 		$this->assertStringContainsString( 'Public Guide', $llms );
 		$this->assertStringContainsString( 'A concise public summary.', $llms );
 		$this->assertStringNotContainsString( 'Draft Guide', $llms );

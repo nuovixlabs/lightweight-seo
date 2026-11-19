@@ -24,15 +24,75 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		unset( $GLOBALS['lightweight_seo_test_tagline'] );
 	}
 
-	public function test_virtual_robots_separates_search_and_training_policies(): void {
+	public function test_virtual_robots_disallows_switched_off_crawlers_and_leaves_allowed_ones_to_the_general_rules(): void {
 		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false ), null, 'admin' );
 		$output = $module->filter_robots_txt( "User-agent: *\nDisallow: /wp-admin/\n", true );
 
-		$this->assertStringContainsString( "User-agent: OAI-SearchBot\nAllow: /", $output );
-		$this->assertStringContainsString( "User-agent: Claude-SearchBot\nAllow: /", $output );
+		// A crawler with a group of its own ignores the group for every crawler, so an allowed one gets none.
+		$this->assertStringNotContainsString( 'User-agent: OAI-SearchBot', $output );
+		$this->assertStringNotContainsString( "\nAllow: /\n", $output );
+		$this->assertStringContainsString( "# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for every crawler (User-agent: *): OAI-SearchBot, ChatGPT-User, Claude-SearchBot,", $output );
 		$this->assertStringContainsString( "User-agent: GPTBot\nDisallow: /", $output );
 		$this->assertStringContainsString( "User-agent: Google-Extended\nDisallow: /", $output );
-		$this->assertSame( 1, substr_count( $module->filter_robots_txt( $output, true ), 'User-agent: OAI-SearchBot' ) );
+
+		// Running the filter again adds nothing.
+		$this->assertSame( $output, $module->filter_robots_txt( $output, true ) );
+	}
+
+	/**
+	 * @dataProvider switch_combinations
+	 */
+	public function test_every_switch_combination_keeps_the_general_rules_for_allowed_crawlers( $search, $training ): void {
+		$general = "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\nDisallow: /cart/\nDisallow: /checkout/\n\nSitemap: https://example.com/wp-sitemap.xml\n";
+		$module  = new Lightweight_SEO_AI_Discovery_Module( $this->settings( $search, $training ), null, 'admin' );
+		$output  = $module->filter_robots_txt( $general, true );
+		$policy  = $module->get_crawler_policy();
+		$allowed = array_keys( array_filter( $policy ) );
+		$blocked = array_keys( array_diff_key( $policy, array_flip( $allowed ) ) );
+
+		// The general rules are untouched and come first.
+		$this->assertStringStartsWith( rtrim( $general ) . "\n\n# Lightweight SEO AI Discovery (experimental)\n", $output );
+
+		// Only a crawler that is switched off has a group, and it disallows the whole site.
+		preg_match_all( '/^User-agent: (.+)$/m', $output, $agents );
+		$this->assertSame( array_merge( array( '*' ), $blocked ), $agents[1] );
+
+		foreach ( $blocked as $token ) {
+			$this->assertStringContainsString( "User-agent: {$token}\nDisallow: /\n", $output );
+		}
+
+		$this->assertSame( 1, substr_count( $output, "\nAllow: " ), 'The only Allow line is the general one.' );
+
+		// The allowed crawlers are named in a comment, which is printed only when there are any.
+		if ( $allowed ) {
+			$this->assertStringContainsString( "\n# Not blocked here, so they follow the rules for every crawler (User-agent: *): " . implode( ', ', $allowed ) . "\n", $output );
+		} else {
+			$this->assertStringNotContainsString( 'Not blocked here', $output );
+		}
+
+		// With both switches on, the plugin's part is the marker and the comment alone.
+		if ( $search && $training ) {
+			$this->assertStringEndsWith( "\n\n# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for every crawler (User-agent: *): " . implode( ', ', array_keys( $policy ) ) . "\n", $output );
+		}
+	}
+
+	public function switch_combinations(): array {
+		return array(
+			'search on, training off (defaults)' => array( true, false ),
+			'both on'                            => array( true, true ),
+			'search off, training on'            => array( false, true ),
+			'both off'                           => array( false, false ),
+		);
+	}
+
+	public function test_a_token_another_filter_names_is_left_out_of_the_group_and_the_comment(): void {
+		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false ), null, 'admin' );
+		$output = $module->filter_robots_txt( "User-agent: *\nDisallow: /wp-admin/\n\nUser-agent: OAI-SearchBot\nDisallow: /private/\n\nUser-agent: GPTBot\nAllow: /\n", true );
+
+		$this->assertSame( 1, substr_count( $output, 'User-agent: OAI-SearchBot' ) );
+		$this->assertSame( 1, substr_count( $output, 'User-agent: GPTBot' ) );
+		$this->assertStringNotContainsString( ': OAI-SearchBot,', $output );
+		$this->assertStringContainsString( '(User-agent: *): ChatGPT-User, Claude-SearchBot', $output );
 	}
 
 	public function test_physical_robots_file_prevents_virtual_changes_and_is_reported(): void {
@@ -183,11 +243,13 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 
 		foreach ( array( 'Applebot-Extended', 'Meta-ExternalAgent', 'Amazonbot', 'MistralAI-Training' ) as $training ) {
 			$this->assertStringContainsString( "User-agent: {$training}\nDisallow: /", $closed );
-			$this->assertStringContainsString( "User-agent: {$training}\nAllow: /", $open );
+			$this->assertStringNotContainsString( "User-agent: {$training}\n", $open );
+			$this->assertMatchesRegularExpression( '/^# Not blocked here.*\b' . preg_quote( $training, '/' ) . '\b/m', $open );
 		}
 
 		foreach ( array( 'DuckAssistBot', 'MistralAI-User', 'MistralAI-Index', 'Meta-WebIndexer', 'Meta-ExternalFetcher', 'Amzn-SearchBot', 'Amzn-User' ) as $search ) {
-			$this->assertStringContainsString( "User-agent: {$search}\nAllow: /", $closed );
+			$this->assertStringNotContainsString( "User-agent: {$search}\n", $closed );
+			$this->assertMatchesRegularExpression( '/^# Not blocked here.*\b' . preg_quote( $search, '/' ) . '\b/m', $closed );
 			$this->assertStringContainsString( "User-agent: {$search}\nDisallow: /", $open );
 		}
 
@@ -368,6 +430,9 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertTrue( $expected['rules']['Claude-User'] );
 		$this->assertFalse( $expected['rules']['GPTBot'] );
 		$this->assertFalse( $expected['rules']['Google-Extended'] );
+		// The served-file check recognises the plugin's part by its opening comment.
+		$this->assertSame( '# Lightweight SEO AI Discovery (experimental)', $expected['marker'] );
+		$this->assertStringContainsString( $expected['marker'], $module->filter_robots_txt( '', true ) );
 
 		// A token another filter already writes is that filter's rule, not the plugin's.
 		$lightweight_seo_test_filters['robots_txt'] = static function () {
@@ -382,6 +447,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 			return $path;
 		};
 		$this->assertSame( array(), $module->get_served_robots_expectations()['rules'] );
+		$this->assertSame( '', $module->get_served_robots_expectations()['marker'] );
 		unset( $lightweight_seo_test_filters['lightweight_seo_physical_robots_path'] );
 		unlink( $path );
 
@@ -535,8 +601,8 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertStringNotContainsString( 'WordPress writes', $row['text'] );
 		// The browser settles it from the served file.
 		$this->assertSame( 'rules', $row['attributes']['data-settled-by'] );
-		$this->assertStringContainsString( 'the served file holds the rules set here', $row['attributes']['data-msg-present'] );
-		$this->assertStringContainsString( 'but the served file does not hold the rules set here', $row['attributes']['data-msg-absent'] );
+		$this->assertStringContainsString( 'the served file has the part Lightweight SEO adds', $row['attributes']['data-msg-present'] );
+		$this->assertStringContainsString( 'but the served file does not have the part Lightweight SEO adds', $row['attributes']['data-msg-absent'] );
 
 		// With no rules to expect, there is nothing for the browser to settle.
 		$lightweight_seo_test_options['blog_public'] = 0;

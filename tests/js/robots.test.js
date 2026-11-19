@@ -11,6 +11,7 @@ const robots = require('../../admin/js/lightweight-seo-robots.js');
 const {parse, allows, rulesNaming, blocksWholeSite, check} = robots;
 
 const CRAWLERS = ['Googlebot', 'Bingbot', '*'];
+const MARKER = '# Lightweight SEO AI Discovery (experimental)';
 
 function served(body, extra) {
 	return Object.assign({fetched: true, status: 200, contentType: 'text/plain; charset=utf-8', body: body, url: 'https://example.com/robots.txt'}, extra || {});
@@ -69,6 +70,7 @@ test('the file found on a real site is reported: no plugin rules, Googlebot shut
 	const body = 'User-agent: Googlebot\nDisallow: /\n\nUser-agent: *\nAllow: /\n';
 	const results = byId(check(served(body), {
 		rules: {'OAI-SearchBot': true, GPTBot: false},
+		marker: MARKER,
 		crawlers: CRAWLERS,
 		sitemapLine: 'Sitemap: https://example.com/wp-sitemap.xml',
 	}));
@@ -88,15 +90,15 @@ test('the file WordPress and the plugin write together passes every row', () => 
 		'',
 		'Sitemap: https://example.com/wp-sitemap.xml',
 		'',
-		'# Lightweight SEO AI Discovery (experimental)',
-		'User-agent: OAI-SearchBot',
-		'Allow: /',
+		MARKER,
+		'# Not blocked here, so they follow the rules for every crawler (User-agent: *): OAI-SearchBot',
 		'',
 		'User-agent: GPTBot',
 		'Disallow: /',
 	].join('\n');
 	const results = byId(check(served(body), {
 		rules: {'OAI-SearchBot': true, GPTBot: false},
+		marker: MARKER,
 		crawlers: CRAWLERS,
 		sitemapLine: 'Sitemap: https://example.com/wp-sitemap.xml',
 	}));
@@ -106,16 +108,37 @@ test('the file WordPress and the plugin write together passes every row', () => 
 	assert.deepEqual(results.sitemap, {id: 'sitemap', state: 'success', key: 'present', values: ['https://example.com/wp-sitemap.xml']});
 });
 
-test('some plugin rules missing, or served with the opposite answer, are named', () => {
-	const expected = {rules: {'OAI-SearchBot': true, GPTBot: false, ClaudeBot: false}, crawlers: CRAWLERS, sitemapLine: ''};
+test('an allowed crawler follows its own group if another source wrote one, else the group for every crawler', () => {
+	const expected = {rules: {'OAI-SearchBot': true}, marker: MARKER, crawlers: CRAWLERS};
+	const rules = (body) => byId(check(served(MARKER + '\n' + body), expected)).rules;
 
+	// The general rules shut out part of the site: the allowed crawler is not shut out of the whole site.
+	assert.equal(rules('User-agent: *\nDisallow: /wp-admin/\nDisallow: /cart/\n').key, 'present');
+	// The general rules shut out the whole site, and the allowed crawler follows them.
+	assert.deepEqual(rules('User-agent: *\nDisallow: /\n'), {id: 'rules', state: 'warning', key: 'different', values: ['OAI-SearchBot']});
+	// Another source gave it a group of its own, which it follows instead.
+	assert.equal(rules('User-agent: *\nDisallow: /\n\nUser-agent: OAI-SearchBot\nDisallow: /private/\n').key, 'present');
+	assert.equal(rules('User-agent: *\nAllow: /\n\nUser-agent: OAI-SearchBot\nDisallow: /\n').key, 'different');
+	// With no group at all, nothing shuts it out.
+	assert.equal(rules('').key, 'present');
+});
+
+test('a switched-off crawler needs a group of its own that disallows the whole site', () => {
+	const expected = {rules: {'OAI-SearchBot': true, GPTBot: false, ClaudeBot: false}, marker: MARKER, crawlers: CRAWLERS};
+
+	// The group for every crawler does not count: the plugin writes one for each crawler it blocks.
 	assert.deepEqual(
-		byId(check(served('User-agent: OAI-SearchBot\nAllow: /\n'), expected)).rules,
-		{id: 'rules', state: 'warning', key: 'missing', values: ['GPTBot', 'ClaudeBot']}
+		byId(check(served(MARKER + '\nUser-agent: *\nDisallow: /wp-admin/\n\nUser-agent: GPTBot\nDisallow: /\n'), expected)).rules,
+		{id: 'rules', state: 'warning', key: 'missing', values: ['ClaudeBot']}
 	);
 	assert.deepEqual(
-		byId(check(served('User-agent: OAI-SearchBot\nAllow: /\nUser-agent: GPTBot\nAllow: /\nUser-agent: ClaudeBot\nDisallow: /\n'), expected)).rules,
+		byId(check(served(MARKER + '\nUser-agent: GPTBot\nAllow: /\n\nUser-agent: ClaudeBot\nDisallow: /\n'), expected)).rules,
 		{id: 'rules', state: 'warning', key: 'different', values: ['GPTBot']}
+	);
+	// Without the plugin's part in the file, the rules are reported absent, whatever else it holds.
+	assert.deepEqual(
+		byId(check(served('User-agent: GPTBot\nDisallow: /\n\nUser-agent: ClaudeBot\nDisallow: /\n'), expected)).rules,
+		{id: 'rules', state: 'warning', key: 'absent', values: []}
 	);
 });
 

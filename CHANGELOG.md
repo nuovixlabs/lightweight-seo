@@ -6,6 +6,10 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+### Fixed
+
+- Allowed AI crawlers follow the site's general `robots.txt` rules. **This changes the `robots.txt` of every site that has AI Discovery on.** An allowed crawler used to get a group of its own holding only `Allow: /`, and a crawler with a group of its own ignores the group for every crawler, so it stopped obeying WordPress's `Disallow: /wp-admin/`, a shop's cart and checkout paths, and anything else the site said to every crawler. The `Allow: /` groups go away: allowed AI crawlers now obey the rules for every crawler, and a comment under the plugin's own names them. Crawlers that are switched off keep their `Disallow: /` group. A site whose `*` group disallows everything no longer has AI search crawlers excepted from that. The served-file check now passes an allowed crawler when the served file does not shut it out of the whole site, and recognises the plugin's part of the file by its opening comment. The two switches keep their names and stored values; their help texts say what they now do.
+
 ### Added
 
 - Content checks in the editor panel: images in the content without alternative text, as a count, and more than one H1 heading. Both follow the content as it is edited. An image that is only decorative may keep an empty `alt`, so it is a warning, not a failure.

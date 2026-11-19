@@ -13,6 +13,9 @@ if ( ! defined( 'WPINC' ) ) {
 /** Adds bounded crawler policies, a curated llms.txt, and deterministic checks. */
 class Lightweight_SEO_AI_Discovery_Module {
 
+	/** Comment that opens the plugin's part of the virtual robots.txt, also how the served-file check recognises it. */
+	const ROBOTS_MARKER = '# Lightweight SEO AI Discovery (experimental)';
+
 	private $settings;
 	private $api;
 	private $context;
@@ -145,7 +148,16 @@ class Lightweight_SEO_AI_Discovery_Module {
 		return $valid;
 	}
 
-	/** Append explicit policies only when WordPress owns the virtual robots.txt. */
+	/**
+	 * Add the crawler policy, only when WordPress owns the virtual robots.txt.
+	 *
+	 * A crawler that is switched off gets a group of its own with "Disallow: /". A crawler that is
+	 * allowed gets no group: under RFC 9309 a crawler that matches a named group ignores the group
+	 * for every crawler, so a group holding only "Allow: /" would free it from the site's general
+	 * rules, such as WordPress's "Disallow: /wp-admin/". Without a group it follows them, including
+	 * rules another filter adds later. A comment names the allowed crawlers so the intent is readable.
+	 * A token another filter already names is left to it.
+	 */
 	public function filter_robots_txt( $output, $is_public ) {
 		if ( ! $is_public || $this->physical_robots_exists() ) {
 			return $output;
@@ -153,26 +165,54 @@ class Lightweight_SEO_AI_Discovery_Module {
 
 		$output = $this->add_content_signal( (string) $output );
 
-		$search_allowed   = $this->settings->ai_search_crawlers_enabled();
-		$training_allowed = $this->settings->ai_training_crawlers_enabled();
-		$append           = array();
+		if ( false !== strpos( $output, self::ROBOTS_MARKER ) ) {
+			return $output;
+		}
 
-		foreach ( $this->get_crawler_registry() as $token => $definition ) {
+		$allowed = array();
+		$groups  = array();
+
+		foreach ( $this->get_crawler_policy() as $token => $is_allowed ) {
 			if ( $this->robots_output_contains_token( $output, $token ) ) {
 				continue;
 			}
 
-			$allowed  = 'training' === $definition['purpose'] ? $training_allowed : $search_allowed;
-			$append[] = 'User-agent: ' . $token;
-			$append[] = ( $allowed ? 'Allow' : 'Disallow' ) . ': /';
-			$append[] = '';
+			if ( $is_allowed ) {
+				$allowed[] = $token;
+			} else {
+				array_push( $groups, 'User-agent: ' . $token, 'Disallow: /', '' );
+			}
 		}
 
-		if ( empty( $append ) ) {
-			return $output;
+		$lines = array( self::ROBOTS_MARKER );
+
+		if ( ! empty( $allowed ) ) {
+			$lines[] = '# Not blocked here, so they follow the rules for every crawler (User-agent: *): ' . implode( ', ', $allowed );
 		}
 
-		return rtrim( (string) $output ) . "\n\n# Lightweight SEO AI Discovery (experimental)\n" . implode( "\n", $append );
+		if ( ! empty( $groups ) ) {
+			$lines[] = '';
+		}
+
+		return rtrim( $output ) . "\n\n" . implode( "\n", array_merge( $lines, $groups ) ) . ( empty( $groups ) ? "\n" : '' );
+	}
+
+	/**
+	 * Whether each crawler token is allowed by the switches on the card, keyed by token.
+	 *
+	 * @since 1.2.0
+	 * @return bool[]
+	 */
+	public function get_crawler_policy() {
+		$search_allowed   = (bool) $this->settings->ai_search_crawlers_enabled();
+		$training_allowed = (bool) $this->settings->ai_training_crawlers_enabled();
+		$policy           = array();
+
+		foreach ( $this->get_crawler_registry() as $token => $definition ) {
+			$policy[ $token ] = 'training' === $definition['purpose'] ? $training_allowed : $search_allowed;
+		}
+
+		return $policy;
 	}
 
 	/**
@@ -369,7 +409,8 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 * @return array {
 	 *     @type string $url          Address of the file crawlers read.
 	 *     @type string $subdirectory Path WordPress is installed under, or an empty string at the root.
-	 *     @type array  $rules        Whether each crawler token the plugin adds is allowed, keyed by token.
+	 *     @type array  $rules        Whether each crawler token the plugin governs is allowed, keyed by token.
+	 *     @type string $marker       The comment that opens the plugin's part of the file, or an empty string.
 	 *     @type array  $crawlers     Tokens checked for a group that disallows the whole site.
 	 *     @type string $sitemapLine  The Sitemap line WordPress would print, or an empty string.
 	 *     @type string $contentSignal The content signals this card adds, or an empty string when it adds none.
@@ -390,20 +431,14 @@ class Lightweight_SEO_AI_Discovery_Module {
 		$sitemap_urls = $public && $this->api && method_exists( $this->api, 'get_sitemap_urls' ) ? (array) $this->api->get_sitemap_urls() : array();
 
 		if ( '' === $subdirectory && $public && ! $this->physical_robots_exists() ) {
-			$taken            = $this->get_conflicts()['robots_tokens'];
-			$search_allowed   = (bool) $this->settings->ai_search_crawlers_enabled();
-			$training_allowed = (bool) $this->settings->ai_training_crawlers_enabled();
+			$taken = $this->get_conflicts()['robots_tokens'];
 
 			if ( method_exists( $this->settings, 'content_signals_enabled' ) && $this->settings->content_signals_enabled() ) {
 				$signal = $this->get_content_signal();
 			}
 
-			foreach ( $this->get_crawler_registry() as $token => $definition ) {
-				// A token another filter already defines is left to it, so its rule is not the plugin's to check.
-				if ( ! in_array( $token, $taken, true ) ) {
-					$rules[ $token ] = 'training' === $definition['purpose'] ? $training_allowed : $search_allowed;
-				}
-			}
+			// A token another filter already defines is left to it, so its rule is not the plugin's to check.
+			$rules = array_diff_key( $this->get_crawler_policy(), array_flip( $taken ) );
 		}
 
 		$origin = ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' );
@@ -412,6 +447,8 @@ class Lightweight_SEO_AI_Discovery_Module {
 			'url'           => $origin . '/robots.txt',
 			'subdirectory'  => $subdirectory,
 			'rules'         => $rules,
+			// The comment that opens the plugin's part of the file, which shows the file served is WordPress's with it.
+			'marker'        => empty( $rules ) ? '' : self::ROBOTS_MARKER,
 			'crawlers'      => array( 'Googlebot', 'Bingbot', '*' ),
 			'sitemapLine'   => empty( $sitemap_urls ) ? '' : 'Sitemap: ' . reset( $sitemap_urls ),
 			'contentSignal' => $signal,
@@ -588,13 +625,13 @@ class Lightweight_SEO_AI_Discovery_Module {
 								__( 'AI crawler rules', 'lightweight-seo' ),
 								$expected['url'],
 								array(
-									/* translators: %s: number of crawler rules. */
-									'present'   => __( 'All %s rules set here are in the served file.', 'lightweight-seo' ),
-									'absent'    => __( 'None of the rules set here are in the served file. Another file, plugin, or server setting answers /robots.txt instead of WordPress.', 'lightweight-seo' ),
+									/* translators: %s: number of AI crawlers. */
+									'present'   => __( 'The served file follows this card for all %s crawlers: each one switched off has a group that disallows it, and the others are not shut out of the site.', 'lightweight-seo' ),
+									'absent'    => __( 'The served file does not have the part Lightweight SEO adds. Another file, plugin, or server setting answers /robots.txt instead of WordPress.', 'lightweight-seo' ),
 									/* translators: %s: list of crawler names. */
-									'missing'   => __( 'The served file has no rules for: %s.', 'lightweight-seo' ),
+									'missing'   => __( 'The served file has no group that disallows these crawlers, which are switched off here: %s.', 'lightweight-seo' ),
 									/* translators: %s: list of crawler names. */
-									'different' => __( 'The served file gives a different answer than this card for: %s.', 'lightweight-seo' ),
+									'different' => __( 'The served file gives a different answer than this card for: %s. A crawler allowed here is shut out of the whole site, or one switched off here is not.', 'lightweight-seo' ),
 								)
 							),
 							$this->browser_row(
@@ -749,14 +786,14 @@ class Lightweight_SEO_AI_Discovery_Module {
 
 		$row += array(
 			'state' => 'info',
-			'text'  => __( 'No robots.txt file is on disk, and no other plugin the server can see adds rules for these crawlers. Whether the served file holds the rules set here is checked in this browser.', 'lightweight-seo' ),
+			'text'  => __( 'No robots.txt file is on disk, and no other plugin the server can see adds rules for these crawlers. Whether the served file has the part Lightweight SEO adds is checked in this browser.', 'lightweight-seo' ),
 		);
 
 		if ( $rules_expected ) {
 			$row['attributes'] = array(
 				'data-settled-by'  => 'rules',
-				'data-msg-present' => __( 'No robots.txt file is on disk, no other plugin the server can see adds rules for these crawlers, and the served file holds the rules set here.', 'lightweight-seo' ),
-				'data-msg-absent'  => __( 'No robots.txt file is on disk and no other plugin the server can see adds rules for these crawlers, but the served file does not hold the rules set here. Something else answers or rewrites /robots.txt: a filter that runs later, a cache, a CDN, or a server setting.', 'lightweight-seo' ),
+				'data-msg-present' => __( 'No robots.txt file is on disk, no other plugin the server can see adds rules for these crawlers, and the served file has the part Lightweight SEO adds.', 'lightweight-seo' ),
+				'data-msg-absent'  => __( 'No robots.txt file is on disk and no other plugin the server can see adds rules for these crawlers, but the served file does not have the part Lightweight SEO adds. Something else answers or rewrites /robots.txt: a filter that runs later, a cache, a CDN, or a server setting.', 'lightweight-seo' ),
 			);
 		}
 
