@@ -358,7 +358,7 @@ class Lightweight_SEO {
 				break;
 			case 'ai':
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-ai-discovery-module.php';
-				new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), $context );
+				new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), $context, $this->post_meta );
 				break;
 			case 'indexnow':
 				require_once LIGHTWEIGHT_SEO_PLUGIN_DIR . 'includes/class-lightweight-seo-indexnow-module.php';

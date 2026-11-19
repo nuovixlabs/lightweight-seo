@@ -26,13 +26,24 @@ class Lightweight_SEO_Admin_Module_Fields {
 	private $settings;
 
 	/**
+	 * Shared post meta service, handed to the AI Discovery checks.
+	 *
+	 * @since    1.2.0
+	 * @access   private
+	 * @var      Lightweight_SEO_Post_Meta|null    $post_meta
+	 */
+	private $post_meta;
+
+	/**
 	 * Initialize the renderer.
 	 *
 	 * @since    1.1.0
-	 * @param    Lightweight_SEO_Settings    $settings    Shared settings service.
+	 * @param    Lightweight_SEO_Settings          $settings     Shared settings service.
+	 * @param    Lightweight_SEO_Post_Meta|null    $post_meta    Optional. Shared post meta service.
 	 */
-	public function __construct( $settings ) {
-		$this->settings = $settings;
+	public function __construct( $settings, $post_meta = null ) {
+		$this->settings  = $settings;
+		$this->post_meta = $post_meta;
 	}
 
 	/**
@@ -854,7 +865,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 			return;
 		}
 
-		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), 'admin' );
+		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), 'admin', $this->post_meta );
 
 		echo '<ul class="lwseo-status-list">';
 		foreach ( $module->get_readiness_checks() as $check ) {

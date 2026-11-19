@@ -76,7 +76,7 @@ class Lightweight_SEO_Admin {
 			$plugin_name,
 			$settings,
 			new Lightweight_SEO_Admin_Core_Fields( $settings ),
-			new Lightweight_SEO_Admin_Module_Fields( $settings ),
+			new Lightweight_SEO_Admin_Module_Fields( $settings, $post_meta ),
 			$tools_fields
 		);
 		$notices        = new Lightweight_SEO_Admin_Notices( $plugin_name );

@@ -202,7 +202,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 				);
 			}
 		};
-		$module                                    = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array( 21, 22 ), array( 'meta_description' => 'Handmade oak furniture.' ) ), $api, 'admin' );
+		$module                                    = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array( 21, 22 ), array( 'meta_description' => 'Handmade oak furniture.' ) ), $api, 'admin', new Lightweight_SEO_Post_Meta() );
 		$output                                    = $module->build_llms_txt();
 
 		$lightweight_seo_test_query_state['title'] = $previous_title;
@@ -238,9 +238,41 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 				);
 			}
 		};
-		$module                         = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array( 21 ), array( 'meta_description' => 'Handmade oak furniture.' ) ), $api, 'admin' );
+		$module                         = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array( 21 ), array( 'meta_description' => 'Handmade oak furniture.' ) ), $api, 'admin', new Lightweight_SEO_Post_Meta() );
 
 		$this->assertStringContainsString( "- [Oak furniture – Test Site](https://example.com/): Our own words.\n", $module->build_llms_txt() );
+	}
+
+	public function test_listing_a_static_front_page_registers_no_hook(): void {
+		global $lightweight_seo_test_hooks;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_posts;
+
+		$lightweight_seo_test_options += array(
+			'show_on_front' => 'page',
+			'page_on_front' => 21,
+		);
+		$lightweight_seo_test_posts    = array( 21 => $this->post( 21, 'publish', '', 'https://example.com/' ) );
+		$api                           = new class() {
+			public function get_object_context( $type, $id ) {
+				return array(
+					'title'         => 'Home Page',
+					'description'   => '',
+					'canonical_url' => 'https://example.com/',
+					'indexable'     => true,
+				);
+			}
+		};
+		$module                        = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false, array( 21 ) ), $api, 'admin', new Lightweight_SEO_Post_Meta() );
+		$hooks_before                  = count( $lightweight_seo_test_hooks );
+
+		// The readiness checks build the entries on every render of the Modules tab.
+		$module->get_curated_entries();
+		$module->get_curated_entries();
+		$module->get_readiness_checks();
+
+		$this->assertSame( 'Test Site – Test Tagline', $module->get_curated_entries()[0]['title'] );
+		$this->assertSame( $hooks_before, count( $lightweight_seo_test_hooks ) );
 	}
 
 	private function settings( $search = true, $training = false, $ids = array(), $values = array() ) {
