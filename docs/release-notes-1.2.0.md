@@ -75,6 +75,28 @@ The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' 
 - The file opens with a one-line summary of the site under its name: the homepage meta description from the "Description and sharing" card on **SEO → Search appearance**, or the tagline when there is none. With neither, the summary line is left out. 1.1 printed a disclaimer there; it is still shown on the AI Discovery card.
 - When the static front page is one of the listed pages, it is listed the way the homepage prints it. Its link text is the page's own SEO title, or the homepage title format, such as "Site name – Tagline". Its note is the page's own description, or the homepage meta description. Other pages are listed as before.
 
+## Content checks
+
+### In the editor
+
+The Checks tab of the editor panel has two new rows and a clearer description row. All three follow the page as it is edited, in the block editor and the classic editor.
+
+- **Meta description** says which description the page prints: "The description written here is printed", "Nothing is written here, so the homepage meta description is printed" on a static front page, or "Nothing is written here, so a summary of the excerpt or content is printed". When none of these exists, as on a page whose text comes from the theme or from custom fields, it says "No description is printed for this page". A password-protected page prints no description, and the row says so.
+- **Image alternative text** counts the images in the content that have no alternative text, such as "2 of 3". It is a warning to review, not a failure: an image that is only decorative may keep an empty one. It is hidden when the content has no images.
+- **Main headings** warns when the content has more than one H1 heading, since the theme usually prints the page title as the H1.
+
+### In the Inspect report
+
+The report on the Tools tab ends with a **Content** section, measured on the page as it is served:
+
+- the characters of text in the main content, read from the page's `main` element, or its first `article`, or its `body`
+- the number of H1 headings on the page
+- images with an empty or missing `alt` attribute, out of all images on the page
+
+The counts come from the administrator's browser. After the report arrives, the Tools tab requests the page again, signed out, as any visitor would, and counts what it receives with the same functions the editor uses. So the site does no extra work for a visitor's request, and the page is measured with its theme templates and custom fields, not only its post content. The report opened in a new tab, without the script, says to open it from the Tools tab to see the counts.
+
+Text a script adds after the page loads is not counted, and the counts state numbers, not grades.
+
 ## Site identity
 
 - The "Site identity" card on **SEO → Schema and identity** has a "Description" field. A sentence or two about who the organization or person is is printed as `description` on the Organization or Person node of the structured data. Google lists it as a recommended property of an organization. Left empty, nothing is printed, as in 1.1.

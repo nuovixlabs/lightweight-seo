@@ -144,6 +144,7 @@ class Lightweight_SEO_Inspector {
 						$this->get_sharing_section( $tags ),
 						$this->get_sitemap_section( $subject ),
 						$this->get_schema_section(),
+						$this->get_content_section(),
 					)
 				)
 			),
@@ -663,12 +664,89 @@ class Lightweight_SEO_Inspector {
 	 * @param string|array $lines What is sent, followed by where it comes from.
 	 * @return array
 	 */
-	private function row( $state, $title, $lines ) {
+	private function row( $state, $title, $lines, $attributes = array() ) {
 		return array(
-			'state' => $state,
-			'title' => $title,
-			'lines' => array_values( array_filter( (array) $lines, 'strlen' ) ),
+			'state'      => $state,
+			'title'      => $title,
+			'lines'      => array_values( array_filter( (array) $lines, 'strlen' ) ),
+			'attributes' => $attributes,
 		);
+	}
+
+	/**
+	 * Describe the content section, which the administrator's browser measures.
+	 *
+	 * The report is produced by an inspect request, never by a visitor's. The counts come
+	 * from the Tools tab: it requests the page again, signed out, as any visitor would, and
+	 * reads the markup with contentFacts() and pageFacts() in lightweight-seo-formats.js.
+	 * So a visitor's request does no extra work, and the page is measured as it is served.
+	 *
+	 * @return array
+	 */
+	private function get_content_section() {
+		$rows    = array(
+			'text'     => array(
+				__( 'Main content text', 'lightweight-seo' ),
+				array(
+					/* translators: 1: number of characters. 2: HTML element name, such as main or article. */
+					'some' => __( '%1$s characters of text in the %2$s element, where the page’s main content is.', 'lightweight-seo' ),
+					/* translators: %s: HTML element name, such as main or article. */
+					'none' => __( 'No text was found in the %s element. When a theme prints the page text outside it, or loads it with a script, readers that look for the main content find little.', 'lightweight-seo' ),
+				),
+			),
+			'headings' => array(
+				__( 'H1 headings', 'lightweight-seo' ),
+				array(
+					'one'  => __( 'The page has one H1 heading.', 'lightweight-seo' ),
+					'none' => __( 'The page has no H1 heading.', 'lightweight-seo' ),
+					/* translators: %s: number of H1 headings, two or more. */
+					'many' => __( 'The page has %s H1 headings.', 'lightweight-seo' ),
+				),
+			),
+			'images'   => array(
+				__( 'Image alternative text', 'lightweight-seo' ),
+				array(
+					/* translators: %s: number of images. */
+					'all'     => __( 'All %s images have alternative text.', 'lightweight-seo' ),
+					/* translators: 1: number of images with an empty or missing alt attribute. 2: number of images. */
+					'missing' => __( '%1$s of %2$s images have an empty or missing alt attribute. An image that is only decorative may keep an empty one.', 'lightweight-seo' ),
+					'none'    => __( 'The page has no images.', 'lightweight-seo' ),
+				),
+			),
+		);
+		$section = array(
+			'title' => __( 'Content', 'lightweight-seo' ),
+			'list'  => array(
+				'data-lwseo-page-content' => true,
+				'data-url'                => $this->get_address(),
+				'data-msg-failed'         => __( 'The page could not be requested from this browser, so its content was not counted.', 'lightweight-seo' ),
+				'data-prefix-success'     => Lightweight_SEO_Admin_UI::status_prefix( 'success' ),
+				'data-prefix-warning'     => Lightweight_SEO_Admin_UI::status_prefix( 'warning' ),
+			),
+			'rows'  => array(
+				$this->row(
+					'info',
+					__( 'Measured in this browser', 'lightweight-seo' ),
+					__( 'The Tools tab requests the page as a signed-out visitor and counts what it receives. Open this report from the Tools tab to see the counts.', 'lightweight-seo' ),
+					array( 'data-content-note' => true )
+				),
+			),
+		);
+
+		foreach ( $rows as $id => $row ) {
+			$attributes = array(
+				'hidden'               => true,
+				'data-content-measure' => $id,
+			);
+
+			foreach ( $row[1] as $key => $message ) {
+				$attributes[ 'data-msg-' . $key ] = $message;
+			}
+
+			$section['rows'][] = $this->row( 'info', $row[0], '', $attributes );
+		}
+
+		return $section;
 	}
 
 	/**
@@ -694,10 +772,16 @@ class Lightweight_SEO_Inspector {
 			echo '<div class="lwseo-inspect__section"><h3 class="lwseo-inspect__heading">' . esc_html( $section['title'] ) . '</h3>';
 
 			if ( ! empty( $section['rows'] ) ) {
-				echo '<ul class="lwseo-status-list">';
+				echo '<ul class="lwseo-status-list"';
+
+				foreach ( (array) ( $section['list'] ?? array() ) as $name => $value ) {
+					echo ' ' . esc_attr( $name ) . ( true === $value ? '' : '="' . esc_attr( (string) $value ) . '"' );
+				}
+
+				echo '>';
 
 				foreach ( $section['rows'] as $row ) {
-					Lightweight_SEO_Admin_UI::status( $row['state'], $row['title'], $row['lines'] );
+					Lightweight_SEO_Admin_UI::status( $row['state'], $row['title'], $row['lines'], array(), $row['attributes'] ?? array() );
 				}
 
 				echo '</ul>';

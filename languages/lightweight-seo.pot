@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T09:48:10+00:00\n"
+"POT-Creation-Date: 2026-11-19T09:54:27+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -333,19 +333,19 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:522
 #: includes/class-lightweight-seo-archive-meta.php:576
-#: includes/class-lightweight-seo-meta-boxes.php:253
+#: includes/class-lightweight-seo-meta-boxes.php:279
 msgid "Large"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:523
 #: includes/class-lightweight-seo-archive-meta.php:577
-#: includes/class-lightweight-seo-meta-boxes.php:254
+#: includes/class-lightweight-seo-meta-boxes.php:280
 msgid "Standard"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-core-fields.php:524
 #: includes/class-lightweight-seo-archive-meta.php:578
-#: includes/class-lightweight-seo-meta-boxes.php:255
+#: includes/class-lightweight-seo-meta-boxes.php:281
 msgid "None"
 msgstr ""
 
@@ -1249,7 +1249,7 @@ msgid "Overview"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:150
-#: includes/class-lightweight-seo-meta-boxes.php:180
+#: includes/class-lightweight-seo-meta-boxes.php:206
 msgid "Search appearance"
 msgstr ""
 
@@ -1454,7 +1454,7 @@ msgid "What your current settings send to search engines and social networks. Ea
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:574
-#: includes/class-lightweight-seo-meta-boxes.php:193
+#: includes/class-lightweight-seo-meta-boxes.php:219
 msgid "Search result preview"
 msgstr ""
 
@@ -1463,7 +1463,7 @@ msgid "No description is set, so search engines will pick text from the page."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:587
-#: includes/class-lightweight-seo-meta-boxes.php:263
+#: includes/class-lightweight-seo-meta-boxes.php:289
 msgid "Share preview"
 msgstr ""
 
@@ -1572,8 +1572,8 @@ msgid "Safe mode is on because %s is also active. Overlapping output is paused t
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:730
-#: includes/class-lightweight-seo-inspector.php:606
 #: includes/class-lightweight-seo-inspector.php:607
+#: includes/class-lightweight-seo-inspector.php:608
 msgid "XML sitemap"
 msgstr ""
 
@@ -1657,7 +1657,7 @@ msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:140
 #: includes/class-lightweight-seo-archive-meta.php:481
-#: includes/class-lightweight-seo-meta-boxes.php:249
+#: includes/class-lightweight-seo-meta-boxes.php:275
 msgid "Image preview size"
 msgstr ""
 
@@ -1678,7 +1678,7 @@ msgid "Redirected pages"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:153
-#: includes/class-lightweight-seo-inspector.php:622
+#: includes/class-lightweight-seo-inspector.php:623
 msgid "Structured data"
 msgstr ""
 
@@ -1691,7 +1691,7 @@ msgid "Name"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:158
-#: includes/class-lightweight-seo-inspector.php:513
+#: includes/class-lightweight-seo-inspector.php:514
 #: includes/class-lightweight-seo-post-list.php:214
 msgid "Description"
 msgstr ""
@@ -2415,8 +2415,8 @@ msgid "SEO settings"
 msgstr ""
 
 #: includes/class-lightweight-seo-archive-meta.php:446
-#: includes/class-lightweight-seo-meta-boxes.php:205
-#: includes/class-lightweight-seo-meta-boxes.php:354
+#: includes/class-lightweight-seo-meta-boxes.php:231
+#: includes/class-lightweight-seo-meta-boxes.php:393
 #: includes/class-lightweight-seo-post-list.php:210
 msgid "SEO title"
 msgstr ""
@@ -2426,9 +2426,9 @@ msgid "Optional title override for this archive page."
 msgstr ""
 
 #: includes/class-lightweight-seo-archive-meta.php:451
-#: includes/class-lightweight-seo-inspector.php:514
-#: includes/class-lightweight-seo-meta-boxes.php:214
-#: includes/class-lightweight-seo-meta-boxes.php:355
+#: includes/class-lightweight-seo-inspector.php:515
+#: includes/class-lightweight-seo-meta-boxes.php:240
+#: includes/class-lightweight-seo-meta-boxes.php:468
 msgid "Meta description"
 msgstr ""
 
@@ -2437,7 +2437,7 @@ msgid "Optional description override for this archive page."
 msgstr ""
 
 #: includes/class-lightweight-seo-archive-meta.php:456
-#: includes/class-lightweight-seo-meta-boxes.php:225
+#: includes/class-lightweight-seo-meta-boxes.php:251
 msgid "Canonical URL"
 msgstr ""
 
@@ -2446,10 +2446,10 @@ msgid "Leave empty to use the archive URL."
 msgstr ""
 
 #: includes/class-lightweight-seo-archive-meta.php:461
-#: includes/class-lightweight-seo-inspector.php:319
-#: includes/class-lightweight-seo-inspector.php:325
-#: includes/class-lightweight-seo-inspector.php:343
-#: includes/class-lightweight-seo-meta-boxes.php:232
+#: includes/class-lightweight-seo-inspector.php:320
+#: includes/class-lightweight-seo-inspector.php:326
+#: includes/class-lightweight-seo-inspector.php:344
+#: includes/class-lightweight-seo-meta-boxes.php:258
 msgid "Search results"
 msgstr ""
 
@@ -2486,7 +2486,7 @@ msgid "Override the global image preview robots directive for this archive page.
 msgstr ""
 
 #: includes/class-lightweight-seo-archive-meta.php:575
-#: includes/class-lightweight-seo-meta-boxes.php:252
+#: includes/class-lightweight-seo-meta-boxes.php:278
 msgid "Use global default"
 msgstr ""
 
@@ -2524,581 +2524,688 @@ msgstr ""
 msgid "The address of this site is one search engines cannot reach, such as localhost."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:246
+#: includes/class-lightweight-seo-inspector.php:247
 msgid "No page exists at this address (404)."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:250
+#: includes/class-lightweight-seo-inspector.php:251
 msgid "The homepage, which is a page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:252
+#: includes/class-lightweight-seo-inspector.php:253
 msgid "The posts page."
 msgstr ""
 
 #. translators: %s: plural name of a content type, such as Posts.
-#: includes/class-lightweight-seo-inspector.php:255
+#: includes/class-lightweight-seo-inspector.php:256
 #, php-format
 msgid "A single item of the content type “%s”."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:259
+#: includes/class-lightweight-seo-inspector.php:260
 msgid "The homepage, which lists the latest posts."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:262
+#: includes/class-lightweight-seo-inspector.php:263
 msgid "A page of internal search results."
 msgstr ""
 
 #. translators: %s: plural name of a taxonomy, such as Categories.
-#: includes/class-lightweight-seo-inspector.php:266
+#: includes/class-lightweight-seo-inspector.php:267
 #, php-format
 msgid "An archive of the taxonomy “%s”."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:269
+#: includes/class-lightweight-seo-inspector.php:270
 msgid "An author archive."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:272
+#: includes/class-lightweight-seo-inspector.php:273
 msgid "A date archive."
 msgstr ""
 
 #. translators: %s: plural name of a content type, such as Portfolio Items.
-#: includes/class-lightweight-seo-inspector.php:276
+#: includes/class-lightweight-seo-inspector.php:277
 #, php-format
 msgid "The archive page of the content type “%s”."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:279
+#: includes/class-lightweight-seo-inspector.php:280
 msgid "A page of another kind."
 msgstr ""
 
 #. translators: %d: page number of a paginated archive or post.
-#: includes/class-lightweight-seo-inspector.php:287
+#: includes/class-lightweight-seo-inspector.php:288
 #, php-format
 msgid "This is page %d of it."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:291
+#: includes/class-lightweight-seo-inspector.php:292
 msgid "Page"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:292
+#: includes/class-lightweight-seo-inspector.php:293
 msgid "What WordPress found"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:319
+#: includes/class-lightweight-seo-inspector.php:320
 msgid "Search engines may show this page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:322
+#: includes/class-lightweight-seo-inspector.php:323
 msgid "Lightweight SEO does not hide it: the noindex directive comes from WordPress, the theme, or another plugin."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:325
+#: includes/class-lightweight-seo-inspector.php:326
 msgid "Search engines are asked not to show this page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:331
+#: includes/class-lightweight-seo-inspector.php:332
 msgid "Exception"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:331
+#: includes/class-lightweight-seo-inspector.php:332
 msgid "Its content type is hidden from search results, but this one is set to “Show in search results”."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:334
+#: includes/class-lightweight-seo-inspector.php:335
 msgid "No robots meta tag is printed."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:337
+#: includes/class-lightweight-seo-inspector.php:338
 msgid "Safe mode: Lightweight SEO adds no directive of its own."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:340
-#: includes/class-lightweight-seo-meta-boxes.php:239
+#: includes/class-lightweight-seo-inspector.php:341
+#: includes/class-lightweight-seo-meta-boxes.php:265
 msgid "Robots directives"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:377
+#: includes/class-lightweight-seo-inspector.php:378
 msgid "WordPress is set to discourage search engines from indexing this site (Settings → Reading)."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:381
+#: includes/class-lightweight-seo-inspector.php:382
 msgid "A missing page is never shown."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:391
+#: includes/class-lightweight-seo-inspector.php:392
 msgid "The page is protected by a password."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:396
+#: includes/class-lightweight-seo-inspector.php:397
 msgid "This page is set to “Hide from search results” in its SEO settings."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:397
+#: includes/class-lightweight-seo-inspector.php:398
 msgid "This archive is set to “Hide from search results” in its SEO settings."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:400
+#: includes/class-lightweight-seo-inspector.php:401
 msgid "Author archives are hidden on the “Content and indexation” tab, and this author follows that."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:402
+#: includes/class-lightweight-seo-inspector.php:403
 msgid "Media pages are hidden on the “Content and indexation” tab, and this one follows that."
 msgstr ""
 
 #. translators: %s: plural name of a content type or taxonomy, such as Posts or Tags.
-#: includes/class-lightweight-seo-inspector.php:405
+#: includes/class-lightweight-seo-inspector.php:406
 #, php-format
 msgid "“%s” is hidden on the “Content and indexation” tab, and this one follows that."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:411
+#: includes/class-lightweight-seo-inspector.php:412
 msgid "Internal search pages are hidden on the “Content and indexation” tab."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:412
+#: includes/class-lightweight-seo-inspector.php:413
 msgid "WordPress hides its own search result pages."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:416
+#: includes/class-lightweight-seo-inspector.php:417
 msgid "Date archives are hidden on the “Content and indexation” tab."
 msgstr ""
 
 #. translators: %s: plural name of a content type, such as Portfolio Items.
-#: includes/class-lightweight-seo-inspector.php:421
+#: includes/class-lightweight-seo-inspector.php:422
 #, php-format
 msgid "“%s” is hidden on the “Content and indexation” tab, which also hides its archive page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:438
+#: includes/class-lightweight-seo-inspector.php:439
 msgid "Safe mode: the title is written by WordPress or another plugin, not by Lightweight SEO."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:440
+#: includes/class-lightweight-seo-inspector.php:441
 msgid "Written by WordPress; Lightweight SEO has no format for this kind of page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:443
+#: includes/class-lightweight-seo-inspector.php:444
 msgid "From this page’s own SEO title."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:444
+#: includes/class-lightweight-seo-inspector.php:445
 msgid "From this archive’s own SEO title."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:446
+#: includes/class-lightweight-seo-inspector.php:447
 msgid "From the homepage title format."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:448
+#: includes/class-lightweight-seo-inspector.php:449
 msgid "From the search title format."
 msgstr ""
 
 #. translators: %s: plural name of a content type or taxonomy, such as Posts or Tags.
-#: includes/class-lightweight-seo-inspector.php:451
+#: includes/class-lightweight-seo-inspector.php:452
 #, php-format
 msgid "From the title format of “%s” on the “Content and indexation” tab."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:453
+#: includes/class-lightweight-seo-inspector.php:454
 msgid "From the default title format."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:455
+#: includes/class-lightweight-seo-inspector.php:456
 msgid "From the archive title format."
 msgstr ""
 
 #. translators: %d: number of characters in a title or description.
-#: includes/class-lightweight-seo-inspector.php:459
-#: includes/class-lightweight-seo-inspector.php:508
+#: includes/class-lightweight-seo-inspector.php:460
+#: includes/class-lightweight-seo-inspector.php:509
 #, php-format
 msgid "%d character."
 msgid_plural "%d characters."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-inspector.php:462
+#: includes/class-lightweight-seo-inspector.php:463
 msgid "Title"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:463
+#: includes/class-lightweight-seo-inspector.php:464
 msgid "Title tag"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:463
+#: includes/class-lightweight-seo-inspector.php:464
 msgid "No title is sent."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:487
+#: includes/class-lightweight-seo-inspector.php:488
 msgid "Safe mode: Lightweight SEO prints no description."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:489
+#: includes/class-lightweight-seo-inspector.php:490
 msgid "No description is sent, so search engines pick text from the page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:493
+#: includes/class-lightweight-seo-inspector.php:494
 msgid "From this page’s own meta description."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:494
+#: includes/class-lightweight-seo-inspector.php:495
 msgid "From this archive’s own meta description."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:496
+#: includes/class-lightweight-seo-inspector.php:497
 msgid "From the homepage meta description on the “Search appearance” tab."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:498
+#: includes/class-lightweight-seo-inspector.php:499
 msgid "A short summary of the excerpt or content, because the page has no description of its own."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:500
+#: includes/class-lightweight-seo-inspector.php:501
 msgid "A short summary of the term’s description."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:502
+#: includes/class-lightweight-seo-inspector.php:503
 msgid "A short summary of the author’s biography."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:504
+#: includes/class-lightweight-seo-inspector.php:505
 msgid "From the archive’s own description."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:530
+#: includes/class-lightweight-seo-inspector.php:531
 msgid "None is sent for a missing page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:530
+#: includes/class-lightweight-seo-inspector.php:531
 msgid "No canonical address is sent."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:532
+#: includes/class-lightweight-seo-inspector.php:533
 msgid "Safe mode: decided by WordPress or another plugin, not by Lightweight SEO."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:534
+#: includes/class-lightweight-seo-inspector.php:535
 msgid "A custom address, set in the SEO settings of this page or archive."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:536
+#: includes/class-lightweight-seo-inspector.php:537
 msgid "The page’s own address."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:540
+#: includes/class-lightweight-seo-inspector.php:541
 msgid "Canonical"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:541
+#: includes/class-lightweight-seo-inspector.php:542
 msgid "Canonical address"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:561
+#: includes/class-lightweight-seo-inspector.php:562
 msgid "Sharing and other tags"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:567
-#: includes/class-lightweight-seo-inspector.php:569
+#: includes/class-lightweight-seo-inspector.php:568
+#: includes/class-lightweight-seo-inspector.php:570
 msgid "Open Graph and X tags"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:567
-#: includes/class-lightweight-seo-inspector.php:627
+#: includes/class-lightweight-seo-inspector.php:568
+#: includes/class-lightweight-seo-inspector.php:628
 msgid "Safe mode: Lightweight SEO prints none."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:569
+#: includes/class-lightweight-seo-inspector.php:570
 msgid "None are sent for this page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:571
+#: includes/class-lightweight-seo-inspector.php:572
 msgid "Share image"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:571
+#: includes/class-lightweight-seo-inspector.php:572
 msgid "No image is sent, so a share shows text only."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:595
+#: includes/class-lightweight-seo-inspector.php:596
 msgid "WordPress sitemaps are switched off on this site."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:597
+#: includes/class-lightweight-seo-inspector.php:598
 msgid "WordPress does not list media pages in its sitemap."
 msgstr ""
 
 #. translators: %s: plural name of a content type or taxonomy, such as Posts or Tags.
-#: includes/class-lightweight-seo-inspector.php:600
+#: includes/class-lightweight-seo-inspector.php:601
 #, php-format
 msgid "“In sitemap” is off for “%s” on the “Content and indexation” tab."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:602
+#: includes/class-lightweight-seo-inspector.php:603
 msgid "It is hidden from search results, and hidden pages are left out of the sitemap."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:606
+#: includes/class-lightweight-seo-inspector.php:607
 msgid "Left out."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:607
+#: includes/class-lightweight-seo-inspector.php:608
 msgid "Lightweight SEO does not leave it out."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:607
+#: includes/class-lightweight-seo-inspector.php:608
 msgid "WordPress lists published content; an address that a redirect rule sends elsewhere is left out."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:610
+#: includes/class-lightweight-seo-inspector.php:611
 msgid "Sitemap"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:627
-#: includes/class-lightweight-seo-inspector.php:635
-#: includes/class-lightweight-seo-inspector.php:646
+#: includes/class-lightweight-seo-inspector.php:628
+#: includes/class-lightweight-seo-inspector.php:636
+#: includes/class-lightweight-seo-inspector.php:647
 msgid "Schema"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:635
+#: includes/class-lightweight-seo-inspector.php:636
 msgid "None is sent for this page."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:635
+#: includes/class-lightweight-seo-inspector.php:636
 msgid "Core schema output is switched off on the “Schema and identity” tab."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:643
+#: includes/class-lightweight-seo-inspector.php:644
 msgid "Untyped node"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:683
+#: includes/class-lightweight-seo-inspector.php:689
+msgid "Main content text"
+msgstr ""
+
+#. translators: 1: number of characters. 2: HTML element name, such as main or article.
+#: includes/class-lightweight-seo-inspector.php:692
+#, php-format
+msgid "%1$s characters of text in the %2$s element, where the page’s main content is."
+msgstr ""
+
+#. translators: %s: HTML element name, such as main or article.
+#: includes/class-lightweight-seo-inspector.php:694
+#, php-format
+msgid "No text was found in the %s element. When a theme prints the page text outside it, or loads it with a script, readers that look for the main content find little."
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:698
+msgid "H1 headings"
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:700
+msgid "The page has one H1 heading."
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:701
+msgid "The page has no H1 heading."
+msgstr ""
+
+#. translators: %s: number of H1 headings, two or more.
+#: includes/class-lightweight-seo-inspector.php:703
+#, php-format
+msgid "The page has %s H1 headings."
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:707
+#: includes/class-lightweight-seo-meta-boxes.php:435
+msgid "Image alternative text"
+msgstr ""
+
+#. translators: %s: number of images.
+#: includes/class-lightweight-seo-inspector.php:710
+#, php-format
+msgid "All %s images have alternative text."
+msgstr ""
+
+#. translators: 1: number of images with an empty or missing alt attribute. 2: number of images.
+#: includes/class-lightweight-seo-inspector.php:712
+#, php-format
+msgid "%1$s of %2$s images have an empty or missing alt attribute. An image that is only decorative may keep an empty one."
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:713
+msgid "The page has no images."
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:718
+msgid "Content"
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:722
+msgid "The page could not be requested from this browser, so its content was not counted."
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:729
+msgid "Measured in this browser"
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:730
+msgid "The Tools tab requests the page as a signed-out visitor and counts what it receives. Open this report from the Tools tab to see the counts."
+msgstr ""
+
+#: includes/class-lightweight-seo-inspector.php:761
 msgid "Report for"
 msgstr ""
 
 #. translators: 1: comma-separated list of active SEO plugins, 2: comma-separated list of outputs.
-#: includes/class-lightweight-seo-inspector.php:688
+#: includes/class-lightweight-seo-inspector.php:766
 #, php-format
 msgid "Safe mode is on because %1$s is also active. Lightweight SEO is holding back: %2$s."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:717
+#: includes/class-lightweight-seo-inspector.php:801
 msgid "Show the JSON"
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:741
-#: includes/class-lightweight-seo-inspector.php:748
+#: includes/class-lightweight-seo-inspector.php:825
+#: includes/class-lightweight-seo-inspector.php:832
 msgid "SEO report"
 msgstr ""
 
 #. translators: %d: number of on-page checks that need a review.
-#: includes/class-lightweight-seo-meta-boxes.php:156
-#: includes/class-lightweight-seo-meta-boxes.php:158
-#: includes/class-lightweight-seo-meta-boxes.php:161
+#: includes/class-lightweight-seo-meta-boxes.php:179
+#: includes/class-lightweight-seo-meta-boxes.php:181
+#: includes/class-lightweight-seo-meta-boxes.php:184
 #, php-format
 msgid "%d check to review"
 msgid_plural "%d checks to review"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:159
+#: includes/class-lightweight-seo-meta-boxes.php:182
 msgid "All checks passed"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:164
+#: includes/class-lightweight-seo-meta-boxes.php:187
 msgid "Prevent search engines from following links on this page"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:165
+#: includes/class-lightweight-seo-meta-boxes.php:188
 msgid "Prevent search engines from showing cached copies"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:166
+#: includes/class-lightweight-seo-meta-boxes.php:189
 msgid "Prevent text snippets from showing in search results"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:179
+#: includes/class-lightweight-seo-meta-boxes.php:205
 msgid "SEO editor panels"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:181
+#: includes/class-lightweight-seo-meta-boxes.php:207
 msgid "Social appearance"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:183
+#: includes/class-lightweight-seo-meta-boxes.php:209
 msgid "Checks"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:209
+#: includes/class-lightweight-seo-meta-boxes.php:235
 msgid "characters. Aim for a clear, specific title; roughly 30–60 characters is useful preview guidance, not a ranking rule."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:218
+#: includes/class-lightweight-seo-meta-boxes.php:244
 msgid "characters. Roughly 120–160 characters often fits a search preview, but clarity matters more than hitting a number."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:222
+#: includes/class-lightweight-seo-meta-boxes.php:248
 msgid "Advanced canonical and robots controls"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:228
+#: includes/class-lightweight-seo-meta-boxes.php:254
 msgid "Leave empty to use this page’s own address. Set it only when this page is a copy of another page."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:235
+#: includes/class-lightweight-seo-meta-boxes.php:261
 msgid "Decides whether search engines may show this page, whatever its content type is set to."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:275
+#: includes/class-lightweight-seo-meta-boxes.php:301
 msgid "Social title"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:278
+#: includes/class-lightweight-seo-meta-boxes.php:304
 msgid "Leave empty to use the SEO title."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:282
+#: includes/class-lightweight-seo-meta-boxes.php:308
 msgid "Social description"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:285
+#: includes/class-lightweight-seo-meta-boxes.php:311
 msgid "Leave empty to use the meta description."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:289
-#: includes/class-lightweight-seo-meta-boxes.php:360
+#: includes/class-lightweight-seo-meta-boxes.php:315
+#: includes/class-lightweight-seo-meta-boxes.php:399
 msgid "Social image"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:301
+#: includes/class-lightweight-seo-meta-boxes.php:327
 msgid "Selected social image"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:305
+#: includes/class-lightweight-seo-meta-boxes.php:331
 msgid "Leave empty to use the featured image, or the site default when there is none. Recommended size: 1200 × 630 pixels."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:310
+#: includes/class-lightweight-seo-meta-boxes.php:336
 msgid "These checks report facts and preview guidance only. They do not predict rankings."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:311
-#: includes/class-lightweight-seo-meta-boxes.php:316
+#: includes/class-lightweight-seo-meta-boxes.php:337
+#: includes/class-lightweight-seo-meta-boxes.php:342
 msgid "Edit"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:340
+#: includes/class-lightweight-seo-meta-boxes.php:370
 msgid "Inspect what is sent for this page"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:354
+#: includes/class-lightweight-seo-meta-boxes.php:393
 msgid "A title is available for the search preview."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:354
+#: includes/class-lightweight-seo-meta-boxes.php:393
 msgid "Add a clear SEO title."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:355
-msgid "A description is available for the search preview."
-msgstr ""
-
-#: includes/class-lightweight-seo-meta-boxes.php:355
-msgid "Add a useful description of this page."
-msgstr ""
-
-#: includes/class-lightweight-seo-meta-boxes.php:357
+#: includes/class-lightweight-seo-meta-boxes.php:396
 msgid "Title preview length"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:357
+#: includes/class-lightweight-seo-meta-boxes.php:396
 msgid "The title is within the usual preview guidance range."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:357
+#: includes/class-lightweight-seo-meta-boxes.php:396
 msgid "The title may be shortened or expanded in search results; review it for clarity."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:359
+#: includes/class-lightweight-seo-meta-boxes.php:398
 msgid "Description preview length"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:359
+#: includes/class-lightweight-seo-meta-boxes.php:398
 msgid "The description is within the usual preview guidance range."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:359
+#: includes/class-lightweight-seo-meta-boxes.php:398
 msgid "The description may truncate or leave unused preview space; review it for clarity."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:360
+#: includes/class-lightweight-seo-meta-boxes.php:399
 msgid "A social image is available."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:360
+#: includes/class-lightweight-seo-meta-boxes.php:399
 msgid "Choose an image for richer social previews."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:364
+#: includes/class-lightweight-seo-meta-boxes.php:403
 msgid "Social image width"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:364
+#: includes/class-lightweight-seo-meta-boxes.php:403
 msgid "The selected image meets the 1200px width recommendation."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:364
+#: includes/class-lightweight-seo-meta-boxes.php:403
 msgid "The selected image is below the 1200px width recommendation."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:368
+#: includes/class-lightweight-seo-meta-boxes.php:407
 msgid "This content type is hidden from search results, so this page is too. Choose “Show in search results” to make an exception."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:369
+#: includes/class-lightweight-seo-meta-boxes.php:408
 msgid "Indexing"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:369
+#: includes/class-lightweight-seo-meta-boxes.php:408
 msgid "This page can be indexed."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:369
+#: includes/class-lightweight-seo-meta-boxes.php:408
 msgid "This page is intentionally set to noindex. Confirm that is expected."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:382
+#: includes/class-lightweight-seo-meta-boxes.php:421
 msgid "The custom canonical URL is invalid."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:383
+#: includes/class-lightweight-seo-meta-boxes.php:422
 msgid "Custom canonical"
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:383
+#: includes/class-lightweight-seo-meta-boxes.php:422
 msgid "The custom canonical uses this site’s host."
 msgstr ""
 
-#: includes/class-lightweight-seo-meta-boxes.php:383
+#: includes/class-lightweight-seo-meta-boxes.php:422
 msgid "The custom canonical points to a different host. Confirm that this is intentional."
 msgstr ""
 
+#. translators: 1: number of images without alternative text. 2: number of images in the content.
+#: includes/class-lightweight-seo-meta-boxes.php:434
+#, php-format
+msgid "Images in the content without alternative text: %1$d of %2$d. Describe each image that carries meaning; an image that is only decorative may keep an empty one."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:435
+msgid "Every image in the content has alternative text."
+msgstr ""
+
+#. translators: %d: number of H1 headings in the content, two or more.
+#: includes/class-lightweight-seo-meta-boxes.php:439
+#, php-format
+msgid "The content has %d H1 headings. The theme usually prints the page title as the H1, so use Heading 2 and below inside the content."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:440
+msgid "Main headings"
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:440
+msgid "The content has no more than one H1 heading."
+msgstr ""
+
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-meta-boxes.php:396
+#: includes/class-lightweight-seo-meta-boxes.php:446
 msgid "SEO output conflicts"
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-meta-boxes.php:396
+#: includes/class-lightweight-seo-meta-boxes.php:446
 msgid "No conflicting SEO plugin was detected."
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins.
-#: includes/class-lightweight-seo-meta-boxes.php:396
+#: includes/class-lightweight-seo-meta-boxes.php:446
 #, php-format
 msgid "Another SEO plugin is active: %s. Lightweight SEO suppresses overlapping output."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:469
+msgid "The description written here is printed."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:470
+msgid "No description is printed for this page: nothing is written here, and the page has no excerpt or content text to summarize. Write one, especially when the theme or custom fields hold the page text."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:475
+msgid "Nothing is written here, so a summary of the excerpt or content is printed."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:476
+msgid "Nothing is written here, so the homepage meta description is printed."
+msgstr ""
+
+#: includes/class-lightweight-seo-meta-boxes.php:479
+msgid "No description is printed while the page is password protected."
 msgstr ""
 
 #. translators: %d: page number of a paginated archive or post, from 2 upwards.

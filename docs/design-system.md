@@ -129,6 +129,7 @@ The "Inspect a page" card on the Tools tab shows what the plugin sends for one a
 - **The address field has no name**, so it is never saved, and Enter runs the report instead of saving the form.
 - **Without the script** a link opens the same report as a page of its own. That page links the admin stylesheet and carries the few rules WordPress would otherwise supply (`lwseo-inspect-page`).
 - **Nothing is fetched by PHP**, and the inspect argument does nothing without the `manage_options` capability and a valid nonce.
+- **The Content section is measured in the browser.** Its rows are printed hidden, with every message in `data-msg-{key}`. After placing the report, the script requests the page again, signed out, reads it with `pageFacts()`, and shows the rows. The standalone report says to open it from the Tools tab.
 
 ## Served-File Checks
 
@@ -146,6 +147,8 @@ The editor panel is printed in its saved state and then follows the page as it i
 - Each check has a stable ID. The server prints its row with `data-check`, both outcomes in `data-pass` and `data-fail`, and the field that fixes it in `data-target`. A check that does not apply yet is printed with `hidden`.
 - The script holds one rule per ID in `checkRules`. A rule returns `true`, `false`, the name of an alternative failure message (`data-fail-{name}`), or `null` when the check does not apply.
 - Add a check in both places: `get_editor_checks()` in `class-lightweight-seo-meta-boxes.php` and `checkRules` in the script. A test fails when a printed check has no rule. A check only the server can decide, such as `conflicts`, has no rule and keeps its printed state.
+- A rule may also return `{passes, variant, values}`. `variant` picks `data-pass-{name}` or `data-fail-{name}`, so a passing row can say which source it found, such as the description check naming the summary it prints. `values` fill `%1$d`, `%2$d`, or `%d` in the message, which the server prints as a template beside the filled-in text.
+- Content counts come from `contentFacts()` in `lightweight-seo-formats.js` and `Lightweight_SEO_Text::content_facts()`, which share the cases in `tests/fixtures/content-facts.json`.
 - The count on the Checks tab becomes a tick when nothing is left to review. The tick animates once, only when an edit clears the last check, and never on page load.
 
 ## Previews

@@ -118,6 +118,16 @@ class Lightweight_SEO_Meta_Boxes {
 		$current_title  = $resolve_tokens( $global_title_format );
 		// Mirror the frontend fallback: a short summary of the excerpt or content, never the whole document.
 		$fallback_description = Lightweight_SEO_Text::summarize( $this->normalize_preview_text( ! empty( $post->post_excerpt ) ? $post->post_excerpt : ( $post->post_content ?? '' ) ) );
+		// A static front page without a description of its own prints the homepage meta description instead.
+		$is_front_page    = 'page' === get_option( 'show_on_front' ) && absint( get_option( 'page_on_front', 0 ) ) === (int) $post->ID;
+		$site_description = $is_front_page ? $this->normalize_preview_text( $this->settings->get( 'meta_description', '' ) ) : '';
+		$is_protected     = '' !== (string) ( $post->post_password ?? '' );
+		$content_facts    = Lightweight_SEO_Text::content_facts( $post->post_content ?? '' );
+
+		if ( '' !== $site_description ) {
+			$fallback_description = $site_description;
+		}
+
 		$preview_title        = $this->normalize_preview_text( $seo_title ? $resolve_tokens( $seo_title ) : $current_title );
 		$preview_description  = $this->normalize_preview_text( $seo_description ? $resolve_tokens( $seo_description ) : $fallback_description );
 		$preview_url          = $seo_canonical_url ? $seo_canonical_url : get_permalink( $post->ID );
@@ -142,7 +152,20 @@ class Lightweight_SEO_Meta_Boxes {
 			$social_image_id = 0;
 		}
 
-		$checks    = $this->get_editor_checks( $post_meta, $preview_title, $preview_description, $social_image, $social_image_id, $type_hidden );
+		$checks    = $this->get_editor_checks(
+			$post_meta,
+			$preview_title,
+			$preview_description,
+			$social_image,
+			$social_image_id,
+			$type_hidden,
+			array(
+				'own_description'  => '' !== trim( (string) $seo_description ),
+				'site_description' => $site_description,
+				'protected'        => $is_protected,
+				'content'          => $content_facts,
+			)
+		);
 		$to_review = count(
 			array_filter(
 				$checks,
@@ -175,6 +198,9 @@ class Lightweight_SEO_Meta_Boxes {
 			data-featured-width="<?php echo esc_attr( (string) $this->get_image_width( $featured_image_id ) ); ?>"
 			data-default-image="<?php echo esc_url( $default_image ); ?>"
 			data-type-noindex="<?php echo $type_hidden ? '1' : '0'; ?>"
+			data-site-description="<?php echo esc_attr( $site_description ); ?>"
+			data-protected="<?php echo $is_protected ? '1' : '0'; ?>"
+			data-content-facts="<?php echo esc_attr( (string) wp_json_encode( $content_facts ) ); ?>"
 		>
 			<div class="lwseo-tabs" role="tablist" aria-label="<?php echo esc_attr( __( 'SEO editor panels', 'lightweight-seo' ) ); ?>">
 				<button type="button" class="lwseo-tabs__tab is-active" role="tab" aria-selected="true" aria-controls="lightweight-seo-search-panel" id="lightweight-seo-search-tab"><?php esc_html_e( 'Search appearance', 'lightweight-seo' ); ?></button>
@@ -329,6 +355,10 @@ class Lightweight_SEO_Meta_Boxes {
 							$attributes[ 'data-fail-' . $variant ] = $message;
 						}
 
+						foreach ( $check['pass_variants'] as $variant => $message ) {
+							$attributes[ 'data-pass-' . $variant ] = $message;
+						}
+
 						$attributes['hidden'] = ! empty( $check['hidden'] );
 
 						Lightweight_SEO_Admin_UI::status( $check['status'], $check['label'], $check['message'], $action, $attributes );
@@ -349,10 +379,19 @@ class Lightweight_SEO_Meta_Boxes {
 	 *
 	 * @return array
 	 */
-	private function get_editor_checks( $post_meta, $title, $description, $social_image, $social_image_id, $type_hidden = false ) {
+	private function get_editor_checks( $post_meta, $title, $description, $social_image, $social_image_id, $type_hidden = false, $page = array() ) {
+		$page               = wp_parse_args(
+			$page,
+			array(
+				'own_description'  => '' !== trim( (string) ( $post_meta['seo_description'] ?? '' ) ),
+				'site_description' => '',
+				'protected'        => false,
+				'content'          => Lightweight_SEO_Text::content_facts( '' ),
+			)
+		);
 		$checks             = array();
 		$checks[]           = $this->make_check( 'title', '' !== (string) $title, __( 'SEO title', 'lightweight-seo' ), __( 'A title is available for the search preview.', 'lightweight-seo' ), __( 'Add a clear SEO title.', 'lightweight-seo' ), '#lightweight_seo_title' );
-		$checks[]           = $this->make_check( 'description', '' !== (string) $description, __( 'Meta description', 'lightweight-seo' ), __( 'A description is available for the search preview.', 'lightweight-seo' ), __( 'Add a useful description of this page.', 'lightweight-seo' ), '#lightweight_seo_description' );
+		$checks[]           = $this->get_description_check( $description, $page );
 		$title_length       = Lightweight_SEO_Text::length( $title );
 		$checks[]           = $this->make_check( 'title_length', $title_length >= 30 && $title_length <= 60, __( 'Title preview length', 'lightweight-seo' ), __( 'The title is within the usual preview guidance range.', 'lightweight-seo' ), __( 'The title may be shortened or expanded in search results; review it for clarity.', 'lightweight-seo' ), '#lightweight_seo_title' );
 		$description_length = Lightweight_SEO_Text::length( $description );
@@ -390,6 +429,17 @@ class Lightweight_SEO_Meta_Boxes {
 
 		$checks[] = $check;
 
+		$facts = $page['content'];
+		/* translators: 1: number of images without alternative text. 2: number of images in the content. */
+		$no_alt   = __( 'Images in the content without alternative text: %1$d of %2$d. Describe each image that carries meaning; an image that is only decorative may keep an empty one.', 'lightweight-seo' );
+		$check    = $this->make_check( 'image_alt', $facts['images'] ? 0 === $facts['imagesWithoutAlt'] : null, __( 'Image alternative text', 'lightweight-seo' ), __( 'Every image in the content has alternative text.', 'lightweight-seo' ), $no_alt, '' );
+		$checks[] = $this->with_counts( $check, array( $facts['imagesWithoutAlt'], $facts['images'] ) );
+
+		/* translators: %d: number of H1 headings in the content, two or more. */
+		$many_h1  = __( 'The content has %d H1 headings. The theme usually prints the page title as the H1, so use Heading 2 and below inside the content.', 'lightweight-seo' );
+		$check    = $this->make_check( 'content_headings', $facts['h1'] <= 1, __( 'Main headings', 'lightweight-seo' ), __( 'The content has no more than one H1 heading.', 'lightweight-seo' ), $many_h1, '' );
+		$checks[] = $this->with_counts( $check, array( $facts['h1'] ) );
+
 		if ( class_exists( 'Lightweight_SEO_Compatibility_Service' ) ) {
 			$conflicts = ( new Lightweight_SEO_Compatibility_Service() )->get_conflicting_plugins();
 			/* translators: %s: comma-separated list of conflicting SEO plugins. */
@@ -397,6 +447,58 @@ class Lightweight_SEO_Meta_Boxes {
 		}
 
 		return $checks;
+	}
+
+	/**
+	 * Say which description the page prints, and when it prints none.
+	 *
+	 * The order is the page's: a password removes it, the description written here wins,
+	 * a static front page then uses the homepage meta description, and other pages a
+	 * summary of the excerpt or content.
+	 *
+	 * @param string $description Description the preview shows.
+	 * @param array  $page        Facts about the page: own_description, site_description, protected.
+	 * @return array
+	 */
+	private function get_description_check( $description, $page ) {
+		$passes = '' !== (string) $description && ! $page['protected'];
+		$check  = $this->make_check(
+			'description',
+			$passes,
+			__( 'Meta description', 'lightweight-seo' ),
+			__( 'The description written here is printed.', 'lightweight-seo' ),
+			__( 'No description is printed for this page: nothing is written here, and the page has no excerpt or content text to summarize. Write one, especially when the theme or custom fields hold the page text.', 'lightweight-seo' ),
+			'#lightweight_seo_description'
+		);
+
+		$check['pass_variants'] = array(
+			'summary' => __( 'Nothing is written here, so a summary of the excerpt or content is printed.', 'lightweight-seo' ),
+			'site'    => __( 'Nothing is written here, so the homepage meta description is printed.', 'lightweight-seo' ),
+		);
+		$check['variants']      = array(
+			'protected' => __( 'No description is printed while the page is password protected.', 'lightweight-seo' ),
+		);
+
+		if ( $page['protected'] ) {
+			$check['message'] = $check['variants']['protected'];
+		} elseif ( $passes && ! $page['own_description'] ) {
+			$check['message'] = $check['pass_variants'][ '' !== (string) $page['site_description'] ? 'site' : 'summary' ];
+		}
+
+		return $check;
+	}
+
+	/**
+	 * Fill the counts of a check's message, keeping the template for the script.
+	 *
+	 * @param array $check  Check from make_check().
+	 * @param int[] $counts Values for %1$d, %2$d, and so on.
+	 * @return array
+	 */
+	private function with_counts( $check, $counts ) {
+		$check['message'] = vsprintf( str_replace( '%d', '%1$d', $check['message'] ), $counts );
+
+		return $check;
 	}
 
 	/**
@@ -415,15 +517,16 @@ class Lightweight_SEO_Meta_Boxes {
 	 */
 	private function make_check( $id, $passes, $label, $success, $warning, $target ) {
 		return array(
-			'id'       => $id,
-			'status'   => false === $passes ? 'warning' : 'success',
-			'label'    => $label,
-			'message'  => false === $passes ? $warning : $success,
-			'pass'     => $success,
-			'fail'     => $warning,
-			'variants' => array(),
-			'target'   => $target,
-			'hidden'   => null === $passes,
+			'id'            => $id,
+			'status'        => false === $passes ? 'warning' : 'success',
+			'label'         => $label,
+			'message'       => false === $passes ? $warning : $success,
+			'pass'          => $success,
+			'fail'          => $warning,
+			'variants'      => array(),
+			'pass_variants' => array(),
+			'target'        => $target,
+			'hidden'        => null === $passes,
 		);
 	}
 

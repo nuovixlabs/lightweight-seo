@@ -54,13 +54,13 @@ The SEO panel on supported posts and pages provides:
 - an optional SEO title and meta description, with `%title%`, `%sitename%`, `%tagline%`, `%sep%`, `%category%`, `%author%`, `%year%`, and `%page%` resolved on the page
 - canonical and robots controls, including a choice to show or hide the page whatever its content type is set to
 - social title, description, and image overrides
-- deterministic checks explaining missing or conflicting inputs
+- deterministic checks explaining missing or conflicting inputs, including which description is printed, images in the content without alternative text, and more than one H1 heading
 
 When no description is written, a 160-character summary of the excerpt or content is used. Legacy focus-keyword values are preserved for export but are not edited or emitted.
 
 Redirect rule paths are matched against the full request path, so a subdirectory install writes rules as `/blog/old-path /blog/new-path`. A source ending in `/*` covers everything under it, a target ending in `/*` keeps the rest of the address, and `/old-path 410` answers that the page is gone.
 
-The Tools tab can inspect any address on the site: it shows what is sent for that page and where each value comes from.
+The Tools tab can inspect any address on the site: it shows what is sent for that page and where each value comes from, and counts the main content's text, the H1 headings, and the images without alternative text on the page as a visitor receives it.
 
 The Posts, Pages, and custom post type lists show a compact SEO column, and their Quick Edit and Bulk Edit can change the SEO title, the description, and whether the item is shown in search results.
 

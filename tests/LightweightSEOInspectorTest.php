@@ -493,6 +493,30 @@ final class LightweightSEOInspectorTest extends TestCase {
 		$this->assertStringContainsString( '<div class="lwseo-inspect__result">', $document );
 	}
 
+	public function test_the_content_section_is_measured_in_the_browser_from_the_page_as_served(): void {
+		$this->view_post();
+
+		$inspector = $this->get_inspector();
+		$report    = $inspector->get_report();
+		$lines     = $this->lines( $report );
+
+		ob_start();
+		$inspector->render( $report );
+		$output = (string) ob_get_clean();
+
+		// PHP counts nothing: the rows are printed hidden for the Tools tab to fill in.
+		$this->assertSame( 'info: The Tools tab requests the page as a signed-out visitor and counts what it receives. Open this report from the Tools tab to see the counts.', $lines['Content / Measured in this browser'] );
+		$this->assertStringContainsString( '<h3 class="lwseo-inspect__heading">Content</h3><ul class="lwseo-status-list" data-lwseo-page-content data-url="https://example.com/a-post/"', $output );
+
+		foreach ( array( 'text', 'headings', 'images' ) as $row ) {
+			$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-info" hidden data-content-measure="' . $row . '"/', $output );
+		}
+
+		$this->assertStringContainsString( 'data-msg-missing="%1$s of %2$s images have an empty or missing alt attribute. An image that is only decorative may keep an empty one."', $output );
+		$this->assertStringContainsString( 'data-msg-none="No text was found in the %s element.', $output );
+		$this->assertStringContainsString( 'data-msg-many="The page has %s H1 headings."', $output );
+	}
+
 	public function test_the_rendered_report_escapes_everything_it_shows(): void {
 		global $lightweight_seo_test_query_state;
 
