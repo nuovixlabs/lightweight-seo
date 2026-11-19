@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T10:02:38+00:00\n"
+"POT-Creation-Date: 2026-11-19T10:09:34+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -1038,7 +1038,7 @@ msgid "Search posts and pages to add"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:854
-#: includes/class-lightweight-seo-ai-discovery-module.php:721
+#: includes/class-lightweight-seo-ai-discovery-module.php:726
 msgid "Pages listed in llms.txt"
 msgstr ""
 
@@ -1063,7 +1063,7 @@ msgid "Not checked, because robots.txt could not be read."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:931
-msgid "Each row states a fact. There is no score: a check that does not apply to a site that publishes content says why, and a file this version does not publish is “Not offered”, not a problem."
+msgid "Each row states a fact. There is no score: a standard Lightweight SEO does not take part in says why, a file this version does not publish is “Not offered”, not a problem, and an address this browser could not fetch is “Not checked”."
 msgstr ""
 
 #. translators: %s: comma-separated list of conflicting SEO plugins
@@ -2336,7 +2336,7 @@ msgid "DNS records for agents"
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:533
-msgid "Agent DNS records announce agent services a site runs, and a site that publishes content through WordPress runs none."
+msgid "DNS records for agents announce agent services under a domain, and they are set at the DNS provider, where Lightweight SEO can neither publish nor check them."
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:539
@@ -2495,7 +2495,7 @@ msgid "Web Bot Auth key directory"
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:632
-msgid "Web Bot Auth publishes the keys a bot signs its requests with, and a site that publishes content runs no bot of its own."
+msgid "A Web Bot Auth key directory publishes the keys an operator’s own bots sign their requests with; Lightweight SEO runs no bot and publishes no keys."
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:642
@@ -2523,7 +2523,7 @@ msgid "OpenAPI description"
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:668
-msgid "An OpenAPI document describes an API built for agents, and this site offers none beyond the WordPress REST API, which describes itself at /wp-json/."
+msgid "An OpenAPI document describes an API for the plugin or service that provides it; Lightweight SEO adds no API, and the WordPress REST API describes itself at /wp-json/."
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:669
@@ -2531,7 +2531,7 @@ msgid "WebMCP"
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:669
-msgid "WebMCP exposes actions on a page as tools for an agent in the browser, and pages that publish content have no such actions to expose."
+msgid "WebMCP lets a page offer its actions as tools to an agent in the browser, which the code behind those actions registers; Lightweight SEO registers none."
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:673
@@ -2543,7 +2543,7 @@ msgid "OAuth metadata and auth.md"
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:675
-msgid "These describe how an agent signs in to an API, and this site offers no API that asks an agent to sign in."
+msgid "They describe an OAuth server an agent can sign in with; WordPress has none, its REST API signs in with application passwords, and Lightweight SEO adds no sign-in."
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:679
@@ -2555,7 +2555,7 @@ msgid "A2A agent card"
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:681
-msgid "An agent card describes an AI agent the site runs, and a site that publishes content runs none."
+msgid "An A2A agent card describes an AI agent that answers at the site, for whichever plugin or service runs it; Lightweight SEO runs no agent."
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:682
@@ -2563,80 +2563,84 @@ msgid "Commerce protocols"
 msgstr ""
 
 #: includes/class-lightweight-seo-ai-discovery-module.php:682
-msgid "Agent payment and checkout protocols belong to a shop; Lightweight SEO prints no product or payment data and provides none."
+msgid "Agent payment and checkout protocols are provided by the shop or payment plugin that handles the sale; Lightweight SEO handles no products or payments."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:702
+#: includes/class-lightweight-seo-ai-discovery-module.php:700
+msgid "Not checked: this browser could not fetch the address. That happens when the administration runs on another address than the site, such as www or http, or when something blocks the request. Open it to see the answer."
+msgstr ""
+
+#: includes/class-lightweight-seo-ai-discovery-module.php:707
 msgid "Checked by this browser, which fetches the address the way a crawler would."
 msgstr ""
 
 #. translators: %s: address the file was found at.
-#: includes/class-lightweight-seo-ai-discovery-module.php:712
+#: includes/class-lightweight-seo-ai-discovery-module.php:717
 #, php-format
 msgid "Found at %s."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:713
+#: includes/class-lightweight-seo-ai-discovery-module.php:718
 msgid "Not offered. This version of Lightweight SEO does not publish it, and nothing else answers the address with one."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:727
+#: includes/class-lightweight-seo-ai-discovery-module.php:732
 msgid "The llms.txt switch on this card is off."
 msgstr ""
 
 #. translators: 1: number of pages listed. 2: number of pages selected.
-#: includes/class-lightweight-seo-ai-discovery-module.php:739
+#: includes/class-lightweight-seo-ai-discovery-module.php:744
 #, php-format
 msgid "%1$d of %2$d selected pages are listed: published, public, indexable, canonical, on this site, and not redirected."
 msgstr ""
 
 #. translators: 1: number of listed pages with a description. 2: number of listed pages.
-#: includes/class-lightweight-seo-ai-discovery-module.php:741
+#: includes/class-lightweight-seo-ai-discovery-module.php:746
 #, php-format
 msgid "%1$d of %2$d listed pages have a description."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:750
+#: includes/class-lightweight-seo-ai-discovery-module.php:755
 msgid "Organization or person"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:756
+#: includes/class-lightweight-seo-ai-discovery-module.php:761
 msgid "Another SEO plugin prints the structured data, so Lightweight SEO prints none to check."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:763
+#: includes/class-lightweight-seo-ai-discovery-module.php:768
 #: includes/class-lightweight-seo-inspector.php:636
 msgid "Core schema output is switched off on the “Schema and identity” tab."
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:776
+#: includes/class-lightweight-seo-ai-discovery-module.php:781
 msgid "name"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:780
+#: includes/class-lightweight-seo-ai-discovery-module.php:785
 msgid "photo"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:780
+#: includes/class-lightweight-seo-ai-discovery-module.php:785
 msgid "logo"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:784
+#: includes/class-lightweight-seo-ai-discovery-module.php:789
 msgid "description"
 msgstr ""
 
-#: includes/class-lightweight-seo-ai-discovery-module.php:788
+#: includes/class-lightweight-seo-ai-discovery-module.php:793
 msgid "profile links"
 msgstr ""
 
 #. translators: %s: schema type, Organization or Person.
-#: includes/class-lightweight-seo-ai-discovery-module.php:797
+#: includes/class-lightweight-seo-ai-discovery-module.php:802
 #, php-format
 msgid "The %s node has a name, an image, a description, and profile links."
 msgstr ""
 
 #. translators: 1: schema type, Organization or Person. 2: list of missing properties, such as "logo, description".
-#: includes/class-lightweight-seo-ai-discovery-module.php:799
+#: includes/class-lightweight-seo-ai-discovery-module.php:804
 #, php-format
 msgid "The %1$s node is missing: %2$s. Add them on the “Site identity” card."
 msgstr ""

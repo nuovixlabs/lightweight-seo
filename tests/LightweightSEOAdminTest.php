@@ -1867,6 +1867,11 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( 'data-msg-partly="These groups disallow the homepage and every page their Allow lines do not list: %s."', $output );
 		$this->assertStringContainsString( 'data-msg-missing="No Sitemap line is served. Add this line to the file: %s"', $output );
 		$this->assertStringContainsString( 'data-msg-off="The content signals switch on this card is off, and no Content-Signal line is served."', $output );
+		// Every row about an address can say it was not checked, which is not a finding about the site.
+		$this->assertSame( 13, substr_count( $output, 'data-msg-unchecked="Not checked: this browser could not fetch the address.' ) );
+		$this->assertStringContainsString( 'WordPress has none, its REST API signs in with application passwords', $output );
+		$this->assertStringContainsString( 'they are set at the DNS provider, where Lightweight SEO can neither publish nor check them.', $output );
+		$this->assertStringNotContainsString( 'a site that publishes content', $output );
 
 		// Settings-based rows and their states.
 		$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-success" data-readiness="search_visibility"/', $output );

@@ -530,7 +530,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 									'none'  => __( 'Not offered. The homepage sends no Link header that points agents to an API description or catalog; this version of Lightweight SEO adds none.', 'lightweight-seo' ),
 								)
 							),
-							$na( 'dnsAid', __( 'DNS records for agents', 'lightweight-seo' ), __( 'Agent DNS records announce agent services a site runs, and a site that publishes content through WordPress runs none.', 'lightweight-seo' ) ),
+							$na( 'dnsAid', __( 'DNS records for agents', 'lightweight-seo' ), __( 'DNS records for agents announce agent services under a domain, and they are set at the DNS provider, where Lightweight SEO can neither publish nor check them.', 'lightweight-seo' ) ),
 						)
 					)
 				),
@@ -629,7 +629,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 									'off'     => __( 'The content signals switch on this card is off, and no Content-Signal line is served.', 'lightweight-seo' ),
 								)
 							),
-							$na( 'webBotAuth', __( 'Web Bot Auth key directory', 'lightweight-seo' ), __( 'Web Bot Auth publishes the keys a bot signs its requests with, and a site that publishes content runs no bot of its own.', 'lightweight-seo' ) ),
+							$na( 'webBotAuth', __( 'Web Bot Auth key directory', 'lightweight-seo' ), __( 'A Web Bot Auth key directory publishes the keys an operator’s own bots sign their requests with; Lightweight SEO runs no bot and publishes no keys.', 'lightweight-seo' ) ),
 						)
 					)
 				),
@@ -665,21 +665,21 @@ class Lightweight_SEO_AI_Discovery_Module {
 						$expected['probes']['ard'][0],
 						$this->found_messages()
 					),
-					$na( 'openApi', __( 'OpenAPI description', 'lightweight-seo' ), __( 'An OpenAPI document describes an API built for agents, and this site offers none beyond the WordPress REST API, which describes itself at /wp-json/.', 'lightweight-seo' ) ),
-					$na( 'webMcp', __( 'WebMCP', 'lightweight-seo' ), __( 'WebMCP exposes actions on a page as tools for an agent in the browser, and pages that publish content have no such actions to expose.', 'lightweight-seo' ) ),
+					$na( 'openApi', __( 'OpenAPI description', 'lightweight-seo' ), __( 'An OpenAPI document describes an API for the plugin or service that provides it; Lightweight SEO adds no API, and the WordPress REST API describes itself at /wp-json/.', 'lightweight-seo' ) ),
+					$na( 'webMcp', __( 'WebMCP', 'lightweight-seo' ), __( 'WebMCP lets a page offer its actions as tools to an agent in the browser, which the code behind those actions registers; Lightweight SEO registers none.', 'lightweight-seo' ) ),
 				),
 			),
 			array(
 				'title' => __( 'Authentication', 'lightweight-seo' ),
 				'rows'  => array(
-					$na( 'oauth', __( 'OAuth metadata and auth.md', 'lightweight-seo' ), __( 'These describe how an agent signs in to an API, and this site offers no API that asks an agent to sign in.', 'lightweight-seo' ) ),
+					$na( 'oauth', __( 'OAuth metadata and auth.md', 'lightweight-seo' ), __( 'They describe an OAuth server an agent can sign in with; WordPress has none, its REST API signs in with application passwords, and Lightweight SEO adds no sign-in.', 'lightweight-seo' ) ),
 				),
 			),
 			array(
 				'title' => __( 'Agent protocols', 'lightweight-seo' ),
 				'rows'  => array(
-					$na( 'a2a', __( 'A2A agent card', 'lightweight-seo' ), __( 'An agent card describes an AI agent the site runs, and a site that publishes content runs none.', 'lightweight-seo' ) ),
-					$na( 'commerce', __( 'Commerce protocols', 'lightweight-seo' ), __( 'Agent payment and checkout protocols belong to a shop; Lightweight SEO prints no product or payment data and provides none.', 'lightweight-seo' ) ),
+					$na( 'a2a', __( 'A2A agent card', 'lightweight-seo' ), __( 'An A2A agent card describes an AI agent that answers at the site, for whichever plugin or service runs it; Lightweight SEO runs no agent.', 'lightweight-seo' ) ),
+					$na( 'commerce', __( 'Commerce protocols', 'lightweight-seo' ), __( 'Agent payment and checkout protocols are provided by the shop or payment plugin that handles the sale; Lightweight SEO handles no products or payments.', 'lightweight-seo' ) ),
 				),
 			),
 		);
@@ -695,6 +695,11 @@ class Lightweight_SEO_AI_Discovery_Module {
 	 * @return array
 	 */
 	private function browser_row( $id, $label, $url, $messages ) {
+		// A failed request says nothing about the site; it is often an administration on another address.
+		$messages += array(
+			'unchecked' => __( 'Not checked: this browser could not fetch the address. That happens when the administration runs on another address than the site, such as www or http, or when something blocks the request. Open it to see the answer.', 'lightweight-seo' ),
+		);
+
 		return array(
 			'id'       => $id,
 			'state'    => 'browser',

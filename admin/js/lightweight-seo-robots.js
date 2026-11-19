@@ -12,7 +12,8 @@
  * id      The row: fetch, rules, blocked, sitemap, or signals; readiness() adds sitemapXml,
  *         linkHeaders, markdown, llms, apiCatalog, skills, mcp, and ard.
  * state   success, warning, info, or off, as Lightweight_SEO_Admin_UI::status() uses them.
- * key     Which message of the row applies. The server prints each message.
+ * key     Which message of the row applies. The server prints each message. "unchecked"
+ *         means this browser could not fetch the address, which says nothing about the site.
  * values  Text that fills the message's %s, joined by the caller.
  */
 (function(root, factory) {
@@ -247,6 +248,15 @@
 		return Boolean(response && response.fetched && response.status === 200);
 	}
 
+	// A request that failed tells nothing about the site, only that this browser could not ask.
+	function failed(response) {
+		return !response || !response.fetched;
+	}
+
+	function unchecked(id) {
+		return {id: id, state: 'info', key: 'unchecked', values: []};
+	}
+
 	function mediaType(response) {
 		return String((response && response.contentType) || '').split(';')[0].trim().toLowerCase();
 	}
@@ -261,6 +271,10 @@
 
 	// /sitemap.xml, after the redirects the browser followed, or a Sitemap line in robots.txt.
 	function sitemapXmlResult(response, robotsSitemaps) {
+		if (failed(response) && !robotsSitemaps.length) {
+			return unchecked('sitemapXml');
+		}
+
 		if (answered(response) && (response.xmlRoot === 'urlset' || response.xmlRoot === 'sitemapindex')) {
 			return {id: 'sitemapXml', state: 'success', key: 'valid', values: [response.url || '']};
 		}
@@ -274,6 +288,10 @@
 	var AGENT_RELATIONS = ['api-catalog', 'service-desc', 'describedby'];
 
 	function linkHeadersResult(response) {
+		if (failed(response)) {
+			return unchecked('linkHeaders');
+		}
+
 		var header = String((response && response.link) || '');
 		var found = [];
 		var pattern = /rel\s*=\s*(?:"([^"]*)"|([^\s;,]+))/gi;
@@ -293,6 +311,10 @@
 	}
 
 	function markdownResult(response) {
+		if (failed(response)) {
+			return unchecked('markdown');
+		}
+
 		return answered(response) && mediaType(response) === 'text/markdown'
 			? {id: 'markdown', state: 'success', key: 'found', values: []}
 			: {id: 'markdown', state: 'info', key: 'none', values: []};
@@ -300,6 +322,10 @@
 
 	// An llms.txt file is Markdown that opens with a level-one heading.
 	function llmsResult(response, enabled) {
+		if (failed(response)) {
+			return unchecked('llms');
+		}
+
 		var first = answered(response) ? String(response.body).split(/\r\n|\n|\r/).filter(function(line) {
 			return line.trim() !== '';
 		})[0] || '' : '';
@@ -334,7 +360,14 @@
 
 	// A file this version does not publish: found, or a neutral "not offered", never a warning.
 	function wellKnownResult(id, responses) {
-		var found = (responses || []).filter(function(response) {
+		var list = responses || [];
+
+		// Several addresses: not checked only when none of them could be asked.
+		if (list.length && list.every(failed)) {
+			return unchecked(id);
+		}
+
+		var found = list.filter(function(response) {
 			var data = answered(response) ? json(response) : null;
 
 			return data !== null && typeof data === 'object' && WELL_KNOWN[id](data, response);

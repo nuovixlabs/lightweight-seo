@@ -464,6 +464,8 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		foreach ( array( 'dnsAid', 'webBotAuth', 'openApi', 'webMcp', 'oauth', 'a2a', 'commerce' ) as $id ) {
 			$this->assertSame( 'na', $plain[ $id ]['state'], $id );
 			$this->assertMatchesRegularExpression( '/^[^.]+\.$/', $plain[ $id ]['text'], $id . ' gives one sentence.' );
+			$this->assertStringContainsString( 'Lightweight SEO', $plain[ $id ]['text'], $id . ' says what the plugin does about it.' );
+			$this->assertStringNotContainsString( 'publishes content', $plain[ $id ]['text'], $id . ' claims nothing about what the site runs.' );
 		}
 
 		// A complete identity passes; a person without a photo names the photo, not a logo.

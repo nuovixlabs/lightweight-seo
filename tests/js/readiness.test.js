@@ -115,3 +115,48 @@ test('a robots.txt that cannot be fetched still lets every other address be chec
 
 	assert.deepEqual(ids, ['fetch', 'sitemapXml', 'linkHeaders', 'markdown', 'llms', 'apiCatalog', 'skills', 'mcp', 'ard']);
 });
+
+test('a request that failed is reported as not checked, never as a fact about the site', () => {
+	const failed = {fetched: false};
+	const results = byId(readiness({
+		robots: failed,
+		sitemapXml: failed,
+		home: failed,
+		markdown: failed,
+		llms: failed,
+		apiCatalog: [failed],
+		skills: [failed, failed],
+		mcp: [failed, failed, failed],
+		ard: [failed, failed],
+	}, {llmsEnabled: true, sitemapLine: 'Sitemap: ' + ROOT + '/wp-sitemap.xml'}));
+
+	assert.deepEqual(results.fetch, {id: 'fetch', state: 'warning', key: 'failed', values: []});
+
+	for (const id of ['sitemapXml', 'linkHeaders', 'markdown', 'llms', 'apiCatalog', 'skills', 'mcp', 'ard']) {
+		assert.deepEqual(results[id], {id: id, state: 'info', key: 'unchecked', values: []}, id);
+	}
+});
+
+test('a row is checked when any of its requests went through', () => {
+	const failed = {fetched: false};
+	const results = byId(readiness(plainSite({
+		// The sitemap request failed, but robots.txt names a sitemap to fall back on.
+		sitemapXml: failed,
+		markdown: failed,
+		llms: answer('# Example\n', {url: ROOT + '/llms.txt'}),
+		// One address failed and another answered 404: the file is not offered.
+		skills: [failed, notFound()],
+		// One address failed and another serves a card: found.
+		mcp: [failed, answer('{"name":"Example"}', {contentType: 'application/json', url: ROOT + '/.well-known/mcp.json'}), failed],
+		ard: [failed, failed],
+	}), {llmsEnabled: true}));
+
+	assert.deepEqual(results.sitemapXml, {id: 'sitemapXml', state: 'success', key: 'listed', values: [ROOT + '/wp-sitemap.xml']});
+	assert.equal(results.markdown.key, 'unchecked');
+	assert.equal(results.llms.key, 'found');
+	assert.deepEqual(results.skills, {id: 'skills', state: 'info', key: 'none', values: []});
+	assert.deepEqual(results.mcp.values, [ROOT + '/.well-known/mcp.json']);
+	assert.equal(results.ard.key, 'unchecked');
+	assert.equal(results.linkHeaders.key, 'none');
+	assert.equal(results.apiCatalog.key, 'none');
+});

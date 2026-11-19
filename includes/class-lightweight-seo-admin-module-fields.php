@@ -928,7 +928,7 @@ class Lightweight_SEO_Admin_Module_Fields {
 
 		echo '</div>';
 		?>
-		<p class="lwseo-help"><?php esc_html_e( 'Each row states a fact. There is no score: a check that does not apply to a site that publishes content says why, and a file this version does not publish is “Not offered”, not a problem.', 'lightweight-seo' ); ?></p>
+		<p class="lwseo-help"><?php esc_html_e( 'Each row states a fact. There is no score: a standard Lightweight SEO does not take part in says why, a file this version does not publish is “Not offered”, not a problem, and an address this browser could not fetch is “Not checked”.', 'lightweight-seo' ); ?></p>
 		<?php
 	}
 }
