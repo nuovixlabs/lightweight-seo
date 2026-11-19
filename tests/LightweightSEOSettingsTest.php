@@ -513,8 +513,18 @@ final class LightweightSEOSettingsTest extends TestCase {
 		$this->assertSame( LIGHTWEIGHT_SEO_DEFAULT_SEPARATOR, Lightweight_SEO_Settings::TITLE_SEPARATORS[0] );
 		$this->assertSame( 'organization', $settings->get_identity_type() );
 		$this->assertSame( get_bloginfo( 'name' ), $settings->get_identity_name() );
+		$this->assertSame( '', $settings->get_identity_description() );
+		$this->assertSame( '', $settings->get_defaults()['identity_description'] );
 		$this->assertSame( '', $settings->get_identity_logo_url() );
 		$this->assertSame( '', $settings->get_x_handle() );
+	}
+
+	public function test_identity_description_is_read_as_one_line(): void {
+		global $lightweight_seo_test_options;
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array( 'identity_description' => "  Makes oak furniture\n\nin   Leeds. " );
+
+		$this->assertSame( 'Makes oak furniture in Leeds.', ( new Lightweight_SEO_Settings() )->get_identity_description() );
 	}
 
 	public function test_title_separator_is_limited_to_the_supported_characters(): void {

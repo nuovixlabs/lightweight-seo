@@ -790,17 +790,19 @@ final class LightweightSEOAdminTest extends TestCase {
 
 		$saved = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
 			array(
-				'settings_tab'     => 'identity',
-				'identity_type'    => 'person',
-				'identity_name'    => '  <b>Ada</b> Lovelace ',
-				'identity_logo'    => 'https://example.com/uploads/logo.png',
-				'identity_logo_id' => '31',
-				'x_handle'         => 'https://x.com/@Ada_L',
+				'settings_tab'         => 'identity',
+				'identity_type'        => 'person',
+				'identity_name'        => '  <b>Ada</b> Lovelace ',
+				'identity_description' => " <script>x</script>Writes about\nthe Analytical Engine. ",
+				'identity_logo'        => 'https://example.com/uploads/logo.png',
+				'identity_logo_id'     => '31',
+				'x_handle'             => 'https://x.com/@Ada_L',
 			)
 		);
 
 		$this->assertSame( 'person', $saved['identity_type'] );
 		$this->assertSame( 'Ada Lovelace', $saved['identity_name'] );
+		$this->assertSame( "xWrites about\nthe Analytical Engine.", $saved['identity_description'] );
 		$this->assertSame( 'https://example.com/uploads/logo.png', $saved['identity_logo'] );
 		$this->assertSame( 31, $saved['identity_logo_id'] );
 		$this->assertSame( 'Ada_L', $saved['x_handle'] );
@@ -823,6 +825,7 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( '|', $appearance['title_separator'] );
 		$this->assertSame( 'person', $appearance['identity_type'] );
 		$this->assertSame( 'Ada Lovelace', $appearance['identity_name'] );
+		$this->assertSame( $saved['identity_description'], $appearance['identity_description'] );
 		$this->assertSame( 31, $appearance['identity_logo_id'] );
 		$this->assertSame( 'Ada_L', $appearance['x_handle'] );
 
@@ -846,16 +849,18 @@ final class LightweightSEOAdminTest extends TestCase {
 		// Clearing the fields is a valid save.
 		$cleared = $this->get_admin_settings( new Lightweight_SEO_Settings() )->validate_settings(
 			array(
-				'settings_tab'     => 'identity',
-				'identity_type'    => 'organization',
-				'identity_name'    => '',
-				'identity_logo'    => '',
-				'identity_logo_id' => '31',
-				'x_handle'         => '',
+				'settings_tab'         => 'identity',
+				'identity_type'        => 'organization',
+				'identity_name'        => '',
+				'identity_description' => '',
+				'identity_logo'        => '',
+				'identity_logo_id'     => '31',
+				'x_handle'             => '',
 			)
 		);
 
 		$this->assertSame( '', $cleared['identity_name'] );
+		$this->assertSame( '', $cleared['identity_description'] );
 		$this->assertSame( '', $cleared['identity_logo'] );
 		$this->assertSame( 0, $cleared['identity_logo_id'] );
 		$this->assertSame( '', $cleared['x_handle'] );
@@ -865,11 +870,12 @@ final class LightweightSEOAdminTest extends TestCase {
 		global $lightweight_seo_test_options;
 
 		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ] = array(
-			'title_separator' => '|',
-			'identity_type'   => 'person',
-			'identity_name'   => 'Ada "Countess" Lovelace',
-			'identity_logo'   => 'https://example.com/uploads/ada.jpg',
-			'x_handle'        => 'ada_l',
+			'title_separator'      => '|',
+			'identity_type'        => 'person',
+			'identity_name'        => 'Ada "Countess" Lovelace',
+			'identity_description' => 'Writes <about> the "Engine".',
+			'identity_logo'        => 'https://example.com/uploads/ada.jpg',
+			'x_handle'             => 'ada_l',
 		);
 
 		$settings = new Lightweight_SEO_Settings();
@@ -892,6 +898,9 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_identity_type">This site represents</label>', $identity );
 		$this->assertMatchesRegularExpression( '/<option value="person"\s+selected=\'selected\'>A person<\/option>/', $identity );
 		$this->assertStringContainsString( 'name="lightweight_seo_settings[identity_name]" value="Ada &quot;Countess&quot; Lovelace" placeholder="Test Site"', $identity );
+		$this->assertStringContainsString( '<label class="lwseo-field__label" for="lightweight_seo_identity_description">Description</label>', $identity );
+		$this->assertStringContainsString( 'name="lightweight_seo_settings[identity_description]" rows="2" class="large-text">Writes &lt;about&gt; the &quot;Engine&quot;.</textarea>', $identity );
+		$this->assertLessThan( strpos( $identity, 'lightweight_seo_identity_logo"' ), strpos( $identity, 'lightweight_seo_identity_description"' ) );
 		$this->assertStringContainsString( 'id="lightweight_seo_identity_logo" name="lightweight_seo_settings[identity_logo]" value="https://example.com/uploads/ada.jpg"', $identity );
 		$this->assertStringContainsString( 'name="lightweight_seo_settings[identity_logo_id]"', $identity );
 		$this->assertStringContainsString( 'name="lightweight_seo_settings[x_handle]" value="@ada_l"', $identity );
@@ -1162,7 +1171,7 @@ final class LightweightSEOAdminTest extends TestCase {
 				'lightweight_seo_general_section'      => array( 'title_separator', 'title_format', 'home_title_format', 'archive_title_format', 'search_title_format', 'meta_description', 'social_image' ),
 				'lightweight_seo_indexation_section'   => array( 'content_types', 'default_max_image_preview', 'enable_media_x_robots_headers' ),
 				'lightweight_seo_sitemap_section'      => array( 'exclude_noindex_from_sitemaps', 'exclude_redirected_from_sitemaps' ),
-				'lightweight_seo_schema_section'       => array( 'identity_type', 'identity_name', 'identity_logo', 'x_handle', 'organization_same_as', 'enable_schema_output', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
+				'lightweight_seo_schema_section'       => array( 'identity_type', 'identity_name', 'identity_description', 'identity_logo', 'x_handle', 'organization_same_as', 'enable_schema_output', 'enable_local_business_schema', 'local_business_details', 'enable_hreflang_output', 'hreflang_mappings', 'enable_hreflang_path_mirroring' ),
 				'lightweight_seo_verification_section' => array( 'verification_google', 'verification_bing', 'verification_pinterest', 'verification_yandex' ),
 				'lightweight_seo_redirects_section'    => array( 'enable_redirects', 'enable_auto_redirects', 'redirect_rules', 'redirect_test', 'generated_redirect_rules', 'redirect_export', 'redirect_import', 'redirect_health' ),
 				'lightweight_seo_inspect_section'      => array( 'inspect_page' ),

@@ -795,6 +795,22 @@ final class LightweightSEOSchemaServiceTest extends TestCase {
 		$this->assertSame( 'Test Site', $graph['WebSite']['name'] );
 	}
 
+	public function test_the_identity_description_is_printed_only_when_written(): void {
+		$organization = $this->get_graph( array( 'identity_description' => "  Makes oak furniture\nin Leeds. " ) );
+		$person       = $this->get_graph(
+			array(
+				'identity_type'        => 'person',
+				'identity_description' => 'Writes about the Analytical Engine.',
+			),
+			true
+		);
+
+		$this->assertSame( 'Makes oak furniture in Leeds.', $organization['Organization']['description'] );
+		$this->assertSame( 'Writes about the Analytical Engine.', $person['Person']['description'] );
+		$this->assertArrayNotHasKey( 'description', $this->get_graph( array( 'identity_description' => '   ' ) )['Organization'] );
+		$this->assertArrayNotHasKey( 'description', $this->get_graph( array() )['Organization'] );
+	}
+
 	public function test_a_person_is_printed_with_a_photo_and_becomes_the_publisher(): void {
 		$options = array(
 			'identity_type'        => 'person',

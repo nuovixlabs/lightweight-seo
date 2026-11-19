@@ -155,6 +155,7 @@ class Lightweight_SEO_Admin_Settings {
 				'fields'   => array(
 					'identity_type'                  => array( __( 'This site represents', 'lightweight-seo' ), $core, true ),
 					'identity_name'                  => array( __( 'Name', 'lightweight-seo' ), $core, true ),
+					'identity_description'           => array( __( 'Description', 'lightweight-seo' ), $core, true ),
 					'identity_logo'                  => array( __( 'Logo or photo', 'lightweight-seo' ), $core, true ),
 					'x_handle'                       => array( __( 'X handle', 'lightweight-seo' ), $core, true ),
 					'organization_same_as'           => array( __( 'Profiles', 'lightweight-seo' ), $core, true ),
@@ -465,6 +466,8 @@ class Lightweight_SEO_Admin_Settings {
 
 		$sanitized_input['identity_type'] = $this->settings->normalize_identity_type( $input['identity_type'] ?? ( $existing_settings['identity_type'] ?? 'organization' ) );
 		$sanitized_input['identity_name'] = sanitize_text_field( $input['identity_name'] ?? ( $existing_settings['identity_name'] ?? '' ) );
+
+		$sanitized_input['identity_description'] = sanitize_textarea_field( $input['identity_description'] ?? ( $existing_settings['identity_description'] ?? '' ) );
 
 		list( $sanitized_input['identity_logo'], $sanitized_input['identity_logo_id'] ) = $this->normalize_social_image(
 			$input['identity_logo'] ?? ( $existing_settings['identity_logo'] ?? '' ),

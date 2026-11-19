@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-19T09:25:17+00:00\n"
+"POT-Creation-Date: 2026-11-19T09:25:50+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: lightweight-seo\n"
@@ -403,44 +403,48 @@ msgstr ""
 msgid "Names the organization or person; leave empty to use the site title."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:613
-#: includes/class-lightweight-seo-admin-settings.php:158
+#: includes/class-lightweight-seo-admin-core-fields.php:606
+msgid "Says in a sentence or two who the organization or person is. It is added to structured data as the description; leave empty to add none."
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-core-fields.php:626
+#: includes/class-lightweight-seo-admin-settings.php:159
 msgid "Logo or photo"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:617
+#: includes/class-lightweight-seo-admin-core-fields.php:630
 msgid "Shows the logo of an organization or the photo of a person in structured data; an organization without one uses the default social image."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:630
+#: includes/class-lightweight-seo-admin-core-fields.php:643
 msgid "Credits this account when a page is shared on X, through the twitter:site tag."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:657
+#: includes/class-lightweight-seo-admin-core-fields.php:670
 msgid "Paste the code, or the whole HTML tag, from the “HTML tag” method in Google Search Console."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:666
+#: includes/class-lightweight-seo-admin-core-fields.php:679
 msgid "Paste the code, or the whole meta tag, from Bing Webmaster Tools."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:675
+#: includes/class-lightweight-seo-admin-core-fields.php:688
 msgid "Paste the code, or the whole meta tag, from the “Claim your website” step on Pinterest."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:684
+#: includes/class-lightweight-seo-admin-core-fields.php:697
 msgid "Paste the code, or the whole meta tag, from Yandex Webmaster."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:693
+#: includes/class-lightweight-seo-admin-core-fields.php:706
 msgid "Output core Organization or Person, WebSite, Article, and Breadcrumb schema"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:693
+#: includes/class-lightweight-seo-admin-core-fields.php:706
 msgid "Disable this if your theme or another plugin already outputs equivalent structured data."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-core-fields.php:705
+#: includes/class-lightweight-seo-admin-core-fields.php:718
 msgid "Add one profile URL per line for the organization or person, such as social profiles or knowledge sources."
 msgstr ""
 
@@ -757,7 +761,7 @@ msgid "Search redirect rules"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-module-fields.php:416
-#: includes/class-lightweight-seo-admin-settings.php:231
+#: includes/class-lightweight-seo-admin-settings.php:232
 msgid "Status"
 msgstr ""
 
@@ -1247,7 +1251,7 @@ msgid "Preview and import titles, descriptions, and other fields saved on posts 
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:355
-#: includes/class-lightweight-seo-admin-settings.php:209
+#: includes/class-lightweight-seo-admin-settings.php:210
 msgid "Legacy data"
 msgstr ""
 
@@ -1264,24 +1268,24 @@ msgid "Choose what happens to your SEO data if the plugin is removed."
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:382
-#: includes/class-lightweight-seo-admin-settings.php:180
+#: includes/class-lightweight-seo-admin-settings.php:181
 #: includes/class-lightweight-seo.php:287
 msgid "Redirects"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:383
-#: includes/class-lightweight-seo-admin-settings.php:214
+#: includes/class-lightweight-seo-admin-settings.php:215
 msgid "Tracking codes"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:384
-#: includes/class-lightweight-seo-admin-settings.php:235
+#: includes/class-lightweight-seo-admin-settings.php:236
 #: includes/class-lightweight-seo.php:308
 msgid "AI Discovery"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-page.php:385
-#: includes/class-lightweight-seo-admin-settings.php:227
+#: includes/class-lightweight-seo-admin-settings.php:228
 #: includes/class-lightweight-seo.php:314
 msgid "IndexNow"
 msgstr ""
@@ -1543,198 +1547,204 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:159
-msgid "X handle"
+#: includes/class-lightweight-seo-admin-settings.php:158
+#: includes/class-lightweight-seo-inspector.php:513
+#: includes/class-lightweight-seo-post-list.php:214
+msgid "Description"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:160
-msgid "Profiles"
+msgid "X handle"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:161
-msgid "Core schema output"
+msgid "Profiles"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:162
-#: includes/class-lightweight-seo-admin-settings.php:164
-#: includes/class-lightweight-seo-admin-settings.php:183
-#: includes/class-lightweight-seo-admin-settings.php:217
-#: includes/class-lightweight-seo-admin-settings.php:230
-#: includes/class-lightweight-seo-admin-settings.php:238
-msgid "Enable module"
+msgid "Core schema output"
 msgstr ""
 
 #: includes/class-lightweight-seo-admin-settings.php:163
+#: includes/class-lightweight-seo-admin-settings.php:165
+#: includes/class-lightweight-seo-admin-settings.php:184
+#: includes/class-lightweight-seo-admin-settings.php:218
+#: includes/class-lightweight-seo-admin-settings.php:231
+#: includes/class-lightweight-seo-admin-settings.php:239
+msgid "Enable module"
+msgstr ""
+
+#: includes/class-lightweight-seo-admin-settings.php:164
 msgid "Business details"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:165
+#: includes/class-lightweight-seo-admin-settings.php:166
 msgid "Hreflang mappings"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:166
+#: includes/class-lightweight-seo-admin-settings.php:167
 msgid "Legacy path mirroring"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:170
+#: includes/class-lightweight-seo-admin-settings.php:171
 msgid "Site verification"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:184
+#: includes/class-lightweight-seo-admin-settings.php:185
 msgid "Automatic slug redirects"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:185
+#: includes/class-lightweight-seo-admin-settings.php:186
 msgid "Manual redirect rules"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:186
+#: includes/class-lightweight-seo-admin-settings.php:187
 msgid "Test an address"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:187
+#: includes/class-lightweight-seo-admin-settings.php:188
 msgid "Generated redirects"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:188
+#: includes/class-lightweight-seo-admin-settings.php:189
 msgid "Redirect export"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:189
+#: includes/class-lightweight-seo-admin-settings.php:190
 msgid "Import from a CSV file"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:190
+#: includes/class-lightweight-seo-admin-settings.php:191
 msgid "Redirect health"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:194
+#: includes/class-lightweight-seo-admin-settings.php:195
 msgid "Inspect a page"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:197
+#: includes/class-lightweight-seo-admin-settings.php:198
 msgid "Address"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:201
+#: includes/class-lightweight-seo-admin-settings.php:202
 msgid "Migration and imports"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:204
+#: includes/class-lightweight-seo-admin-settings.php:205
 msgid "Export"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:205
+#: includes/class-lightweight-seo-admin-settings.php:206
 msgid "Import"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:206
+#: includes/class-lightweight-seo-admin-settings.php:207
 msgid "Import source"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:207
+#: includes/class-lightweight-seo-admin-settings.php:208
 msgid "Preview or import"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:208
+#: includes/class-lightweight-seo-admin-settings.php:209
 msgid "Import status"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:210
+#: includes/class-lightweight-seo-admin-settings.php:211
 msgid "Uninstall data"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:219
+#: includes/class-lightweight-seo-admin-settings.php:220
 msgid "Google Tag Manager container ID"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:220
+#: includes/class-lightweight-seo-admin-settings.php:221
 msgid "Direct Google Analytics 4 measurement ID"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:221
+#: includes/class-lightweight-seo-admin-settings.php:222
 msgid "Direct Meta Pixel ID"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:222
+#: includes/class-lightweight-seo-admin-settings.php:223
 msgid "Excluded roles"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:223
+#: includes/class-lightweight-seo-admin-settings.php:224
 msgid "Excluded environments"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:239
+#: includes/class-lightweight-seo-admin-settings.php:240
 msgid "AI search visibility"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:240
+#: includes/class-lightweight-seo-admin-settings.php:241
 msgid "Model training access"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:241
+#: includes/class-lightweight-seo-admin-settings.php:242
 msgid "Curated llms.txt"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:242
+#: includes/class-lightweight-seo-admin-settings.php:243
 msgid "Pages to list"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:243
+#: includes/class-lightweight-seo-admin-settings.php:244
 msgid "Readiness checks"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:257
+#: includes/class-lightweight-seo-admin-settings.php:258
 msgid "Google Search Console"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:258
+#: includes/class-lightweight-seo-admin-settings.php:259
 msgid "Bing Webmaster Tools"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:259
+#: includes/class-lightweight-seo-admin-settings.php:260
 msgid "Pinterest"
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:260
+#: includes/class-lightweight-seo-admin-settings.php:261
 msgid "Yandex Webmaster"
 msgstr ""
 
 #. translators: %d: number of redirect rules that were not saved.
-#: includes/class-lightweight-seo-admin-settings.php:460
+#: includes/class-lightweight-seo-admin-settings.php:461
 #, php-format
 msgid "Settings saved. %d redirect rule was left out because it was incomplete, repeated another rule, looped, or pointed to a site that is not approved."
 msgid_plural "Settings saved. %d redirect rules were left out because they were incomplete, repeated another rule, looped, or pointed to a site that is not approved."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-admin-settings.php:482
+#: includes/class-lightweight-seo-admin-settings.php:485
 msgid "Invalid X handle. Use a handle like @example, or the address of the profile."
 msgstr ""
 
 #. translators: %s: name of the service, such as Google Search Console.
-#: includes/class-lightweight-seo-admin-settings.php:500
+#: includes/class-lightweight-seo-admin-settings.php:503
 #, php-format
 msgid "The %s verification code was not saved. Paste the code, or the whole meta tag the service shows."
 msgstr ""
 
 #. translators: %d: number of hreflang mappings that were not saved.
-#: includes/class-lightweight-seo-admin-settings.php:560
+#: includes/class-lightweight-seo-admin-settings.php:563
 #, php-format
 msgid "Settings saved. %d translation was left out because its page, language tag, or address was not valid, or it repeated another line."
 msgid_plural "Settings saved. %d translations were left out because their page, language tag, or address was not valid, or they repeated another line."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-lightweight-seo-admin-settings.php:607
+#: includes/class-lightweight-seo-admin-settings.php:610
 msgid "Invalid Google Analytics 4 Measurement ID. Use a value like G-XXXXXXXXXX."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:620
+#: includes/class-lightweight-seo-admin-settings.php:623
 msgid "Invalid Google Tag Manager Container ID. Use a value like GTM-XXXXXX."
 msgstr ""
 
-#: includes/class-lightweight-seo-admin-settings.php:633
+#: includes/class-lightweight-seo-admin-settings.php:636
 msgid "Invalid Facebook Pixel ID. Use a numeric value."
 msgstr ""
 
@@ -2615,11 +2625,6 @@ msgstr ""
 msgid "From the archive’s own description."
 msgstr ""
 
-#: includes/class-lightweight-seo-inspector.php:513
-#: includes/class-lightweight-seo-post-list.php:214
-msgid "Description"
-msgstr ""
-
 #: includes/class-lightweight-seo-inspector.php:530
 msgid "None is sent for a missing page."
 msgstr ""
@@ -2996,7 +3001,7 @@ msgstr ""
 msgid "— No change —"
 msgstr ""
 
-#: includes/class-lightweight-seo-schema-service.php:437
+#: includes/class-lightweight-seo-schema-service.php:443
 msgid "Home"
 msgstr ""
 
@@ -3024,39 +3029,39 @@ msgstr ""
 msgid "The last import was undone. The settings are as they were before it."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:788
+#: includes/class-lightweight-seo-settings.php:799
 msgid "Choose a supported LocalBusiness type."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:814
+#: includes/class-lightweight-seo-settings.php:825
 msgid "Enter a valid phone number containing 7 to 15 digits."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:820
+#: includes/class-lightweight-seo-settings.php:831
 msgid "Enter a short numeric or currency-symbol price range."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:825
+#: includes/class-lightweight-seo-settings.php:836
 msgid "Use a two-letter ISO country code."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:834
+#: includes/class-lightweight-seo-settings.php:845
 msgid "Enter both coordinates using latitude -90 to 90 and longitude -180 to 180."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:845
+#: includes/class-lightweight-seo-settings.php:856
 msgid "Use opening hours like Mo-Fr 09:00-17:00."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:857
+#: includes/class-lightweight-seo-settings.php:868
 msgid "Enter a valid HTTP or HTTPS business image URL."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:867
+#: includes/class-lightweight-seo-settings.php:878
 msgid "Complete the street, locality, postal code, and country together."
 msgstr ""
 
-#: includes/class-lightweight-seo-settings.php:871
+#: includes/class-lightweight-seo-settings.php:882
 msgid "A business name and complete address are required before Local SEO can be enabled."
 msgstr ""
 

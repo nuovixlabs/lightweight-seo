@@ -154,6 +154,12 @@ class Lightweight_SEO_Schema_Service {
 			'url'   => home_url( '/' ),
 		);
 
+		$description = $this->settings->get_identity_description();
+
+		if ( '' !== $description ) {
+			$schema['description'] = $description;
+		}
+
 		if ( $is_person ) {
 			// A person has a photo, not a logo, and a share image is never used in its place.
 			if ( ! empty( $image_url ) ) {

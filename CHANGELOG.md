@@ -6,6 +6,10 @@ Add every change under "Unreleased" in the commit that makes it. `bin/release-pr
 
 ## Unreleased
 
+### Added
+
+- A description for the organization or person on the "Site identity" card. When it is written, the Organization or Person node of the schema prints it as `description`; empty by default, which prints nothing, as before. Stored as `identity_description` in the settings option.
+
 ### Fixed
 
 - `/llms.txt` opens with a summary of the site, as the format expects: the homepage meta description, else the tagline, and no summary line when neither is set. The notice that Google Search ignores `llms.txt` stays on the AI Discovery card and is no longer printed in the file.
