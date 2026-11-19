@@ -1562,7 +1562,7 @@ if (!function_exists('url_to_postid')) {
 
 if (!function_exists('get_post_type_object')) {
     function get_post_type_object($post_type) {
-		if ( ! in_array( $post_type, array( 'post', 'page' ), true ) ) {
+		if ( ! in_array( $post_type, array( 'post', 'page', 'attachment' ), true ) ) {
 			return null;
 		}
 

@@ -57,6 +57,7 @@ final class LightweightSEOMarkdownOnRequestTest extends TestCase {
 			9  => $this->post( 9, 'attachment', 'inherit', '', 'https://example.com/photo/' ),
 			10 => $this->post( 10, 'post', 'private', '', 'https://example.com/private/' ),
 			11 => $this->post( 11, 'product', 'publish', '', 'https://example.com/hidden-type/' ),
+			12 => $this->post( 12, 'attachment', 'publish', '', 'https://example.com/published-photo/' ),
 			20 => $this->post( 20, 'page', 'publish', '', 'https://example.com/blog/' ),
 		);
 		$GLOBALS['lightweight_seo_test_hooks']          = array();
@@ -290,6 +291,61 @@ final class LightweightSEOMarkdownOnRequestTest extends TestCase {
 			),
 			'the administration'              => array( $singular( 5, array( 'is_admin' => true ) ), '' ),
 		);
+	}
+
+	/**
+	 * Each exclusion on its own turns away a view that would otherwise be answered, so each guard is what is tested.
+	 *
+	 * @dataProvider exclusions
+	 */
+	public function test_each_exclusion_alone_keeps_an_eligible_post_in_html( array $state, string $uri = '/hello/' ): void {
+		$GLOBALS['lightweight_seo_test_query_state']['is_singular']       = true;
+		$GLOBALS['lightweight_seo_test_query_state']['queried_object_id'] = 5;
+
+		$this->assertSame( 'singular', $this->module()->get_markdown_view(), 'Without the exclusion the post is answered.' );
+
+		$GLOBALS['lightweight_seo_test_query_state'] = array_merge( $GLOBALS['lightweight_seo_test_query_state'], $state );
+		$GLOBALS['lightweight_seo_test_is_admin']    = ! empty( $state['is_admin'] );
+		$_SERVER['REQUEST_URI']                      = $uri;
+
+		$this->assertSame( '', $this->module()->get_markdown_view() );
+	}
+
+	public function exclusions(): array {
+		return array(
+			'a post\'s comment feed'     => array( array( 'is_feed' => true ) ),
+			'an embed'                   => array( array( 'is_embed' => true ) ),
+			'robots.txt'                 => array( array( 'is_robots' => true ) ),
+			'a trackback'                => array( array( 'is_trackback' => true ) ),
+			'the favicon'                => array( array( 'is_favicon' => true ) ),
+			'not found'                  => array( array( 'is_404' => true ) ),
+			'search results'             => array( array( 'is_search' => true ) ),
+			'an archive'                 => array( array( 'is_archive' => true ) ),
+			'a preview'                  => array( array( 'is_preview' => true ) ),
+			'the customizer'             => array( array( 'is_customize_preview' => true ) ),
+			'a sitemap'                  => array( array( 'query_vars' => array( 'sitemap' => 'posts' ) ) ),
+			'a sitemap stylesheet'       => array( array( 'query_vars' => array( 'sitemap-stylesheet' => 'sitemap' ) ) ),
+			'llms.txt'                   => array( array(), '/llms.txt' ),
+			'the administration'         => array( array( 'is_admin' => true ) ),
+			'an attachment, even public' => array( array( 'queried_object_id' => 12 ) ),
+		);
+	}
+
+	/**
+	 * A REST request is never answered in Markdown. REST_REQUEST is a constant, so this runs alone.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_a_rest_request_keeps_an_eligible_post_in_html(): void {
+		$GLOBALS['lightweight_seo_test_query_state']['is_singular']       = true;
+		$GLOBALS['lightweight_seo_test_query_state']['queried_object_id'] = 5;
+
+		$this->assertSame( 'singular', $this->module()->get_markdown_view() );
+
+		define( 'REST_REQUEST', true );
+
+		$this->assertSame( '', $this->module()->get_markdown_view() );
 	}
 
 	public function test_no_post_id_never_stands_for_the_global_post(): void {

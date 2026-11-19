@@ -143,6 +143,19 @@ final class LightweightSEOMarkdownOnRequestIntegrationTest extends WP_UnitTestCa
 		$this->assertSame( '', $this->answer( get_permalink( $draft ) )['view'] );
 	}
 
+	public function test_a_posts_comment_feed_stays_a_feed(): void {
+		$post_id = self::factory()->post->create( array( 'post_title' => 'Integration Feed Post' ) );
+		self::factory()->comment->create( array( 'comment_post_ID' => $post_id ) );
+
+		$answer = $this->answer( get_post_comments_feed_link( $post_id ) );
+
+		// A post's comment feed is singular and a feed at once; only the feed check keeps it a feed.
+		$this->assertTrue( is_singular() );
+		$this->assertTrue( is_feed() );
+		$this->assertSame( '', $answer['view'] );
+		$this->assertNull( $answer['response'] );
+	}
+
 	public function test_a_post_hidden_from_search_keeps_noindex_in_its_markdown_answer(): void {
 		$post_id = self::factory()->post->create(
 			array(
