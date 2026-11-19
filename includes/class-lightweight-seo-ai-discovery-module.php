@@ -187,7 +187,7 @@ class Lightweight_SEO_AI_Discovery_Module {
 		$lines = array( self::ROBOTS_MARKER );
 
 		if ( ! empty( $allowed ) ) {
-			$lines[] = '# Not blocked here, so they follow the rules for every crawler (User-agent: *): ' . implode( ', ', $allowed );
+			$lines[] = '# Not blocked here, so they follow the rules for all crawlers: ' . implode( ', ', $allowed );
 		}
 
 		if ( ! empty( $groups ) ) {

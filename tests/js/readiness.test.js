@@ -165,7 +165,7 @@ test('"Who writes robots.txt" is settled by whether the served file holds the ca
 	const expected = {rules: {'OAI-SearchBot': true, GPTBot: false}, marker: '# Lightweight SEO AI Discovery (experimental)', crawlers: ['Googlebot', 'Bingbot', '*']};
 	// What the real site's host served instead of the file WordPress writes.
 	const host = answer('User-agent: Googlebot\nDisallow: /\n\nUser-agent: *\nAllow: /\n', {url: ROOT + '/robots.txt'});
-	const wordpress = answer('User-agent: *\nDisallow: /wp-admin/\n\n# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for every crawler (User-agent: *): OAI-SearchBot\n\nUser-agent: GPTBot\nDisallow: /\n', {url: ROOT + '/robots.txt'});
+	const wordpress = answer('User-agent: *\nDisallow: /wp-admin/\n\n# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for all crawlers: OAI-SearchBot\n\nUser-agent: GPTBot\nDisallow: /\n', {url: ROOT + '/robots.txt'});
 
 	assert.deepEqual(settle(byId(readiness(plainSite({robots: host}), expected)).rules), {state: 'warning', key: 'absent'});
 	assert.deepEqual(settle(byId(readiness(plainSite({robots: wordpress}), expected)).rules), {state: 'success', key: 'present'});

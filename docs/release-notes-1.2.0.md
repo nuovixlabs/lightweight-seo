@@ -18,7 +18,7 @@ From 1.2:
 
 - **The `Allow: /` groups go away.** An allowed AI crawler gets no group from Lightweight SEO, so it obeys the rules for every crawler, including rules another plugin adds later.
 - **A crawler that is switched off still gets its own group with `Disallow: /`**, as before.
-- **A comment names the allowed crawlers**, under the plugin's own comment, so the file says what the card chose: `# Not blocked here, so they follow the rules for every crawler (User-agent: *): OAI-SearchBot, ChatGPT-User, …`. The plugin's comment is printed whenever the module is on and WordPress answers the file, even when no group is written.
+- **A comment names the allowed crawlers**, under the plugin's own comment, so the file says what the card chose: `# Not blocked here, so they follow the rules for all crawlers: OAI-SearchBot, ChatGPT-User, …`. The plugin's comment is printed whenever the module is on and WordPress answers the file, even when no group is written.
 - **A site whose `*` group disallows everything no longer has AI search crawlers excepted from that.** Before, the `Allow: /` groups let them in anyway. If that is intended, add a group for them with another plugin or a physical file; a crawler another source already names is left alone.
 - The two switches keep their names and stored values. On now means Lightweight SEO does not block those crawlers and they follow the site's general rules; off means it disallows them.
 

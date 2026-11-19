@@ -91,7 +91,7 @@ test('the file WordPress and the plugin write together passes every row', () => 
 		'Sitemap: https://example.com/wp-sitemap.xml',
 		'',
 		MARKER,
-		'# Not blocked here, so they follow the rules for every crawler (User-agent: *): OAI-SearchBot',
+		'# Not blocked here, so they follow the rules for all crawlers: OAI-SearchBot',
 		'',
 		'User-agent: GPTBot',
 		'Disallow: /',

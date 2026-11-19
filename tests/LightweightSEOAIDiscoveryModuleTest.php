@@ -31,7 +31,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		// A crawler with a group of its own ignores the group for every crawler, so an allowed one gets none.
 		$this->assertStringNotContainsString( 'User-agent: OAI-SearchBot', $output );
 		$this->assertStringNotContainsString( "\nAllow: /\n", $output );
-		$this->assertStringContainsString( "# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for every crawler (User-agent: *): OAI-SearchBot, ChatGPT-User, Claude-SearchBot,", $output );
+		$this->assertStringContainsString( "# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for all crawlers: OAI-SearchBot, ChatGPT-User, Claude-SearchBot,", $output );
 		$this->assertStringContainsString( "User-agent: GPTBot\nDisallow: /", $output );
 		$this->assertStringContainsString( "User-agent: Google-Extended\nDisallow: /", $output );
 
@@ -63,16 +63,21 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 
 		$this->assertSame( 1, substr_count( $output, "\nAllow: " ), 'The only Allow line is the general one.' );
 
+		// No directive appears inside a comment the plugin writes, so a loose reader cannot mistake one for a rule.
+		preg_match_all( '/^# .*$/m', substr( $output, strlen( rtrim( $general ) ) ), $comments );
+		$this->assertNotEmpty( $comments[0] );
+		$this->assertDoesNotMatchRegularExpression( '/(User-agent|Allow|Disallow|Sitemap)\s*:/i', implode( "\n", $comments[0] ) );
+
 		// The allowed crawlers are named in a comment, which is printed only when there are any.
 		if ( $allowed ) {
-			$this->assertStringContainsString( "\n# Not blocked here, so they follow the rules for every crawler (User-agent: *): " . implode( ', ', $allowed ) . "\n", $output );
+			$this->assertStringContainsString( "\n# Not blocked here, so they follow the rules for all crawlers: " . implode( ', ', $allowed ) . "\n", $output );
 		} else {
 			$this->assertStringNotContainsString( 'Not blocked here', $output );
 		}
 
 		// With both switches on, the plugin's part is the marker and the comment alone.
 		if ( $search && $training ) {
-			$this->assertStringEndsWith( "\n\n# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for every crawler (User-agent: *): " . implode( ', ', array_keys( $policy ) ) . "\n", $output );
+			$this->assertStringEndsWith( "\n\n# Lightweight SEO AI Discovery (experimental)\n# Not blocked here, so they follow the rules for all crawlers: " . implode( ', ', array_keys( $policy ) ) . "\n", $output );
 		}
 	}
 
@@ -92,7 +97,7 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( 1, substr_count( $output, 'User-agent: OAI-SearchBot' ) );
 		$this->assertSame( 1, substr_count( $output, 'User-agent: GPTBot' ) );
 		$this->assertStringNotContainsString( ': OAI-SearchBot,', $output );
-		$this->assertStringContainsString( '(User-agent: *): ChatGPT-User, Claude-SearchBot', $output );
+		$this->assertStringContainsString( 'the rules for all crawlers: ChatGPT-User, Claude-SearchBot', $output );
 	}
 
 	public function test_physical_robots_file_prevents_virtual_changes_and_is_reported(): void {
