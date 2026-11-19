@@ -4,7 +4,7 @@ How Lightweight SEO is put together, and the rules every change has to keep. For
 
 ## Product boundary
 
-Lightweight SEO prints correct titles, descriptions, canonical URLs, robots directives, social tags, schema, and sitemap signals. It is not an SEO platform.
+Lightweight SEO prints correct titles, descriptions, canonical URLs, robots directives, social tags, schema, and sitemap signals. It also checks whether AI crawlers and agents can reach and read the site, and publishes agent-discovery output, such as `llms.txt` or crawler rules, only for things the site really offers. It never publishes a document that describes a service the site does not run. It is not an SEO platform.
 
 Principles, in priority order:
 
@@ -17,7 +17,9 @@ Principles, in priority order:
 7. Existing user metadata survives upgrades.
 8. Experimental features are labelled as such and never described as a ranking guarantee.
 
-Guidance is deterministic: a check states a fact the plugin can verify. There is no percentage score, keyword-density score, readability grade, or ranking prediction.
+Guidance is deterministic: a check states a fact the plugin can verify. There is no percentage score, keyword-density score, readability grade, or ranking prediction, and no AI readiness score or level. An AI readiness check has one of four statuses: passed, needs attention, off by choice, or not applicable.
+
+A check that tests an address as it is served, such as `/robots.txt`, runs in the administrator's browser, the way "Inspect a page" does. PHP requests nothing.
 
 These stay out of this plugin. Most belong to a possible future Insights companion (see [below](#insights-companion)):
 
@@ -27,6 +29,7 @@ These stay out of this plugin. Most belong to a possible future Insights compani
 - Product schema (WooCommerce or another owner provides it)
 - arbitrary script or header/footer code input
 - AI-generated content, and any AI citation or ranking prediction
+- an AI readiness score, level, or percentage
 
 The one exception to "no remote request" is the IndexNow module, which is off by default and sends changed addresses to `api.indexnow.org`. Tracking prints a provider's script only after the user enables it and enters an ID.
 

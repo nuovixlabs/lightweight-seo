@@ -28,7 +28,7 @@ bin/dev-site up      # throwaway WordPress for manual or destructive tests
 | Change | Also required |
 |---|---|
 | Any | A test that fails without it, `composer check` passing, an entry under "Unreleased" in `CHANGELOG.md` |
-| Behavior a user sees | `README.md`, `docs/release-notes-1.1.0.md`, a check in `docs/qa-checklist.md` |
+| Behavior a user sees | `README.md`, `docs/release-notes-1.2.0.md`, a check in `docs/qa-checklist.md` |
 | A string | `composer make-pot`. Sentence case; say what a setting does before naming the directive |
 | Hook, API method, ability, WP-CLI command | `docs/developer-api.md` |
 | Setting, module, import source, stored data, new file, release | Every step of its recipe in [docs/recipes.md](docs/recipes.md) |

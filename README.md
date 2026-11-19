@@ -86,7 +86,7 @@ The plugin is distributed through GitHub releases. Its `Update URI` header stops
 
 Tags must exactly match the `Version:` header, for example `v1.1.0-rc.2`. `bin/release-prep <version>` prepares a release; see [Cut a release](docs/recipes.md#cut-a-release). The release workflow runs the quality checks, builds the ZIP with `bin/build-zip`, which fails when a plugin file is missing or a development file is included, and smoke-activates the packaged plugin in WordPress. A tag with a hyphen, such as a release candidate, is published as a prerelease and does not replace the latest stable release.
 
-See the [Changelog](CHANGELOG.md), [Release Notes](docs/release-notes-1.1.0.md), and [Release Baselines](docs/release-baselines.md).
+See the [Changelog](CHANGELOG.md), the release notes for [1.2](docs/release-notes-1.2.0.md) and [1.1](docs/release-notes-1.1.0.md), and [Release Baselines](docs/release-baselines.md).
 
 ## License
 
