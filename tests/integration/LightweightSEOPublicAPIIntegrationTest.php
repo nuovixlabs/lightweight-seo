@@ -179,9 +179,10 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 				'ai_training_crawlers_enabled' => '0',
 				'enable_llms_txt'              => '1',
 				'llms_txt_post_ids'            => $public_id . ',' . $draft_id,
+				'meta_description'             => 'Integration site summary.',
 			)
 		);
-		$module = new Lightweight_SEO_AI_Discovery_Module( new Lightweight_SEO_Settings(), lightweight_seo_get_api(), 'admin' );
+		$module = new Lightweight_SEO_AI_Discovery_Module( new Lightweight_SEO_Settings(), lightweight_seo_get_api(), 'admin', new Lightweight_SEO_Post_Meta() );
 		$robots = $module->filter_robots_txt( "User-agent: *\nDisallow: /wp-admin/\n", true );
 		$llms   = $module->build_llms_txt();
 
@@ -190,6 +191,79 @@ final class LightweightSEOPublicAPIIntegrationTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Public Guide', $llms );
 		$this->assertStringContainsString( 'A concise public summary.', $llms );
 		$this->assertStringNotContainsString( 'Draft Guide', $llms );
-		$this->assertStringContainsString( 'does not guarantee crawling, citation, training, or inclusion', $llms );
+		// The blockquote under the name is a summary of the site; the disclaimer is on the settings card only.
+		$this->assertStringContainsString( "\n\n> Integration site summary.\n", $llms );
+		$this->assertStringNotContainsString( 'guarantee', $llms );
+	}
+
+	/**
+	 * The module fills the homepage title variables itself, so this compares it with the page as WordPress resolves it.
+	 */
+	public function test_llms_txt_lists_a_static_front_page_as_the_homepage_prints_it(): void {
+		require_once dirname( __DIR__, 2 ) . '/includes/class-lightweight-seo-ai-discovery-module.php';
+
+		$author_id = self::factory()->user->create( array( 'display_name' => 'Integration Author' ) );
+		$plain_id  = self::factory()->post->create(
+			array(
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_title'   => 'Home Page',
+				'post_content' => '',
+				'post_author'  => $author_id,
+			)
+		);
+		$custom_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_title'   => 'Home Page With Fields',
+				'post_content' => 'Content that the page prints only when it has no description of its own.',
+				'post_author'  => $author_id,
+			)
+		);
+		update_post_meta( $custom_id, '_lightweight_seo_title', 'Oak furniture %sep% %sitename%' );
+		update_post_meta( $custom_id, '_lightweight_seo_description', 'Our own words about the homepage.' );
+		update_option( 'blogname', 'Integration Site' );
+		update_option( 'blogdescription', 'Integration tagline' );
+		update_option( 'show_on_front', 'page' );
+
+		$cases = array(
+			'default format'        => array( $plain_id, '%sitename% %sep% %tagline%' ),
+			'format with variables' => array( $plain_id, '%title% %sep% %author% %sep% %page% %sep% %year% %sep% %sitename%' ),
+			'own SEO fields'        => array( $custom_id, '%sitename% %sep% %tagline%' ),
+		);
+
+		foreach ( $cases as $label => $case ) {
+			list( $page_id, $home_title_format ) = $case;
+
+			update_option( 'page_on_front', $page_id );
+			update_option(
+				LIGHTWEIGHT_SEO_OPTION_NAME,
+				array(
+					'enable_ai_discovery' => '1',
+					'enable_llms_txt'     => '1',
+					'llms_txt_post_ids'   => (string) $page_id,
+					'meta_description'    => 'Integration homepage summary.',
+					'home_title_format'   => $home_title_format,
+				)
+			);
+
+			$this->go_to( home_url( '/' ) );
+			$this->assertTrue( is_front_page(), $label );
+
+			$settings     = new Lightweight_SEO_Settings();
+			$post_meta    = new Lightweight_SEO_Post_Meta();
+			$archive_meta = new Lightweight_SEO_Archive_Meta( $settings );
+			$homepage     = ( new Lightweight_SEO_Page_Context_Service( $settings, $post_meta, $archive_meta ) )->get_context();
+			$entries      = ( new Lightweight_SEO_AI_Discovery_Module( $settings, lightweight_seo_get_api(), 'admin', $post_meta ) )->get_curated_entries();
+
+			$this->assertCount( 1, $entries, $label );
+			$this->assertNotSame( '', $homepage['document_title'], $label );
+			$this->assertSame( $homepage['document_title'], $entries[0]['title'], $label );
+			$this->assertSame( $homepage['description'], $entries[0]['description'], $label );
+		}
+
+		$this->assertSame( 'Oak furniture – Integration Site', $entries[0]['title'] );
+		$this->assertSame( 'Our own words about the homepage.', $entries[0]['description'] );
 	}
 }

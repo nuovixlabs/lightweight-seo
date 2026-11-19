@@ -8,7 +8,10 @@ These notes describe the 1.2 line by feature, as it is built. [Changelog](../CHA
 
 ## AI Discovery
 
-Nothing yet.
+### llms.txt
+
+- The file opens with a one-line summary of the site under its name: the homepage meta description from the "Description and sharing" card on **SEO → Search appearance**, or the tagline when there is none. With neither, the summary line is left out. 1.1 printed a disclaimer there; it is still shown on the AI Discovery card.
+- When the static front page is one of the listed pages, it is listed the way the homepage prints it. Its link text is the page's own SEO title, or the homepage title format, such as "Site name – Tagline". Its note is the page's own description, or the homepage meta description. Other pages are listed as before.
 
 ## Upgrading from 1.1
 
