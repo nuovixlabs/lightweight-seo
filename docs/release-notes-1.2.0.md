@@ -31,7 +31,7 @@ The checks of 1.1 looked for a `robots.txt` file on disk and for other plugins' 
 - The administrator's browser fetches `/robots.txt` at the root of the host, without its sign-in, the way a crawler does. The server makes no request.
 - **Served robots.txt** says whether the address answered with a plain text file, and reports a failed fetch, a status other than 200, or a type other than `text/plain`.
 - **Crawler rules from this card** says whether the rules for the AI crawlers set on the card are in the served file, and names any that are missing or give a different answer. When none are there, another file or setting answers the address instead of WordPress.
-- **Whole-site blocks** names any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site.
+- **Whole-site blocks** names any group for Googlebot, Bingbot, or every crawler (`*`) that disallows the whole site. A group that disallows `/` but also has `Allow` lines is reported as disallowing the homepage and every page those lines do not list, since the listed paths can still be fetched.
 - **Sitemap line** lists the `Sitemap:` lines, or gives the exact line to add when WordPress sitemaps are on.
 - WordPress answers `robots.txt` only when it is installed at the root of the host. On a subdirectory install the card says so, and that the rules set on the card are not served there.
 - Without JavaScript, the card keeps the checks of 1.1 and links to the served file.
