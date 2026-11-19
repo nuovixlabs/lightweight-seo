@@ -250,6 +250,53 @@ class Lightweight_SEO_AI_Discovery_Module {
 		return $entries;
 	}
 
+	/**
+	 * Describe what the served /robots.txt should hold, for the check the administrator's browser runs.
+	 *
+	 * Crawlers read robots.txt only at the root of the host. WordPress answers it there only when it
+	 * is installed at the root, so a subdirectory install expects none of the plugin's rules.
+	 *
+	 * @since 1.2.0
+	 * @return array {
+	 *     @type string $url          Address of the file crawlers read.
+	 *     @type string $subdirectory Path WordPress is installed under, or an empty string at the root.
+	 *     @type array  $rules        Whether each crawler token the plugin adds is allowed, keyed by token.
+	 *     @type array  $crawlers     Tokens checked for a group that disallows the whole site.
+	 *     @type string $sitemapLine  The Sitemap line WordPress would print, or an empty string.
+	 * }
+	 */
+	public function get_served_robots_expectations() {
+		$home         = home_url( '/' );
+		$scheme       = (string) wp_parse_url( $home, PHP_URL_SCHEME );
+		$host         = (string) wp_parse_url( $home, PHP_URL_HOST );
+		$port         = wp_parse_url( $home, PHP_URL_PORT );
+		$subdirectory = untrailingslashit( (string) wp_parse_url( $home, PHP_URL_PATH ) );
+		$public       = (bool) get_option( 'blog_public', 1 );
+		$rules        = array();
+		$sitemap_urls = $public && $this->api && method_exists( $this->api, 'get_sitemap_urls' ) ? (array) $this->api->get_sitemap_urls() : array();
+
+		if ( '' === $subdirectory && $public && ! $this->physical_robots_exists() ) {
+			$taken            = $this->get_conflicts()['robots_tokens'];
+			$search_allowed   = (bool) $this->settings->ai_search_crawlers_enabled();
+			$training_allowed = (bool) $this->settings->ai_training_crawlers_enabled();
+
+			foreach ( $this->get_crawler_registry() as $token => $definition ) {
+				// A token another filter already defines is left to it, so its rule is not the plugin's to check.
+				if ( ! in_array( $token, $taken, true ) ) {
+					$rules[ $token ] = 'training' === $definition['purpose'] ? $training_allowed : $search_allowed;
+				}
+			}
+		}
+
+		return array(
+			'url'          => ( '' !== $scheme ? $scheme : 'https' ) . '://' . $host . ( $port ? ':' . (int) $port : '' ) . '/robots.txt',
+			'subdirectory' => $subdirectory,
+			'rules'        => $rules,
+			'crawlers'     => array( 'Googlebot', 'Bingbot', '*' ),
+			'sitemapLine'  => empty( $sitemap_urls ) ? '' : 'Sitemap: ' . reset( $sitemap_urls ),
+		);
+	}
+
 	/** Return factual, deterministic readiness checks with no ranking claims. */
 	public function get_readiness_checks() {
 		$conflicts     = $this->get_conflicts();

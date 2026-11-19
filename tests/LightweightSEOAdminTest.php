@@ -1810,6 +1810,83 @@ final class LightweightSEOAdminTest extends TestCase {
 		$this->assertSame( array(), $lightweight_seo_test_settings_errors );
 	}
 
+	public function test_ai_card_prints_the_served_robots_rows_for_the_browser_and_a_link_without_it(): void {
+		global $lightweight_seo_test_home_url;
+		global $lightweight_seo_test_options;
+
+		require_once dirname( __DIR__ ) . '/includes/class-lightweight-seo-ai-discovery-module.php';
+
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'ai' => true );
+		$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_OPTION_NAME ]         = array( 'enable_ai_discovery' => '1' );
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Module_Fields( new Lightweight_SEO_Settings() ) )->ai_readiness_render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '<ul class="lwseo-status-list" data-lwseo-served-robots data-url="https://example.com/robots.txt"', $output );
+		$this->assertStringContainsString( '&quot;OAI-SearchBot&quot;:true', $output );
+		$this->assertStringContainsString( '&quot;GPTBot&quot;:false', $output );
+		$this->assertStringContainsString( 'data-prefix-warning="Needs attention:"', $output );
+
+		// Every row is printed hidden with all of its messages, so the script only chooses.
+		foreach ( array( 'fetch', 'rules', 'blocked', 'sitemap' ) as $row ) {
+			$this->assertMatchesRegularExpression( '/<li class="lwseo-status is-pending" hidden data-served-check="' . $row . '"/', $output );
+		}
+
+		$this->assertStringContainsString( 'data-msg-absent="None of the rules set here are in the served file.', $output );
+		$this->assertStringContainsString( 'data-msg-missing="No Sitemap line is served. Add this line to the file: %s"', $output );
+		$this->assertStringContainsString( 'data-msg-type="The file is served as %s. Crawlers expect text/plain;', $output );
+
+		// Without the script, the link opens the file crawlers read.
+		$this->assertStringContainsString( '<a href="https://example.com/robots.txt" target="_blank" rel="noopener noreferrer">Open the served robots.txt', $output );
+		$this->assertStringNotContainsString( 'WordPress is installed under', $output );
+
+		$previous_home                 = $lightweight_seo_test_home_url;
+		$lightweight_seo_test_home_url = 'https://example.com/blog';
+
+		ob_start();
+		( new Lightweight_SEO_Admin_Module_Fields( new Lightweight_SEO_Settings() ) )->ai_readiness_render();
+		$subdirectory = ob_get_clean();
+
+		$lightweight_seo_test_home_url = $previous_home;
+
+		$this->assertStringContainsString( 'WordPress is installed under /blog, and crawlers read robots.txt only at https://example.com/robots.txt, which WordPress does not answer.', $subdirectory );
+		$this->assertStringContainsString( '&quot;rules&quot;:[]', $subdirectory );
+	}
+
+	public function test_robots_reader_loads_on_the_modules_tab_while_ai_discovery_is_on(): void {
+		global $lightweight_seo_test_enqueued_scripts;
+		global $lightweight_seo_test_options;
+		global $lightweight_seo_test_screen;
+
+		$admin                       = new Lightweight_SEO_Admin( 'lightweight-seo', '1.1.0', new Lightweight_SEO_Settings(), $this->get_post_meta() );
+		$lightweight_seo_test_screen = (object) array(
+			'base'      => 'toplevel_page_lightweight-seo',
+			'post_type' => '',
+		);
+		$loads                       = function ( $tab, $ai ) use ( $admin ) {
+			global $lightweight_seo_test_enqueued_scripts;
+			global $lightweight_seo_test_options;
+
+			$lightweight_seo_test_enqueued_scripts                               = array();
+			$lightweight_seo_test_options[ LIGHTWEIGHT_SEO_MODULES_OPTION_NAME ] = array( 'ai' => $ai );
+			$_GET['tab'] = $tab;
+
+			$admin->enqueue_admin_scripts( 'toplevel_page_lightweight-seo' );
+			unset( $_GET['tab'] );
+
+			return isset( $lightweight_seo_test_enqueued_scripts['lightweight-seo-robots'] );
+		};
+
+		$this->assertTrue( $loads( 'modules', true ) );
+		$this->assertSame( array( 'jquery', 'lightweight-seo-formats', 'lightweight-seo-robots' ), $lightweight_seo_test_enqueued_scripts['lightweight-seo-admin-script'] );
+		$this->assertFalse( $loads( 'modules', false ) );
+		$this->assertFalse( $loads( 'appearance', true ) );
+		$this->assertSame( array( 'jquery', 'lightweight-seo-formats' ), $lightweight_seo_test_enqueued_scripts['lightweight-seo-admin-script'] );
+
+		$lightweight_seo_test_screen = null;
+	}
+
 	public function test_format_script_loads_on_the_settings_screen_only(): void {
 		global $lightweight_seo_test_enqueued_scripts;
 		global $lightweight_seo_test_localized_scripts;

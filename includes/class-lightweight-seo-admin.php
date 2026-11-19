@@ -179,6 +179,19 @@ class Lightweight_SEO_Admin {
 	}
 
 	/**
+	 * Whether this screen shows the served robots.txt check: the Modules tab while AI Discovery is on.
+	 *
+	 * @since    1.2.0
+	 * @return   bool
+	 */
+	private function is_served_robots_check_shown() {
+		$tab    = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab selection.
+		$states = (array) get_option( LIGHTWEIGHT_SEO_MODULES_OPTION_NAME, array() );
+
+		return 'modules' === $tab && ! empty( $states['ai'] );
+	}
+
+	/**
 	 * Enqueue admin scripts and styles
 	 *
 	 * @since    1.0.0
@@ -218,11 +231,26 @@ class Lightweight_SEO_Admin {
 			true
 		);
 
+		$admin_dependencies = array( 'jquery', $this->plugin_name . '-formats' );
+
+		// Only the AI Discovery card reads a served robots.txt, so only its tab loads the reader.
+		if ( $is_plugin_page && $this->is_served_robots_check_shown() ) {
+			wp_enqueue_script(
+				$this->plugin_name . '-robots',
+				LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-robots.js',
+				array(),
+				$this->version,
+				true
+			);
+
+			$admin_dependencies[] = $this->plugin_name . '-robots';
+		}
+
 		// Enqueue our admin script
 		wp_enqueue_script(
 			$this->plugin_name . '-admin-script',
 			LIGHTWEIGHT_SEO_PLUGIN_URL . 'admin/js/lightweight-seo-admin.js',
-			array( 'jquery', $this->plugin_name . '-formats' ),
+			$admin_dependencies,
 			$this->version,
 			true
 		);

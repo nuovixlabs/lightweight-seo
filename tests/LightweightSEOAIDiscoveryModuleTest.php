@@ -275,6 +275,63 @@ final class LightweightSEOAIDiscoveryModuleTest extends TestCase {
 		$this->assertSame( $hooks_before, count( $lightweight_seo_test_hooks ) );
 	}
 
+	public function test_served_robots_expectations_follow_the_switches_and_the_install(): void {
+		global $lightweight_seo_test_filters;
+		global $lightweight_seo_test_home_url;
+		global $lightweight_seo_test_options;
+
+		$api      = new class() {
+			public function get_sitemap_urls() {
+				return array( 'https://example.com/wp-sitemap.xml' );
+			}
+		};
+		$module   = new Lightweight_SEO_AI_Discovery_Module( $this->settings( true, false ), $api, 'admin' );
+		$expected = $module->get_served_robots_expectations();
+
+		$this->assertSame( 'https://example.com/robots.txt', $expected['url'] );
+		$this->assertSame( '', $expected['subdirectory'] );
+		$this->assertSame( array( 'Googlebot', 'Bingbot', '*' ), $expected['crawlers'] );
+		$this->assertSame( 'Sitemap: https://example.com/wp-sitemap.xml', $expected['sitemapLine'] );
+		$this->assertSame( array_keys( $module->get_crawler_registry() ), array_keys( $expected['rules'] ) );
+		$this->assertTrue( $expected['rules']['OAI-SearchBot'] );
+		$this->assertTrue( $expected['rules']['Claude-User'] );
+		$this->assertFalse( $expected['rules']['GPTBot'] );
+		$this->assertFalse( $expected['rules']['Google-Extended'] );
+
+		// A token another filter already writes is that filter's rule, not the plugin's.
+		$lightweight_seo_test_filters['robots_txt'] = static function () {
+			return "User-agent: GPTBot\nAllow: /\n";
+		};
+		$this->assertArrayNotHasKey( 'GPTBot', $module->get_served_robots_expectations()['rules'] );
+		unset( $lightweight_seo_test_filters['robots_txt'] );
+
+		// A physical file is served instead of the plugin's rules.
+		$path = tempnam( sys_get_temp_dir(), 'lightweight-seo-robots-' );
+		$lightweight_seo_test_filters['lightweight_seo_physical_robots_path'] = static function () use ( $path ) {
+			return $path;
+		};
+		$this->assertSame( array(), $module->get_served_robots_expectations()['rules'] );
+		unset( $lightweight_seo_test_filters['lightweight_seo_physical_robots_path'] );
+		unlink( $path );
+
+		// A site that asks not to be indexed gets neither rules nor a Sitemap line from WordPress.
+		$lightweight_seo_test_options['blog_public'] = 0;
+		$this->assertSame( array(), $module->get_served_robots_expectations()['rules'] );
+		$this->assertSame( '', $module->get_served_robots_expectations()['sitemapLine'] );
+		$lightweight_seo_test_options['blog_public'] = 1;
+
+		// Crawlers read robots.txt at the root of the host, which a subdirectory install does not answer.
+		$previous_home                 = $lightweight_seo_test_home_url;
+		$lightweight_seo_test_home_url = 'http://example.com:8080/blog';
+		$subdirectory                  = $module->get_served_robots_expectations();
+		$lightweight_seo_test_home_url = $previous_home;
+
+		$this->assertSame( 'http://example.com:8080/robots.txt', $subdirectory['url'] );
+		$this->assertSame( '/blog', $subdirectory['subdirectory'] );
+		$this->assertSame( array(), $subdirectory['rules'] );
+		$this->assertSame( 'Sitemap: https://example.com/wp-sitemap.xml', $subdirectory['sitemapLine'] );
+	}
+
 	private function settings( $search = true, $training = false, $ids = array(), $values = array() ) {
 		return new class( $search, $training, $ids, $values ) {
 			private $search;

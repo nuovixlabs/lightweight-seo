@@ -865,12 +865,118 @@ class Lightweight_SEO_Admin_Module_Fields {
 			return;
 		}
 
-		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings, lightweight_seo_get_api(), 'admin', $this->post_meta );
+		$module = new Lightweight_SEO_AI_Discovery_Module( $this->settings, function_exists( 'lightweight_seo_get_api' ) ? lightweight_seo_get_api() : null, 'admin', $this->post_meta );
 
 		echo '<ul class="lwseo-status-list">';
 		foreach ( $module->get_readiness_checks() as $check ) {
 			Lightweight_SEO_Admin_UI::status( 'pass' === $check['status'] ? 'success' : 'warning', $check['label'], $check['details'] );
 		}
 		echo '</ul>';
+
+		$this->render_served_robots_check( $module->get_served_robots_expectations() );
+	}
+
+	/**
+	 * Print the rows the administrator's browser fills after fetching the served /robots.txt.
+	 *
+	 * PHP requests nothing. The rows are printed hidden, with every message they can show, and
+	 * the script reveals the ones that apply. Without the script, the link opens the file.
+	 *
+	 * @since    1.2.0
+	 * @param    array    $expected    What the served file should hold, from the AI Discovery module.
+	 * @return   void
+	 */
+	private function render_served_robots_check( $expected ) {
+		$url      = (string) $expected['url'];
+		$checking = __( 'Fetching the file from this browser…', 'lightweight-seo' );
+		$rows     = array(
+			'fetch'   => array(
+				__( 'Served robots.txt', 'lightweight-seo' ),
+				array(
+					/* translators: %s: address of the robots.txt file. */
+					'ok'     => __( '%s answers with a plain text file.', 'lightweight-seo' ),
+					'failed' => __( 'This browser could not fetch the file. Open it with the link below to see what crawlers receive.', 'lightweight-seo' ),
+					/* translators: %s: HTTP status code, such as 404. */
+					'status' => __( 'The address answers with status %s instead of 200, so crawlers find no rules there.', 'lightweight-seo' ),
+					/* translators: %s: media type the file is served as, such as text/html. */
+					'type'   => __( 'The file is served as %s. Crawlers expect text/plain; check the server or plugin that answers this address.', 'lightweight-seo' ),
+				),
+			),
+			'rules'   => array(
+				__( 'Crawler rules from this card', 'lightweight-seo' ),
+				array(
+					/* translators: %s: number of crawler rules. */
+					'present'   => __( 'All %s rules set here are in the served file.', 'lightweight-seo' ),
+					'absent'    => __( 'None of the rules set here are in the served file. Another file, plugin, or server setting answers /robots.txt instead of WordPress.', 'lightweight-seo' ),
+					/* translators: %s: list of crawler names. */
+					'missing'   => __( 'The served file has no rules for: %s.', 'lightweight-seo' ),
+					/* translators: %s: list of crawler names. */
+					'different' => __( 'The served file gives a different answer than this card for: %s.', 'lightweight-seo' ),
+				),
+			),
+			'blocked' => array(
+				__( 'Whole-site blocks', 'lightweight-seo' ),
+				array(
+					/* translators: %s: list of crawler names, where * means every crawler. */
+					'open'    => __( 'No group for %s disallows the whole site.', 'lightweight-seo' ),
+					/* translators: %s: list of crawler names, where * means every crawler. */
+					'blocked' => __( 'These groups disallow the whole site: %s. The crawlers they name may not fetch any page.', 'lightweight-seo' ),
+				),
+			),
+			'sitemap' => array(
+				__( 'Sitemap line', 'lightweight-seo' ),
+				array(
+					/* translators: %s: list of sitemap addresses. */
+					'present' => __( 'Points crawlers to %s.', 'lightweight-seo' ),
+					/* translators: %s: the exact line to add, such as "Sitemap: https://example.com/wp-sitemap.xml". */
+					'missing' => __( 'No Sitemap line is served. Add this line to the file: %s', 'lightweight-seo' ),
+					'none'    => __( 'No Sitemap line is served, and WordPress sitemaps are off.', 'lightweight-seo' ),
+				),
+			),
+		);
+
+		echo '<ul class="lwseo-status-list" data-lwseo-served-robots';
+		echo ' data-url="' . esc_url( $url ) . '"';
+		echo ' data-expected="' . esc_attr( (string) wp_json_encode( array_intersect_key( $expected, array_flip( array( 'rules', 'crawlers', 'sitemapLine' ) ) ) ) ) . '"';
+
+		foreach ( array( 'success', 'warning', 'info' ) as $state ) {
+			echo ' data-prefix-' . esc_attr( $state ) . '="' . esc_attr( Lightweight_SEO_Admin_UI::status_prefix( $state ) ) . '"';
+		}
+
+		echo '>';
+
+		if ( '' !== (string) $expected['subdirectory'] ) {
+			Lightweight_SEO_Admin_UI::status(
+				'info',
+				__( 'Crawler rules from this card', 'lightweight-seo' ),
+				sprintf(
+					/* translators: 1: path WordPress is installed under, such as /blog. 2: address of the robots.txt file. */
+					__( 'WordPress is installed under %1$s, and crawlers read robots.txt only at %2$s, which WordPress does not answer. The rules set here are not served; copy them into that file to apply them.', 'lightweight-seo' ),
+					$expected['subdirectory'],
+					$url
+				)
+			);
+		}
+
+		foreach ( $rows as $id => $row ) {
+			$attributes = array(
+				'hidden'            => true,
+				'data-served-check' => $id,
+			);
+
+			foreach ( $row[1] as $key => $message ) {
+				$attributes[ 'data-msg-' . $key ] = $message;
+			}
+
+			Lightweight_SEO_Admin_UI::status( 'pending', $row[0], $checking, array(), $attributes );
+		}
+
+		echo '</ul>';
+		?>
+		<p class="lwseo-help">
+			<?php esc_html_e( 'This browser fetches the served file the way a crawler would and fills in the rows about it; the server requests nothing.', 'lightweight-seo' ); ?>
+			<a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Open the served robots.txt', 'lightweight-seo' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'lightweight-seo' ); ?></span></a>
+		</p>
+		<?php
 	}
 }

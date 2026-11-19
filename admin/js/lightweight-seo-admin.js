@@ -133,6 +133,60 @@
 			}
 		});
 
+		/* Served robots.txt ----------------------------------------------------- */
+
+		// The administrator's browser fetches the file crawlers read, signed out, and compares it with
+		// what the server expects. The rows and every message are printed by the server; this only
+		// picks the ones that apply. Nothing is saved.
+		$('[data-lwseo-served-robots]').each(function() {
+			var list = $(this);
+			var robots = window.lightweightSeoRobots;
+			var icons = {success: 'dashicons-yes-alt', warning: 'dashicons-warning', info: 'dashicons-info-outline', pending: 'dashicons-marker'};
+			var expected;
+
+			if (!robots || !window.fetch) {
+				return;
+			}
+
+			try {
+				expected = JSON.parse(list.attr('data-expected') || '{}');
+			} catch (error) {
+				expected = {};
+			}
+
+			function show(row, state, text) {
+				var prefix = list.attr('data-prefix-' + state) || '';
+
+				row.prop('hidden', false).removeClass('is-success is-warning is-info is-pending').addClass('is-' + state);
+				row.children('.lwseo-status__icon').removeClass('dashicons-yes-alt dashicons-warning dashicons-info-outline dashicons-marker').addClass(icons[state] || icons.info);
+				row.find('.lwseo-status__title .screen-reader-text').remove();
+
+				if (prefix) {
+					$('<span>', {'class': 'screen-reader-text', text: prefix + ' '}).prependTo(row.find('.lwseo-status__title'));
+				}
+
+				// Text is set as text, never as markup.
+				row.find('.lwseo-status__text').text(text);
+			}
+
+			// The fetch row shows its "fetching" text until the answer arrives.
+			list.find('[data-served-check="fetch"]').prop('hidden', false);
+
+			window.fetch(list.attr('data-url'), {credentials: 'omit', cache: 'no-store', redirect: 'follow'}).then(function(response) {
+				return response.text().then(function(body) {
+					return {fetched: true, status: response.status, contentType: response.headers.get('content-type') || '', body: body, url: response.url};
+				});
+			}, function() {
+				return {fetched: false};
+			}).then(function(response) {
+				robots.check(response, expected).forEach(function(result) {
+					var row = list.find('[data-served-check="' + result.id + '"]');
+
+					show(row, result.state, (row.attr('data-msg-' + result.key) || '').replace('%s', result.values.join(', ')));
+				});
+			});
+		});
+
 		/* Module cards ------------------------------------------------------- */
 
 		// A link to a collapsed module opens it, so the reader lands on its settings.
