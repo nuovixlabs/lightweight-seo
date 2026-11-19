@@ -202,3 +202,19 @@ test('on a subdirectory install, the sitemap is this site\'s own and the root ro
 	// A root install still falls back on its own robots.txt.
 	assert.equal(byId(readiness(plainSite({robots: rootRobots, sitemapXml: notFound()}), {})).sitemapXml.key, 'listed');
 });
+
+test('a repeated Content-Type header does not hide Markdown, llms.txt, or an API catalog', () => {
+	const results = byId(readiness(plainSite({
+		markdown: answer('# Home\n', {contentType: 'text/markdown; charset=utf-8, text/markdown'}),
+		llms: answer('# Example\n', {contentType: 'text/plain, text/plain', url: ROOT + '/llms.txt'}),
+		apiCatalog: [answer('{"linkset":[{"anchor":"' + ROOT + '/api"}]}', {contentType: 'application/linkset+json, application/linkset+json', url: ROOT + '/.well-known/api-catalog'})],
+	}), {llmsEnabled: true}));
+
+	assert.equal(results.markdown.key, 'found');
+	assert.equal(results.llms.key, 'found');
+	assert.deepEqual(results.apiCatalog.values, [ROOT + '/.well-known/api-catalog']);
+
+	// The type that counts is the last one, so HTML after Markdown is HTML.
+	assert.equal(byId(readiness(plainSite({markdown: answer('<html>', {contentType: 'text/markdown, text/html'})}), {})).markdown.key, 'none');
+	assert.equal(byId(readiness(plainSite({markdown: answer('# Home', {contentType: 'text/html, text/markdown'})}), {})).markdown.key, 'found');
+});

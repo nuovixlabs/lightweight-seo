@@ -184,7 +184,8 @@
 
 				window.fetch(url.toString(), {credentials: 'same-origin', cache: 'no-store'}).then(function(response) {
 					// Only a report carries this header. Anything else is the page itself, usually after a redirect.
-					if (response.headers.get('X-Lightweight-SEO-Inspect') !== '1') {
+					// A header a host sends twice arrives joined as "1, 1", so each value is checked.
+					if ((response.headers.get('X-Lightweight-SEO-Inspect') || '').split(',').map($.trim).indexOf('1') === -1) {
 						return {redirected: response.redirected ? response.url : ''};
 					}
 
